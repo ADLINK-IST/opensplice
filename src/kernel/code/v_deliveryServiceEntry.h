@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -52,17 +53,17 @@ v_deliveryServiceEntry
 v_deliveryServiceEntryNew(
     v_deliveryService deliveryService,
     v_topic topic);
-    
-void               
+
+void
 v_deliveryServiceEntryFree(
     v_deliveryServiceEntry _this);
-    
-v_writeResult      
+
+v_writeResult
 v_deliveryServiceEntryWrite(
-    v_deliveryServiceEntry _this, 
-    v_message o, 
+    v_deliveryServiceEntry _this,
+    v_message o,
     v_instance *instance);
-    
+
 #if defined (__cplusplus)
 }
 #endif

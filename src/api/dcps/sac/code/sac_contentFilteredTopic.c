@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -150,8 +151,8 @@ DDS_ContentFilteredTopicNew (
     return (DDS_Topic)topic;
 }
 
-/*     string
- *     get_filter_expression();
+/* string
+ * get_filter_expression();
  */
 DDS_string
 DDS_ContentFilteredTopic_get_filter_expression (
@@ -173,8 +174,8 @@ DDS_ContentFilteredTopic_get_filter_expression (
     return expr;
 }
 
-/*     StringSeq
- *     get_expression_parameters();
+/* StringSeq
+ * get_expression_parameters();
  */
 DDS_ReturnCode_t
 DDS_ContentFilteredTopic_get_expression_parameters (
@@ -198,9 +199,9 @@ DDS_ContentFilteredTopic_get_expression_parameters (
     return result;
 }
 
-/*     ReturnCode_t
- *     set_expression_parameters(
- *         in StringSeq expression_parameters);
+/* ReturnCode_t
+ * set_expression_parameters(
+ *      in StringSeq expression_parameters);
  */
 DDS_ReturnCode_t
 DDS_ContentFilteredTopic_set_expression_parameters (
@@ -216,7 +217,8 @@ DDS_ContentFilteredTopic_set_expression_parameters (
 DDS_ReturnCode_t
 DDS_ContentFilteredTopic_get_parameters (
     DDS_ContentFilteredTopic _this,
-    c_value **params)
+    c_value **params,
+    DDS_unsigned_long *nrOfParams)
 {
     DDS_ReturnCode_t result;
     _ContentFilteredTopic topic;
@@ -234,8 +236,10 @@ DDS_ContentFilteredTopic_get_parameters (
                 for (n=0;n<parms->_length;n++) {
                     (*params)[n] = c_stringValue(parms->_buffer[n]);
                 }
+                *nrOfParams = parms->_length;
             } else {
                 *params = NULL;
+                *nrOfParams = 0;
             }
             DDS_ContentFilteredTopicRelease(_this);
         }
@@ -248,8 +252,8 @@ DDS_ContentFilteredTopic_get_parameters (
     return result;
 }
 
-/*     Topic
- *     get_related_topic();
+/* Topic
+ * get_related_topic();
  */
 DDS_Topic
 DDS_ContentFilteredTopic_get_related_topic (

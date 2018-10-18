@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,18 +22,21 @@
 #include "v__transactionGroup.h"
 #include "v__transaction.h"
 #include "v__kernel.h"
-#include "v__spliced.h"
 #include "v_public.h"
 #include "v_message.h"
 #include "v_instance.h"
 #include "v__subscriber.h"
+#include "v__reader.h"
 #include "v__dataReader.h"
 #include "v__builtin.h"
 #include "v__policy.h"
+#include "v_time.h"
 #include "os_abstract.h"
 #include "os_report.h"
 #include "os_heap.h"
+#include "os_atomics.h"
 #include "c_collection.h"
+
 
 #define V_TRANSACTION_BLOCKSIZE (50)
 
@@ -62,16 +66,13 @@ do { \
          NULL)
 
 #define TRANSACTION_OWNER(o) \
-        (((o) && (v_transactionGroup(o)->publisher)) ? \
-         (v_transactionGroupAdmin(v_transactionPublisher(v_transactionGroup(o)->publisher)->admin)->owner) : \
+        ((o) ? \
+         (v_transactionGroupAdmin(v_transactionGroup(o)->admin)->owner) : \
          NULL)
 
 #define v_transactionPublisherCount(p) \
         (p ? (v_transactionPublisher(p)->writers ? c_count(v_transactionPublisher(p)->writers) : 0) : 0)
 
-/****************************************************************************
- * Private New/Free
- ****************************************************************************/
 static v_transactionPublisher
 v_transactionPublisherNew(
     v_transactionGroupAdmin admin,
@@ -90,7 +91,6 @@ v_transactionPublisherNew(
         _this->publisherId = publisherId;
         _this->admin = admin;
         _this->transactions = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
-        _this->lastRemovedTransactionId = 0;
         _this->writers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONGROUPWRITER),
                                     "gid.systemId,gid.localId,gid.serial");
         TRACE_COHERENT_UPDATE(ADMIN_OWNER(admin),
@@ -108,13 +108,16 @@ v_transactionPublisherNew(
 static v_transactionGroup
 v_transactionGroupNew(
     v_transactionPublisher publisher,
+    v_transactionGroupAdmin admin,
     v_transaction transaction)
 {
     v_transactionGroup group;
     v_kernel kernel = v_objectKernel(transaction);
 
+    assert(admin != NULL);
     assert(transaction != NULL);
     assert(C_TYPECHECK(publisher, v_transactionPublisher));
+    assert(C_TYPECHECK(admin, v_transactionGroupAdmin));
     assert(C_TYPECHECK(transaction, v_transaction));
 
     group = v_transactionGroup(v_objectNew(kernel, K_TRANSACTIONGROUP));
@@ -129,10 +132,14 @@ v_transactionGroupNew(
             group->publisher = (c_voidp)publisher;
             group->publisherId = publisher->publisherId;
         }
+        group->admin = admin;
         group->matchCount = 0;
-        group->triggered = FALSE;
         group->writers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONGROUPWRITER),
                                     "gid.systemId,gid.localId,gid.serial");
+        group->obsolete = FALSE;
+        group->allocTime = os_timeEGet();
+        group->writeTime = v_message(transaction->eot)->writeTime;
+        pa_st32(&group->historyLinks, 0);
 
         TRACE_COHERENT_UPDATE(PUBLISHER_OWNER(publisher),
                               "PID(%d) TID(%d) => 0x%"PA_PRIxADDR"\n",
@@ -164,6 +171,8 @@ v_transactionGroupWriterNew (
         _this->publisher = publisher;
         _this->readers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONGROUPREADER),
                                     "gid.systemId,gid.localId,gid.serial");
+        _this->rxo = NULL;
+        _this->topicName = NULL;
 
         TRACE_COHERENT_UPDATE(PUBLISHER_OWNER(publisher),
                               "PID(%d) Writer(%u) => 0x%"PA_PRIxADDR"\n",
@@ -177,9 +186,6 @@ v_transactionGroupWriterNew (
     return _this;
 }
 
-/****************************************************************************
- * Private functions
- ****************************************************************************/
 static void
 v_transactionGroupInsertTransaction (
     v_transactionGroup _this,
@@ -188,6 +194,7 @@ v_transactionGroupInsertTransaction (
     struct c_collectionIter it;
     v_transaction txn;
     c_bool duplicate = FALSE;
+    os_uint32 oldValue, value;
 
     assert(_this);
     assert(transaction);
@@ -205,7 +212,9 @@ v_transactionGroupInsertTransaction (
         /* Mark group transaction as aborted, on flush this flag is reevaluated. */
         _this->aborted = TRUE;
     }
-    transaction->transactionGroup = _this;
+
+
+
 
     for (txn = c_collectionIterFirst(_this->transactions, &it); txn; txn = c_collectionIterNext(&it)) {
         if (txn->admin == transaction->admin && txn->writer == transaction->writer) {
@@ -218,25 +227,29 @@ v_transactionGroupInsertTransaction (
         }
     }
     if (!duplicate) {
+        if  (v_objectKind(TRANSACTION_OWNER(_this)) == K_KERNEL) {
+            oldValue = pa_ld32(&_this->historyLinks);
+            value = pa_add32_nv(&_this->historyLinks, pa_ld32(&transaction->historyLinks));
+
+            if ((value > 0) && (oldValue == 0)) {
+                v_transactionGroupAdmin admin = v_transactionGroupAdmin(_this->admin);
+                v_transactionGroup found;
+
+                /* Transaction already has samples commited in the group instance so
+                 * it needs to be added to the history
+                 */
+                TRACE_COHERENT_UPDATE(TRANSACTION_OWNER(_this), "Group(0x%"PA_PRIxADDR") PID(%u) TID(%u) "
+                                      "add to history\n",
+                                      (os_address)_this, _this->publisherId, _this->transactionId);
+
+                found = c_append(admin->history, _this);
+                assert(found == _this);
+                OS_UNUSED_ARG(found);
+            }
+        }
+        transaction->transactionGroup = _this;
         c_append(_this->transactions, transaction);
     }
-}
-
-static c_bool
-writerDiscovered(
-    c_object o,
-    c_voidp arg)
-{
-    v_transactionGroupWriter writer = v_transactionGroupWriter(o);
-    OS_UNUSED_ARG(arg);
-    return writer->discovered;
-}
-
-static c_bool
-v_transactionGroupAllWritersDiscovered(
-    v_transactionGroup _this)
-{
-    return c_walk(_this->writers, writerDiscovered, NULL);
 }
 
 /**
@@ -253,84 +266,45 @@ v_transactionGroupHasData(
     return (c_count(_this->transactions) > 0);
 }
 
+static c_bool
+writerDiscovered(
+    c_object o,
+    c_voidp arg)
+{
+    v_transactionGroupWriter writer = v_transactionGroupWriter(o);
+    OS_UNUSED_ARG(arg);
+    return writer->discovered;
+}
+
 /**
  * This operation determines the completeness of a group coherent transaction.
  *
- * A group is complete if it contains all transactions which are defined by
- * the writers listed in the EOT message of any of the available transactions.
- * For each writer in the list a transaction is expected for each matching reader.
- *
- * This operation will first check if the number of discovered DataWriters equals
- * the number of DataWriters listed in the EOT messages, if these numbers are equal then
- * all DataWriters are discovered and match, in that case completeness is reached as soon
- * as the number of available transactions equal the number of known DataWriters.
- * If the number of known DataWriters differ from the number listed in the EOT messages
- * then some DataWriters don't match or are not discovered yet, in that case this
- * operation will ask the spliced to give more information about the missing DataWriters.
- * The spliced will acknowledge if it has discovered the DataWriter and return the number
- * of matching DataReaders for the DataWriter and then report the status which can either
- * be a match, an unmatch or unknown.
- * In case one or more DataWriters are not discovered yet, this operation cannot determine
- * completeness and will therefore return a unknown status.
+ * A group is complete if all the writers listed in the EOT message are discovered
+ * and the number of received transactions is equal to the matchCount.
+ * The matchCount is calculated differently for kernel and subscriber owned
+ * transactionGroupAdmins. For the kernel owned the matchCount equals the number of
+ * writers listed in the EOT message. For the subscriber owned the matchCount is
+ * equal to total number of readers matching the writers listed in the EOT message,
+ * a writer can have 0 to multiple reader matches.
  */
 static c_bool
 v_transactionGroupComplete(
     v_transactionGroup _this)
 {
     c_bool complete = FALSE;
-    c_bool allDiscovered = FALSE;
 
     assert(_this);
     assert(C_TYPECHECK(_this, v_transactionGroup));
 
-    if (c_count(_this->transactions) == 0) {
-        v_transactionPublisher publisher = v_transactionPublisher(_this->publisher);
-        OS_UNUSED_ARG(publisher);
-        /* The count attribute is the number of available (received) writer transactions,
-         * this number is initially one when the transactionGroup is created.
-         * When the value is zero it means that the group is empty (i.e. already flushed)
-         * so can be ignored.
-         * This can occur when the group is added to the pending list because of an
-         * undiscovered writer. In that case the group can be flushed when the writer
-         * is discovered while remaining in the pending list until the pending list is
-         * flushed.
-         */
-        TRACE_COHERENT_UPDATE(TRANSACTION_OWNER(_this), "NO TRANSACTIONS: Group(0x%"PA_PRIxADDR") PID(%u) TID(%u) "
-             "transaction count(%d) == writer count(%d) EOT count (%d) results in (%d) matches\n",
-             (os_address)_this, _this->publisherId, _this->transactionId,
-             c_count(_this->transactions), v_transactionPublisherCount(publisher),
-             0, _this->matchCount);
-
-        return FALSE;
+    if (c_count(_this->transactions) == _this->matchCount) {
+        complete = c_walk(_this->writers, writerDiscovered, NULL);
     }
-
-    allDiscovered = v_transactionGroupAllWritersDiscovered(_this);
-    if (allDiscovered &&
-        (c_count(_this->transactions) == _this->matchCount)) {
-        complete = TRUE;
-    }
-
     TRACE_COHERENT_UPDATE(TRANSACTION_OWNER(_this), "Group(0x%"PA_PRIxADDR") PID(%u) TID(%u) "
-                          "allDiscovered (%s), number of transactions (%u), "
-                          "matchCount (%u) %s\n",
+                          "number of transactions (%u), matchCount (%u) %s\n",
                           (os_address)_this, _this->publisherId, _this->transactionId,
-                          allDiscovered ? "TRUE": "FALSE", c_count(_this->transactions),
-                          _this->matchCount, complete?"complete":"incomplete");
+                          c_count(_this->transactions), _this->matchCount, complete?"complete":"incomplete");
 
     return complete;
-}
-
-static v_transactionGroup
-v_transactionPublisherRemoveTransaction(
-    v_transactionPublisher _this,
-    v_transactionGroup group)
-{
-    assert(_this);
-    assert(C_TYPECHECK(_this, v_transactionPublisher));
-    assert(group);
-    assert(C_TYPECHECK(group, v_transactionGroup));
-
-    return c_remove(_this->transactions, group, NULL, NULL);
 }
 
 /**
@@ -352,14 +326,10 @@ v_transactionGroupFlush(
 
     if (_this->aborted) {
         if (reevaluateAbort) {
-            /* Need to check it the aborted transaction is still part of the group
-             * transaction. */
+            /* If one of the transactions is aborted then the whole group is aborted. */
             for (txn = c_collectionIterFirst(_this->transactions, &it); txn; txn = c_collectionIterNext(&it)) {
                 abort = v_transactionIsAborted(txn);
-                if (abort == TRUE) {
-                    /* One of the transactions is still aborted, abort everything */
-                    break;
-                }
+                if (abort == TRUE) { break; }
             }
         } else {
             abort = TRUE;
@@ -369,9 +339,15 @@ v_transactionGroupFlush(
     for (txn = c_collectionIterFirst(_this->transactions, &it); txn; txn = c_collectionIterNext(&it)) {
         if (abort) {
             v_transactionAbort(txn);
-            v_transactionNotifySampleLost(txn, owner);
+            if (!_this->deleted) {
+                v_transactionNotifySampleLost(txn, owner);
+            }
         }
-        v_transactionFlush(txn, owner);
+        if (txn->admin == owner) {
+            v_transactionFlush_nl(txn);
+        } else {
+            v_transactionFlush(txn);
+        }
     }
 }
 
@@ -572,7 +548,7 @@ v_transactionPublisherLookupTransaction(
     template.transactionId = transaction->eot->transactionId;
     group = v_transactionGroup(c_listTemplateFind(_this->transactions, compareTransactionId, &template));
     if (group == NULL) {
-        group = v_transactionGroupNew(_this, transaction);
+        group = v_transactionGroupNew(_this, _this->admin, transaction);
         group = ospl_c_insert(_this->transactions, group);
 #if TRACE_COHERENT
         inserted = TRUE;
@@ -590,87 +566,6 @@ v_transactionPublisherLookupTransaction(
     return group;
 }
 
-/**
- * \brief              This operation removes older transactions from the publisher
- *
- * \param _this      : The v_transactionPublisher this operation operates on.
- * \param transaction : Transactions older then this transaction are removed.
- *
- * \return           : List of removed transactions.
- */
-static c_iter
-v_transactionPublisherRemoveOlderTransactions(
-    v_transactionPublisher _this,
-    v_transactionGroup transaction)
-{
-    c_iter list = NULL;
-    v_transactionGroup group;
-    struct c_collectionIterD it;
-    c_bool old;
-
-    assert(_this);
-    assert(C_TYPECHECK(_this, v_transactionPublisher));
-
-    for (group = c_collectionIterDFirst(_this->transactions, &it); group; group = c_collectionIterDNext(&it)) {
-        old = FALSE;
-
-        if (transaction->transactionId < _this->lastRemovedTransactionId) {
-            if ((group->transactionId >= _this->lastRemovedTransactionId) ||
-                (group->transactionId < transaction->transactionId)) {
-                old = TRUE;
-            }
-        } else if ((group->transactionId >= _this->lastRemovedTransactionId) &&
-                   (group->transactionId < transaction->transactionId)) {
-            old = TRUE;
-        }
-
-        if (old) {
-            if (v_transactionGroupComplete(group) != TRUE) {
-                list = c_iterInsert(list, c_keep(group));
-                c_collectionIterDRemove(&it);
-                c_free(group);
-            }
-        }
-    }
-
-    return list;
-}
-
-static v_topic
-getTopicByName(
-    v_kernel kernel,
-    const c_char *name)
-{
-    v_topic topic;
-    c_iter topics;
-
-    topics = v_resolveTopics(kernel, name);
-    assert(c_iterLength(topics) == 1);
-    topic = v_topic(c_iterTakeFirst(topics));
-    c_iterFree(topics);
-
-    return topic;
-}
-
-struct processPublicationInfoHelper {
-    v_kernel kernel;
-    v_rxoData rxo;
-    v_topic topic;
-};
-
-static v_result
-processPublicationInfo(
-    struct v_publicationInfo *info,
-    void *arg)
-{
-    struct processPublicationInfoHelper *helper = (struct processPublicationInfoHelper *)arg;
-
-    helper->rxo = v_kernel_rxoDataFromPublicationInfo(helper->kernel, info);
-    helper->topic = getTopicByName(helper->kernel, info->topic_name);
-
-    return V_RESULT_OK;
-}
-
 static c_bool
 v_transactionGroupWriterMatchReader(
     v_transactionGroupWriter _this,
@@ -681,7 +576,7 @@ v_transactionGroupWriterMatchReader(
     v_transactionGroupReader r;
 
     if ((dispose == FALSE) &&
-        (strcmp(v_topicName(reader->topic), v_topicName(_this->topic)) == 0) &&
+        (strcmp(v_topicName(reader->topic), _this->topicName) == 0) &&
         (v_rxoDataCompatible(_this->rxo, reader->rxo) == TRUE)) {
         r = c_find(_this->readers, reader);
         if (r == NULL) {
@@ -713,7 +608,7 @@ matchWriter(
     struct matchWriterHelper *helper = (struct matchWriterHelper *) arg;
 
     assert(reader->topic);
-    assert(helper->writer->topic);
+    assert(helper->writer->topicName);
 
     helper->updated |= v_transactionGroupWriterMatchReader(helper->writer, reader, FALSE);
 
@@ -736,7 +631,8 @@ matchReader(
 
     assert(helper->reader->topic);
     if (writer->discovered) {
-        assert(writer->topic);
+        assert(writer->rxo);
+        assert(writer->topicName);
         helper->updated |= v_transactionGroupWriterMatchReader(writer, helper->reader, helper->dispose);
     }
 
@@ -775,13 +671,8 @@ v_transactionGroupWriterGetMatches(
     if (_this->discovered == TRUE) {
         if (v_objectKind(PUBLISHER_OWNER(_this->publisher)) == K_SUBSCRIBER) {
             matches = c_count(_this->readers);
-        } else {
-            v_topicQos topicQos;
-            topicQos = v_topicGetQos(_this->topic);
-            if (topicQos->durability.v.kind != V_DURABILITY_VOLATILE) {
-                matches = 1;
-            }
-            c_free(topicQos);
+        } else if (_this->rxo->durability.v.kind != V_DURABILITY_VOLATILE) {
+            matches = 1;
         }
     }
     return matches;
@@ -855,7 +746,8 @@ v_transactionGroupRecalculateMatchCount(
     oldCount = _this->matchCount;
 
     /* Run through the discovered writers list to determine how many matches there are.
-     * When publisherId==0, then it should not change. */
+     * When publisherId==0, then it should not change.
+     */
     if ((_this->publisherId != 0) && (_this->publisher != NULL)) {
         _this->matchCount = 0;
         (void)c_walk(_this->writers, calculateMatchCount, &_this->matchCount);
@@ -896,7 +788,8 @@ v_transactionGroupRemoveReader(
                           reader->gid.localId);
 
     /* First, remove all transactions that are related to this reader.
-     * But do not clean KERNEL owned transactions as these are required for alignment. */
+     * But do not clean KERNEL owned transactions as these are required for alignment.
+     */
     if ((_this->publisher != NULL) &&
         (v_objectKind(TRANSACTION_OWNER(_this)) != K_KERNEL)) {
 
@@ -921,7 +814,9 @@ v_transactionGroupRemoveReader(
     (void)c_walk(_this->writers, matchReader, &helper);
 
     /* Third, re-calculate the matchCount. */
-    v_transactionGroupRecalculateMatchCount(_this);
+    if (helper.updated) {
+        v_transactionGroupRecalculateMatchCount(_this);
+    }
 
     /* Sanity check. */
     if (oldComplete) {
@@ -932,7 +827,7 @@ v_transactionGroupRemoveReader(
     }
 }
 
-static c_bool
+static void
 v_transactionGroupWriterUpdate(
     v_transactionGroupWriter _this,
     const struct v_publicationInfo *info)
@@ -948,12 +843,10 @@ v_transactionGroupWriterUpdate(
         c_free(_this->rxo);
     } else {
         /* Topic cannot be changed so only set it once */
-        _this->topic = getTopicByName(kernel, info->topic_name); /* pass reference */
+        _this->topicName = c_keep(info->topic_name);
     }
     _this->rxo = v_kernel_rxoDataFromPublicationInfo(kernel, info); /* pass reference */
     _this->discovered = TRUE;
-
-    return TRUE;
 }
 
 static void
@@ -968,65 +861,83 @@ v_transactionPublisherRecalculateMatchCounts(
     }
 }
 
-/**
- * \brief              This operation removes groupTransactions from the history
- *                     when the contained transactions are not referenced by samples
- *                     anymore
- *
- * \param _this      : The transactionGroupAdmin this operation operates on.
- *
- * \return           : None
- */
 static void
-transactionGroupAdminPurgeHistory(
-    v_transactionGroupAdmin _this)
+v_transactionPublisherMarkObsolete(
+    v_transactionPublisher _this,
+    os_timeW writeTime,
+    c_ulong transactionId)
 {
-    v_transactionGroup group;
-    v_transaction txn;
     struct c_collectionIterD it;
-    struct c_collectionIter jt;
-    c_long cnt;
+    v_transactionGroup tg;
+    os_compare eq;
 
-    if (v_objectKind(ADMIN_OWNER(_this)) == K_KERNEL) {
-        for (group = c_collectionIterDFirst(_this->history, &it); group; group = c_collectionIterDNext(&it)) {
-            cnt = 0;
-            for (txn = c_collectionIterFirst(group->transactions, &jt); txn; txn = c_collectionIterNext(&jt)) {
-                /* Determine if the this transactionGroup hold the only reference.
-                 */
-                cnt += (c_refCount(txn) - 1);
+    assert(_this);
+    assert(C_TYPECHECK(_this, v_transactionPublisher));
+
+    for (tg = c_collectionIterDFirst(_this->transactions, &it); tg; tg = c_collectionIterDNext(&it)) {
+        eq = os_timeWCompare(tg->writeTime, writeTime);
+        if (eq == OS_EQUAL) {
+            if (tg->transactionId < transactionId) {
+                eq = OS_LESS;
             }
-            if (cnt == 0) {
-                /* There are no longer samples/registrations referencing this
-                 * transactionGroup. It's now safe to remove it.
-                 */
-                TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this), "TID(%u) GroupTransaction(0x%"PA_PRIxADDR") "
-                                      "Removed from history list\n",
-                                      group->transactionId, (os_address)group);
-                c_collectionIterDRemove(&it);
-                c_free(group);
-            }
+        }
+        if (eq == OS_LESS) {
+            tg->obsolete = TRUE;
         }
     }
 }
 
-/**
- * \brief              This operation adds a groupTransaction to the history list
- *
- * \param _this      : The transactionGroupAdmin this operation operates on.
- * \param group      : The transactionGroup to add to the history list
- *
- * \return           : None
- */
-static void
-v_transactionGroupAdminAddGroupToHistory(
+static c_bool
+v_transactionGroupAdminAddGroupToPending(
     v_transactionGroupAdmin _this,
     v_transactionGroup group)
 {
-    if (v_objectKind(_this->owner) == K_KERNEL) {
-        (void)c_append(_this->history, group);
+    c_bool result = FALSE;
+    v_transactionGroup found;
+    v_transactionPublisher publisher;
+
+    assert(_this);
+    assert(C_TYPECHECK(_this, v_transactionGroupAdmin));
+    assert(group);
+    assert(C_TYPECHECK(group, v_transactionGroup));
+
+    publisher = v_transactionPublisher(group->publisher);
+    if ((group->obsolete == FALSE) &&
+        (group->aborted == FALSE)){
+        v_transactionPublisherMarkObsolete(publisher, group->writeTime, group->transactionId);
     }
+    group->publisher = NULL;
+
+    if (v_transactionGroupHasData(group)) {
+        found = c_append(_this->pending, group);
+        assert(found == group);
+        OS_UNUSED_ARG(found);
+        result = TRUE;
+        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
+                              "Add %sgroup TID(%u) (0x%"PA_PRIxADDR") to pending list (size:%u)\n",
+                              (group->aborted ?"aborted ":""),
+                              group->transactionId,
+                              (os_address)group,
+                              c_count(_this->pending));
+    } else {
+        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
+                              "Removing complete but empty group TID(%u) (0x%"PA_PRIxADDR")\n",
+                              group->transactionId,
+                              (os_address)group);
+    }
+    return result;
 }
 
+/**
+ * \brief              This operation moves all complete transactions from the
+ *                     transactionPublisher to the pending list. This operation
+ *                     is required because of the asynchronous detection of writers.
+ *
+ * \param _this      : The transactionGroupAdmin this operation operates on.
+ * \param publisher  : The transactionPublisher to check for complete transactions
+ *
+ * \return           : TRUE when at least one transaction has become complete
+ */
 static c_bool
 v_transactionGroupAdminPendCompleteTransactions(
     v_transactionGroupAdmin _this,
@@ -1038,43 +949,40 @@ v_transactionGroupAdminPendCompleteTransactions(
 
     for (group = c_collectionIterDFirst(publisher->transactions, &it); group; group = c_collectionIterDNext(&it)) {
         if (v_transactionGroupComplete(group) == TRUE) {
-            if (!c_exists(_this->pending, group)) {
-                if (v_transactionGroupHasData(group)) {
-                    c_append(_this->pending, group);
-                    result = TRUE;
-                    TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                                          "Add group TID(%u) (0x%"PA_PRIxADDR") to pending list (size:%u)\n",
-                                          group->transactionId,
-                                          (os_address)group,
-                                          c_count(_this->pending));
-                } else {
-                    TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                                          "Removing complete but empty group TID(%u) (0x%"PA_PRIxADDR")\n",
-                                          group->transactionId,
-                                          (os_address)group);
-                    c_collectionIterDRemove(&it);
-                    c_free(group);
-                }
-            }
+            result = v_transactionGroupAdminAddGroupToPending(_this, group);
+            c_collectionIterDRemove(&it);
+            c_free(group);
         }
     }
     return result;
 }
 
-static void
-remove_pending_from_publishers(
-    c_list list)
-{
-    struct c_collectionIter it;
-    v_transactionGroup group, found;
-    v_transactionPublisher pub;
+static c_bool
+publisherPurgeObsolete(
+    c_object o,
+    c_voidp arg);
 
-    for (group = c_collectionIterFirst(list, &it); group; group = c_collectionIterNext(&it)) {
-        pub = v_transactionPublisher(group->publisher);
-        if (pub) {
-            found = v_transactionPublisherRemoveTransaction(pub, group);
-            c_free(found);
-        }
+/**
+ * \brief              This operation moves all obsolete transactions from the
+ *                     transactionPublishers to the pending list when durability
+ *                     is not aligning data.
+ *
+ * \param _this      : The transactionGroupAdmin this operation operates on.
+ *
+ * \return           : void
+ */
+static void
+purgeObsolete (
+    v_transactionGroupAdmin _this)
+{
+    v_kernel kernel = v_objectKernel(v_object(_this));
+
+    if ((v_kernelGetDurabilitySupport(kernel) == TRUE) &&
+        (v_kernelGetAlignedState(kernel) == FALSE)) {
+        /* Durability is currently not aligned, do not purge obsolete groups as
+         * they can still become complete. */
+    } else {
+        (void)c_walk(_this->publishers, publisherPurgeObsolete, _this->pending);
     }
 }
 
@@ -1090,127 +998,35 @@ v_transactionGroupAdminFlushPending(
     v_transactionGroup group;
     c_list pending = NULL;
     v_kernel kernel;
-    c_iter oldList = NULL;
-    c_iter historyList = NULL;
 
     assert(_this);
     assert(C_TYPECHECK(_this, v_transactionGroupAdmin));
     assert(C_TYPECHECK(admin, v_transactionAdmin));
 
     c_mutexLock(&_this->mutex);
+    kernel = v_objectKernel(_this);
+
+    purgeObsolete(_this);
+
     if (c_count(_this->pending) > 0) {
-        kernel = v_objectKernel(_this);
         pending = _this->pending;
         _this->pending = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
         assert(_this->pending);
-        remove_pending_from_publishers(pending);
+    }
 
-        group = c_read(pending);
-        if (group) {
-            if (group->publisher) {
-                oldList = v_transactionPublisherRemoveOlderTransactions(v_transactionPublisher(group->publisher), group);
-            }
-            c_free(group);
-        }
-    }
-    if (v_objectKind(ADMIN_OWNER(_this)) == K_KERNEL) {
-        historyList = c_iterNew(NULL);
-    }
     c_mutexUnlock(&_this->mutex);
 
-    while ((group = c_iterTakeFirst(oldList)) != NULL) {
-        group->aborted = TRUE;
-        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this), "PID(%u) Abort incomplete old "
-                              "group(0x%"PA_PRIxADDR") TID(%u)\n",
-                              group->publisherId, (os_address)group,
-                              group->transactionId);
-        v_transactionGroupFlush(group, admin, FALSE);
-        if (historyList) {
-            c_iterAppend(historyList, c_keep(group));
-        }
-        c_free(group);
-    }
-    c_iterFree(oldList);
     while (pending && ((group = c_take(pending)) != NULL)) {
         TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
                               "PID(%u) Flush group (0x%"PA_PRIxADDR") TID(%u) "
                               "from pending list\n",
                               group->publisherId, (os_address)group,
                               group->transactionId);
+
         v_transactionGroupFlush(group, admin, TRUE);
-        if (historyList) {
-            c_iterAppend(historyList, c_keep(group));
-        }
         c_free(group);
     }
-
-    if (historyList) {
-        c_mutexLock(&_this->mutex);
-        while ((group = c_iterTakeFirst(historyList)) != NULL) {
-            /* Add all emptied (all elements are flushed and freed, only EOTs still
-             * exist) transactionGroups to the history list.
-             */
-            v_transactionGroupAdminAddGroupToHistory(_this, group);
-            c_free(group);
-        }
-        transactionGroupAdminPurgeHistory(_this);
-        c_mutexUnlock(&_this->mutex);
-        c_iterFree(historyList);
-    }
-
     c_free(pending);
-}
-
-void
-v_transactionGroupAdminTrigger(
-    v_transactionGroupAdmin _this,
-    v_reader owner)
-{
-    c_iter triggerList = c_iterNew(NULL);
-    v_dataReader reader;
-    v_transactionGroup group;
-    v_transaction transaction;
-    struct c_collectionIter it, jt;
-
-    c_mutexLock(&_this->mutex);
-    if (c_count(_this->pending) > 0) {
-        for (group = c_collectionIterFirst(_this->pending, &it); group; group = c_collectionIterNext(&it)) {
-            if (group->triggered == FALSE) {
-                for (transaction = c_collectionIterFirst(group->transactions, &jt); transaction; transaction = c_collectionIterNext(&jt)) {
-                    v_transactionTriggerList(transaction, triggerList);
-                }
-                group->triggered = TRUE;
-            }
-        }
-        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                              "Trigger %u readers data available\n", c_iterLength(triggerList));
-    }
-    c_mutexUnlock(&_this->mutex);
-    while ((reader = c_iterTakeFirst(triggerList)) != NULL) {
-        if (reader == v_dataReader(owner)) {
-            v_dataReaderTriggerNoLock(reader);
-        } else {
-            v_dataReaderTrigger(reader);
-        }
-    }
-    c_iterFree(triggerList);
-}
-
-static c_bool
-publisherReaderUpdate(
-    c_object o,
-    c_voidp arg)
-{
-    v_transactionPublisher publisher = v_transactionPublisher(o);
-
-    assert(publisher);
-    assert(arg == NULL);
-    OS_UNUSED_ARG(arg);
-
-    v_transactionPublisherRecalculateMatchCounts(publisher);
-    (void)v_transactionGroupAdminPendCompleteTransactions(v_transactionGroupAdmin(publisher->admin), publisher);
-
-    return TRUE;
 }
 
 static c_bool
@@ -1221,26 +1037,6 @@ publisherRecalculateMatchCounts(
     v_transactionPublisher publisher = v_transactionPublisher(o);
     OS_UNUSED_ARG(arg);
     v_transactionPublisherRecalculateMatchCounts(publisher);
-    return TRUE;
-}
-
-static c_bool
-transactionWriterRemoveReader(
-    c_object o,
-    c_voidp arg)
-{
-    v_transactionGroupWriter writer = v_transactionGroupWriter(o);
-    v_transactionGroupReader found, reader = v_transactionGroupReader(arg);
-
-    found = c_remove(writer->readers, reader, NULL, NULL);
-    if (found) {
-        TRACE_COHERENT_UPDATE(PUBLISHER_OWNER(v_transactionPublisher(writer->publisher)),
-                              "PID(%u) WID(%u) removed reader(%u)\n",
-                              v_transactionPublisher(writer->publisher)->publisherId,
-                              writer->gid.localId, found->gid.localId);
-        c_free(found);
-    }
-
     return TRUE;
 }
 
@@ -1268,21 +1064,17 @@ v_transactionPublisherRemoveReader(
             c_free(group);
         }
     }
-
-    (void)c_walk(publisher->writers, transactionWriterRemoveReader, groupReader);
-
-    publisherReaderUpdate(o, NULL);
+    (void)v_transactionGroupAdminPendCompleteTransactions(v_transactionGroupAdmin(publisher->admin), publisher);
 
     return TRUE;
 }
 
-
-/****************************************************************************
- * Protected functions
- ****************************************************************************/
+_Check_return_
+_Ret_notnull_
+_Pre_satisfies_(v_objectKind(owner) == K_KERNEL || v_objectKind(owner) == K_SUBSCRIBER)
 v_transactionGroupAdmin
 v_transactionGroupAdminNew(
-    v_object owner)
+    _In_ v_object owner)
 {
     v_transactionGroupAdmin _this;
     v_kernel kernel;
@@ -1292,38 +1084,58 @@ v_transactionGroupAdminNew(
 
     kernel = v_objectKernel(owner);
     _this = v_transactionGroupAdmin(v_objectNew(kernel, K_TRANSACTIONGROUPADMIN));
-    if (_this) {
-        base = c_getBase(kernel);
-        c_mutexInit(base, &_this->mutex);
+    base = c_getBase(kernel);
+    (void)c_mutexInit(base, &_this->mutex);
 
-        if (v_objectKind(owner) == K_SUBSCRIBER) {
-            _this->readers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONGROUPREADER),
-                                        "gid.systemId,gid.localId,gid.serial");
-        } else {
-            assert(v_objectKind(owner) == K_KERNEL);
-            _this->readers = NULL;
-        }
-        _this->publishers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONPUBLISHER),
-                                       "systemId, publisherId");
-        _this->pending = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
-        if (v_objectKind(owner) == K_KERNEL) {
-            /* Only kernel owned transactionGroupAdmins need keep to history as this
-             * is a list of EOTs (wrapped in v_transactionGroups and v_transactions)
-             * which are required for alignment.
-             */
-            _this->history = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
-        } else {
-            _this->history = NULL;
-        }
-        _this->owner = owner;
-        TRACE_COHERENT_UPDATE(owner, "=> 0x%"PA_PRIxADDR"\n", (os_address)_this);
+    if (v_objectKind(owner) == K_SUBSCRIBER) {
+        _this->readers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONGROUPREADER),
+                                    "gid.systemId,gid.localId,gid.serial");
     } else {
-        OS_REPORT(OS_ERROR, "v_transactionGroupAdminNew",0,
-                  "Failed to allocate v_transactionGroupAdmin object");
-        assert(FALSE);
+        assert(v_objectKind(owner) == K_KERNEL);
+        _this->readers = NULL;
     }
+    _this->publishers = c_tableNew(v_kernelType(kernel, K_TRANSACTIONPUBLISHER),
+                                   "systemId, publisherId");
+    _this->pending = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
+    if (v_objectKind(owner) == K_KERNEL) {
+        /* Only kernel owned transactionGroupAdmins need keep to history as this
+         * is a list of EOTs (wrapped in v_transactionGroups and v_transactions)
+         * which are required for alignment.
+         */
+        _this->history = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
+    } else {
+        _this->history = NULL;
+    }
+    _this->owner = owner;
+
+    TRACE_COHERENT_UPDATE(owner, "=> 0x%"PA_PRIxADDR"\n", (os_address)_this);
+
     return _this;
 }
+
+struct processPublicationInfoHelper {
+    v_transactionGroupWriter writer;
+    v_kernel kernel;
+};
+
+static os_boolean
+processPublicationInfo(
+    const v_message msg,
+    c_voidp arg)
+{
+    struct processPublicationInfoHelper *a = (struct processPublicationInfoHelper *)arg;
+    struct v_publicationInfo *info;
+
+    info = v_builtinPublicationInfoData(msg);
+    if (v_gidEqual(info->key, a->writer->gid)) {
+        a->writer->rxo = v_kernel_rxoDataFromPublicationInfo(a->kernel, info);
+        a->writer->topicName = c_keep(info->topic_name);
+        a->writer->discovered = TRUE;
+        return OS_FALSE;
+    }
+    return OS_TRUE;
+}
+
 
 /**
  * This operation inserts complete transactions into the group admin.
@@ -1343,8 +1155,6 @@ v_transactionGroupAdminInsertTransaction(
     v_transactionGroup group, found;
     v_transactionGroupWriter writer, thisWriter = NULL;
     v_kernel kernel;
-    v_spliced spliced;
-    struct processPublicationInfoHelper helper;
     c_iter list = NULL;
     c_ulong i;
     c_ulong length;
@@ -1361,7 +1171,7 @@ v_transactionGroupAdminInsertTransaction(
     if (transaction->eot->publisherId == 0) {
         assert(c_arraySize(transaction->eot->tidList) == 1);
 
-        group = v_transactionGroupNew(NULL, transaction);
+        group = v_transactionGroupNew(NULL, _this, transaction);
         if (group) {
             group->matchCount = 1;
             v_transactionGroupInsertTransaction(group, transaction);
@@ -1387,8 +1197,6 @@ v_transactionGroupAdminInsertTransaction(
     group = v_transactionPublisherLookupTransaction(publisher, transaction);
     if (group) {
         kernel = v_objectKernel(_this);
-        spliced = v_kernelGetSpliced(kernel);
-
         if (group->matchCount == 0) {
             /* matchCount can only be zero when the transactionGroup is just created */
             struct v_tid *tidList = (struct v_tid *)transaction->eot->tidList;
@@ -1403,27 +1211,21 @@ v_transactionGroupAdminInsertTransaction(
                     thisWriter = c_keep(writer);
                 }
                 /* discovery of thisWriter is done later */
-                if ((thisWriter != writer) &&
-                    (writer->discovered == FALSE)) {
-                    assert(writer->topic == NULL);
+                if ((thisWriter != writer) && (writer->discovered == FALSE))
+                {
+                    struct processPublicationInfoHelper helper;
+                    assert(writer->topicName == NULL);
                     assert(writer->rxo == NULL);
-                    memset(&helper, 0, sizeof(struct processPublicationInfoHelper));
                     helper.kernel = kernel;
+                    helper.writer = writer;
 
                     /* TGwriter can only be discovered here if the PublicationInfo
                      * was received before the TGwriter was created. This also means
                      * that this discovery will not impact any other open transactions.
                      */
-                    if (v_splicedLookupPublicationInfo(spliced,
-                                                       writer->gid,
-                                                       processPublicationInfo,
-                                                       &helper) == V_RESULT_OK) {
-                        writer->rxo = helper.rxo; /* pass reference */
-                        writer->topic = helper.topic; /* pass reference */
-                        writer->discovered = TRUE;
-
+                    (void) v_kernelWalkPublications(kernel, processPublicationInfo, &helper);
+                    if (writer->discovered) {
                         (void)v_transactionGroupWriterMatch(writer, _this);
-
                         TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
                                               "TID(%d) PID(%d) discovered %sWID(%u) matches %u\n",
                                               transaction->eot->transactionId,
@@ -1451,10 +1253,10 @@ v_transactionGroupAdminInsertTransaction(
             writer = v_transactionPublisherLookupWriter(publisher, v_message(transaction->eot)->writerGID);
         }
         if (writer->discovered == FALSE) {
-            assert(writer->topic == NULL);
+            assert(writer->topicName == NULL);
             assert(writer->rxo == NULL);
 
-            writer->topic = c_keep(topic);
+            writer->topicName = c_keep(v_topicName(topic));
             writer->rxo = v_kernel_rxoDataFromMessageQos(kernel, v_message(transaction->eot)->qos);
             writer->discovered = TRUE;
 
@@ -1462,7 +1264,8 @@ v_transactionGroupAdminInsertTransaction(
 
             if (c_refCount(writer) > 3) {
                 /* This writer is also referenced by other group transactions,
-                 * update all groups including this one. */
+                 * update all groups including this one.
+                 */
                 v_transactionPublisherRecalculateMatchCounts(publisher);
             } else {
                 group->matchCount += v_transactionGroupWriterGetMatches(writer);
@@ -1484,26 +1287,11 @@ v_transactionGroupAdminInsertTransaction(
                               transaction->eot->publisherId, (os_address)group,
                               group->matchCount);
         v_transactionGroupInsertTransaction(group, transaction);
-            if (v_transactionGroupComplete(group) == TRUE) {
-                if (!c_exists(_this->pending, group)) {
-                    if (v_transactionGroupHasData(group)) {
-                        c_append(_this->pending, group);
-                        result = TRUE;
-                        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                                              "Add group TID(%u) (0x%"PA_PRIxADDR") to pending list (size:%u)\n",
-                                              group->transactionId,
-                                              (os_address)group,
-                                              c_count(_this->pending));
-                    } else {
-                        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                                              "Removing complete but empty group TID(%u) (0x%"PA_PRIxADDR")\n",
-                                              group->transactionId,
-                                              (os_address)group);
-                        found = c_remove(publisher->transactions, group, NULL, NULL);
-                        assert(found == group);
-                        c_free(found);
-                    }
-                }
+        if (v_transactionGroupComplete(group) == TRUE) {
+            result = v_transactionGroupAdminAddGroupToPending(_this, group);
+            found = c_remove(publisher->transactions, group, NULL, NULL);
+            assert(found == group);
+            c_free(found);
         }
 
         c_free(group);
@@ -1520,9 +1308,7 @@ v_transactionGroupAdminAddReader(
     v_transactionGroupAdmin _this,
     v_reader reader)
 {
-    v_transactionGroupReader groupReader, added;
-    v_transactionGroup group;
-    c_list pending;
+    v_transactionGroupReader groupReader, found = NULL;
     v_kernel kernel;
 #ifdef TRACE_COHERENT
     v_topic topic;
@@ -1533,50 +1319,38 @@ v_transactionGroupAdminAddReader(
     assert(v_objectKind(ADMIN_OWNER(_this)) == K_SUBSCRIBER);
 
 #ifdef TRACE_COHERENT
-    topic = v_dataReaderGetTopic(v_dataReader(reader));
-    TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                          "add reader(%d) for topic '%s'\n",
-                          v_publicGid(v_public(reader)).localId,
-                          v_topicName(topic));
-    c_free(topic);
+    topic = v_readerGetTopic(reader);
+    if(topic){
+        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
+                              "add reader(%d) for topic '%s'\n",
+                              v_publicGid(v_public(reader)).localId,
+                              v_topicName(topic));
+        c_free(topic);
+    } else {
+        TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
+              "add reader(%d), but it has already been deleted\n",
+              v_publicGid(v_public(reader)).localId);
+    }
 #endif
 
     kernel = v_objectKernel(_this);
     groupReader = v_transactionGroupReader(v_objectNew(kernel, K_TRANSACTIONGROUPREADER));
     if (groupReader) {
         groupReader->gid = v_publicGid(v_public(reader));
-        groupReader->topic = v_dataReaderGetTopic(v_dataReader(reader)); /* pass reference */
+        groupReader->topic = v_readerGetTopic(reader); /* pass reference */
         groupReader->rxo = v_kernel_rxoDataFromReaderQos(kernel, reader->qos);
 
-        c_mutexLock(&_this->mutex);
-        added = ospl_c_insert(_this->readers, groupReader);
-        assert(added == groupReader);
-        v_transactionGroupAdminMatchReader(_this, groupReader, FALSE);
-        (void)c_walk(_this->publishers, publisherRecalculateMatchCounts, NULL);
-
-        pending = _this->pending;
-        _this->pending = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
-        while((group = c_take(pending)) != NULL) {
-            if (group->publisher == NULL) {
-                /* Group was complete before all its writers were deleted, with
-                 * new reader it's no longer possible to determine completeness,
-                 * remove it from pending list (group transaction is not in a
-                 * publisher list anymore so it is removed).
-                 */
-            } else if (v_transactionGroupComplete(group)) {
-                ospl_c_insert(_this->pending, group);
-            } else {
-                /* Group has become incomplete again, reset trigger flag so it's
-                 * triggered again when complete again.
-                 */
-                group->triggered = FALSE;
+        if(groupReader->topic){
+            c_mutexLock(&_this->mutex);
+            found = ospl_c_insert(_this->readers, groupReader);
+            assert(found == groupReader);
+            if (v_transactionGroupAdminMatchReader(_this, groupReader, FALSE)) {
+                (void)c_walk(_this->publishers, publisherRecalculateMatchCounts, NULL);
             }
-            c_free(group);
+            c_mutexUnlock(&_this->mutex);
+            c_free(groupReader->topic);
+            c_free(found);
         }
-        c_free(pending);
-        c_mutexUnlock(&_this->mutex);
-
-        c_free(added);
     } else {
         OS_REPORT(OS_ERROR, OS_FUNCTION, OS_ERROR,
                   "Failed to allocate v_transactionGroupWriter object");
@@ -1590,8 +1364,8 @@ v_transactionGroupAdminRemoveReader(
     v_reader reader)
 {
     v_transactionGroupReader groupReader;
-    v_transactionGroup group, found;
     C_STRUCT(v_transactionGroupReader) dummy;
+    v_transactionGroup group;
     struct c_collectionIterD it;
 
     assert(_this);
@@ -1614,10 +1388,10 @@ v_transactionGroupAdminRemoveReader(
 
         /* Now, remove all transactions related to this reader from the pending list. */
         for (group = c_collectionIterDFirst(_this->pending, &it); group; group = c_collectionIterDNext(&it)) {
+            /* Sanity check, publisher should always be cleared for pending transactions */
+            assert(group->publisher == NULL);
 
-            /* Remove the reader information from this group.
-             * It is most likely that this is already done by v_transactionPublisherRemoveReader,
-             * but not always (f.i. when the _this->publisher has been cleared and set to NULL). */
+            /* Remove the reader information from this group. */
             v_transactionGroupRemoveReader(group, groupReader);
 
             /* If the group is empty: remove it from the pending list. */
@@ -1627,60 +1401,17 @@ v_transactionGroupAdminRemoveReader(
                 TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
                                       "group(0x%"PA_PRIxADDR") TID(%u) removed as it became empty\n",
                                       (os_address)group, group->transactionId);
+                c_free(group);
+            } else if (group->aborted) {
+                c_collectionIterDRemove(&it);
 
-                /* Sanity check:
-                 * The group should not be available in it's own linked publisher anymore. */
-                if (group->publisher) {
-                    found = c_find(v_transactionPublisher(group->publisher)->transactions, group);
-                    assert(found == NULL);
-                    if (found) {
-                        c_free(found);
-                    }
-                }
-
+                TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
+                                      "group(0x%"PA_PRIxADDR") TID(%u) removed as it became aborted\n",
+                                      (os_address)group, group->transactionId);
                 c_free(group);
             } else {
                 assert(v_transactionGroupComplete(group));
             }
-        }
-
-        c_free(groupReader);
-    }
-
-    c_mutexUnlock(&_this->mutex);
-}
-
-void
-v_transactionGroupAdminUpdateReader(
-    v_transactionGroupAdmin _this,
-    v_reader reader)
-{
-    v_transactionGroupReader groupReader;
-    C_STRUCT(v_transactionGroupReader) dummy;
-    v_kernel kernel;
-
-    assert(_this);
-    assert(C_TYPECHECK(_this, v_transactionGroupAdmin));
-    assert(v_objectKind(ADMIN_OWNER(_this)) == K_SUBSCRIBER);
-
-    TRACE_COHERENT_UPDATE(ADMIN_OWNER(_this),
-                          "update reader(%d)\n",
-                          v_publicGid(v_public(reader)).localId);
-
-    kernel = v_objectKernel(_this);
-    memset(&dummy, 0, C_SIZEOF(v_transactionGroupReader));
-    dummy.gid = v_publicGid(v_public(reader));
-
-    c_mutexLock(&_this->mutex);
-    groupReader = c_find(_this->readers, &dummy);
-    assert(groupReader); /* Reader should exist within administration */
-    if (groupReader) {
-        c_free(groupReader->rxo);
-        groupReader->rxo = v_kernel_rxoDataFromReaderQos(kernel, reader->qos);
-        if (v_transactionGroupAdminMatchReader(_this, groupReader, TRUE) == FALSE) {
-            /* Reader is updated but it did not result in a match change */
-        } else {
-            (void)c_walk(_this->publishers, publisherReaderUpdate, NULL);
         }
         c_free(groupReader);
     }
@@ -1689,7 +1420,7 @@ v_transactionGroupAdminUpdateReader(
 }
 
 c_bool
-v_transactionGroupAdminNotifyGroupCoherentPublication(
+v_transactionGroupAdminNotifyPublication(
     v_transactionGroupAdmin _this,
     v_transactionWriter writer,
     c_bool dispose,
@@ -1731,27 +1462,37 @@ v_transactionGroupAdminNotifyGroupCoherentPublication(
         assert(C_TYPECHECK(publisher, v_transactionPublisher));
 
         if (dispose) {
+            C_STRUCT(v_transactionGroupWriter) dummy;
+            memset(&dummy, 0, C_SIZEOF(v_transactionGroupWriter));
+            dummy.gid = writerGID;
+            /* Removal of a writer cannot make a previous incomplete transaction
+             * complete. Removal of a writer does ensure that we'll never receive
+             * data from it again and thus incomplete transactions will never
+             * become complete.
+             */
             groupWriter = v_transactionPublisherRemoveWriter(publisher, writerGID);
             c_free(groupWriter);
 
             count = c_count(publisher->writers);
             for (group = c_collectionIterDFirst(publisher->transactions, &idt); group; group = c_collectionIterDNext(&idt)) {
                 if (v_transactionGroupComplete(group) == FALSE) {
-                    /* Remove incomplete group transactions from publisher */
-                    c_collectionIterDRemove(&idt);
-                    /* Incomplete transactions should not be in the pending list. */
-                    assert(c_remove(_this->pending, group, NULL, NULL) == NULL);
-                    c_free(group);
-                } else {
-                    if (count == 0) {
-                        /* Remove backref from group. When the group is complete the pending
-                         * list also has a reference.
-                         */
+                    /* Only remove groups that are affected by the disposal of this writer. */
+                    if (c_exists(group->writers, &dummy)) {
+                        group->aborted = TRUE;
+                        group->obsolete = TRUE;
+                        group->deleted = TRUE;
                         group->publisher = NULL;
+
+                        c_append(_this->pending, group);
+                        /* Remove incomplete group transactions from publisher */
+                        c_collectionIterDRemove(&idt);
+                        c_free(group);
+                        result = TRUE;
                     }
                 }
             }
             if (count == 0) {
+                /* Publisher not longer has writer so it can be removed */
                 found = c_remove(_this->publishers,publisher,NULL,NULL);
                 c_free(found);
             }
@@ -1759,24 +1500,27 @@ v_transactionGroupAdminNotifyGroupCoherentPublication(
             groupWriter = v_transactionPublisherFindWriter(publisher, writerGID);
             if (groupWriter) {
                 if (info) {
-                    if (groupWriter->discovered == FALSE) {
-                        /* The writer update function (see a few lines below this),
-                         * will indicate that the writer is discovered.
-                         * Link this discovered writer into the related groups. */
-                        for (group = c_collectionIterFirst(publisher->transactions, &it); group; group = c_collectionIterNext(&it)) {
-                            (void)ospl_c_insert(group->writers, groupWriter);
+                    /* For newly discovered writers link info to the relaed groups. */
+                    v_transactionGroupWriterUpdate(groupWriter, info);
+                    (void)v_transactionGroupWriterMatch(groupWriter, _this);
+                    for (group = c_collectionIterFirst(publisher->transactions, &it); group; group = c_collectionIterNext(&it)) {
+                        /* Get the EOT writer list and verify that the group is affected by the discovered writer
+                         * before updating the group admin.
+                         */
+                        v_transaction t = c_read(group->transactions);
+                        if (t) {
+                            c_ulong i, length;
+                            struct v_tid *tidList = (struct v_tid *)t->eot->tidList;
+                            length = c_arraySize(t->eot->tidList);
+                            for (i=0; i<length; i++) {
+                                if (v_gidCompare(tidList[i].wgid, writerGID) == C_EQ) {
+                                    v_transactionGroupRecalculateMatchCount(group);
+                                    break;
+                                }
+                            }
                         }
                     }
-                    v_transactionGroupWriterUpdate(groupWriter, info);
                 }
-                if (v_objectKind(ADMIN_OWNER(_this)) == K_SUBSCRIBER) {
-                    if (v_transactionGroupWriterMatch(groupWriter, _this) == TRUE) {
-                        v_transactionPublisherRecalculateMatchCounts(publisher);
-                    }
-                } else {
-                    v_transactionPublisherRecalculateMatchCounts(publisher);
-                }
-
                 result = v_transactionGroupAdminPendCompleteTransactions(_this, publisher);
                 c_free(groupWriter);
             }
@@ -1807,17 +1551,18 @@ groupWalk(
     v_transactionAdmin admin;
     struct c_collectionIter it;
 
-    for (txn = c_collectionIterFirst(group->transactions, &it); txn && result; txn = c_collectionIterNext(&it)) {
-        admin = v_transactionGetAdmin(txn);
-        if (v_objectKind(admin->owner) == K_GROUP) {
-            if (v_group(admin->owner) == a->vgroup) {
-                result = a->action (txn, a->arg);
+    if (!group->aborted) {
+        for (txn = c_collectionIterFirst(group->transactions, &it); txn && result; txn = c_collectionIterNext(&it)) {
+            admin = v_transactionGetAdmin(txn);
+            if (v_objectKind(admin->owner) == K_GROUP) {
+                if (v_group(admin->owner) == a->vgroup) {
+                    result = a->action (txn, a->arg);
+                }
             }
         }
     }
     return result;
 }
-
 
 static c_bool
 publisherWalk(
@@ -1847,16 +1592,12 @@ v_transactionGroupAdminWalkTransactions(
     walkArg.arg = arg;
     walkArg.vgroup = vgroup;
 
-    transactionGroupAdminPurgeHistory(_this);
     (void)c_walk(_this->history, groupWalk, &walkArg);
     (void)c_walk(_this->pending, groupWalk, &walkArg);
     (void)c_walk(_this->publishers, publisherWalk, &walkArg);
     c_mutexUnlock(&_this->mutex);
 }
 
-/*
- * Call should be protected by v_subscriberLockAccess
- */
 void
 v_transactionGroupAdminFlush(
     v_transactionGroupAdmin _this)
@@ -1926,22 +1667,114 @@ v_transactionGroupAdminNoMessageFromWriterExist(
     return result;
 }
 
+static c_bool
+publisherPurgeObsolete(
+    c_object o,
+    c_voidp arg)
+{
+    v_transactionPublisher publisher = v_transactionPublisher(o);
+    struct c_collectionIterD it;
+    v_transactionGroup group, found;
+    c_list list = (c_list)arg;
+
+    for (group = c_collectionIterDFirst(publisher->transactions, &it); group; group = c_collectionIterDNext(&it)) {
+        if (group->obsolete == TRUE) {
+            found = c_append(list, group);
+            assert(found == group);
+            OS_UNUSED_ARG(found);
+            group->publisher = NULL;
+            group->aborted = TRUE;
+            c_collectionIterDRemove(&it);
+            c_free(group);
+        }
+    }
+
+    return TRUE;
+}
 
 /**
- * \brief              This operation removes groupTransactions from the history
- *                     when the contained transactions are not referenced by samples
- *                     anymore
+ * \brief              This operation links to the groupTransactions.
+ *                     When this is the first link it is added to the history.
  *
  * \param _this      : The transactionGroupAdmin this operation operates on.
  *
  * \return           : None
  */
 void
-v_transactionGroupAdminPurgeHistory(
-    v_transactionGroupAdmin _this)
+v_transactionGroupLink(
+    v_transactionGroup _this)
 {
-    c_mutexLock(&_this->mutex);
-    transactionGroupAdminPurgeHistory(_this);
-    c_mutexUnlock(&_this->mutex);
+    os_uint32 value;
+    v_transactionGroupAdmin admin;
+    v_transactionGroup found;
+
+    if (_this) {
+        value = pa_inc32_nv(&_this->historyLinks);
+
+        if (value == 1) {
+            admin = v_transactionGroupAdmin(_this->admin);
+            assert(v_objectKind(admin->owner) == K_KERNEL);
+
+            TRACE_COHERENT_UPDATE(TRANSACTION_OWNER(_this), "Group(0x%"PA_PRIxADDR") PID(%u) TID(%u) "
+                                  "add to history\n",
+                                  (os_address)_this, _this->publisherId, _this->transactionId);
+
+            c_mutexLock(&admin->mutex);
+            found = c_append(admin->history, _this);
+            assert(found == _this);
+            OS_UNUSED_ARG(found);
+            c_mutexUnlock(&admin->mutex);
+        }
+    }
 }
 
+/**
+ * \brief              This operation unlinks from the groupTransactions.
+ *                     When there are no more links to the groupTransaction it is
+ *                     removed from the history.
+ *
+ * \param _this      : The transactionGroupAdmin this operation operates on.
+ *
+ * \return           : None
+ */
+void
+v_transactionGroupUnlink(
+    v_transactionGroup _this)
+{
+    os_uint32 value;
+    v_transactionGroupAdmin admin;
+    v_transactionGroup found;
+
+    if (_this) {
+        value = pa_dec32_nv(&_this->historyLinks);
+
+        if (value == 0) {
+            admin = v_transactionGroupAdmin(_this->admin);
+            assert(v_objectKind(admin->owner) == K_KERNEL);
+
+            TRACE_COHERENT_UPDATE(TRANSACTION_OWNER(_this), "Group(0x%"PA_PRIxADDR") PID(%u) TID(%u) "
+                                  "remove from history\n",
+                                  (os_address)_this, _this->publisherId, _this->transactionId);
+
+            c_mutexLock(&admin->mutex);
+
+#ifndef NDEBUG
+            /* Sanity check, when value equals zero non of the transactions are
+             * allowed to have a link remaining.
+             */
+            {
+                struct c_collectionIter it;
+                v_transaction txn;
+                for (txn = c_collectionIterFirst(_this->transactions, &it); txn; txn = c_collectionIterNext(&it)) {
+                    assert(pa_ld32(&txn->historyLinks) == 0);
+                }
+            }
+#endif
+
+            found = c_remove(admin->history, _this, NULL, NULL);
+            assert(found == _this);
+            c_mutexUnlock(&admin->mutex);
+            c_free(found);
+        }
+    }
+}

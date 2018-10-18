@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -237,31 +238,14 @@ u_readerGetMatchedPublications (
     void *arg)
 {
     v_dataReader reader;
-    v_spliced spliced;
-    v_kernel kernel;
     u_result result;
-    c_iter participants;
-    v_participant participant;
 
     assert(_this);
     assert(action);
 
     result = u_observableReadClaim(u_observable(_this), (v_public *)(&reader), C_MM_RESERVATION_ZERO);
     if ((result == U_RESULT_OK) && (reader != NULL)) {
-        kernel = v_objectKernel(reader);
-
-        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
-        assert(c_iterLength(participants) == 1);
-        participant = v_participant(c_iterTakeFirst(participants));
-        spliced = v_spliced(participant);
-        c_free(participant);
-        c_iterFree(participants);
-
-        result = u_resultFromKernel(
-                     v_splicedGetMatchedPublications(spliced,
-                                                     v_dataReader(reader),
-                                                     action,
-                                                     arg));
+        result = u_resultFromKernel(v_dataReaderReadMatchedPublications(v_dataReader(reader), action, arg));
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     }
     return result;
@@ -275,32 +259,17 @@ u_readerGetMatchedPublicationData (
     void *arg)
 {
     v_dataReader reader;
-    v_spliced spliced;
-    v_kernel kernel;
     u_result result;
-    c_iter participants;
-    v_participant participant;
 
     assert(_this);
     assert(action);
 
     result = u_observableReadClaim(u_observable(_this), (v_public *)(&reader), C_MM_RESERVATION_ZERO);
     if ((result == U_RESULT_OK) && (reader != NULL)) {
-        kernel = v_objectKernel(reader);
-
-        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
-        assert(c_iterLength(participants) == 1);
-        participant = v_participant(c_iterTakeFirst(participants));
-        spliced = v_spliced(participant);
-        c_free(participant);
-        c_iterFree(participants);
-
         result = u_resultFromKernel(
-                     v_splicedGetMatchedPublicationData(spliced,
-                                                        v_dataReader(reader),
-                                                        u_instanceHandleToGID(publication_handle),
-                                                        action,
-                                                        arg));
+                     v_dataReaderReadMatchedPublicationData(reader,
+                                                            u_instanceHandleToGID(publication_handle),
+                                                            action, arg));
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     }
     return result;

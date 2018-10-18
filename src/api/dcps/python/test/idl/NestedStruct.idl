@@ -1,0 +1,28 @@
+const long length = 3;
+
+module test{
+	typedef long my_long;
+};
+
+module basic{
+
+	typedef long basic_long;
+	
+	module module_NestedStruct{
+
+		struct Inner{
+			basic::basic_long long1;
+			double double1;
+		};
+		
+		typedef Inner inner_struct;
+		
+		struct NestedStruct_struct{
+			test::my_long long1;
+			inner_struct inner1;
+		};
+		
+		#pragma keylist NestedStruct_struct long1
+	};
+};
+		

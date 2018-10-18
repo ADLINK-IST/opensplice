@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DDS Simulink Guide &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="#" />
+    <link rel="next" title="1. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dds-simulink-guide">
+<h1>DDS Simulink Guide<a class="headerlink" href="#dds-simulink-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#dds">1.1. DDS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#simulink">1.2. Simulink</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-requirements">2.1. System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#opensplice-ospl-and-dds-simulink-installation">2.2. OpenSplice (OSPL) and DDS Simulink Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#opensplice-ospl-configuration">2.3. OpenSplice (OSPL) Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#linux">2.3.1. Linux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#windows">2.3.2. Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#simulink-setup">2.4. Simulink Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#examples">2.5. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="blocks.html">3. Vortex DDS Blocks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html#optional-dds-blocks-and-ports">3.1. Optional DDS Blocks and Ports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html#qos-profiles">3.2. QoS Profiles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blocks.html#simulink-block-sample-time">3.3. Simulink Block Sample Time</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bus-dds.html">4. Simulink Bus to DDS Topic Mapping</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bus-dds.html#generate-simulink-bus-definitions-from-an-idl-file">4.1. Generate Simulink bus definitions from an IDL file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bus-dds.html#overriding-default-values-for-vortex-idlimportsl">4.2. Overriding default values for Vortex.idlImportSl</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bus-dds.html#overriding-struct-and-enum-names">4.2.1. Overriding struct and enum names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bus-dds.html#changing-unbound-string-maximum-sizes">4.2.2. Changing unbound string maximum sizes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bus-dds.html#changing-sequence-attributes">4.2.3. Changing sequence attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bus-dds.html#add-simulink-bus-definitions-using-bus-editor">4.3. Add Simulink bus definitions using bus editor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bus-dds.html#bus-definition-limitations">4.4. Bus definition limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qos_provider.html">5. QoS Provider</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#qos-provider-file">5.1. QoS Provider File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#qos-profile">5.2. QoS Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#setting-qos-profile-in-simulink">5.3. Setting QoS Profile in Simulink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#known-limitations">5.4. Known Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topic.html">6. Topic Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#topic-block-parameters">6.1. Topic Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topic.html#topic-tab">6.1.1. Topic Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic.html#ports-tab">6.1.2. Ports Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic.html#qos-tab">6.1.3. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="domain.html">7. Domain Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="domain.html#domain-block-parameters">7.1. Domain Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="domain.html#domain-tab">7.1.1. Domain Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="domain.html#qos-tab">7.1.2. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="publisher.html">8. Publisher Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="publisher.html#publisher-block-parameters">8.1. Publisher Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="publisher.html#ports-tab">8.1.1. Ports Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="publisher.html#qos-tab">8.1.2. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="subscriber.html">9. Subscriber Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="subscriber.html#subscriber-block-parameters">9.1. Subscriber Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="subscriber.html#ports-tab">9.1.1. Ports Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="subscriber.html#qos-tab">9.1.2. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="writer.html">10. Writer Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="writer.html#writer-block-parameters">10.1. Writer Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="writer.html#data-tab">10.1.1. Data Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writer.html#ports-tab">10.1.2. Ports Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writer.html#qos-tab">10.1.3. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reader.html">11. Reader Block</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reader.html#reader-block-parameters">11.1. Reader Block Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="reader.html#data-tab">11.1.1. Data Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reader.html#ports-tab">11.1.2. Ports Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reader.html#qos-tab">11.1.3. QoS Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reader.html#filters-tab">11.1.4. Filters Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">12. Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#create-shapetype-bus-using-simulink-bus-editor">12.1. Create ShapeType Bus Using Simulink Bus Editor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#open-the-bus-editor-from-the-matlab-command-window">12.1.1. Open the bus editor from the MATLAB command window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#add-a-new-bus-named-shapetype">12.1.2. Add a new BUS named ShapeType</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#select-add-bus-button">12.1.2.1. Select Add Bus button</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#set-bus-name-and-key">12.1.2.2. Set Bus name and Key</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#add-buselements">12.1.3. Add BusElements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-color">12.1.3.1. Add color</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-x">12.1.3.2. Add x</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-y">12.1.3.3. Add y</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-shapesize">12.1.3.4. Add shapesize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#export-bus-objects">12.1.4. Export BUS objects</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#create-shapetype-using-idl">12.2. Create ShapeType Using IDL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#create-idl-file">12.2.1. Create IDL File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#generate-simulink-bus-definitions-from-an-idl-file">12.2.2. Generate Simulink bus definitions from an IDL file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#model-explorer">12.2.3. Model Explorer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#shapes-write-model">12.3. Shapes Write Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#create-a-new-simulink-model">12.3.1. Create a new Simulink model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#start-simulink">12.3.1.1. Start Simulink</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-a-new-blank-model">12.3.1.2. Add a new blank model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#save-as">12.3.1.3. Save As...</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#model-settings">12.3.1.4. Model Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#add-simulink-dds-blocks">12.3.2. Add Simulink DDS Blocks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#open-the-simulink-library-browser">12.3.2.1. Open the Simulink Library Browser</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-a-domain-block">12.3.2.2. Add a Domain block</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#set-domain-block-properties">12.3.2.3. Set domain block properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-blocks-topic-publisher-and-writer">12.3.2.4. Add blocks (Topic, Publisher, and Writer)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#connect-domain-to-topic-and-publisher">12.3.2.5. Connect Domain to Topic and Publisher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#set-topic-block-parameters">12.3.2.6. Set Topic Block Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#connect-topic-publisher-and-writer-blocks-set-writer-block-parameters">12.3.2.7. Connect Topic, Publisher and Writer Blocks &amp; Set Writer Block Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-a-bus-creator-to-set-sample-data">12.3.2.8. Add a Bus Creator to Set Sample Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-bus-creator-inputs">12.3.2.9. Add Bus Creator Inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#shapes-read-model">12.4. Shapes Read Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#id2">12.4.1. Create a new Simulink model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id3">12.4.1.1. Start Simulink</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id4">12.4.1.2. Add a new blank model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id5">12.4.1.3. Save As...</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id6">12.4.1.4. Model Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#id7">12.4.2. Add Simulink DDS Blocks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id8">12.4.2.1. Open the Simulink Library Browser</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-all-required-blocks-topic-and-reader">12.4.2.2. Add all required blocks (Topic and Reader)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#toggle-off-optional-ports">12.4.2.3. Toggle off optional ports</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#id9">12.4.2.4. Set Topic Block Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#set-reader-block-parameters">12.4.2.5. Set Reader Block Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#connect-topic-and-reader">12.4.2.6. Connect Topic and Reader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-a-bus-selector-to-read-and-display-sample-data">12.4.2.7. Add a Bus Selector to read and display sample data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#set-bus-selector-block-parameters">12.4.2.8. Set Bus Selector Block Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#add-bus-selector-outputs">12.4.2.9. Add Bus Selector outputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#running-simulations">12.5. Running Simulations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#setup-write-model">12.5.1. Setup Write Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#setup-read-model">12.5.2. Setup Read Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#run-simulations">12.5.3. Run Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="simulink_coder.html">13. Generating C code with Simulink Coder</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="simulink_coder.html#prerequisites-for-c-generation">13.1. Prerequisites for C generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulink_coder.html#preparing-for-c-generation">13.2. Preparing for C generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulink_coder.html#generating-code">13.3. Generating code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulink_coder.html#running-built-models">13.4. Running built models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">14. Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bus_to_dds_mapping.html">15. Appendix A</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bus_to_dds_mapping.html#simulink-bus-to-dds-mapping">15.1. Simulink Bus to DDS Mapping</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bus_to_dds_mapping.html#workflow-1-using-idlpp-to-generate-simulink-bus-and-type-descriptor">15.1.1. Workflow 1: Using idlpp to Generate Simulink Bus and Type Descriptor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bus_to_dds_mapping.html#workflow-2-manually-modeling-dds-data-in-the-simulink-bus-editor">15.1.2. Workflow 2: Manually Modeling DDS data in the Simulink Bus Editor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">16. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">16.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">16.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DDS Simulink Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="next chapter">1. Introduction</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             >next</a> |</li>
+        <li><a href="#">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

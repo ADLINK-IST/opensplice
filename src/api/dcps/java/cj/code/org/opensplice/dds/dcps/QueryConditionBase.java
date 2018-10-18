@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@ public class QueryConditionBase extends ReadConditionImpl {
         return super.deinit();
     }
 
-    public class QueryConditionBaseImpl extends DDS._QueryConditionLocalBase {
+    public static class QueryConditionBaseImpl extends DDS._QueryConditionLocalBase {
         private static final long serialVersionUID = 4539410966516244165L;
 
         /* querycondition operations */

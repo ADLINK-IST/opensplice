@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,7 +37,7 @@
 #define OMG_DDS_OWNERSHIP_SUPPORT                           FULL
 #define OMG_DDS_OBJECT_MODEL_SUPPORT                        FULL
 // #define OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT   FULL
-// #define OMG_DDS_X_TYPES_BUILTIN_TOPIC_TYPES_SUPPORT         FULL
+#define OMG_DDS_X_TYPES_BUILTIN_TOPIC_TYPES_SUPPORT         FULL
 
 #define OMG_DDS_HAS_PRETTY_PRINT_COUT 1
 // End of implementation

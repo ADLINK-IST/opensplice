@@ -1,0 +1,13 @@
+module basic{
+
+	module module_Sequence{
+	
+		struct Sequence_struct{
+			long long1;
+			Sequence<long> seq1;
+		};
+		
+		#pragma keylist Sequence_struct long1
+	};
+};
+		

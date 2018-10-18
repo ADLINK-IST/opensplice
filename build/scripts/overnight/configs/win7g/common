@@ -1,0 +1,21 @@
+export OPENORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/openorb-v1.4.0
+export OPENORB_VERSION=1.4.0e
+export VS_HOME='/cygdrive/C/Program Files/Microsoft Visual Studio 12.0/'
+export WINDOWSSDKDIR='/cygdrive/C/Program Files/Windows Kits/8.1'
+export VS_ENV_SCRIPT="C:\Program Files\Microsoft Visual Studio 12.0\Common7\Tools\vsvars32.bat"
+export JAVA6_HOME="c:/Program Files/Java/jdk1.6.0_37"
+export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export ZLIB_HOME=/home/dds/INSTALLED\ FOR\ DDS/zlib-1.2.4
+export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
+export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0/src
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=/usr/local/bin:$PROTOBUF_HOME/bin:$PATH
+
+#There is no TAO for VS2013
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no
+export PATH=$PATH:$ZLIB_HOME
+export JAVA_HOME="c:/Program Files/Java/jdk1.7.0"
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

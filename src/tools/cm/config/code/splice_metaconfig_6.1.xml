@@ -3,13 +3,13 @@
   <!--xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.splice-dds.org/splice_metaconfig.xsd"-->
   <rootElement name="OpenSplice" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
     <comment><![CDATA[
-            <p>OpenSplice DDS is highly configurable, even allowing the architecture of the
-            DDS middleware to be chosen by the user at deployment time. OpenSplice DDS can
+            <p>Vortex OpenSplice is highly configurable, even allowing the architecture of the
+            DDS middleware to be chosen by the user at deployment time. Vortex OpenSplice can
             be configured to run using a <b>shared memory</b> architecture, where both the
             DDS related administration (including the optional pluggable services) and DDS
-            applications interface directly with shared memory. Alternatively, OpenSplice
-            DDS also supports a <b>single process</b> architecture, where one or more DDS
-            applications, together with the OpenSplice administration and services, can all be
+            applications interface directly with shared memory. Alternatively, Vortex OpenSplice
+            also supports a <b>single process</b> architecture, where one or more DDS
+            applications, together with the Vortex OpenSplice administration and services, can all be
             grouped into a single operating system process. Both deployment modes support a
             configurable and extensible set of services, providing functionality such as:</p>
             <p>networking - providing QoS-driven real-time networking based on multiple
@@ -17,17 +17,25 @@
             <p>durability - providing fault-tolerant storage for both real-time state data as well as
               persistent settings</p>
             <p>remote control and monitoring SOAP service - providing remote web-based
-              access using the SOAP protocol from the OpenSplice Tuner tool</p>
+              access using the SOAP protocol from the Vortex OpenSplice Tuner tool</p>
             <p>dbms service - providing a connection between the real-time and the enterprise
               domain by bridging data from DDS to DBMS and vice versa</p>
-            <p>Because of the pluggable architecture, the OpenSplice middleware
+            <p>Because of the pluggable architecture, the Vortex OpenSplice middleware
             can be easily configured on the fly by specifying which services to
             be used as well as specifying their optimal configuration for the
             application domain (networking parameters, durability levels, etc.).
             Typically, there are many nodes within a system.</p>
-            <p>The OpenSplice middleware including its services can be configured
+            <p>The Vortex OpenSplice middleware including its services can be configured
             by means of easy maintainable XML-file(s).</p>
         ]]></comment>
+        <attributeString hidden="true" name="version" required="false" version="COMMUNITY">
+            <comment><![CDATA[
+                     This attribute specifies the version of the Vortex OpenSplice configuration
+                     syntax definition.
+                ]]></comment>
+            <maxLength>0</maxLength>
+            <default>6.1</default>
+        </attributeString>
   <leafString name="Description" hidden="true"/>
   </rootElement>
   <serviceMapping>
@@ -51,7 +59,7 @@
             lifecycle of the started services is under control of the Domain service, which means it will monitor the health
             of all started services, take corrective actions if needed and stop the services when it is terminated.</p>
 
-            <p>When a shutdown of the OpenSplice Domain service is requested, it will react by announcing the shutdown using the
+            <p>When a shutdown of the Vortex OpenSplice Domain service is requested, it will react by announcing the shutdown using the
             DDS administration. Applications will not be able to use DDS functionality anymore and services are requested
             to terminate elegantly. Once this has succeeded, the Domain service will destroy the administration and
             finally terminate itself.</p>
@@ -72,8 +80,8 @@
                     Note - for maximum interoperability it is recommended that you only select a domain Id from the range 0 < n < 230. The domain Id
                     value is used by the DDSI2 service to derive values for the required network communiction endpoints and service reconfiguration is
                     required to use domain id values outside of this range.
-                    Please see section 9.6.1 of the Real-time Publish-Subscribe Wire Protocol DDS Interoperability Wire Protocol specification (DDSI), v2.1, formal/2009-01-05 at
-                    http://www.omg.org/spec/DDSI/2.1/ for further information.
+                    Please see section 9.6.1 of the Real-time Publish-Subscribe Wire Protocol DDS Interoperability Wire Protocol specification (DDSI), v2.1, formal/2009-01-05
+                    or v2.2, formal/2014-09-01, at http://www.omg.org/spec/DDSI for further information.
                     ]]></comment>
       <minimum>0</minimum>
       <maximum>2147483646</maximum>
@@ -105,7 +113,7 @@
       <leafFloat name="ExpiryTime" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     <p>This element specifies the interval(in seconds) in which services have to announce their liveliness.</p>
-                    <p>Every OpenSplice service including the Domain service itself has to announce its liveliness regularly.
+                    <p>Every Vortex OpenSplice service including the Domain service itself has to announce its liveliness regularly.
                     This allows corrective actions to be taken when one of the services becomes non-responsive. This
                     element specifies the required interval. Decreasing the interval decreases the time in which
                     non-responsiveness of a service is detected, but leads to more processing. Increasing it has
@@ -186,7 +194,7 @@
                 This may prevent graceful termination and thus leave applications
                 that are still attached to the DDS domain in an undefined state.
                 Consequently the '0' value should only be used when there is
-                some form of process management on top of OpenSplice DDS.
+                some form of process management on top of Vortex OpenSplice.
             ]]></comment>
       <format>float</format>
       <dimension>seconds</dimension>
@@ -196,23 +204,23 @@
     </leafFloat>
     <leafBoolean name="SingleProcess" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
-                    <p>The SingleProcess element specifies whether the OpenSplice Domain and other
-                      OpenSplice services and applications are intended to be all deployed within the
-                      same process, known in OpenSplice as a single process.</p>
+                    <p>The SingleProcess element specifies whether the Vortex OpenSplice Domain and other
+                      Vortex OpenSplice services and applications are intended to be all deployed within the
+                      same process, known in Vortex OpenSplice as a single process.</p>
                     <p>Please note that the choice to use the single process deployment also implies
-                      the use of heap memory for the OpenSplice database management instead of shared
+                      the use of heap memory for the Vortex OpenSplice database management instead of shared
                       memory that would be used otherwise. If no database size or size 0 is configured
                       the heap memory is limited by the Operating System, so the Database element under
                       Domain does not take effect when SingleProcess has a value of True.
                       If the database size is configured with a value, a database will be allocated on
                       heap with that size and the domain service will use it's own memory manager to
                       manage that memory</p>
-                    <p>There are two ways in which to deploy an OpenSplice DDS application as a
+                    <p>There are two ways in which to deploy an Vortex OpenSplice application as a
                       single process:</p>
                     <p><b>Single Process Application</b> : The user starts an application as a
                       new process. In this case, the DDS create_participant operation will
-                      implicitly start the OpenSplice Domain Service as a thread in the existing
-                      application process. The OpenSplice Domain Service will then also implicitly
+                      implicitly start the Vortex OpenSplice Domain Service as a thread in the existing
+                      application process. The Vortex OpenSplice Domain Service will then also implicitly
                       start all services specified in the configuration as threads within the same
                       process.
                     <p><b>Single Process Application Cluster</b> : This provides the option to
@@ -245,7 +253,7 @@
     </leafString>
     <leafBoolean name="InProcessExceptionHandling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
-           <p>The InProcessExceptionHandling element determines whether a process that uses OpenSplice will
+           <p>The InProcessExceptionHandling element determines whether a process that uses Vortex OpenSplice will
             handle exceptions by itself and try to clean up shared resources or not. If the process itself
             refrains from cleaning up its resources, the splice-daemon will attempt to clean up the application
             shared resources asynchronously. If the splice-daemon during clean-up determines that shared
@@ -732,7 +740,7 @@
       </leafSize>
       <leafSize name="Threshold" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-                        This element specifies the threshold size used by OpenSplice DDS. Whenever there is less
+                        This element specifies the threshold size used by Vortex OpenSplice. Whenever there is less
                         free shared memory then indicated by the threshold then no new allocations will be allowed
                         within shared memory. Services are allowed to continue allocating shared memory until less then
                         50% of the threshold value is available. It is strongly discouraged to configure a threshold
@@ -756,15 +764,22 @@
                     product.</p>
                     <p>default values per platform:</p>
                     <ul>
-                    <li>0x20000000 (Linux2.6 on x86)</li>
-                    <li>00x140000000 (Linux2.6 on x86_64)</li>
-                    <li>00x40000000 (Windows on x86)</li>
-                    <li>00x40000000 (Windows on x86_64)</li>
-                    <li>00xA0000000 (Solaris on SPARC)</li>
-                    <li>00xA0000000 (AIX5.3 on POWER5+)</li>
-                    <li>00x0 (VxWorks 5.5.1 on PowerPC604)</li>
-                    <li>00x60000000 (VxWorks 6.x on PowerPC604)</li>
-                    <li>00x20000000 (Integrity on mvme5100)</li></ul>
+                    <li>00x20000000 (Linux)</li>
+                    <li>00x140000000 (Linux 64-bit)</li>
+                    <li>00x40000000 (Windows)</li>
+                    <li>00x140000000 (Windows 64-bit)</li>
+                    <li>00xA0000000 (Solaris)</li>
+                    <li>00xA0000000 (AIX5.3)</li>
+                    <li>00x0 (VxWorks 5.5.1)</li>
+                    <li>00x60000000 (VxWorks 6.x)</li>
+                    <li>00x20000000 (Integrity)</li>
+                    <li>00x20000000 (LynxOS)</li>
+                    <li>00x140000000 (LynxOS 64-bit)</li>
+                    <li>00x0 (PikeOS)</li>
+                    <li>00x60000000 (QXN)</li>
+                    <li>00x0 (RTEMS)</li>
+                    <li>00x00220000 (Windows CE)</li>
+                    </ul>
                 ]]></comment>
         <maxLength>0</maxLength>
         <minimum>0x0</minimum>
@@ -821,7 +836,7 @@
         <comment><![CDATA[
                     <p>This attribute specifies the name by which the corresponding service is
                     identified in the rest of the configuration file.</p>
-                    <p>In the OpenSplice DDS configuration file, services and their settings
+                    <p>In the Vortex OpenSplice configuration file, services and their settings
                     are identified by a name. When the Domain Service starts a particular
                     service, its corresponding name is passed. The service in question uses
                     this name in order to find its own configuration settings in the rest of
@@ -844,14 +859,14 @@
         <comment><![CDATA[
                     <p>This element specifies the command to be executed in order to start the service.</p>
                     <p>In shared memory mode, Command element specifies the name of the actual service
-                    executable (possibly including its path, but always including its extension, e.g.
-                    .exe on the Windows platform). When no path is included, the Domain Service
-                    will search the PATH environment variable for the corresponding executable. Once
-                    located, it will be started as a separate process.</p>
+                    executable or a script to launch this service (possibly including its path, but always
+                    including its extension, e.g. .exe on the Windows platform). When no path is
+                    included, the Domain Service will search the PATH environment variable for the
+                    corresponding executable. Once located, it will be started as a separate process.</p>
                     <p>In single process mode, Command is the name of the entry point function to be
                     invoked and the name of the shared library to be dynamically loaded into the
                     process. The signature of the entry point function is the same as argc/argv usually
-                    seen with main. The OpenSplice services are implemented in such a way that the
+                    seen with main. The Vortex OpenSplice services are implemented in such a way that the
                     entry point name matches that of the shared library, so (for example) specifying
                     durability is all that is required.</p>
                 ]]></comment>
@@ -992,7 +1007,7 @@
                         <li><b>skip</b>: Ignore the non-responsiveness and continue.</li>
                         <li><b>kill</b>: End the service process by force.</li>
                         <li><b>restart</b>: End the service process by force and restart it.</li>
-                        <li><b>systemhalt</b>:  End all OpenSplice services including the Domain service (for the current DDS Domain on this computing node).</li>
+                        <li><b>systemhalt</b>:  End all Vortex OpenSplice services including the Domain service (for the current DDS Domain on this computing node).</li>
                     </ul>
                 ]]></comment>
         <value>kill</value>
@@ -1002,13 +1017,24 @@
         <default>skip</default>
       </leafEnum>
     </element>
+    <element name="GIDKey" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
+      <attributeString name="groups" required="true" version="COMMUNITY">
+        <comment><![CDATA[
+                    <p>This attribute specifies the namespace by which the corresponding groups
+                    will use the writer instance gid as key so that data from different writers
+                    don merge as historical data for late joiners.</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default></default>
+      </attributeString>
+    </element>
     <element name="Application" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
       <comment><![CDATA[
                 <p>When in the single process deployment mode, the Domain service can deploy
                 DDS applications by dynamically loading application shared libraries and
                 starting threads within the existing process.
                 A user can add a multiple Application elements to the configuration when they want
-                to 'cluster' multiple DDS applications within an OpenSplice DDS single process.
+                to 'cluster' multiple DDS applications within an Vortex OpenSplice single process.
                 The entry point and shared library for each Application can be specified by using the
                 Command and Library elements that are described below.>/p>
                 <p><b>Note that Applications only take effect when the single process configuration is enabled by way of the SingleProcess element.</b></p>
@@ -1035,7 +1061,7 @@
                     <p>Command is the name of both the entry point function to invoked and the name of the
                     shared library to be dynamically loaded into the process.  The signature of the entry
                     point function is the same as argc/argv usually seen with main.</p>
-                    <p>For example, if Command is "HelloWorld", OpenSpliceDDS will attempt to load
+                    <p>For example, if Command is "HelloWorld", Vortex OpenSplice will attempt to load
                     "libHelloWorld.so" on Unix (or "HelloWorld.dll" on Windows) into the existing process
                     and then  invoke the "HelloWorld" entry point to start that DDS application.</p>
                     <p>If the name of the shared library does not have the same name as the entry point the
@@ -1052,7 +1078,7 @@
         <comment><![CDATA[
                     <p>This optional attribute allows the user to specify arguments to be passed to the
                     DDS application's entry point when it is invoked.</p>
-                    <p>For example, if Command is "HelloWorld" and Arguments is "arg1 arg2", OpenSplice will
+                    <p>For example, if Command is "HelloWorld" and Arguments is "arg1 arg2", Vortex OpenSplice will
                     invoke the HelloWorld function with the argc = 3 and argv = {"HelloWorld", "arg1", "arg2"}</p>
                 ]]></comment>
         <maxLength>0</maxLength>
@@ -1082,6 +1108,15 @@
                 ]]></comment>
         <default>true</default>
       </attributeBoolean>
+      <attributeString name="logfile" required="false" version="COMMUNITY">
+        <comment><![CDATA[
+                  This attribute specifies the log file for entity lifecycle messages.
+                  When a logfile is specified the service will open the logfile and
+                  write a corresponding log line for each update of discovered entities.
+              ]]></comment>
+        <default>builtin.log</default>
+        <maxLength>0</maxLength>
+      </attributeString>
     </element>
     <element name="PriorityInheritance" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
@@ -1099,7 +1134,7 @@
     </element>
     <element name="Report" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
-            The Report element controls some aspects of the OpenSplice domain logging
+            The Report element controls some aspects of the Vortex OpenSplice domain logging
             functionality.
         ]]></comment>
       <attributeBoolean name="append" required="false" version="COMMUNITY">
@@ -1143,7 +1178,7 @@
     <element name="Statistics" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
             This element specifies the policies regarding statistics. Various statistics
-            can be generated by OpenSplice DDS to help you analyze and tune application
+            can be generated by Vortex OpenSplice to help you analyze and tune application
             behaviour during application development.  Since this introduces extra overhead,
             it is generally turned off in a runtime system.
             ]]></comment>
@@ -1218,7 +1253,7 @@
                 <p>int symbol_name (const char *argument, void **context)</p>
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
                 The context parameter is an out reference that can be set to plugin-specific data that
                 will subsequently be passed to any of the other plugin functions. The value of the
                 parameter is meaningless to the service
@@ -1250,14 +1285,14 @@
           resolved, an error message will be generated and the service will not attempt to
           resolve other symbol_names for the report plugin.
           The function is invoked slightly differently for applications using the DDS API and
-          OpenSplice services. OpenSplice services invoke the function once for every report.
+          Vortex OpenSplice services. Vortex OpenSplice services invoke the function once for every report.
           For applications using the DDS API the function is invoked once per API call, in
           which case the XML is extended by one or more DETAIL elements.
           The implementation of this function must have the following signature:
           <p>int symbol_name (void *context, const char *report)</p>
           The result value is used to return the status of the call. If it is 0 then the operation
           was successful. If it is not 0 then there was an error and details of the error and the
-          result value are reported to the OpenSplice DDS default report service.
+          result value are reported to the Vortex OpenSplice default report service.
           The context parameter is a reference to the plugin-specific data retrieved from the
           initialize operation.
           The report parameter is an XML string representation of the report data.
@@ -1328,7 +1363,7 @@
                 <p>int symbol_name (void *context)</p>
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
           ]]></comment>
           <default/>
           <maxLength>0</maxLength>
@@ -1352,7 +1387,7 @@
                 int symbol_name (void *context)
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
                 The context parameter is a reference to the plugin-specific data retrieved from the
                 initialize operation.
           ]]></comment>
@@ -1373,8 +1408,8 @@
       <leafBoolean name="ServicesOnly" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
             This attribute specifies whether the log plug-in is to be effective only for processes
-            that are exclusively OpenSplice services. If this value is true then the plug-in will
-            not be used for user applications and/or OpenSplice services collocated with user
+            that are exclusively Vortex OpenSplice services. If this value is true then the plug-in will
+            not be used for user applications and/or Vortex OpenSplice services collocated with user
             applications in single process mode.
             ]]></comment>
         <default>false</default>
@@ -1562,7 +1597,7 @@
     <element name="UserClock" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
             The UserClock Service allows you to plug in a custom clock library, allowing
-            OpenSplice to read the time from an external clock source. It expects a root
+            Vortex OpenSplice to read the time from an external clock source. It expects a root
             element named <i>OpenSplice/Domain/UserClock</i>. Within this root element,
             the userclock will look for several child-elements. Each of these is listed
             and explained.
@@ -1658,7 +1693,7 @@
     <element name="UserClockService" hidden="true" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
             The UserClock Service allows you to plug in a custom clock library, allowing
-            OpenSplice to read the time from an external clock source. It expects a root
+            Vortex OpenSplice to read the time from an external clock source. It expects a root
             element named <i>OpenSplice/Domain/UserClock</i>. Within this root element,
             the userclock will look for several child-elements. Each of these is listed
             and explained.
@@ -1686,8 +1721,16 @@
                  ]]></comment>
         <default>False</default>
       </attributeBoolean>
-      <leafString name="UserClockModule" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
+      <attributeBoolean name="reporting" required="false" version="COMMUNITY">
         <comment><![CDATA[
+                  This attribute identifies if the ospl info/error messages will use the userclock or use
+                  the system clock for time reporting. When set to true which is default the userclock will be used.
+                  When set to false the system clock will be used for time reporting in the log files.
+              ]]></comment>
+        <default>true</default>
+      </attributeBoolean>
+      <leafString name="UserClockModule" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
+      <comment><![CDATA[
                 This element specifies the User Clock Service library file. On UNIX
                 like and Windows platforms this will be a shared library. On VxWorks
                 this will be a reallocatable object file. On VxWorks this tag may
@@ -1826,7 +1869,7 @@
     </element>
     <leafBoolean name="y2038Ready" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
-            <p>The y2038Ready element determines that OpenSplice will send timestamps to other nodes
+            <p>The y2038Ready element determines that Vortex OpenSplice will send timestamps to other nodes
             in a 64-bit format which is capable to contain time stamps beyond the year 2038.</p>
             <p>Setting this option to true will force the middleware to communicate with time stamps able to go
             beyond 2038.
@@ -1847,16 +1890,71 @@
        ]]></comment>
       <default>false</default>
     </leafBoolean>
+  <element name="Filters" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+    <comment><![CDATA[
+          Domain Filters are expressions that are applied on the local Domain Service meaning that it affects all local readers
+          including services, i.e. filtered out data will not exist on the node.
+          By using filters the amount of data that is being send or received can be reduced.<br/><br/>
+          Different filters can be specified for different partition-topic
+          combinations using the &lt;Filter&gt;-elements.<br/><br/>
+          Note: that when a filter is set on a partition topic combination the Durability Service can no longer be master for
+          the namespace that contains the given partition-topic combination as it is incomplete by definition.
+    ]]></comment>
+    <maxLength>0</maxLength>
+    <element name="Filter" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
+      <comment><![CDATA[
+            This element specifies the filter that is used. The &lt;PartitionTopic&gt;-child
+            elements specify the partition-topic combinations to which the
+            filter expression is applied.<br/><br/>
+            If no filter is defined for a particular partition-topic then all data will be
+            send for this partition-topic combination.
+            If multiple filters are defined then the first one that matches will be applied.
+      ]]></comment>
+      <attributeString name="content" required="true" version="COMMUNITY">
+        <comment><![CDATA[
+              This attribute specifies the expression that is used for filtering.
+              The expression is a string that is used as-is without any parameters.
+              The filter expression is essentially the where-clauses of an sql expression.
+              When data is requested for matching partition-topics only the data
+              that matches the filter expression will be aligned. The
+              content attribute defaults to the empty string, which means that
+              no filter is applied at all.<br/><br/>
+              The following escape sequence can be used in expressions: &amp;lt;
+              (less than), &amp;gt; (greater than), &amp;quot; (double quote)
+              &amp;apos; (apostrophe) and &amp;amp; (ampersand).<br/><br/>
+              Examples of expressions are:
+              <ul>
+                <li>x=1 or x=2</li>
+                <li>(id&amp;lt;10) and (name=&quot;test&quot;)</li>
+              </ul>
+              If an invalid filter expression is provided an error will be logged
+              in ospl-error.log.
+        ]]></comment>
+        <maxLength>0</maxLength>
+        <default></default>
+      </attributeString>
+      <leafString name="PartitionTopic" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
+        <comment><![CDATA[
+              This element specifies the partition-topics to which
+              the filter expression is applied. A partition-topic
+              expression may contain the wildcards '*' to match any number of
+              characters and '?' to match one single character.
+        ]]></comment>
+        <maxLength>0</maxLength>
+        <default>*.*</default>
+      </leafString>
+    </element>
   </element>
-  <element name="DurabilityService" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+  </element>
+  <element name="DurabilityService" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
     <comment><![CDATA[
                 The responsibilities of the durability service are to realize the durable properties of
-                data in an OpenSplice system. The Durability Service looks for its configuration
+                data in an Vortex OpenSplice system. The Durability Service looks for its configuration
                 within the 'OpenSplice/DurabilityService' element. The configuration parameters
                 that the Durability Service will look for within this element are listed and explained
                 in the following subsections.
         ]]></comment>
-    <attributeString name="name" required="true" version="COMMERCIAL">
+    <attributeString name="name" required="true" version="COMMUNITY">
       <comment><![CDATA[
                 This attribute identifies the configuration for the Durability service.
                 Multiple Durability service configurations can be specified in one single
@@ -1868,7 +1966,7 @@
       <maxLength>0</maxLength>
       <default>durability</default>
     </attributeString>
-    <element name="ClientDurability" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="ClientDurability" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                 Client-durability is a feature that allows clients of this durability
                 service to acquire historical data from a remote durability service
@@ -1880,7 +1978,7 @@
                 provided, then the durability service will not respond to historical
                 data requests from clients.
             ]]></comment>
-      <attributeBoolean name="enabled" required="false" version="COMMERCIAL">
+      <attributeBoolean name="enabled" required="false" version="COMMUNITY">
         <comment><![CDATA[
                     This attribute enables or disables the ability of the durability service
                     to respond to requests for historical data from clients. When the
@@ -1889,28 +1987,28 @@
                 ]]></comment>
         <default>TRUE</default>
       </attributeBoolean>
-      <element name="EntityNames" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="EntityNames" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the names of the various entities used by the
                     client-durability feature of this DurabilityService. The names specified
-                    here will be displayed in the OpenSplice DDS Tuner when viewing the
+                    here will be displayed in the Vortex OpenSplice Tuner when viewing the
                     DurabilityService.
                 ]]></comment>
-        <leafString name="Publisher" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafString name="Publisher" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the name of the client-durability publisher.
                     ]]></comment>
           <maxLength>64</maxLength>
           <default>durabilityPublisher</default>
         </leafString>
-        <leafString name="Subscriber" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafString name="Subscriber" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the name of the client-durability subscriber.
                     ]]></comment>
           <maxLength>64</maxLength>
           <default>durabilitySubscriber</default>
         </leafString>
-        <leafString name="Partition" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafString name="Partition" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the name of the partition used for
                         client-durability. The default is the same partition as
@@ -1922,11 +2020,11 @@
         </leafString>
       </element>
     </element>
-    <element name="Watchdog" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="Watchdog" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                 This element controls the characteristics of the Watchdog thread.
             ]]></comment>
-      <attributeBoolean name="deadlockDetection" required="false" version="COMMERCIAL">
+      <attributeBoolean name="deadlockDetection" required="false" version="COMMUNITY">
         <comment><![CDATA[
                 This attribute drives whether the Watchdog will check for deadlocks and refrain
                 from updating its lease and heartbeat in case one or more of its threads do not
@@ -1936,12 +2034,12 @@
             ]]></comment>
         <default>False</default>
       </attributeBoolean>
-      <element name="Scheduling" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+      <element name="Scheduling" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the type of OS scheduling class will be
                     used by the thread that announces its liveliness periodically.
                 ]]></comment>
-        <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+        <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the thread priority that will be used by the
                         watchdog thread. Only priorities that are supported by the
@@ -1950,7 +2048,7 @@
                         system to be able to assign some of the privileged priorities.
                     ]]></comment>
           <default>0</default>
-          <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+          <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute specifies whether the specified
                             Priority is a relative or absolute priority.
@@ -1960,7 +2058,7 @@
             <default>Relative</default>
           </attributeEnum>
         </leafInt>
-        <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+        <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the thread scheduling class that will be used by
                         the watchdog thread. The user may need the appropriate privileges from
@@ -1974,7 +2072,7 @@
         </leafEnum>
       </element>
     </element>
-    <element name="Network" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="Network" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                     <p>Applications need to be able to gain access to historical data in a system.
                     When the local DDS service gets connected to a remote DDS service by means
@@ -1988,7 +2086,7 @@
                     communication between Durability services on different computing nodes on
                     network level. These settings only apply when the Networking service is active.</p>
             ]]></comment>
-      <attributeFloat name="latency_budget" required="false" version="COMMERCIAL">
+      <attributeFloat name="latency_budget" required="false" version="COMMUNITY">
         <comment><![CDATA[
                     <p>This attribute controls the latency_budget QoS setting
                     that is used by the Durability service for its communication
@@ -2003,7 +2101,7 @@
         <default>0.0</default>
         <dimension>seconds</dimension>
       </attributeFloat>
-      <attributeInt name="transport_priority" required="false" version="COMMERCIAL">
+      <attributeInt name="transport_priority" required="false" version="COMMUNITY">
         <comment><![CDATA[
                     <p>This attribute controls the transport priority QoS
                     setting that is used by the Durability service for its
@@ -2022,10 +2120,10 @@
         <minimum>0</minimum>
         <default>0</default>
       </attributeInt>
-      <element name="Heartbeat" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="Heartbeat" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     <p>During startup and at runtime, the network topology can change
-                    dynamically. This happens when OpenSplice services are started/stopped
+                    dynamically. This happens when Vortex OpenSplice services are started/stopped
                     or when a network cable is plugged in/out. The Durability services
                     need to keep data consistency in that environment. To detect newly
                     joining services as well as detecting nodes that are leaving, the
@@ -2035,7 +2133,7 @@
                     <p>Please note this heartbeat mechanism is similar to but not the
                     same as the service liveliness assertion.</p>
                 ]]></comment>
-        <attributeFloat name="latency_budget" required="false" version="COMMERCIAL">
+        <attributeFloat name="latency_budget" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute controls the latency budget QoS setting that
                         is only used by the Durability service for sending its heartbeats.
@@ -2044,7 +2142,7 @@
           <minimum>0.0</minimum>
           <default>0.0</default>
         </attributeFloat>
-        <attributeInt name="transport_priority" required="false" version="COMMERCIAL">
+        <attributeInt name="transport_priority" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute controls the transport priority QoS setting (in seconds) that
                         is only used by the Durability service for for sending its heartbeats.
@@ -2053,12 +2151,12 @@
           <minimum>0</minimum>
           <default>0</default>
         </attributeInt>
-        <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the scheduling parameters used by the
                         thread that periodically sends the heartbeats.
                     ]]></comment>
-          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread priority that will be used
                             by the thread that periodically sends the heartbeats. Only
@@ -2068,7 +2166,7 @@
                             be able to assign some of the privileged priorities.
                         ]]></comment>
             <default>0</default>
-            <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+            <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
               <comment><![CDATA[
                                 This attribute specifies whether the specified
                                 Priority is a relative or absolute priority.
@@ -2078,7 +2176,7 @@
               <default>Relative</default>
             </attributeEnum>
           </leafInt>
-          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread scheduling class that will
                             be used by the thread that periodically sends the heartbeats.
@@ -2092,7 +2190,7 @@
             <default>Default</default>
           </leafEnum>
         </element>
-        <leafFloat name="ExpiryTime" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+        <leafFloat name="ExpiryTime" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         <p>This element specifies the maximum amount of time(in seconds) in
                         which the Durability service expects a new heartbeat of
@@ -2107,7 +2205,7 @@
                     ]]></comment>
           <default>10.0</default>
           <minimum>0.2</minimum>
-          <attributeFloat name="update_factor" required="true" version="COMMERCIAL">
+          <attributeFloat name="update_factor" required="true" version="COMMUNITY">
             <comment><![CDATA[
                             <p>In case of a (temporary) high CPU load, the scheduling
                             behaviour of the operating system might affect the
@@ -2126,7 +2224,7 @@
           </attributeFloat>
         </leafFloat>
       </element>
-      <leafFloat name="InitialDiscoveryPeriod" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafFloat name="InitialDiscoveryPeriod" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                 On startup the Durability Service needs to determine, for each namespace, if it has
                 to align with other Durability Services in the system or if it has to load the initial
@@ -2154,7 +2252,7 @@
         <maximum>10.0</maximum>
         <dimension>seconds</dimension>
       </leafFloat>
-      <element name="Alignment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="Alignment" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     The Durability service is responsible for keeping its local cache
                     consistent with the other available Durability caches in the
@@ -2163,7 +2261,7 @@
                     consistency is called alignment. This element allows fine-tuning
                     alignment behaviour of the Durability service.
                 ]]></comment>
-        <attributeFloat name="latency_budget" required="false" version="COMMERCIAL">
+        <attributeFloat name="latency_budget" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute specifies the latency budget QoS setting (in seconds)
                         that is only used by the Durability service for the alignment of data.
@@ -2173,7 +2271,7 @@
           <minimum>0.0</minimum>
           <default>0.0</default>
         </attributeFloat>
-        <attributeInt name="transport_priority" required="false" version="COMMERCIAL">
+        <attributeInt name="transport_priority" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute specifies the transport priority QoS setting
                         that is used by the Durability service for the alignment of data.
@@ -2184,23 +2282,28 @@
           <minimum>0</minimum>
           <default>0</default>
         </attributeInt>
-        <leafBoolean name="TimeAlignment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafBoolean name="TimeAlignment" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-                        This attribute specifies whether time on all nodes in
+                        <p>This attribute specifies whether time on all nodes in
                         the domain can be considered aligned or not. This setting
                         needs to be consistent for all durability services in the
                         domain. In case there is no time alignment, the durability
-                        service needs to align more data since to compensate possible
-                        timing gaps between different nodes in the domain.
+                        service needs to align more data to compensate for possible
+                        timing gaps between different nodes in the domain.</p>
+                        <p>When using DDSI2(e) networking service it is strongly recommended
+                        to set this value to 'false'. The asynchronous nature of the DDSI2
+                        discovery protocol in combination with TimeAlignment could lead to a
+                        gap in transient/persistent data when Durability alignment and DDSI2
+                        discovery coincide, which is normal behavior.</p>
                     ]]></comment>
           <default>true</default>
         </leafBoolean>
-        <element name="AlignerScheduling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <element name="AlignerScheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the scheduling parameters used to
                         control the thread that aligns other durability services.
                     ]]></comment>
-          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread priority that will be
                             used by the aligner thread. Only priorities that are
@@ -2210,7 +2313,7 @@
                             able to assign some of the privileged priorities.
                         ]]></comment>
             <default>0</default>
-            <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+            <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
               <comment><![CDATA[
                                 This attribute specifies whether the specified
                                 Priority is a relative or absolute priority.
@@ -2220,7 +2323,7 @@
               <default>Relative</default>
             </attributeEnum>
           </leafInt>
-          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread scheduling class that
                             will be used by the aligner thread. The user may need the
@@ -2234,13 +2337,13 @@
             <default>Default</default>
           </leafEnum>
         </element>
-        <element name="AligneeScheduling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <element name="AligneeScheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the scheduling parameters used to
                         control the thread that makes sure the local node becomes
                         and stays aligned.
                     ]]></comment>
-          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread priority that will be
                             used by the alignee thread. Only priorities that are
@@ -2250,7 +2353,7 @@
                             able to assign some of the privileged priorities.
                         ]]></comment>
             <default>0</default>
-            <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+            <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
               <comment><![CDATA[
                                 This attribute specifies whether the specified
                                 Priority is a relative or absolute priority.
@@ -2260,7 +2363,7 @@
               <default>Relative</default>
             </attributeEnum>
           </leafInt>
-          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the thread scheduling class that
                             will be used by the alignee thread. The user may need the
@@ -2274,7 +2377,7 @@
             <default>Default</default>
           </leafEnum>
         </element>
-        <element name="RequestCombinePeriod" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <element name="RequestCombinePeriod" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         <p>When the Durability service detects an inconsistency with
                         another Durability service, it requests that service to align
@@ -2296,10 +2399,10 @@
                         but will decrease the processing and network load in
                         case multiple Durability services need to resolve the
                         same data around the same time. Increasing the value
-                        is useful in case OpenSplice is started at the same time
+                        is useful in case Vortex OpenSplice is started at the same time
                         with more than two computing nodes.</p>
                     ]]></comment>
-          <leafFloat name="Initial" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <leafFloat name="Initial" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                         This element specifies the maximum amount of time the Durability
                         Service is allowed to wait with alignment after an alignment
@@ -2311,7 +2414,7 @@
             <minimum>0.01</minimum>
             <maximum>5.0</maximum>
           </leafFloat>
-          <leafFloat name="Operational" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <leafFloat name="Operational" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
             <comment><![CDATA[
                             This element specifies the maximum amount of time the Durability
                             Service is allowed to wait with alignment after an alignment
@@ -2323,7 +2426,7 @@
             <maximum>5.0</maximum>
           </leafFloat>
         </element>
-        <element name="Partition" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+        <element name="Partition" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
                         This tag specified an inter durability communication
                         partition with specific qos settings. Alignment between
@@ -2336,14 +2439,14 @@
                         that inherits the default qos policies and has the
                         default alignment_priority.
                     ]]></comment>
-          <attributeString name="Name" required="true" version="COMMERCIAL">
+          <attributeString name="Name" required="true" version="COMMUNITY">
             <comment><![CDATA[
                             The name of the partition to use for alignment.
                         ]]></comment>
             <maxLength>0</maxLength>
             <default>partition</default>
           </attributeString>
-          <attributeInt name="alignment_priority" required="false" version="COMMERCIAL">
+          <attributeInt name="alignment_priority" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute specifies the alignment priority of
                             the partition used by the durability service to
@@ -2354,7 +2457,7 @@
             <default>0</default>
             <minimum>0</minimum>
           </attributeInt>
-          <attributeFloat name="latency_budget" required="false" version="COMMERCIAL">
+          <attributeFloat name="latency_budget" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute overrules the latency budget for
                             this partition specified at this point.
@@ -2362,7 +2465,7 @@
             <default>0.0</default>
             <minimum>0.0</minimum>
           </attributeFloat>
-          <attributeInt name="transport_priority" required="false" version="COMMERCIAL">
+          <attributeInt name="transport_priority" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute overrules the transport priority for
                             this partition specified at this point.
@@ -2371,7 +2474,7 @@
             <minimum>0</minimum>
           </attributeInt>
         </element>
-        <leafFloat name="TimeToWaitForAligner" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafFloat name="TimeToWaitForAligner" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                  When all Durability Services in the domain have configured their aligner element
                  as false , none of them is able
@@ -2394,7 +2497,7 @@
           <default>1.0</default>
         </leafFloat>
       </element>
-      <element name="WaitForAttachment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="WaitForAttachment" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     The Durability service depends on the Networking service for its
                     communication with other Durability services. Before it starts
@@ -2403,7 +2506,7 @@
                     be available and how long the Durability service must wait for them
                     to become available before sending any data.
                 ]]></comment>
-        <attributeInt name="maxWaitCount" required="false" version="COMMERCIAL">
+        <attributeInt name="maxWaitCount" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute specifies the number of times the Durability
                         service checks if the services specified in the
@@ -2419,7 +2522,7 @@
           <maximum>1000</maximum>
           <default>200</default>
         </attributeInt>
-        <leafString name="ServiceName" minOccurrences="1" maxOccurrences="0" version="COMMERCIAL">
+        <leafString name="ServiceName" minOccurrences="1" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
                    This element specifies the name of the service(s) that the Durability Service waits
                    for, before starting alignment activities for a specific topic-partition combination. If
@@ -2432,7 +2535,7 @@
         </leafString>
       </element>
       <!-- ResendTimeRange not supported yet.
-            <leafFloat name="ResendTimeRange" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+            <leafFloat name="ResendTimeRange" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
                 <comment><![CDATA[
                     The period (in seconds) ending with the time of the request, over
                     which the service wants samples produced by a node that has stopped.
@@ -2443,7 +2546,32 @@
             </leafFloat>
             -->
     </element>
-    <element name="Persistent" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="MasterElection" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+      <comment><![CDATA[
+                <p>For every namespace and role a single node is elected master, the one to
+                provide historical data. This optional element can be used to fine-fune the
+                characteristics of the master election algorithm.</p>
+                <p>This element is optional, and when used only applies to master election for
+                namespaces with non-legacy masterPriority (see
+                //OpenSplice/DurabilityService/NameSpaces/Policy[@masterPriority]).</p>
+            ]]></comment>
+      <leafFloat name="WaitTime" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+                    Before the durability service elects a master it can waits some time to
+                    detect other nodes in the system. Waiting might increase the possibility
+                    to elect a better candidate, but slows down the master election process.
+                    Electing a master too early may lead to additional alignment actions when
+                    a better candidate appears later, because a handover of mastership is needed.
+                    When the chance that a better master candicate appears within the WaitTime
+                    is small it is advised to set this value to 0.0 (the default).
+                ]]></comment>
+        <minimum>0.0</minimum>
+        <default>0.0</default>
+        <maximum>10.0</maximum>
+        <dimension>seconds</dimension>
+      </leafFloat>
+    </element>
+    <element name="Persistent" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                 <p>Durable data is divided in transient and persistent data. Transient
                 data must stay available for as long as at least one Durability
@@ -2454,9 +2582,9 @@
                 to fine-tune the behaviour of the Durability service concerning
                 the persistent properties of the data.</p>
                 <p>Note these elements are only available as part of the DDS
-                persistence profile of OpenSplice.</p>
+                persistence profile of Vortex OpenSplice.</p>
             ]]></comment>
-      <leafString name="StoreDirectory" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+      <leafString name="StoreDirectory" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element determines the location where the persistent data will
                     be stored on disk. If this parameter is not configured,
@@ -2465,7 +2593,7 @@
         <maxLength>0</maxLength>
         <default>/tmp/pstore</default>
       </leafString>
-      <leafFloat name="StoreSessionTime" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafFloat name="StoreSessionTime" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                    The Durability Service has a persistency thread that periodically (in sessions) writes
                    persistent data to disk, this element together with the Element StoreSleepTime can be
@@ -2478,7 +2606,7 @@
         <default>20.0</default>
         <dimension>seconds</dimension>
       </leafFloat>
-      <leafFloat name="StoreSleepTime" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafFloat name="StoreSleepTime" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     <p>This element specifies the period of time (in seconds) the
                     persistency thread sleeps between two sessions. This allows
@@ -2492,39 +2620,21 @@
         <minimum>0.0</minimum>
         <default>0.0</default>
       </leafFloat>
-      <leafEnum name="StoreMode" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafEnum name="StoreMode" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the plug-in that is used to store the
                     persistent data on disk. With "XML" mode, the service will store
-                    persistent data in XML files. With "MMF", the service will store
-                    persistent data in a Memory Mapped File that exactly represents
-                    the memory that is being used by the persistent store.
-                    With "KV" mode the service will store persistent data in a key-value
-                    store using either sqlite of leveldb to store the data on disk.
-                    <p>!!! The "MMF" store is deprecated from version 6.3 and was only implemented on linux !!!,</p>
+                    persistent data in XML files. With "KV" mode the service will store
+                    persistent data in a key-value store using either sqlite of leveldb
+                    to store the data on disk.
                     <p>!!! For "KV" stores, SQLite is supported on linux, Windows, and Solaris; LevelDB is only
                     supported on linux.<p>
                 ]]></comment>
         <value>XML</value>
-        <value>MMF</value>
         <value>KV</value>
         <default>XML</default>
       </leafEnum>
-      <attributeInt name="SmpCount" required="false" version="COMMERCIAL">
-        <comment><![CDATA[
-                    This element determines how many threads the Durability service will spawn to
-                    write persistent data to disk. Note that this attribute is currently only supported for
-                    MMF (memory mapped file) StoreMode.
-                    Please also note that although technically the maximum valid value for this element
-                    is maxInt, the operating system may impose a lower limit, to prevent 'runaway'
-                    consumption of resources and loss of performance. It is recommended that increases
-                    of this value are carefully considered!
-                    <p>!!! The "MMF" store is deprecated from version 6.3 and was only implemented on linux !!!,</p>
-                ]]></comment>
-        <minimum>1</minimum>
-        <default>1</default>
-      </attributeInt>
-      <element name="KeyValueStore" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="KeyValueStore" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the key-value store mode parameters. The Storage element specifies
                     the which storage type is used to implement the key-value store. The storage type defaults
@@ -2534,17 +2644,31 @@
                     This element is only valid when the Persistent/StoreMode element is set to "KV".
                     <p>The "KV" store is currenly only supported on linux (SQLite and LevelDB), Windows (SQLite), and Solaris (SQLite).</p>
                 ]]></comment>
-        <attributeEnum name="type" required="true" version="COMMERCIAL">
+        <attributeEnum name="type" required="true" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute specifies the third-party product that is used to implement the KV store.
-                        Products currently supported are SQLite and LevelDB
+                        Products currently supported are SQLite and LevelDB.
+                        <p>The following types can be selected:
+                        <ul>
+                          <li>sqlite3 -use sqlite3 as the key value store. Data in the store is stored efficiently
+                              as binary blobs. This is the default.</li>
+                          <li>sqlite - same as sqlite3. This option is present for backward compatibility.</li>
+                          <li>sqlitemt - use sqlite3 as the key value store implementation, but
+                             stores the information as readable data. This mode allows a user to inspect the
+                             contents of the store, but the store performance will be lower compared to sqlite3
+                             because each piece of data must be  translated to readable format. This option is
+                             typically used for testing purposes to inspect the contents of the store.<br/>
+                             (Note: the abbreviation 'mt' stands for 'multi-table').</li>
+                          <li>leveldb - use leveldb as the key value store</li>
+                        </ul></p>
                     ]]></comment>
           <value>sqlite3</value>
           <value>sqlite</value>
+          <value>sqlitemt</value>
           <value>leveldb</value>
           <default>sqlite3</default>
         </attributeEnum>
-        <leafString name="StorageParameters" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <leafString name="StorageParameters" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                        This element is used to set parameters that are specific to the third-party product
                        used to implement the KV store. The element consists of a list of parameters which
@@ -2597,7 +2721,7 @@
           <maxLength>0</maxLength>
           <default>0</default>
         </leafString>
-        <element name="Compression" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <element name="Compression" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         <p>This element specifies compression settings for the key-value store.</p>
                         <p>Compression for the persistent store can be used to reduce disk I/O and lower disk
@@ -2606,11 +2730,11 @@
                         <p>Compression is set at store creation time. Changing these settings after the store is
                         created will result in an error.</p>
                 ]]></comment>
-          <attributeEnum name="algorithm" required="true" version="COMMERCIAL">
+          <attributeEnum name="algorithm" required="true" version="COMMUNITY">
             <comment><![CDATA[
                             <p>This attribute specifies the compression algorithm that is used to store the persistent
                             data in the key-value store.</p>
-                            <p>The lzf and snappy compression algorithms are built into the OpenSplice
+                            <p>The lzf and snappy compression algorithms are built into the Vortex OpenSplice
                             installation. To use the zlib algorithm a shared library needs to be available on the
                             system, and it must be locatable by way of the current working directory, or via
                             LD_LIBRARY_PATH (on Unix systems) or PATH (on Windows systems).</p>
@@ -2620,7 +2744,7 @@
             <value>zlib</value>
             <default>lzf</default>
           </attributeEnum>
-          <attributeBoolean name="enabled" required="false" version="COMMERCIAL">
+          <attributeBoolean name="enabled" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute specifies whether the key-value store will apply compression for
                             storing persistent data to limit disk usage.
@@ -2629,48 +2753,7 @@
           </attributeBoolean>
         </element>
       </element>
-      <element name="MemoryMappedFileStore" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
-        <comment><![CDATA[
-                    This element specifies the memory mapped file store mode parameters. This
-                    element is only valid when the Persistent/StoreMode element is set to "MMF".
-                    The size and the starting address of the memory file must be supplied
-                    <p>The "MMF" store is deprecated from version 6.3. and was only implemented in Linux</p>
-                ]]></comment>
-        <leafSize name="Size" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
-          <comment><![CDATA[
-                          This element specifies the size of the memory mapped file used to
-                          store persistent data. Change this value according to the size of
-                          your persistent data. The file should be big enough to store:
-                          <ul>
-                          <li>all persistent data in your specified namespaces</li>
-                          <li>PLUS a potential backup for all persistent data in namespaces whose content may be replaced by persistent data from another master.</li>
-                          </ul>
-                          <p>As a rule of thumb, you could state that the persistent store should
-                          be twice the size of your combined persistent data in your specified
-                          namespaces. Please note that the operating system should be configured
-                          to support the requested size.</p>
-                            <p>If this value is not specified, the size of the persistent store will be
-                            set to twice the size of the shared memory segment.</p>
-                  ]]></comment>
-          <minimum>1048576</minimum>
-          <default>10485760</default>
-        </leafSize>
-        <leafString name="Address" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
-          <comment><![CDATA[
-                      <p>This element specifies the start address where the
-                      file is mapped into the virtual memory.
-                      The possible values are platform dependent.</p>
-                      <p>Change this value if the default address is already in
-                      use, for example by another Domain Service or another
-                      product.</p>
-                        <p>If this value is not specified, the file will be mapped
-                        just after the shared memory segment.</p>
-                  ]]></comment>
-          <maxLength>0</maxLength>
-          <default>0x80000000</default>
-        </leafString>
-      </element>
-      <leafInt name="StoreOptimizeInterval" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafInt name="StoreOptimizeInterval" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                This element determines after how many write actions the persistent set for a
                specific partition-topic combination is optimized on disk. Persistent data is
@@ -2683,13 +2766,13 @@
         <minimum>0</minimum>
         <default>0</default>
       </leafInt>
-      <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the scheduling parameters used to
                     control the thread that stores persistent data on permanent
                     storage.
                 ]]></comment>
-        <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+        <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the thread priority that will be used by the
                         persistent thread. Only priorities that are supported by the
@@ -2698,7 +2781,7 @@
                         system to be able to assign some of the privileged priorities.
                     ]]></comment>
           <default>0</default>
-          <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+          <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
             <comment><![CDATA[
                             This attribute specifies whether the specified
                             Priority is a relative or absolute priority.
@@ -2708,7 +2791,7 @@
             <default>Relative</default>
           </attributeEnum>
         </leafInt>
-        <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+        <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies the thread scheduling class that will be
                         used by the persistent thread. The user may need the appropriate
@@ -2722,7 +2805,7 @@
         </leafEnum>
       </element>
       <!-- Deprecated parameter-->
-      <leafInt name="QueueSize" hidden="true" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafInt name="QueueSize" hidden="true" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
             Maximum number of samples in the persistent queue. The available
             resources determine the maximum value of this setting. Specify
@@ -2733,7 +2816,7 @@
         <default>0</default>
       </leafInt>
     </element>
-    <element name="NameSpaces" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+    <element name="NameSpaces" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
              When a durability service wants to fulfill a particular role for some of the
              namespaces in a domain, it must have some way of deducing the desired behavior
@@ -2762,7 +2845,7 @@
              NameSpaces element) only supports a name attribute, which is mandatory. This
              name will be used to match against policies.
             ]]></comment>
-      <element name="NameSpace" minOccurrences="1" maxOccurrences="0" version="COMMERCIAL">
+      <element name="NameSpace" minOccurrences="1" maxOccurrences="0" version="COMMUNITY">
         <comment><![CDATA[
                     A namespace describes a dependency between data in two or
                     more partitions by means of a partition expression. The
@@ -2772,7 +2855,7 @@
                     be managed by the Durability service. Data that does not
                     match any of the namespaces, is ignored by the Durability service.
                 ]]></comment>
-        <attributeString name="name" required="false" version="COMMERCIAL">
+        <attributeString name="name" required="false" version="COMMUNITY">
           <comment><![CDATA[
                     This element specifies the name for a namespace. A name is used
                     to match a namespace with a policy.
@@ -2782,7 +2865,7 @@
         </attributeString>
 
         <!-- The durabilityKind attribute is deprecated-->
-        <attributeEnum hidden="true" name="durabilityKind" required="false" version="COMMERCIAL">
+        <attributeEnum hidden="true" name="durabilityKind" required="false" version="COMMUNITY">
             <comment><![CDATA[
                 <p>This element specifies how the durability service
                 manages the data within the NameSpace. The original
@@ -2821,7 +2904,7 @@
         </attributeEnum>
 
         <!-- The alignmentKind attribute is deprecated-->
-        <attributeEnum hidden="true" name="alignmentKind" required="false" version="COMMERCIAL">
+        <attributeEnum hidden="true" name="alignmentKind" required="false" version="COMMUNITY">
             <comment><![CDATA[
                 <p>This element determines how the durability service manages
                 the data that matches the namespace. Scalability of durable
@@ -2877,7 +2960,7 @@
         </attributeEnum>
 
         <!-- The mergePolicy attribute is deprecated-->
-        <attributeEnum hidden="true" name="mergePolicy" required="false" version="COMMERCIAL">
+        <attributeEnum hidden="true" name="mergePolicy" required="false" version="COMMUNITY">
             <comment><![CDATA[
             This tag specifies the merge policy applicable for a
             specific namespace. The following merge policy values are:
@@ -2898,7 +2981,7 @@
             <value>ignore</value>
         </attributeEnum>
 
-        <leafString name="Partition" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+        <leafString name="Partition" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies a partition expression that
                         matches the namespace. A namespace consists of a set of
@@ -2913,7 +2996,7 @@
           <maxLength>0</maxLength>
           <default>*</default>
         </leafString>
-        <leafString name="PartitionTopic" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+        <leafString name="PartitionTopic" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
                         This element specifies a partition-topic expression that
                         matches the namespace. A group expression is a
@@ -2932,7 +3015,7 @@
           <default>*.*</default>
         </leafString>
       </element>
-      <element name="Policy" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+      <element name="Policy" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
         <comment><![CDATA[
                     A namespace describes a dependency between data in two or
                     more partitions by means of a partition expression. The
@@ -2949,7 +3032,7 @@
                     important, as the first matching template
                     will be the one that is selected for a namespace.
                 ]]></comment>
-        <element name="Merge" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+        <element name="Merge" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
             This tag specifies the merge policy applicable for a
             specific namespace. The following merge policy values are
@@ -2972,7 +3055,7 @@
             A scope may contain the wildcards '*' to match any number of characters and '?' to match one
             single character.</p>
             ]]></comment>
-          <attributeEnum name="type" required="true" version="COMMERCIAL">
+          <attributeEnum name="type" required="true" version="COMMUNITY">
             <comment><![CDATA[
                The type attribute describes the kind of action required on a namespace state mismatch.
                <ul>
@@ -3005,7 +3088,7 @@
             <value>Replace</value>
             <value>Catchup</value>
           </attributeEnum>
-          <attributeString name="scope" required="true" version="COMMERCIAL">
+          <attributeString name="scope" required="true" version="COMMUNITY">
             <comment><![CDATA[
                The scope attribute describes for which scope the merge policy is valid. The scope
                is a role-expression in which wildcards ('*' and '?') are allowed. Roles are matched
@@ -3018,7 +3101,7 @@
             <default>*</default>
           </attributeString>
         </element>
-        <attributeString name="nameSpace" required="true" version="COMMERCIAL">
+        <attributeString name="nameSpace" required="true" version="COMMUNITY">
           <comment><![CDATA[
                           The element specifies an expression that matches a namespace name.
                           A namespace may contain the wildcards '*' to match any number of
@@ -3027,7 +3110,7 @@
           <maxLength>0</maxLength>
           <default>*</default>
         </attributeString>
-        <attributeEnum name="durability" required="true" version="COMMERCIAL">
+        <attributeEnum name="durability" required="true" version="COMMUNITY">
           <comment><![CDATA[
                         <p>This element specifies how the durability service
                         manages the data within the NameSpace. The original
@@ -3055,14 +3138,14 @@
           <value>Transient</value>
           <value>Transient_Local</value>
         </attributeEnum>
-        <attributeBoolean name="aligner" required="true" version="COMMERCIAL">
+        <attributeBoolean name="aligner" required="true" version="COMMUNITY">
           <comment><![CDATA[
 This mandatory attribute determines whether the durability service can act as aligner
 (provide historical data) for other durability services.
           ]]></comment>
           <default>True</default>
         </attributeBoolean>
-        <attributeEnum name="alignee" required="true" version="COMMERCIAL">
+        <attributeEnum name="alignee" required="true" version="COMMUNITY">
           <comment><![CDATA[
                         <p>This element determines how the durability service manages
                         the data that matches the namespace. Scalability of durable
@@ -3084,7 +3167,7 @@ This mandatory attribute determines whether the durability service can act as al
           <value>Lazy</value>
           <value>On_Request</value>
         </attributeEnum>
-        <attributeBoolean name="delayedAlignment" required="false">
+        <attributeBoolean name="delayedAlignment" required="false" version="COMMUNITY">
           <comment><![CDATA[
                 This element determines if the durability allows delayed alignment of initial data.
                 This can be usefull for systems where there can be late-joining nodes with a persistent
@@ -3094,7 +3177,7 @@ This mandatory attribute determines whether the durability service can act as al
             ]]></comment>
           <default>False</default>
         </attributeBoolean>
-        <attributeBoolean name="equalityCheck" required="false">
+        <attributeBoolean name="equalityCheck" required="false" version="COMMUNITY">
           <comment><![CDATA[
                 This element specifies whether or not the durability service should compare its
                 current data set with the data set of its aligner before applying the merge policy.
@@ -3112,90 +3195,51 @@ This mandatory attribute determines whether the durability service can act as al
             ]]></comment>
           <default>False</default>
         </attributeBoolean>
-      </element>
-      <element name="Filters" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
-        <comment><![CDATA[
-                    Filters are expressions that are applied when historical
-                    data is requested from another durability service. By using
-                    filters the amount of alignment data between durability
-                    services can be reduced.<br/><br/>
-                    Different filters can be specified for different partition-topic
-                    combinations using the &lt;Filter&gt;-elements.<br/><br/>
-                    <b>NOTE</b> A side effect can occur when filters are
-                    used in combination with the ability to align data.
-                    In case a node that has retrieved a subset of historical data
-                    using filters becomes the aligner to other nodes at some
-                    point in time, then only this subset will be aligned to the other
-                    nodes.
-                ]]></comment>
-        <maxLength>0</maxLength>
-        <element name="Filter" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
+        <attributeInt name="masterPriority" required="false" version="COMMUNITY">
           <comment><![CDATA[
-                      This element specifies the filter expression that is used when
-                      historical data is requested. The &lt;PartitionTopic&gt;-child
-                      elements specify the partition-topic combinations to which the
-                      filter expression is applied.<br/><br/>
-                      If no filter is defined for a particular partition-topic then all data will be
-                      aligned for this partition-topic combination.
-                      If multiple filters are defined then the first one that matches will be applied.
-                  ]]></comment>
-          <attributeString name="content" required="true" version="COMMERCIAL">
-            <comment><![CDATA[
-                      This attribute specifies the expression that is used for filtering.
-                      The expression is a string that is used as-is without any parameters.
-                      The filter expression is essentially the where-clauses of an sql expression.
-                      When data is requested for matching partition-topics only the data
-                      that matches the filter expression will be aligned. The
-                      content attribute defaults to the empty string, which means that
-                      no filter is applied at all.<br/><br/>
-                      The following escape sequence can be used in expressions: &amp;lt;
-                      (less than), &amp;gt; (greater than), &amp;quot; (double quote)
-                      &amp;apos; (apostrophe) and &amp;amp; (ampersand).<br/><br/>
-                      Examples of expressions are:
-                      <ul>
-                        <li>x=1 or x=2</li>
-                        <li>(id&amp;lt;10) and (name=&quot;test&quot;)</li>
-                      </ul>
-                      If an invalid filter expression is provided an error will be logged
-                      in ospl-error.log.
-                    ]]></comment>
-            <maxLength>0</maxLength>
-            <default/>
-          </attributeString>
-          <leafString name="PartitionTopic" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
-            <comment><![CDATA[
-                  This element specifies the partition-topics to which
-                  the filter expression is applied. A partition-topic
-                  expression may contain the wildcards '*' to match any number of
-                  characters and '?' to match one single character.
-              ]]></comment>
-            <maxLength>0</maxLength>
-            <default>*.*</default>
-          </leafString>
-        </element>
+                This attribute sets the master selection priority of the namespace.
+                The default value is 255, this allows to modify a single durability service in
+                an existing system to become both preferred master as well as non-preferred master
+                without having to change the configuration of all durability services.
+                The Durability Service will never become master for a namespace when the
+                masterPriority is set to zero.
+                When set to 255 the durability Service will not use priorities at all, and falls back
+                to the legacy master selection algorithm.
+                If the masterPriority is set other than 0 and 255 the Durability Service will become master if
+                it has the highest masterPriority of all discovered Durability Services for the namespace.
+                If multiple Durability Services exist having equally highest masterPriority
+                a further selection will be made based on the highest namespace quality of each
+                Durability Service (but only if persistent data has not been injected before).
+                Then if there are still multiple equally suitable Durability Services the
+                Durability Service with the highest system id will be selected.
+            ]]></comment>
+          <minimum>0</minimum>
+          <maximum>255</maximum>
+          <default>255</default>
+        </attributeInt>
       </element>
     </element>
-    <element name="EntityNames" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="EntityNames" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                 This element specifies the names of the various entities used by the
                 DurabilityService. The names specified here will be displayed in the
-                OpenSplice DDS Tuner when viewing the DurabilityService.
+                Vortex OpenSplice Tuner when viewing the DurabilityService.
             ]]></comment>
-      <leafString name="Publisher" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafString name="Publisher" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the name of the durability publisher.
                 ]]></comment>
         <maxLength>64</maxLength>
         <default>durabilityPublisher</default>
       </leafString>
-      <leafString name="Subscriber" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafString name="Subscriber" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the name of the durability subscriber.
                 ]]></comment>
         <maxLength>64</maxLength>
         <default>durabilitySubscriber</default>
       </leafString>
-      <leafString name="Partition" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafString name="Partition" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the name of the durability partition.
                 ]]></comment>
@@ -3203,14 +3247,14 @@ This mandatory attribute determines whether the durability service can act as al
         <default>durabilityPartition</default>
       </leafString>
     </element>
-    <element name="Tracing" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+    <element name="Tracing" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
                     This element controls the amount and type of information that is
                     written into the tracing log by the Durability Service. This is
                     useful to track the Durability Service during application
                     development. In the runtime system it should be turned off.
             ]]></comment>
-      <attributeBoolean name="synchronous" required="false" version="COMMERCIAL">
+      <attributeBoolean name="synchronous" required="false" version="COMMUNITY">
         <comment><![CDATA[
                     This attribute specifies whether tracing log updates are synchronous
                     or not. A synchronous update is immediately flushed to disk: there is
@@ -3220,7 +3264,7 @@ This mandatory attribute determines whether the durability service can act as al
                 ]]></comment>
         <default>FALSE</default>
       </attributeBoolean>
-      <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This option specifies where the logging is printed to. Note that
                     "stdout" is considered a legal value that represents "standard out"
@@ -3231,11 +3275,11 @@ This mandatory attribute determines whether the durability service can act as al
         <maxLength>0</maxLength>
         <default>durability.log</default>
       </leafString>
-      <leafBoolean name="Timestamps" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafBoolean name="Timestamps" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies whether the logging must contain timestamps.
                 ]]></comment>
-        <attributeBoolean name="absolute" required="false" version="COMMERCIAL">
+        <attributeBoolean name="absolute" required="false" version="COMMUNITY">
           <comment><![CDATA[
                         This attribute specifies whether the timestamps are absolute or
                         relative to the startup time of the service.
@@ -3244,7 +3288,7 @@ This mandatory attribute determines whether the durability service can act as al
         </attributeBoolean>
         <default>true</default>
       </leafBoolean>
-      <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
                     This element specifies the verbosity level of the logging
                     information. The higher the level, the more (detailed)
@@ -3341,11 +3385,11 @@ This mandatory attribute determines whether the durability service can act as al
                     Every Secure Networking service is bound to only one network interface card
                     (NIC). The card can be uniquely identified by its corresponding
                     IP address or by its symbolic name (e.g. eth0). If the
-                    value "first available" is entered here, the OpenSplice
+                    value "first available" is entered here, the Vortex OpenSplice
                     middleware will try to look up an interface that has
                     the required capabilities.
                  ]]></comment>
-        <maxLength>15</maxLength>
+        <maxLength>0</maxLength>
         <default>first available</default>
         <attributeBoolean name="forced" required="false" version="COMMERCIAL">
           <comment><![CDATA[
@@ -3403,7 +3447,7 @@ This mandatory attribute determines whether the durability service can act as al
         <comment><![CDATA[EnableMulticastLoopback specifies whether the secure networking service will allow
           IP multicast packets within the node to be visible to all secure networking participants in the node,
           including itself. It must be TRUE for intra-node multicast communications,
-          but if a node runs only a single OpenSplice secure networking service and does not host
+          but if a node runs only a single Vortex OpenSplice secure networking service and does not host
           any other networking-capable programs, it may be set to FALSE for improved performance.]]></comment>
         <value>True</value>
         <value>False</value>
@@ -3448,7 +3492,7 @@ This mandatory attribute determines whether the durability service can act as al
     </element>
     <element name="Partitioning" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
-                <p>The OpenSplice Secure Networking service is capable of leveraging
+                <p>The Vortex OpenSplice Secure Networking service is capable of leveraging
                 the network's multicast and routing capabilities. If some a-priori
                 knowledge about the participating
                 nodes and their topic and partition interest is available, then the
@@ -3545,7 +3589,7 @@ commas (,) semicolons (;) or spaces ( ). Samples for this partition will be sent
 all addresses that are specified in this list of addresses. To specify the default
 broadcast address, use the expression "broadcast". Addresses can be entered as
 'dotted decimal' IPv4 or 'colon-separated hexadecimal' IPv6 notation or as the
-symbolic hostname, in which case OpenSplice will try to resolve the corresponding
+symbolic hostname, in which case Vortex OpenSplice will try to resolve the corresponding
 IP address.
                         ]]></comment>
             <default>broadcast</default>
@@ -3591,11 +3635,11 @@ IP address.
                        security feature has been enabled but no profile is declared, the NULL profile will be
                        used by default.
                        The ordering of network partition declarations in the OSPL configuration file must
-                       be the same for all nodes within the OpenSplice domain. If certain nodes shall not
+                       be the same for all nodes within the Vortex OpenSplice domain. If certain nodes shall not
                        use one of the network partitions, the network partition in question must be declared
                        as connected="false". In this case the declared security profile would not be
                        evaluated or initialized, and the associated secret cipher keys need not to be defined
-                       for the OpenSplice node in question.
+                       for the Vortex OpenSplice node in question.
                         ]]></comment>
             <default>nullProfile</default>
             <maxLength>0</maxLength>
@@ -3696,7 +3740,7 @@ such 'loopback' performance is typically optimized by the operating system
                         NULL cipher does not provide for any level of integrity or confidentiality, but
                         message items will be sent unencrypted.
                         In case of enabled="false" the security feature will not be activated, and the
-                        node acts like any other OpenSplice node not being security aware. Security profiles
+                        node acts like any other Vortex OpenSplice node not being security aware. Security profiles
                         defined in the configuration file will not take effect, but will cause the system to log
                         warnings.
                     ]]></comment>
@@ -3724,9 +3768,9 @@ such 'loopback' performance is typically optimized by the operating system
                         have a specific length, 128 bits, 192 bits, 256 bits or none at all. The following
                         case-insensitive values are supported by the current implementation:
                         <ul>
-                            <li>aes128, implements AES cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.</li>
+                            <li>aes128, implements the AES cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.</li>
                             <li>aes192, implements the AES cipher with 192 bit cipher-key (24 Bytes, 48 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.</li>
-                            <li>aes256, implements the AES cipher with 256 bit cipher-key (32 Bytes, 64 hexadecimal characters. This cipher will occupy 34 bytes of each UDP packet being sent.</li>
+                            <li>aes256, implements the AES cipher with 256 bit cipher-key (32 Bytes, 64 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.</li>
                             <li>blowfish, implements the Blowfish cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 26 bytes of each UDP packet being sent.</li>
                             <li>null, implements the NULL cipher. The only cipher that does not require a cipher-key. This cipher will occupy 4 bytes of each UDP packet being sent.</li>
                         </ul>
@@ -3759,14 +3803,14 @@ such 'loopback' performance is typically optimized by the operating system
                         will be marked as invalid. Moreover, each network partition referring to the invalid
                         Security Profile will not be operational and thus traffic will be blocked to prevent
                         information leaks.
-                        As all OpenSplice applications require read access to the XML configuration file,
+                        As all Vortex OpenSplice applications require read access to the XML configuration file,
                         for security reasons it is recommended to store the secret key in an external file in
                         the file system, referenced by the URI in the configuration file. The file must be
                         protected against read and write access from other users on the host. Verify that
                         access rights are not given to any other user or group on the host.
 
                         Alternatively, storing the secret key in-place in the XML configuration file will give
-                        read/write access to all DDS applications joining the same OpenSplice node.
+                        read/write access to all DDS applications joining the same Vortex OpenSplice node.
                         Because of this, the 'in-place' method is strongly discouraged.
                     ]]></comment>
           <maxLength>0</maxLength>
@@ -3810,7 +3854,7 @@ such 'loopback' performance is typically optimized by the operating system
           </attributeBoolean>
           <attributeString name="type" required="false" version="COMMERCIAL">
             <comment><![CDATA[
-                            The type attribute defines the access control model type. Currently, OpenSplice only
+                            The type attribute defines the access control model type. Currently, Vortex OpenSplice only
                             supports mandatory access control, accordingly the only valid value for this
                             attribute is "MAC".
                         ]]></comment>
@@ -3850,7 +3894,7 @@ such 'loopback' performance is typically optimized by the operating system
 
                            It is recommended that the absolute path is used. A relative path
                            will be interpreted relative to the directory from which the
-                           OpenSplice daemon is started.
+                           Vortex OpenSplice daemon is started.
                        ]]></comment>
               <maxLength>0</maxLength>
               <default/>
@@ -3861,7 +3905,7 @@ such 'loopback' performance is typically optimized by the operating system
 
                            It is recommended that the absolute path is used. A relative path
                            will be interpreted relative to the directory from which the
-                           OpenSplice daemon is started.
+                           Vortex OpenSplice daemon is started.
                        ]]></comment>
               <maxLength>0</maxLength>
               <default/>
@@ -3873,7 +3917,7 @@ such 'loopback' performance is typically optimized by the operating system
 
                         It is recommended that the absolute path is used. A relative path
                         will be interpreted relative to the directory from which the
-                        OpenSplice daemon is started.
+                        Vortex OpenSplice daemon is started.
                     ]]></comment>
             <maxLength>0</maxLength>
             <default/>
@@ -4039,7 +4083,7 @@ such 'loopback' performance is typically optimized by the operating system
                     ]]></comment>
           <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -4146,7 +4190,7 @@ The lost message is resent after Resolution * RecoveryFactor milliseconds.
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
                         ]]></comment>
             <minimum>0</minimum>
             <maximum>255</maximum>
@@ -4158,6 +4202,16 @@ The lost message is resent after Resolution * RecoveryFactor milliseconds.
             <value>True</value>
             <value>False</value>
             <default>True</default>
+          </leafBoolean>
+          <leafBoolean name="DontFragment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+            <comment><![CDATA[
+                        Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                        Note that not all operating systems support setting this bit. When the operating
+                        system does not support setting the DF bit this option is ignored.
+                        ]]></comment>
+            <value>True</value>
+            <value>False</value>
+            <default>False</default>
           </leafBoolean>
           <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
@@ -4209,7 +4263,7 @@ The lost message is resent after Resolution * RecoveryFactor milliseconds.
                     ]]></comment>
           <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -4438,7 +4492,7 @@ to true (see Element Reconnection).
                 ]]></comment>
         <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -4464,7 +4518,7 @@ to true (see Element Reconnection).
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
                         ]]></comment>
           <minimum>0</minimum>
           <maximum>255</maximum>
@@ -4476,6 +4530,16 @@ to true (see Element Reconnection).
           <value>True</value>
           <value>False</value>
           <default>True</default>
+        </leafBoolean>
+        <leafBoolean name="DontFragment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+                      Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                      Note that not all operating systems support setting this bit. When the operating
+                      system does not support setting the DF bit this option is ignored.
+                    ]]></comment>
+          <value>True</value>
+          <value>False</value>
+          <default>False</default>
         </leafBoolean>
         <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
@@ -4550,7 +4614,7 @@ to true (see Element Reconnection).
                 ]]></comment>
         <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -4771,6 +4835,28 @@ to true (see Element Reconnection).
           <default>0</default>
         </leafInt>
       </element>
+      <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>The Verbosity attribute sets the level of tracing for all Tracing Catagories. This attribute is an additional method besides the Tracing/Catagories tag to specify trace levels. The difference is that Verbosity sets the level for all catagories similar as by other services whereas the Tracing/Catagories element allows to set the trace level per catagory. The verbosity levels are mapped to Catagory levels as following:</p>
+<ul><li><i>none</i>: level 0 (no Networking log)</li>
+<li><i>severe</i>:   level 1 </li>
+<li><i>warning</i>:  level 2 </li>
+<li><i>info</i>:     level 3 </li>
+<li><i>config</i>:   level 3 </li>
+<li><i>fine</i>:     level 4 </li>
+<li><i>finer</i>:    level 5 </li>
+<li><i>finest</i>:   level 6 </ul>
+          ]]></comment>
+        <value>finest</value>
+        <value>finer</value>
+        <value>fine</value>
+        <value>config</value>
+        <value>info</value>
+        <value>warning</value>
+        <value>severe</value>
+        <value>none</value>
+        <default>none</default>
+      </leafEnum>
     </element>
     <element name="Compression" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
@@ -4779,7 +4865,7 @@ to true (see Element Reconnection).
                       networking service includes (depending on platform) implementations
                       of zlib, lzf and snappy. Others may be implemented by writing a
                       dynamically-loadable library and configuring it here. See the
-                      OpenSplice release notes for details of how to write such a
+                      Vortex OpenSplice release notes for details of how to write such a
                       library.</p>
                       <p>It is imperative that all nodes exchanging compressed data
                       have the same configuration in this section.</p>
@@ -5021,7 +5107,7 @@ to true (see Element Reconnection).
     <comment><![CDATA[
 The Network Service provides a bridge between the local DDS service and a
 network interface.
-<p>The OpenSplice NetworkService supports both Internet Protocol
+<p>The Vortex OpenSplice NetworkService supports both Internet Protocol
 Versions 4 and 6 (IPv4 & IPv6) where possible. Please refer to the Release Notes
 (Known Issues section) to see if the IPv6 capability is present on your operating
 system.</p>
@@ -5043,7 +5129,7 @@ Domain section of the configuration file (Element Application).
 <br><Command>networking</Command>
 <br></Service></i>
 <br>The network configuration expects a root element named
-OpenSplice/NetworkService. Within this root element, the Network Service
+Vortex OpenSplice/NetworkService. Within this root element, the Network Service
 will look for several child-elements. Each of these is listed and explained.
         ]]></comment>
     <attributeString name="name" required="true" version="COMMERCIAL">
@@ -5111,11 +5197,11 @@ will look for several child-elements. Each of these is listed and explained.
                     Every Networking service is bound to only one network interface card
                     (NIC). The card can be uniquely identified by its corresponding
                     IP address or by its symbolic name (e.g. eth0). If the
-                    value "first available" is entered here, the OpenSplice
+                    value "first available" is entered here, the Vortex OpenSplice
                     middleware will try to look up an interface that has
                     the required capabilities.
                  ]]></comment>
-        <maxLength>15</maxLength>
+        <maxLength>0</maxLength>
         <default>first available</default>
         <attributeBoolean name="forced" required="false" version="COMMERCIAL">
           <comment><![CDATA[
@@ -5174,7 +5260,7 @@ will look for several child-elements. Each of these is listed and explained.
           EnableMulticastLoopback specifies whether the networking service will allow
           IP multicast packets within the node to be visible to all networking participants in the node,
           including itself. It must be TRUE for intra-node multicast communications,
-          but if a node runs only a single OpenSplice networking service and does not host
+          but if a node runs only a single Vortex OpenSplice networking service and does not host
           any other networking-capable programs, it may be set to FALSE for improved performance.
             ]]></comment>
         <value>True</value>
@@ -5220,7 +5306,7 @@ will look for several child-elements. Each of these is listed and explained.
     </element>
     <element name="Partitioning" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
-                <p>The OpenSplice Networking service is capable of leveraging
+                <p>The Vortex OpenSplice Networking service is capable of leveraging
                 the network's multicast and routing capabilities. If some a-priori
                 knowledge about the participating
                 nodes and their topic and partition interest is available, then the
@@ -5356,11 +5442,11 @@ will look for several child-elements. Each of these is listed and explained.
               security feature has been enabled but no profile is declared, the NULL profile will be
               used by default.
               The ordering of network partition declarations in the OSPL configuration file must
-              be the same for all nodes within the OpenSplice domain. If certain nodes shall not
+              be the same for all nodes within the Vortex OpenSplice domain. If certain nodes shall not
               use one of the network partitions, the network partition in question must be declared
               as connected="false". In this case the declared security profile would not be
               evaluated or initialized, and the associated secret cipher keys need not to be defined
-              for the OpenSplice node in question.
+              for the Vortex OpenSplice node in question.
                       ]]></comment>
             <default>nullProfile</default>
             <maxLength>0</maxLength>
@@ -5593,7 +5679,7 @@ will look for several child-elements. Each of these is listed and explained.
                     ]]></comment>
           <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5679,7 +5765,7 @@ will look for several child-elements. Each of these is listed and explained.
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
                         ]]></comment>
             <minimum>0</minimum>
             <maximum>255</maximum>
@@ -5691,6 +5777,16 @@ will look for several child-elements. Each of these is listed and explained.
             <value>True</value>
             <value>False</value>
             <default>True</default>
+          </leafBoolean>
+          <leafBoolean name="DontFragment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+            <comment><![CDATA[
+                        Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                        Note that not all operating systems support setting this bit. When the operating
+                        system does not support setting the DF bit this option is ignored.
+                        ]]></comment>
+            <value>True</value>
+            <value>False</value>
+            <default>False</default>
           </leafBoolean>
           <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
@@ -5751,7 +5847,7 @@ will look for several child-elements. Each of these is listed and explained.
                     ]]></comment>
           <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5995,7 +6091,7 @@ received.
                 ]]></comment>
         <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -6021,7 +6117,7 @@ received.
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
                         ]]></comment>
           <minimum>0</minimum>
           <maximum>255</maximum>
@@ -6033,6 +6129,16 @@ received.
           <value>True</value>
           <value>False</value>
           <default>True</default>
+        </leafBoolean>
+        <leafBoolean name="DontFragment" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+                      Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                      Note that not all operating systems support setting this bit. When the operating
+                      system does not support setting the DF bit this option is ignored.
+                    ]]></comment>
+          <value>True</value>
+          <value>False</value>
+          <default>False</default>
         </leafBoolean>
         <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
@@ -6118,7 +6224,7 @@ typical scheduling or network latencies.
                 ]]></comment>
         <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -6340,6 +6446,28 @@ typical scheduling or network latencies.
           <default>0</default>
         </leafInt>
       </element>
+      <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>The Verbosity attribute sets the level of tracing for all Tracing Catagories. This attribute is an additional method besides the Tracing/Catagories tag to specify trace levels. The difference is that Verbosity sets the level for all catagories similar as by other services whereas the Tracing/Catagories element allows to set the trace level per catagory. The verbosity levels are mapped to Catagory levels as following:</p>
+<ul><li><i>none</i>: level 0 (no Networking log)</li>
+<li><i>severe</i>:   level 1 </li>
+<li><i>warning</i>:  level 2 </li>
+<li><i>info</i>:     level 3 </li>
+<li><i>config</i>:   level 3 </li>
+<li><i>fine</i>:     level 4 </li>
+<li><i>finer</i>:    level 5 </li>
+<li><i>finest</i>:   level 6 </ul>
+          ]]></comment>
+        <value>finest</value>
+        <value>finer</value>
+        <value>fine</value>
+        <value>config</value>
+        <value>info</value>
+        <value>warning</value>
+        <value>severe</value>
+        <value>none</value>
+        <default>none</default>
+      </leafEnum>
     </element>
     <element name="Compression" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
@@ -6348,7 +6476,7 @@ typical scheduling or network latencies.
                       networking service includes (depending on platform) implementations
                       of zlib, lzf and snappy. Others may be implemented by writing a
                       dynamically-loadable library and configuring it here. See the
-                      OpenSplice release notes for details of how to write such a
+                      Vortex OpenSplice release notes for details of how to write such a
                       library.</p>
                       <p>It is imperative that all nodes exchanging compressed data
                       have the same configuration in this section.</p>
@@ -6784,7 +6912,7 @@ When an application is run without Administrative priveleges then only the diffs
         </leafInt>
         <leafInt name="QueueSize" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the number of messages the network queue for this channel can contain. The OpenSplice kernel writes data to be transmitted to the network queue, and DDSI2E takes them from this queue. If this queue is full when an application tries to write a sample, the sample will be dropped or the writer suspended, depending on the QoS settings of the writer. OpenSplice and its services are optimised for a well-balanced system design, where the queue never becomes full.</p>
+<p>This element specifies the number of messages the network queue for this channel can contain. The Vortex OpenSplice kernel writes data to be transmitted to the network queue, and DDSI2E takes them from this queue. If this queue is full when an application tries to write a sample, the sample will be dropped or the writer suspended, depending on the QoS settings of the writer. Vortex OpenSplice and its services are optimised for a well-balanced system design, where the queue never becomes full.</p>
             ]]></comment>
           <default>0</default>
         </leafInt>
@@ -6864,10 +6992,18 @@ When an application is run without Administrative priveleges then only the diffs
         ]]></comment>
       <leafBoolean name="AdvertiseBuiltinTopicWriters" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<p>This element controls whether or not DDSI2E advertises writers for the built-in topics from its discovery for backwards compatibility with older OpenSplice versions.</p>
+<p>This element controls whether or not DDSI2E advertises writers for the built-in topics from its discovery for backwards compatibility with older Vortex OpenSplice versions.</p>
           ]]></comment>
         <default>true</default>
       </leafBoolean>
+      <leafString name="DSGracePeriod" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This setting controls for how long endpoints discovered via a Cloud discovery service will survive after the discovery service disappeared, allowing reconnect without loss of data when the discovery service restarts (or another instance takes over).</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>30 s</default>
+      </leafString>
       <leafString name="DefaultMulticastAddress" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p>This element specifies the default multicast address for all traffic other than participant discovery packets. It defaults to Discovery/SPDPMulticastAddress.</p>
@@ -6893,7 +7029,7 @@ When an application is run without Administrative priveleges then only the diffs
 <p>This element controls which partition is monitored by DDSI2E for built-in topics describing entities the it mirrors in DDSI.</p>
           ]]></comment>
         <maxLength>0</maxLength>
-        <default>__BUILT_IN_PARTITION__</default>
+        <default>__BUILT-IN PARTITION__</default>
       </leafString>
       <leafInt name="MaxAutoParticipantIndex" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
@@ -6915,7 +7051,9 @@ When an application is run without Administrative priveleges then only the diffs
       <element name="Peers" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p>This element statically configures addresses for discovery.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <element name="Group" minOccurrences="0" maxOccurrences="0" version="COMMERCIAL">
           <comment><![CDATA[
 <p>This element statically configures a fault tolerant group of addresses for discovery. Each member of the group is tried in sequence until one succeeds.</p>
@@ -6948,12 +7086,12 @@ When an application is run without Administrative priveleges then only the diffs
       </element>
       <element name="Ports" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<p>The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 specification and rarely need to be changed.</p>
+<p>The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 (and 2.2) specification and rarely need to be changed.</p>
           ]]></comment>
         <maxLength>0</maxLength>
         <leafInt name="Base" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the base port number (refer to the DDSI 2.1 specification, section 9.6.1, constant PB).</p>
+<p>This element specifies the base port number (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PB).</p>
             ]]></comment>
           <minimum>1</minimum>
           <maximum>65535</maximum>
@@ -6961,37 +7099,37 @@ When an application is run without Administrative priveleges then only the diffs
         </leafInt>
         <leafInt name="DomainGain" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant DG).</p>
+<p>This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant DG).</p>
             ]]></comment>
           <default>250</default>
         </leafInt>
         <leafInt name="MulticastDataOffset" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d2).</p>
+<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d2).</p>
             ]]></comment>
           <default>1</default>
         </leafInt>
         <leafInt name="MulticastMetaOffset" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d0).</p>
+<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d0).</p>
             ]]></comment>
           <default>0</default>
         </leafInt>
         <leafInt name="ParticipantGain" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant PG).</p>
+<p>This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PG).</p>
             ]]></comment>
           <default>2</default>
         </leafInt>
         <leafInt name="UnicastDataOffset" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d3).</p>
+<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d3).</p>
             ]]></comment>
           <default>11</default>
         </leafInt>
         <leafInt name="UnicastMetaOffset" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
-<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d1).</p>
+<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d1).</p>
             ]]></comment>
           <default>10</default>
         </leafInt>
@@ -7034,7 +7172,7 @@ When an application is run without Administrative priveleges then only the diffs
       </leafString>
       <leafBoolean name="CoexistWithNativeNetworking" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<p>This element specifies whether the DDSI2E service operates in conjunction with the OpenSplice RT Networking service. When "false", the DDSI2E service will take care of all communications, including those between OpenSplice nodes; when "true", the DDSI2E service only communicates with DDS implementations other than OpenSplice. In this case the RT Networking service should be configured as well.</p>
+<p>This element specifies whether the DDSI2E service operates in conjunction with the Vortex OpenSplice RT Networking service. When "false", the DDSI2E service will take care of all communications, including those between Vortex OpenSplice nodes; when "true", the DDSI2E service only communicates with DDS implementations other than Vortex OpenSplice. In this case the RT Networking service should be configured as well.</p>
           ]]></comment>
         <default>false</default>
       </leafBoolean>
@@ -7148,13 +7286,13 @@ When an application is run without Administrative priveleges then only the diffs
       </leafInt>
       <leafBoolean name="AggressiveKeepLastWhc" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
+<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
           ]]></comment>
         <default>true</default>
       </leafBoolean>
       <leafBoolean name="AggressiveKeepLastWhc" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
+<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
           ]]></comment>
         <default>true</default>
       </leafBoolean>
@@ -7164,6 +7302,14 @@ When an application is run without Administrative priveleges then only the diffs
           ]]></comment>
         <maxLength>0</maxLength>
         <default></default>
+      </leafString>
+      <leafString name="AutoReschedNackDelay" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<b>Internal</b> <p>This setting controls the interval with which a reader will continue NACK'ing missing samples in the absence of a response from the writer, as a protection mechanism against writers incorrectly stopping the sending of HEARTBEAT messages.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>1 s</default>
       </leafString>
       <leafString name="AuxiliaryBandwidthLimit" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
@@ -7203,9 +7349,23 @@ When an application is run without Administrative priveleges then only the diffs
             ]]></comment>
           <default>false</default>
         </attributeBoolean>
-        <leafBoolean name="DeafMute" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <attributeString name="initialreset" required="false" version="COMMERCIAL">
           <comment><![CDATA[
-<b>Internal</b> <p>This element controls whether DDSI2E defaults to deaf-mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
+<b>Internal</b> <p>This attribute sets the time until the deaf and mute settings are automatically reset to false</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>inf</default>
+        </attributeString>
+        <leafBoolean name="Deaf" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+<b>Internal</b> <p>This element controls whether DDSI2E defaults to deaf mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
+            ]]></comment>
+          <default>false</default>
+        </leafBoolean>
+        <leafBoolean name="Mute" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+<b>Internal</b> <p>This element controls whether DDSI2E defaults to mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
             ]]></comment>
           <default>false</default>
         </leafBoolean>
@@ -7255,6 +7415,38 @@ When an application is run without Administrative priveleges then only the diffs
           ]]></comment>
         <default>true</default>
       </leafBoolean>
+      <leafString name="HeartbeatInterval" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<b>Internal</b> <p>This element sets the base interval for the asynchronous, periodic writer heartbeats when unacknowledged data is present in its writer history cache. The actual interval is dynamically adjusted, the attributes of this element allow further configuration.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>100 ms</default>
+        <attributeString name="max" required="false" version="COMMERCIAL">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the maximum interval for periodic heartbeats.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>8 s</default>
+        </attributeString>
+        <attributeString name="min" required="false" version="COMMERCIAL">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the minimum interval that must have passed since the most recent heartbeat from a writer, before another asynchronous (not directly related to writing) will be sent.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>5 ms</default>
+        </attributeString>
+        <attributeString name="minsched" required="false" version="COMMERCIAL">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the minimum interval for periodic heartbeats. Other events may still cause heartbeats to go out.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>20 ms</default>
+        </attributeString>
+      </leafString>
       <leafBoolean name="LateAckMode" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <b>Internal</b> <p>Ack a sample only when it has been delivered, instead of when committed to delivering it.</p>
@@ -8151,10 +8343,18 @@ When an application is run without Administrative priveleges then only the diffs
         ]]></comment>
       <leafBoolean name="AdvertiseBuiltinTopicWriters" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
-<p>This element controls whether or not DDSI2 advertises writers for the built-in topics from its discovery for backwards compatibility with older OpenSplice versions.</p>
+<p>This element controls whether or not DDSI2 advertises writers for the built-in topics from its discovery for backwards compatibility with older Vortex OpenSplice versions.</p>
           ]]></comment>
         <default>true</default>
       </leafBoolean>
+      <leafString name="DSGracePeriod" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This setting controls for how long endpoints discovered via a Cloud discovery service will survive after the discovery service disappeared, allowing reconnect without loss of data when the discovery service restarts (or another instance takes over).</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>30 s</default>
+      </leafString>
       <leafString name="DefaultMulticastAddress" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p>This element specifies the default multicast address for all traffic other than participant discovery packets. It defaults to Discovery/SPDPMulticastAddress.</p>
@@ -8180,7 +8380,7 @@ When an application is run without Administrative priveleges then only the diffs
 <p>This element controls which partition is monitored by DDSI2 for built-in topics describing entities the it mirrors in DDSI.</p>
           ]]></comment>
         <maxLength>0</maxLength>
-        <default>__BUILT_IN_PARTITION__</default>
+        <default>__BUILT-IN PARTITION__</default>
       </leafString>
       <leafInt name="MaxAutoParticipantIndex" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
@@ -8202,7 +8402,9 @@ When an application is run without Administrative priveleges then only the diffs
       <element name="Peers" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p>This element statically configures addresses for discovery.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <element name="Group" minOccurrences="0" maxOccurrences="0" version="COMMUNITY">
           <comment><![CDATA[
 <p>This element statically configures a fault tolerant group of addresses for discovery. Each member of the group is tried in sequence until one succeeds.</p>
@@ -8235,12 +8437,12 @@ When an application is run without Administrative priveleges then only the diffs
       </element>
       <element name="Ports" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
-<p>The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 specification and rarely need to be changed.</p>
+<p>The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 (and 2.2) specification and rarely need to be changed.</p>
           ]]></comment>
         <maxLength>0</maxLength>
         <leafInt name="Base" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the base port number (refer to the DDSI 2.1 specification, section 9.6.1, constant PB).</p>
+<p>This element specifies the base port number (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PB).</p>
             ]]></comment>
           <minimum>1</minimum>
           <maximum>65535</maximum>
@@ -8248,37 +8450,37 @@ When an application is run without Administrative priveleges then only the diffs
         </leafInt>
         <leafInt name="DomainGain" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant DG).</p>
+<p>This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant DG).</p>
             ]]></comment>
           <default>250</default>
         </leafInt>
         <leafInt name="MulticastDataOffset" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d2).</p>
+<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d2).</p>
             ]]></comment>
           <default>1</default>
         </leafInt>
         <leafInt name="MulticastMetaOffset" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d0).</p>
+<p>This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d0).</p>
             ]]></comment>
           <default>0</default>
         </leafInt>
         <leafInt name="ParticipantGain" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant PG).</p>
+<p>This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PG).</p>
             ]]></comment>
           <default>2</default>
         </leafInt>
         <leafInt name="UnicastDataOffset" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d3).</p>
+<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d3).</p>
             ]]></comment>
           <default>11</default>
         </leafInt>
         <leafInt name="UnicastMetaOffset" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d1).</p>
+<p>This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d1).</p>
             ]]></comment>
           <default>10</default>
         </leafInt>
@@ -8321,7 +8523,7 @@ When an application is run without Administrative priveleges then only the diffs
       </leafString>
       <leafBoolean name="CoexistWithNativeNetworking" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
-<p>This element specifies whether the DDSI2 service operates in conjunction with the OpenSplice RT Networking service. When "false", the DDSI2 service will take care of all communications, including those between OpenSplice nodes; when "true", the DDSI2 service only communicates with DDS implementations other than OpenSplice. In this case the RT Networking service should be configured as well.</p>
+<p>This element specifies whether the DDSI2 service operates in conjunction with the Vortex OpenSplice RT Networking service. When "false", the DDSI2 service will take care of all communications, including those between Vortex OpenSplice nodes; when "true", the DDSI2 service only communicates with DDS implementations other than Vortex OpenSplice. In this case the RT Networking service should be configured as well.</p>
           ]]></comment>
         <default>false</default>
       </leafBoolean>
@@ -8435,7 +8637,7 @@ When an application is run without Administrative priveleges then only the diffs
       </leafInt>
       <leafBoolean name="AggressiveKeepLastWhc" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
-<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2 WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
+<b>Internal</b> <p>This element controls whether to drop a reliable sample from a DDSI2 WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, <i>false</i>, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.</p>
           ]]></comment>
         <default>false</default>
       </leafBoolean>
@@ -8445,6 +8647,14 @@ When an application is run without Administrative priveleges then only the diffs
           ]]></comment>
         <maxLength>0</maxLength>
         <default></default>
+      </leafString>
+      <leafString name="AutoReschedNackDelay" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<b>Internal</b> <p>This setting controls the interval with which a reader will continue NACK'ing missing samples in the absence of a response from the writer, as a protection mechanism against writers incorrectly stopping the sending of HEARTBEAT messages.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>1 s</default>
       </leafString>
       <leafEnum name="BuiltinEndpointSet" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
@@ -8476,9 +8686,15 @@ When an application is run without Administrative priveleges then only the diffs
             ]]></comment>
           <default>false</default>
         </attributeBoolean>
-        <leafBoolean name="DeafMute" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <leafBoolean name="Deaf" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
-<b>Internal</b> <p>This element controls whether DDSI2 defaults to deaf-mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
+<b>Internal</b> <p>This element controls whether DDSI2 defaults to deaf mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
+            ]]></comment>
+          <default>false</default>
+        </leafBoolean>
+        <leafBoolean name="Mute" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+          <comment><![CDATA[
+<b>Internal</b> <p>This element controls whether DDSI2 defaults to mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.</p>
             ]]></comment>
           <default>false</default>
         </leafBoolean>
@@ -8528,6 +8744,38 @@ When an application is run without Administrative priveleges then only the diffs
           ]]></comment>
         <default>true</default>
       </leafBoolean>
+      <leafString name="HeartbeatInterval" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<b>Internal</b> <p>This element sets the base interval for the asynchronous, periodic writer heartbeats when unacknowledged data is present in its writer history cache. The actual interval is dynamically adjusted, the attributes of this element allow further configuration.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>100 ms</default>
+        <attributeString name="max" required="false" version="COMMUNITY">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the maximum interval for periodic heartbeats.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>8 s</default>
+        </attributeString>
+        <attributeString name="min" required="false" version="COMMUNITY">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the minimum interval that must have passed since the most recent heartbeat from a writer, before another asynchronous (not directly related to writing) will be sent.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>5 ms</default>
+        </attributeString>
+        <attributeString name="minsched" required="false" version="COMMUNITY">
+          <comment><![CDATA[
+<b>Internal</b> <p>This attribute sets the minimum interval for periodic heartbeats. Other events may still cause heartbeats to go out.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+            ]]></comment>
+          <maxLength>0</maxLength>
+          <default>20 ms</default>
+        </attributeString>
+      </leafString>
       <leafBoolean name="LateAckMode" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <b>Internal</b> <p>Ack a sample only when it has been delivered, instead of when committed to delivering it.</p>
@@ -10184,7 +10432,7 @@ Each of these are listed and explained.
       <comment><![CDATA[This element specifies a storage to use for recording and/or replaying data.
         Currently the supported storage backends are XML and CDR.
         Note that storages can also be created, or their properties modified, by Record and Replay configuration-commands.
-        These commands use the same syntax to specify configuration data as the OpenSplice configuration file,
+        These commands use the same syntax to specify configuration data as the Vortex OpenSplice configuration file,
         so the description given here also applies to commands.]]></comment>
       <attributeString name="name" required="true" version="COMMERCIAL">
         <comment><![CDATA[The name used to identify the storage in Record and Replay commands.]]></comment>
@@ -10254,7 +10502,7 @@ Each of these are listed and explained.
         <attributeBoolean name="reset" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[This attribute allows to reset the current values of statistics belonging to the storage. Note
             that this only makes sense in a configuration-command for an existing storage, since new storages created
-            from the OpenSplice configuration file always start out with empty statistics.]]></comment>
+            from the Vortex OpenSplice configuration file always start out with empty statistics.]]></comment>
           <maxLength>0</maxLength>
           <default>false</default>
         </attributeBoolean>

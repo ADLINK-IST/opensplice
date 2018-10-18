@@ -38,8 +38,6 @@ public abstract class DynamicTypeFactory implements DDSObject
         return env.getSPI().getTypeFactory();
     }
 
-
-
     // -----------------------------------------------------------------------
     // Instance Methods
     // -----------------------------------------------------------------------
@@ -56,22 +54,22 @@ public abstract class DynamicTypeFactory implements DDSObject
      */
     public abstract DynamicType createSequenceType(
             DynamicType elementType);
-    
+
     /**
      * Create bounded sequence
      * @param elementType
      * @param bound
-     * @return A new sequence type for bounded sequence. 
+     * @return A new sequence type for bounded sequence.
      */
     public abstract DynamicType createSequenceType(
             DynamicType elementType, int bound);
-    
+
     public abstract DynamicType createArrayType(
             DynamicType elementType, int... bound);
-    
+
     public abstract DynamicType createMapType(
             DynamicType keyElementType, DynamicType elementType, int bound);
-    
+
     public abstract DynamicType createBitSetType(int bound);
 
     /**
@@ -80,7 +78,7 @@ public abstract class DynamicTypeFactory implements DDSObject
      */
     public abstract DynamicType loadType(String documentUrl);
     public abstract java.util.Collection<DynamicType> loadTypes(String documentUrl);
-    
+
     public abstract DynamicType loadType(String documentUrl, String name);
     public abstract java.util.Collection<DynamicType> loadTypes(String documentUrl, String... names);
 

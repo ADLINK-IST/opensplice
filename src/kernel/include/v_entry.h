@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,15 +64,17 @@ v_entryResend (
     v_entry _this,
     v_message msg);
 
-OS_API c_bool
-v_entrySubscribe (
+/**
+ * Adds the group to the entry. Returns TRUE if the entry was not yet connected
+ * to the group and the group has thus been added. Returns FALSE otherwise.
+ *
+ * @param   _this   The entry to add the group to
+ * @param   g       The group to be added to the entry
+ */
+OS_API void
+v_entryAddGroup (
     v_entry _this,
-    v_partition d);
-
-OS_API c_bool
-v_entryUnSubscribe (
-    v_entry _this,
-    v_partition d);
+    v_group g);
 
 #undef OS_API
 

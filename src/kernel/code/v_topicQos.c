@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,9 +37,6 @@ static const v_qosChangeMask immutableMask =
 
 static const os_duration MAX_BLOCKING_TIME = OS_DURATION_INIT(0, 100000000);
 
-/**************************************************************
- * private functions
- **************************************************************/
 static c_bool
 v_topicQosValidValues(
     v_topicQos qos)
@@ -93,9 +91,6 @@ v_topicQosConsistent(
     return result;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_topicQos
 v_topicQosNew(
     v_kernel kernel,
@@ -177,9 +172,6 @@ v_topicQosFree(
     c_free(q);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 v_result
 v_topicQosCompare(
     v_topicQos q,
@@ -192,7 +184,7 @@ v_topicQosCompare(
 
     cm = 0;
     if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
-        /* built change mask */
+                /* built change mask */
                 if (!v_topicDataPolicyIEqual(q->topicData, tmpl->topicData)) {
             cm |= V_POLICY_BIT_TOPICDATA;
         }
@@ -247,9 +239,7 @@ v_topicQosCompare(
 
     return result;
 }
-/**************************************************************
- * Public functions
- **************************************************************/
+
 v_result
 v_topicQosCheck(
     v_topicQos _this)

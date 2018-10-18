@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -50,6 +51,19 @@ u_durabilityNew (
     const os_char *name,
     const u_participantQos qos,
     c_bool enable);
+
+/**
+ * @param purgeSuppressionCount optional pointer to store new-value of purge-
+ *                              suppression counter. ONLY FOR LOGGING.s
+ */
+OS_API u_result
+u_durabilityHeartbeatProcessed (
+        _In_ u_service durability,
+        _Out_opt_ os_uint32 *purgeSuppressionCount );
+
+OS_API u_result
+u_durabilityReportKernelGroupCompleteness (
+        _In_ u_service durability);
 
 #undef OS_API
 

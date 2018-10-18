@@ -1,0 +1,2326 @@
+// Fichier IDL pour l'application SYS_TRADUCTEUR_ETH_DDS_TRT
+// Extraction modele de donnees generique version V2.0_20150211
+
+module VDM
+{
+
+	// Maximal size of zones
+	const unsigned short c_NbZoneMax=10;
+
+	// Maximm size of a tiny character string
+	const unsigned short c_ShortString=10;
+
+	// Maximum size of a great character string
+	const unsigned short c_LongString=50;
+
+	const unsigned short c_SvCommandLineString=500;
+
+	// Redéfinition d'un chaine de c_ShortString (10) caractères
+	typedef string<c_ShortString>  stringShort;
+
+	// Redéfinition d'un chaine de c_LongString (50) caractères
+	typedef string<c_LongString>  string50;
+
+	// Redéfinition d'un chaine de 1000 caractères
+	typedef string<1000>  string1000;
+
+	// Redéfinition d'une chaine de c_SvCommandLineString (500) carctères dédiée aux services
+	typedef string<c_SvCommandLineString>  stringSvCmdLine;
+	
+	module COM
+	{
+	
+		// Operator identifier
+		typedef unsigned short ECOM_OperatorIdentifier_t;
+	
+		typedef unsigned short ECOM_AutoManuMode_t;
+	
+		typedef unsigned short ECOM_WeaponType_t;
+	
+		typedef unsigned short ECOM_OpeningState_t;
+	
+		typedef unsigned short ECOM_LockingState_t;
+	
+		typedef unsigned short ECOM_CTASCErrorCode_t;
+	
+		typedef unsigned short ECOM_AmmunitionType_t;
+	
+		typedef unsigned short ECOM_ActivatedState_t;
+	
+		typedef unsigned short ECOM_BargraphType_t;
+	
+		typedef unsigned short ECOM_FiringWindow_t;
+	
+		// Sight identifier
+		typedef unsigned short ECOM_SightType_t;
+	
+		typedef unsigned short ECOM_ResponseButton_t;
+	
+		// Alert state
+		typedef unsigned short ECOM_AlertState_t;
+	
+		typedef unsigned short ECOM_SubComponents_t;
+	
+		typedef unsigned short ECOM_SystemComponents_t;
+	
+		// User profile
+		typedef unsigned short ECOM_UserProfile_t;
+	
+		typedef unsigned short ECOM_CarrierType_t;
+	
+		// Equipment state
+		typedef unsigned short ECOM_EquipmentState_t;
+	
+		typedef unsigned short ECOM_MFDPosition_t;
+	
+		// Video channel
+		typedef unsigned short ECOM_VideoChannel_t;
+	
+		// Video  field
+		typedef unsigned short ECOM_VideoField_t;
+	
+		typedef unsigned short ECOM_Equipment_t;
+	
+		typedef unsigned short ECOM_HWPresence_t;
+	
+		typedef unsigned short ECOM_PowerActivState_t;
+	
+		typedef unsigned short ECOM_OperatorRequest_t;
+	
+		typedef boolean ECOM_AuthorizationBool_t;
+	
+		typedef unsigned short ECOM_Language_t;
+	
+		// Function state
+		typedef unsigned short ECOM_FunctionState_t;
+	
+		// Direction to rally
+		typedef unsigned short ECOM_SlewingDirection_t;
+	
+		typedef unsigned short ECOM_ZoneVeh_t;
+	
+		typedef unsigned short ECOM_Status_t;
+	
+		// Position de la fenêtre
+		struct TCOM_AppPosition
+		{
+			// X
+			unsigned long m_nX;
+			// Y
+			unsigned long m_nY;
+		};
+	
+		// Taille de la fenêtre
+		struct TCOM_AppSize
+		{
+			// Largeur
+			unsigned long m_nWidth;
+			// Hauteur
+			unsigned long m_nHeight;
+		};
+	};
+	
+	module IMV
+	{
+	
+		typedef unsigned long long TIMV_ApplicationIdentifier_t;
+	};
+	
+	module SYS
+	{
+	
+		typedef unsigned short ESYS_TimeMode_t;
+	
+		typedef unsigned short ESYS_WindowState_t;
+	
+		typedef unsigned short ESYS_DiscretionMode_t;
+	
+		typedef unsigned short ESYS_DiscretionSource_t;
+	
+		typedef unsigned short ESYS_EmergencyStopType_t;
+	
+		typedef unsigned short ESYS_HarmoPhases_t;
+	
+		typedef unsigned short ESYS_HarmoType_t;
+	
+		typedef unsigned short ESYS_Action_t;
+	
+		typedef unsigned short ESYS_Kit_t;
+	
+		typedef unsigned short ESYS_KitSelection_t;
+	
+		typedef unsigned short ESYS_ListToUpdate_t;
+	
+		typedef unsigned short ESYS_MFDModeAck_t;
+	
+		typedef unsigned short ESYS_MFDModeCmd_t;
+	
+		// Device concerned
+		typedef unsigned short ESYS_SlewingDevice_t;
+	
+		typedef unsigned short ESYS_TimeOrigin_t;
+	
+		typedef unsigned short ESYS_CrosshairXPos_t;
+	
+		typedef unsigned short ESYS_CrosshairYPos_t;
+	
+		// Déplace du réticule
+		struct TSYS_CrosshairPosition
+		{
+			// Déplacement en X
+			ESYS_CrosshairXPos_t m_unDeltaXPos;
+			// Déplacement en Y
+			ESYS_CrosshairYPos_t m_unDeltaYPos;
+		};
+	
+		// Etat de la fenêtre de l'applicatif
+		struct SYS_ApplicationWindowState
+		{
+			// Nom de l'applicatif
+			IMV::TIMV_ApplicationIdentifier_t m_unApplicationID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Position de la fenêtre (X  Y)
+			COM::TCOM_AppPosition m_tApplicationPosition;
+			// Taille de la fenêtre (hauteur  largeur)
+			COM::TCOM_AppSize m_tApplicationSize;
+			// Etat de la fenêtre de l'applicatif
+			ESYS_WindowState_t m_unWindowState;
+			// Le niveau du contexte IHM
+			stringSvCmdLine m_sContextLevel;
+		};
+		#pragma keylist SYS_ApplicationWindowState m_unApplicationID 
+	
+		// Demande blackoutt
+		struct SYS_BlackoutReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Modes de discretion possibles (nominale  réduite  cachée)
+			ESYS_DiscretionMode_t m_unDiscretionModeReq;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation ou non de l'occultation automatique sur ouverture de trappe
+			boolean m_bHideAuto;
+		};
+		#pragma keylist SYS_BlackoutReq m_unOperatorID m_unDiscretionModeReq 
+	
+		// Etat du blackoutt
+		struct SYS_BlackoutState
+		{
+			// Mode de discretion
+			ESYS_DiscretionMode_t m_unDiscretionMode;
+			// Source des modes de discretion (opérateur  ouvrants)
+			ESYS_DiscretionSource_t m_unDiscretionSource;
+		};
+		#pragma keylist SYS_BlackoutState m_unDiscretionMode 
+	
+		// Etat d'activation des arrêts d'urgence
+		struct SYS_EmergencyStopState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Emergency stop type
+			ESYS_EmergencyStopType_t m_unEmergencyStop;
+			// Etat d'activation de l'arrêt d'urgence
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist SYS_EmergencyStopState m_unOperatorID m_unEmergencyStop 
+	
+		// Déplacement du réticule de simbleautage
+		struct SYS_HarmoCrossMoveReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Déplacement du réticule en X ou Y
+			TSYS_CrosshairPosition m_tDeltaPos;
+		};
+		#pragma keylist SYS_HarmoCrossMoveReq m_unOperatorID 
+	
+		// Requete sur la fonction simbleautage
+		struct SYS_HarmoFunctionReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Phase courante du simbleautage
+			ESYS_HarmoPhases_t m_unCurrentPhase;
+			// Demandes opérateur (autorisation  sortie)
+			COM::ECOM_OperatorRequest_t m_unRequest;
+		};
+		#pragma keylist SYS_HarmoFunctionReq m_unOperatorID 
+	
+		// Etat de la requete sur la fonction simbleautage
+		struct SYS_HarmoFunctionState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Etat système de la demande opérateur
+			COM::ECOM_AuthorizationBool_t m_unRequest;
+		};
+		#pragma keylist SYS_HarmoFunctionState m_unOperatorID 
+	
+		// Acquitement de la commande de phase de simbleautage
+		struct SYS_HarmoPhaseAck
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Phase de simbleautage commandée par le LCCS
+			ESYS_HarmoPhases_t m_unPhase;
+		};
+		#pragma keylist SYS_HarmoPhaseAck m_unOperatorID 
+	
+		// Réception d'une commande de phase de simbleautage
+		struct SYS_HarmoPhaseCmd
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Phase de simbleautage commandée par le LCCS
+			ESYS_HarmoPhases_t m_unPhase;
+		};
+		#pragma keylist SYS_HarmoPhaseCmd m_unOperatorID 
+	
+		// Sélection du type de simbleautage
+		struct SYS_HarmoSelectReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Type de simbleautage
+			ESYS_HarmoType_t m_unType;
+			// Valeur de la distance du simbleautage terrain
+			unsigned short m_unDistance;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de voie
+			COM::ECOM_VideoChannel_t m_unChannel;
+			// Identifiant de champ
+			COM::ECOM_VideoField_t m_unField;
+		};
+		#pragma keylist SYS_HarmoSelectReq m_unOperatorID 
+	
+		// Etat du type de simbleautage
+		struct SYS_HarmoSelectState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Type de simbleautage
+			ESYS_HarmoType_t m_unType;
+			// Valeur de la distance de simbleautage terrain forfaitaire
+			unsigned short m_unDefaultDistance;
+			// Valeur de la distance du simbleautage terrain
+			unsigned short m_unDistance;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de voie
+			COM::ECOM_VideoChannel_t m_unChannel;
+			// Identifiant de champ
+			COM::ECOM_VideoField_t m_unField;
+			// Permet d'indiquer si la voir est une voie de référence ou non
+			boolean m_bRefChannelFlag;
+		};
+		#pragma keylist SYS_HarmoSelectState m_unOperatorID 
+	
+		// Selection des commande
+		struct SYS_HarmoSightActionReq
+		{
+			// Type de simbleautage
+			ESYS_HarmoType_t m_unType;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Phase de simbleautage commandée par le LCCS
+			ESYS_HarmoPhases_t m_unCurrentPhase;
+			// Actions
+			ESYS_Action_t m_unAction;
+		};
+		#pragma keylist SYS_HarmoSightActionReq m_unType m_unSight m_unOperatorID 
+	
+		// Etat des commande
+		struct SYS_HarmoSightActionState
+		{
+			// Type de simbleautage
+			ESYS_HarmoType_t m_unType;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Actions
+			ESYS_Action_t m_unAction;
+		};
+		#pragma keylist SYS_HarmoSightActionState m_unType m_unSight m_unOperatorID 
+	
+		// Etat de la position de la ligne de visée et offset du réticule
+		struct SYS_HarmoSightPosState
+		{
+			// Type de simbleautage
+			ESYS_HarmoType_t m_unType;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Position en gisement du réticule
+			float m_fCrossOffsetAzimuth;
+			// Position en site du réticule
+			float m_fCrossOffsetElevation;
+		};
+		#pragma keylist SYS_HarmoSightPosState m_unType m_unSight 
+	
+		// Demande de sélection des kits
+		struct SYS_KitReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Nom  présence  et état des kits
+			ESYS_Kit_t m_unKit;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Selectino des kits active ou désactive
+			ESYS_KitSelection_t m_unKitAction;
+		};
+		#pragma keylist SYS_KitReq m_unOperatorID m_unKit 
+	
+		// Recense les kits et leurs états
+		struct SYS_KitState
+		{
+			// Clé par défaut
+			ESYS_Kit_t m_unKit;
+			// Nom  présence  et état des kits
+			COM::ECOM_HWPresence_t m_unPresence;
+			// Etat de l'activation de l'équipement
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist SYS_KitState m_unKit 
+	
+		// Demande de mise à jour des fichiers
+		struct SYS_ListUpdateCmd
+		{
+			// Liste des fichiers à mettre à jour
+			ESYS_ListToUpdate_t m_unList;
+		};
+		#pragma keylist SYS_ListUpdateCmd m_unList 
+	
+		// Compte-rendu de mode de l'abonné MPC / MPT / MSC
+		struct SYS_MFDModeAck
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// La position du MFD
+			COM::ECOM_MFDPosition_t m_unMFDType;
+			// Acquittement de la commande de mode
+			ESYS_MFDModeAck_t m_unMode;
+		};
+		#pragma keylist SYS_MFDModeAck m_unOperatorID m_unMFDType 
+	
+		// Commande de mode de l'abonné MPC / MPT / MSC
+		struct SYS_MFDModeCmd
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// La position du MFD
+			COM::ECOM_MFDPosition_t m_unMFDType;
+			// Acquittement de la commande de mode
+			ESYS_MFDModeCmd_t m_unMode;
+		};
+		#pragma keylist SYS_MFDModeCmd m_unOperatorID m_unMFDType 
+	
+		// Langue utilisée
+		struct SYS_PresentationLanguage
+		{
+			// Identifiant du poste opérateur
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Présentation de la charte IHM en fonction du découpage géographique
+			unsigned short m_unPresentation;
+			// Langue sélectionnée
+			COM::ECOM_Language_t m_unLanguage;
+		};
+		#pragma keylist SYS_PresentationLanguage m_unOperatorID 
+	
+		// Activation de la compensation de dérive de la stabilisation de la tourelle de 40mm par le chef / tireur
+		struct SYS_SightDerivCompActivReq
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Compensation de dérive commandée (vrai) / Non commandée
+			boolean m_bActivation;
+		};
+		#pragma keylist SYS_SightDerivCompActivReq m_unSight m_unOperatorID 
+	
+		// CR compensation de dérive de la tourelle de 40mm en cours
+		struct SYS_SightDerivCompActivState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat de la compensation de dérive
+			COM::ECOM_ActivatedState_t m_unProgress;
+		};
+		#pragma keylist SYS_SightDerivCompActivState m_unSight 
+	
+		// Prise en charge du viseur par l'opérateur
+		struct SYS_SightSelectReq
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Prise en charge (vrai) / Pas de prise en charge (faux)
+			boolean m_bPec;
+		};
+		#pragma keylist SYS_SightSelectReq m_unSight m_unOperatorID 
+	
+		// Demande d'activation de la stabilisation tourelle
+		struct SYS_SightStabActivReq
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation de la stabilisation activée (vrai) / Non activée (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist SYS_SightStabActivReq m_unSight m_unOperatorID 
+	
+		// Etat d'activation de la stabilisation tourelle
+		struct SYS_SightStabActivState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de lla stabilisation tourelle
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist SYS_SightStabActivState m_unSight 
+	
+		// Compte rendu d'état de la stabilisation tourelle
+		struct SYS_SightStabState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat de la stabilisation du viseur
+			COM::ECOM_FunctionState_t m_unState;
+		};
+		#pragma keylist SYS_SightStabState m_unSight 
+	
+		// Demande de ralliement par le chef / tireur
+		struct SYS_SlewingReq
+		{
+			// Dispositif concerné / moyen piloté
+			ESYS_SlewingDevice_t m_unDevice;
+			// Identificateur d'opérateur
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Demande activée  (vrai) / désactivé (faux)
+			boolean m_bActivation;
+			// Nom de l'applicatif demandeur
+			IMV::TIMV_ApplicationIdentifier_t m_unApplicationID;
+			// Type de direction à rallier
+			COM::ECOM_SlewingDirection_t m_unDirection;
+			// Clef de l'instance du topic décrivant la direction à rallier (topic selon valeur de m_unDirection) / Dans le cas des episcopes  m_unDirectionInfoKey indique le numéro d'épiscope comme direction à rallier
+			unsigned short m_unDirectionInfoKey;
+			// Opérateur dont la voie affiché est à rallier dans le cas où m_unDirectionInfoKey = eunESYS_SlewDir_Operator
+			COM::ECOM_OperatorIdentifier_t m_unDirectionOperatorID;
+			// Champ utilisé dans le cas ou m_unDirection = viseur. Sinon m_unSight = Undefined
+			COM::ECOM_SightType_t m_unSight;
+		};
+		#pragma keylist SYS_SlewingReq m_unDevice m_unOperatorID 
+	
+		// Date / Heure applicative
+		struct SYS_SystemApplicativeTime
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Date/Heure en secondes
+			long long m_lSeconds;
+			long m_lNanoseconds;
+			// Origine de l'heure système
+			ESYS_TimeOrigin_t m_unOrigin;
+		};
+		#pragma keylist SYS_SystemApplicativeTime m_unKey 
+	
+		// Date/Heure système automatique rempnté par les sources
+		struct SYS_SystemAutoTimeState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Date/Heure en secondes independante du Fuseau
+			long long m_lSeconds;
+			// Choix de la source DH  automatique
+			boolean m_bAutomaticChoice;
+			// Origine de l'heure système
+			ESYS_TimeOrigin_t m_unOrigin;
+		};
+		#pragma keylist SYS_SystemAutoTimeState m_unKey 
+	
+		// Fuseau date/Heure système
+		struct SYS_SystemTimeZoneState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Signe de l'offset
+			short m_nOffsetSign;
+			// Valeur de l'heure d'offset
+			unsigned short m_unOffsetHour;
+			// Valeur des minutes d'offset
+			unsigned short m_unOffsetMinute;
+			// Lettre code du fuseau
+			char m_cTZCode;
+		};
+		#pragma keylist SYS_SystemTimeZoneState m_unKey 
+	};
+	
+	module ALT
+	{
+	
+		typedef unsigned short EALT_AlertLevel_t;
+	
+		// Alert type
+		typedef unsigned short EALT_AlertType_t;
+	
+		// Acquittement de l'alerte par l'opérateur
+		struct ALT_AlertAlarmAck
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identifiant de l'alarme / alerte
+			unsigned short m_unAlertID;
+			// Reponse dans le cas d'une alarme / alerte sous forme d'une question
+			COM::ECOM_ResponseButton_t m_unResponse;
+		};
+		#pragma keylist ALT_AlertAlarmAck m_unOperatorID m_unAlertID 
+	
+		// Etat de l'alarme / alerte
+		struct ALT_AlertAlarmState
+		{
+			// Identifiant de l'alarme / alerte
+			unsigned short m_unAlertID;
+			// Datation de l'occurrence de l'alarme / alerte (en secondes)
+			long m_lDatation;
+			// Etat de l'alerte
+			COM::ECOM_AlertState_t m_unAlertState;
+		};
+		#pragma keylist ALT_AlertAlarmState m_unAlertID 
+	
+		// Informations sur l'alerte
+		struct ALT_AlertInformations
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identifiant de l'alerte
+			unsigned short m_unAlertID;
+			// Niveau de l'alerte
+			EALT_AlertLevel_t m_unType;
+			// Type de l'alerte
+			EALT_AlertType_t m_unAlertMaxType;
+			// Précise s'il s'agit d'un début ou fin d'alerte
+			COM::ECOM_AlertState_t m_unStartEnd;
+			// Libellé de l'alerte / Alarme
+			string50 m_sTexte1;
+			// Conduite à tenir
+			string1000 m_sTexte2;
+			// Sous composants et sous fonctions impactés
+			COM::ECOM_SubComponents_t m_unSubComponentID;
+			// Composants des fonctions état système impactés
+			COM::ECOM_SystemComponents_t m_unComponentID;
+		};
+		#pragma keylist ALT_AlertInformations m_unOperatorID m_unAlertID 
+	};
+	
+	module NAV
+	{
+	
+		// Sens de direction du porteur
+		struct TNAV_GeoAngularDirection
+		{
+			// cap
+			float m_fHeading;
+			// azimut
+			float m_fGeoAzimut;
+			// elevation
+			float m_fGeoElevation;
+		};
+	
+		// Etat de l'orientation du porteur
+		struct NAV_CarrierOrientationState
+		{
+			// Identifiant du porteur : porteur principal  porteur secondaire (robot)  …
+			COM::ECOM_CarrierType_t m_unCarrierType;
+			// Sens de direction du porteur
+			TNAV_GeoAngularDirection m_tOrientation;
+		};
+		#pragma keylist NAV_CarrierOrientationState m_unCarrierType 
+	};
+	
+	module AGR
+	{
+	
+		typedef unsigned short EAGR_AHSIdentifier_t;
+	
+		// Activation demande of a AHS function
+		typedef unsigned short EAGR_AHSFunction_t;
+	
+		// AHS state
+		typedef unsigned short EAGR_AHSLoadState_t;
+	
+		typedef unsigned short EAGR_AHSZoneIdentifier_t;
+	
+		// State of the AHS (CTWS)
+		typedef unsigned short EAGR_AHSState_t;
+	
+		typedef unsigned short EAGR_AirburstFiringMode_t;
+	
+		typedef unsigned short EAGR_AirburstFiringPoint_t;
+	
+		typedef unsigned short EAGR_AtmoHumidity_t;
+	
+		typedef unsigned short AGR_TemplateType_t;
+	
+		// Identificateur de zone
+		struct TAGR_AHSZone
+		{
+			// Identificateur de zone
+			EAGR_AHSZoneIdentifier_t m_unZoneID;
+			// Nombre de munitions dans la zone du carrosuel
+			unsigned short m_unNbAmmunition;
+			// Nombre d'alvéoles
+			unsigned short m_unNbAlveolus;
+			// Type de munitions de l'arme principale
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+		};
+	
+		// Données de configuration des zones
+		struct TAGR_AHSZoneTab
+		{
+			// Nombre de zones configurées dans le magasin
+			unsigned short m_unCurrentSize;
+			// Données de configuration des zones
+			TAGR_AHSZone m_atZoneConfig[c_NbZoneMax];
+		};
+	
+		// Configurations des paramètres aérologiques
+		struct AGR_AeroParamReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Mode d'acquisition de la vitesse du vent
+			COM::ECOM_AutoManuMode_t m_unWindMode;
+			// Valeur de la vitesse du vent
+			float m_fWindSpeedValue;
+			// Valeur de la direction du vent
+			float m_fWindDirectionValue;
+		};
+		#pragma keylist AGR_AeroParamReq m_unOperatorID 
+	
+		// Etat des paramètres aérologiques
+		struct AGR_AeroParamState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Mode d'acquisition de la vitesse du vent
+			COM::ECOM_AutoManuMode_t m_unWindMode;
+			// Valeur de la vitesse du vent
+			float m_fWindSpeedValue;
+			// Mode d'acquisition de la direction du vent
+			COM::ECOM_AutoManuMode_t m_unWindDirectionMode;
+			// Valeur de la direction du vent
+			float m_fWindDirectionValue;
+		};
+		#pragma keylist AGR_AeroParamState m_unKey 
+	
+		// Menu de configuration AHS
+		struct AGR_AHSConfigReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Données de configuration des zones
+			TAGR_AHSZoneTab m_aZoneConfig;
+		};
+		#pragma keylist AGR_AHSConfigReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Actualisation du menu de coufiguration des carrousels
+		struct AGR_AHSConfigState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Données de configuration des zones
+			TAGR_AHSZoneTab m_aZoneConfig;
+		};
+		#pragma keylist AGR_AHSConfigState m_unWeapon m_unAHSID 
+	
+		// Etat du calculateur du système d'arme du carrousel
+		struct AGR_AHSCTASCState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Etat du tiroir de l'AHS
+			COM::ECOM_OpeningState_t m_unDrawerState;
+			// Etat de verrouillage du tiroir
+			COM::ECOM_LockingState_t m_unDrawerLockState;
+			// Code d'erreur du CTASC
+			COM::ECOM_CTASCErrorCode_t m_unErrorCode;
+			// Numéro d'alvéole présente à la position n°1 de l'AHS
+			unsigned short m_unFirstAveolusNumber;
+			// Nombre d'alvéoles restant à traiter
+			unsigned short m_unNbRemainingAlveolus;
+		};
+		#pragma keylist AGR_AHSCTASCState m_unWeapon m_unAHSID 
+	
+		// Commande de la zone du carrousel X prédisposé pour le tir par le chef / tireur
+		struct AGR_AHSFiringReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Type de munition sélectionnée par l'opérateur
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Longueur de rafale selectionnée par l'opérateur
+			unsigned short m_unBurstLong;
+		};
+		#pragma keylist AGR_AHSFiringReq m_unWeapon m_unAHSID 
+	
+		// Etat de tir des carrousels
+		struct AGR_AHSFiringState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de carrousel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Type de munition sélectionnée par le système
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+			// Longueur de rafale selectionnée par le système
+			unsigned short m_unBurstLong;
+			// Longueur de rafale selectionnée faisable (vrai) / non faisable (faux)
+			boolean m_bBurstFeasible;
+		};
+		#pragma keylist AGR_AHSFiringState m_unWeapon m_unAHSID 
+	
+		// Signal de demande de configuration des magasins en type et nombre de munitions
+		struct AGR_AHSFunctionReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (MFD)
+			unsigned short m_unRequestorID;
+			// Demande d'activation d'une fonction carrousel
+			EAGR_AHSFunction_t m_unFunction;
+		};
+		#pragma keylist AGR_AHSFunctionReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Compte rendu de configuration des magasins en type et nombre de munitions
+		struct AGR_AHSFunctionState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Demande d'activation d'une fonction carrousel
+			EAGR_AHSFunction_t m_unFunction;
+		};
+		#pragma keylist AGR_AHSFunctionState m_unWeapon m_unAHSID 
+	
+		// Etat de configuration des carrousels
+		struct AGR_AHSLoadConfigState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Données de chargement/déchargement des zones
+			TAGR_AHSZoneTab m_aZoneConfigList;
+			// Etat du carroussel
+			EAGR_AHSLoadState_t m_unAHSState;
+		};
+		#pragma keylist AGR_AHSLoadConfigState m_unWeapon m_unAHSID 
+	
+		// Demande de chargement de munitions dans le carrousel
+		struct AGR_AHSLoadingReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Zone à prédisposer au tir
+			EAGR_AHSZoneIdentifier_t m_unZoneID;
+			// Type de munition
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+		};
+		#pragma keylist AGR_AHSLoadingReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Etat de la demande de chargement de munitions dans le carrousel
+		struct AGR_AHSLoadingState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Zone à prédisposer au tir
+			EAGR_AHSZoneIdentifier_t m_unZoneID;
+			// Type de munition
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+		};
+		#pragma keylist AGR_AHSLoadingState m_unWeapon m_unAHSID 
+	
+		// Demande de passage à l'alvéole suivante
+		struct AGR_AHSNextAlveolusReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+		};
+		#pragma keylist AGR_AHSNextAlveolusReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Etat de passage à l'alvéole suivante
+		struct AGR_AHSNextAlveolusState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+		};
+		#pragma keylist AGR_AHSNextAlveolusState m_unWeapon m_unAHSID 
+	
+		// Demande d'infos sur le  paramétrage du carrousel
+		struct AGR_AHSParamReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+		};
+		#pragma keylist AGR_AHSParamReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Etat du paramétrage du carrousel
+		struct AGR_AHSParamState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Nombre max de zones dans le carrousel
+			unsigned short m_unNbMaxZone;
+			// Nombre max  d'alvéoles dans le carrousel
+			unsigned short m_unNbMaxAlveolus;
+		};
+		#pragma keylist AGR_AHSParamState m_unWeapon m_unAHSID 
+	
+		// Etat des carrrousels
+		struct AGR_AHSState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Etat du carrousel
+			EAGR_AHSState_t m_unAHSState;
+		};
+		#pragma keylist AGR_AHSState m_unWeapon m_unAHSID 
+	
+		// Demande de zone correspondante au carrousel
+		struct AGR_AHSZoneReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Zone à prédisposer au tir
+			EAGR_AHSZoneIdentifier_t m_unZoneID;
+		};
+		#pragma keylist AGR_AHSZoneReq m_unWeapon m_unAHSID m_unOperatorID 
+	
+		// Etat de la zone correspondante au carrousel
+		struct AGR_AHSZoneState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de caroussel
+			EAGR_AHSIdentifier_t m_unAHSID;
+			// Zone à prédisposer au tir
+			EAGR_AHSZoneIdentifier_t m_unZoneID;
+			// Etat de l'accès à la zone
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist AGR_AHSZoneState m_unWeapon m_unAHSID 
+	
+		// Requête de configuration airbusrt
+		struct AGR_AirburstConfigReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Mode de tir airburst sélectionné
+			EAGR_AirburstFiringMode_t m_unAirburstFiringModeSel;
+			// Dépointage du tir airburst par rapport au point visé
+			EAGR_AirburstFiringPoint_t m_unAirburstFiringPoint;
+		};
+		#pragma keylist AGR_AirburstConfigReq m_unOperatorID 
+	
+		// Etat de la configuration airburst
+		struct AGR_AirburstConfigState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Mode de tir airburst validé
+			EAGR_AirburstFiringMode_t m_unAirburstFiringMode;
+			// Mode de tir airburst slectionné
+			EAGR_AirburstFiringMode_t m_unAirburstFiringModeSel;
+			// Dépointage du tir airburst par rapport au point visé
+			EAGR_AirburstFiringPoint_t m_unAirburstFiringPoint;
+		};
+		#pragma keylist AGR_AirburstConfigState m_unKey 
+	
+		// Offset de portée de tir
+		struct AGR_AirburstOffsetReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Offset de tir airburst
+			short m_nAirburstOffset;
+		};
+		#pragma keylist AGR_AirburstOffsetReq m_unOperatorID 
+	
+		// Offset de portée de tir
+		struct AGR_AirburstOffsetState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Offset de portée de tir Airburst (domaine de valeur +/- 30m)
+			short m_nAirburstOffset;
+		};
+		#pragma keylist AGR_AirburstOffsetState m_unKey 
+	
+		// Validation télémétrie
+		struct AGR_AirburstTelemReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Validation télémétrie
+			boolean m_bAirburstValidTelem;
+		};
+		#pragma keylist AGR_AirburstTelemReq m_unOperatorID 
+	
+		// Validation télémétrie
+		struct AGR_AirburstTelemState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Télémétrie airburst validée (vrai) / non validée (faux)
+			boolean m_bAirburstValidTelem;
+		};
+		#pragma keylist AGR_AirburstTelemState m_unKey 
+	
+		// Configuration des paramètres de tir
+		struct AGR_AmmunitionParamReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Mode d'asquisition de la température de poudre
+			COM::ECOM_AutoManuMode_t m_unPowderTempMode;
+			// Valeur de la température de poudre
+			float m_fPowderTempValue;
+			// Mode d'acquisition de l'écart V0
+			COM::ECOM_AutoManuMode_t m_unV0DeltaMode;
+			// Valeur de l'écart V0
+			float m_fV0DeltaValue;
+		};
+		#pragma keylist AGR_AmmunitionParamReq m_unOperatorID 
+	
+		// Etat des paramètres de tir
+		struct AGR_AmmunitionParamState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Mode d'asquisition de la température de poudre
+			COM::ECOM_AutoManuMode_t m_unPowderTempMode;
+			// Valeur de la température de poudre
+			float m_fPowderTempValue;
+			// Mode d'acquisition de l'écart V0
+			COM::ECOM_AutoManuMode_t m_unV0DeltaMode;
+			// Valeur de l'écart V0
+			float m_fV0DeltaValue;
+		};
+		#pragma keylist AGR_AmmunitionParamState m_unKey 
+	
+		// Configuration des paramètres atmosphériques
+		struct AGR_AtmoParamReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Mode d'acquisition de l'humidité atmosphérique
+			SYS::ESYS_TimeMode_t m_unAtmoHumidityMode;
+			// Valeur de l'humidité atmosphérique
+			EAGR_AtmoHumidity_t m_unAtmoHumidityValue;
+			// Mode d'acquisition de la pression atmosphérique
+			SYS::ESYS_TimeMode_t m_unAtmoPressureMode;
+			// Valeur de la pression atmosphérique
+			float m_fAtmoPressureValue;
+			// Mode d'acquisition de la température d'air extérieur
+			SYS::ESYS_TimeMode_t m_unAirExtTempMode;
+			// Valeur de la température d'air extérieure
+			float m_fAirExtTempValue;
+		};
+		#pragma keylist AGR_AtmoParamReq m_unOperatorID 
+	
+		// Etat des paramètres atmosphériques
+		struct AGR_AtmoParamState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Mode d'acquisition de l'humidité atmosphérique
+			SYS::ESYS_TimeMode_t m_unAtmoHumidityMode;
+			// Valeur de l'humidité atmosphérique
+			EAGR_AtmoHumidity_t m_unAtmoHumidityValue;
+			// Mode d'acquisition de la pression atmosphérique
+			SYS::ESYS_TimeMode_t m_unAtmoPressureMode;
+			// Valeur de la pression atmosphérique
+			float m_fAtmoPressureValue;
+			// Mode d'acquisition de la température d'air extérieur
+			SYS::ESYS_TimeMode_t m_unAirExtTempMode;
+			// Valeur de la température d'air extérieure
+			float m_fAirExtTempValue;
+		};
+		#pragma keylist AGR_AtmoParamState m_unKey 
+	
+		// Bargraphe d'acquisition de cible
+		struct AGR_BargraphState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Histogramme temps de ralliement
+			COM::ECOM_BargraphType_t m_unBargraph;
+		};
+		#pragma keylist AGR_BargraphState m_unWeapon 
+	
+		// Requête d'activation fin de bande
+		struct AGR_CartridgeBeltEndOfBandReq
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Demande d'activation (vrai) / désactivation (faux) de fin de bande
+			boolean m_bEndOfBandActivated;
+		};
+		#pragma keylist AGR_CartridgeBeltEndOfBandReq m_unWeapon m_unOperatorID 
+	
+		// CR d'activation de la gestion de fin de bande du tourelleau 7.62
+		struct AGR_CartridgeBeltEndOfBandState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Etat d'activation de la demande de fin de bande
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist AGR_CartridgeBeltEndOfBandState m_unWeapon 
+	
+		// Demande de chargement de la ceinture de cartouche
+		struct AGR_CartridgeBeltLoadingReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Demande d'activation (vrai) / de désactivation (faux) de l'opération de chargement de la bande par l'opérateur
+			boolean m_bActivation;
+		};
+		#pragma keylist AGR_CartridgeBeltLoadingReq m_unOperatorID m_unWeapon 
+	
+		// Etat de la mise à jour du nombre de coups
+		struct AGR_CartridgeBeltLoadingState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Etat système de la demande d'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist AGR_CartridgeBeltLoadingState m_unWeapon 
+	
+		// Information sur les limites de gabarits
+		struct AGR_FiringTemplateState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Type de limite de gabarit
+			AGR_TemplateType_t m_unType;
+			// Hauteur en pixel du gabarit
+			unsigned short m_unPosition;
+		};
+		#pragma keylist AGR_FiringTemplateState m_unOperatorID 
+	
+		// Etat des munitions
+		struct AGR_FiringWeaponAmmunitionState
+		{
+			// Weapon type
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Type de munition
+			COM::ECOM_AmmunitionType_t m_unAmmunition;
+			// Remaning shots
+			unsigned short m_unNbRemaningShots;
+			// à utilisé par l'arme 7.62
+			boolean m_bEndOfBandReached;
+			// Incident de gestion de fin de bande pour l'arme secondaire
+			boolean m_bEndOfBandFault;
+		};
+		#pragma keylist AGR_FiringWeaponAmmunitionState m_unWeapon m_unAmmunition 
+	
+		// Etat des armes
+		struct AGR_FiringWeaponState
+		{
+			// Weapon type
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Fenêtre de tir (Tir prêt  engagé  réalisé)
+			COM::ECOM_FiringWindow_t m_unFiringWindow;
+			// appliqué à la 7.62 / Arme non enrayée (faux) ou enrayée (vrai)
+			boolean m_bWeaponBloked;
+			// Tir dégradé
+			boolean m_bDegradedFiring;
+		};
+		#pragma keylist AGR_FiringWeaponState m_unWeapon 
+	
+		// Configuration des paramètres géographiques
+		struct AGR_GeoParamReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Mode d'acquisition de latitude
+			SYS::ESYS_TimeMode_t m_unLatitudeMode;
+			// Valeur manuelle de la latitude
+			float m_fLatitudeValue;
+		};
+		#pragma keylist AGR_GeoParamReq m_unOperatorID 
+	
+		// Etat des paramètres géographiques
+		struct AGR_GeoParamState
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Mode d'acquisition de latitude
+			SYS::ESYS_TimeMode_t m_unLatitudeMode;
+			// Valeur de la latitude
+			float m_fLatitudeValue;
+		};
+		#pragma keylist AGR_GeoParamState m_unKey 
+	
+		// Demande d'activation de la fonction PAC pour l'arme 40mm au poste chef / tireur
+		struct AGR_PACActivationReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Demande PAC Activée (Vrai) / PAC Désactivée (Faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist AGR_PACActivationReq m_unSight m_unOperatorID 
+	
+		// Etat d'activation de la fonction PAC pour l'arme 40mm au poste chef / tireur
+		struct AGR_PACActivationState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de la fonction PAC
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist AGR_PACActivationState m_unOperatorID m_unSight 
+	
+		// Etat du verrouillage de la PAC
+		struct AGR_PACLockedState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Etat du verrouillage
+			COM::ECOM_LockingState_t m_unState;
+		};
+		#pragma keylist AGR_PACLockedState m_unSight 
+	
+		// Information de l'arme principale sélectionnée
+		struct AGR_SelectedMainWeapon
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Arme principale sélectionnée
+			COM::ECOM_WeaponType_t m_unWeapon;
+		};
+		#pragma keylist AGR_SelectedMainWeapon m_unKey 
+	
+		// Etat d'activation de la sélection de l'arme
+		struct AGR_SelectedWeaponState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identificateur d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Etat système de l'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist AGR_SelectedWeaponState m_unOperatorID m_unWeapon 
+	
+		// Etat des autorisations de tir et pointage
+		struct AGR_WeaponAuthorizationState
+		{
+			// Identificateur d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Pointage interdit (faux) / autorisé (vrai)
+			boolean m_bAimingAuthorizationState;
+			// Tir interdit (faux) / autorisé (vrai)
+			boolean m_bFiringAuthorizationState;
+		};
+		#pragma keylist AGR_WeaponAuthorizationState m_unWeapon 
+	
+		// Requête de modification du nombre de coups
+		struct AGR_WeaponNbShotModifyReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Nombre de munitions système
+			unsigned short m_unNbAmmunition;
+		};
+		#pragma keylist AGR_WeaponNbShotModifyReq m_unOperatorID m_unWeapon 
+	
+		// Etat de la modification du nombre de coups
+		struct AGR_WeaponNbShotModifyState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Nombre de munitions système
+			unsigned short m_unNbAmmunition;
+		};
+		#pragma keylist AGR_WeaponNbShotModifyState m_unWeapon 
+	};
+	
+	module OBS
+	{
+	
+		typedef unsigned short EOBS_EchoType_t;
+	
+		typedef unsigned short EOBS_DistanceMeasureMode_t;
+	
+		// Video Equipment started / stopped by IHM
+		typedef unsigned short EOBS_VideoEquiActiv_t;
+	
+		typedef unsigned short EOBS_VideoConfMode_t;
+	
+		typedef unsigned short EOBS_VideoFocusState_t;
+	
+		typedef unsigned short EOBS_VideoGainState_t;
+	
+		typedef unsigned short EOBS_VideoCalibState_t;
+	
+		// Video equipment
+		typedef unsigned short EOBS_VideoSensor_t;
+	
+		// Video mode
+		typedef unsigned short EOBS_VideoMode_t;
+	
+		// Demande de nettoyage des viseurs par les operateurs
+		struct OBS_CleaningReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Nettoyage des viseur activé (vrai) / Non activé (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_CleaningReq m_unSight m_unOperatorID 
+	
+		// Etat du nettoyage des viseurs
+		struct OBS_CleaningState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de ldu nettoyage des viseurs
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_CleaningState m_unSight 
+	
+		// Demande de changement des reticules
+		struct OBS_CrosshairReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Etat système de la couleur sélectionnée
+			unsigned short m_unColor;
+			// Origine de la demande
+			unsigned short m_unRequestorID;
+		};
+		#pragma keylist OBS_CrosshairReq m_unOperatorID 
+	
+		// Etat des reticules
+		struct OBS_CrosshairState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Etat système de la couleur sélectionnée
+			unsigned short m_unColor;
+		};
+		#pragma keylist OBS_CrosshairState m_unOperatorID 
+	
+		// Demande de degivrage
+		struct OBS_DefrostReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation du dégivrage activée (vrai) / Non activée (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_DefrostReq m_unSight m_unOperatorID 
+	
+		// Etat degivrage
+		struct OBS_DefrostState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Etat système de la demande d'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_DefrostState m_unSight 
+	
+		// Demande de détection des viseurs
+		struct OBS_DetectionReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Detection activée (vrai) / Non activée (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_DetectionReq m_unSight m_unOperatorID 
+	
+		// Etat de la détection des viseurs
+		struct OBS_DetectionState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de la détection des viseurs
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_DetectionState m_unSight 
+	
+		// Commande d'affichage de l'échelle des échos
+		struct OBS_EchoDisplayCmd
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Commande d'affichage de l'échelle des échos et de l'offset de distance activé (vrai)
+			boolean m_bEchoDisplayActivated;
+		};
+		#pragma keylist OBS_EchoDisplayCmd m_unWeapon 
+	
+		// Etat des echos  dans le cas d'une séquence de tir Airburst
+		struct OBS_EchoState
+		{
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Type d'écho
+			EOBS_EchoType_t m_unEchoType;
+			// Numéro de l'écho télémétré
+			unsigned short m_unEchoNumber;
+			// Mode de mesure la distance
+			EOBS_DistanceMeasureMode_t m_unMode;
+			// Distance cible système
+			float m_fDistance;
+			// L'echo considéré être l'echo validé (vrai) / L'echo n'est pas considéré comme être l'echo validé (faux)
+			boolean m_bValid;
+			// Echo télémétré considéré être l'écho de la cible (vrai) / ou pas (faux)
+			boolean m_bTarget;
+		};
+		#pragma keylist OBS_EchoState m_unWeapon m_unEchoType m_unEchoNumber 
+	
+		// Demande d'activation de la sélection de  distance manuelle
+		struct OBS_ManualDistanceReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (MFD)
+			unsigned short m_unRequestorID;
+			// valeur de la distance manuelle
+			unsigned short m_unValue;
+		};
+		#pragma keylist OBS_ManualDistanceReq m_unSight m_unOperatorID 
+	
+		// Etat d'activation de la sélection de  distance manuelle
+		struct OBS_ManualDistanceState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// valeur de la distance manuelle
+			unsigned short m_unValue;
+		};
+		#pragma keylist OBS_ManualDistanceState m_unSight 
+	
+		// Viseur principal sélectionné
+		struct OBS_SelectedMainSight
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+		};
+		#pragma keylist OBS_SelectedMainSight m_unKey 
+	
+		// Etat de la sélection du viseur
+		struct OBS_SelectedSightState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat système de la sélection du viseur
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_SelectedSightState m_unOperatorID m_unSight 
+	
+		// Valeur de la position site / gisement du viseur
+		struct OBS_SightPositionState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de viseur dans le groupe "type"
+			unsigned short m_unKey;
+			// Gisement
+			float m_fAzimuth;
+			// Site
+			float m_fElevation;
+			// limite gauche d'observation
+			float m_fAzimuthLeftLimit;
+			// limite droite d'observation
+			float m_fAzimuthRightLimit;
+			// distance et portée
+			float m_fLineOfSight;
+		};
+		#pragma keylist OBS_SightPositionState m_unSight m_unKey 
+	
+		// Echelle stadimétrique
+		struct OBS_StadimetricScaleReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Echelle stadimétrique activée (vrai) / Non activée (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_StadimetricScaleReq m_unSight m_unOperatorID 
+	
+		// Echelle stadimétrique
+		struct OBS_StadimetricScaleState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de l'échelle stadimétrique
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_StadimetricScaleState m_unSight 
+	
+		// Distance de la cible du système et alerte multi echo distance cible
+		struct OBS_TargetDistanceState
+		{
+			// Origine de la distance
+			EOBS_DistanceMeasureMode_t m_unOrigin;
+			// Type d'arme
+			COM::ECOM_WeaponType_t m_unWeapon;
+			// Distance cible système
+			float m_fDistance;
+			// Offset de portée de tir dans le cas d'un tir airvurst (40mm)
+			short m_nOffset;
+			// Alerte mullti echo activé (vrai) / Désactivé (faux)
+			boolean m_bMultiEcho;
+		};
+		#pragma keylist OBS_TargetDistanceState m_unOrigin m_unWeapon 
+	
+		// Activation télémétre par le chef / tireur
+		struct OBS_TelemActivReq
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Demande d'activation du télémètre (vrai) / de désactivation (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_TelemActivReq m_unSight m_unOperatorID 
+	
+		// Etat d'activation télémétre
+		struct OBS_TelemActivState
+		{
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation du télémètre
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_TelemActivState m_unSight 
+	
+		// Demande de mise sous tension ddes equipements videos
+		struct OBS_VideoActivReq
+		{
+			// Equipement vidéo démarré/arrêté par  l'IHM
+			EOBS_VideoEquiActiv_t m_unVideo;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Equipement vidéo activé / Désactivé
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_VideoActivReq m_unVideo m_unOperatorID 
+	
+		// Etat de l'activation des équipements videos
+		struct OBS_VideoActivState
+		{
+			// Equipement vidéo démarré/arrêté
+			EOBS_VideoEquiActiv_t m_unVideo;
+			// Etat d'activation de la demande d'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+			// Etat équipement vidéo
+			COM::ECOM_EquipmentState_t m_unState;
+		};
+		#pragma keylist OBS_VideoActivState m_unVideo 
+	
+		// Demande de configuration vidéo
+		struct OBS_VideoConfigReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Demande d'inversion de polarité (Normale (faux) / Inversée (vrai))
+			boolean m_bPolarityInversion;
+			// Demande d'activation de la calibration thermique activée (vrai) / désactivée (faux)
+			boolean m_bCalibCth;
+			// Demande de réglage de la focalisation de la voie visualisée
+			EOBS_VideoConfMode_t m_unFocus;
+			// Valeur manuelle du réglage de la focalisation
+			unsigned short m_unFocusValue;
+			// Demande de réglage du gain (aucun (faux)/automatique (vrai))
+			EOBS_VideoConfMode_t m_unGain;
+			// Valeur manuelle du réglage du gain
+			unsigned short m_unGainValue;
+		};
+		#pragma keylist OBS_VideoConfigReq m_unOperatorID m_unSight 
+	
+		// Réglage de la vidéo pour la voie affichée sur le poste chef ou tireur
+		struct OBS_VideoConfigState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identificateur de viseur
+			COM::ECOM_SightType_t m_unSight;
+			// Etat du réglage de la focalisation
+			EOBS_VideoFocusState_t m_unFocus;
+			// Valeur manuelle du réglage de la focalisation
+			unsigned short m_unFocusValue;
+			// Etat du réglage du gain
+			EOBS_VideoGainState_t m_unGain;
+			// Valeur manuelle du réglage du gain
+			unsigned short m_unGainValue;
+			// Etat de la demande d'inversion de polarité (faux =normale  vrai = inversée)
+			boolean m_bPolarityInversion;
+			// Etat de la demande de calibration
+			EOBS_VideoCalibState_t m_unCalibCth;
+		};
+		#pragma keylist OBS_VideoConfigState m_unOperatorID m_unSight 
+	
+		// Commande de mode vidéo du MPC / MPT
+		struct OBS_VideoDisplayCmd
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// La position du MFD
+			COM::ECOM_MFDPosition_t m_unMFDType;
+			// Equipement fournissant la vidéo
+			EOBS_VideoSensor_t m_unEquipment;
+			// Voie de la video a afficher
+			COM::ECOM_VideoChannel_t m_unChannel;
+			// Champ de la video a afficher
+			COM::ECOM_VideoField_t m_unField;
+			// Mode de la video a afficher
+			EOBS_VideoMode_t m_unMode;
+			// Position de la vidéo  (X  Y)
+			COM::TCOM_AppPosition m_tVideoPosition;
+			// Taille de la video (hauteur  largeur)
+			COM::TCOM_AppSize m_tVideoSize;
+		};
+		#pragma keylist OBS_VideoDisplayCmd m_unOperatorID m_unMFDType 
+	
+		// Demande de sélection video
+		struct OBS_VideoSelectReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Video à selectionner
+			EOBS_VideoSensor_t m_unVideoSensor;
+		};
+		#pragma keylist OBS_VideoSelectReq m_unOperatorID m_unRequestorID 
+	
+		// Demande d'activation du mode loupe
+		struct OBS_VideoZoomReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Equipement fournissant la video
+			EOBS_VideoSensor_t m_unVideoSensor;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation (vrai) / Desactivation (faux) de la loupe x2
+			boolean m_bActivation;
+			// valeur du zoom
+			float m_fZoom;
+		};
+		#pragma keylist OBS_VideoZoomReq m_unOperatorID m_unVideoSensor 
+	
+		// Etat du niveau loupe reçu du système
+		struct OBS_VideoZoomState
+		{
+			// Equipement fournissant la video
+			EOBS_VideoSensor_t m_unVideoSensor;
+			// Etat d'activation de l'équipement
+			COM::ECOM_ActivatedState_t m_unActivationProgress;
+			// valeur du zoom appliqué
+			float m_fZoom;
+		};
+		#pragma keylist OBS_VideoZoomState m_unVideoSensor 
+	
+		// Demande d'essuyage
+		struct OBS_WipingReq
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Essuyage du viseur activé (vrai) / Non activé (faux)
+			boolean m_bActivation;
+		};
+		#pragma keylist OBS_WipingReq m_unSight m_unOperatorID 
+	
+		// Etat d'essuyage des viseusrs
+		struct OBS_WipingState
+		{
+			// Identificateur de viseur de tir
+			COM::ECOM_SightType_t m_unSight;
+			// Etat d'activation de l'essuyage du viseur
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist OBS_WipingState m_unSight 
+	};
+	
+	module TST
+	{
+	
+		typedef unsigned short ETST_TypeAlarmIndicator_t;
+	
+		typedef unsigned long ETST_FaultCode_t;
+	
+		typedef unsigned short ETST_OperationalState_t;
+	
+		typedef unsigned short ETST_SystemFunction_t;
+	
+		struct TST_AlarmIndicator
+		{
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Sous composants et sous fonctions
+			COM::ECOM_SubComponents_t m_unSubComponentID;
+			// Composants des fonctions état système
+			COM::ECOM_SystemComponents_t m_unComponentID;
+			// Précise s'il s'agit d'une alarme ou d'une indication de panne
+			ETST_TypeAlarmIndicator_t m_unType;
+		};
+		#pragma keylist TST_AlarmIndicator m_unRequestorID m_unOperatorID 
+	
+		// Information sur l'apparition ou la disparition d'un défaut
+		struct TST_CANFaultCode
+		{
+			// Code défaut
+			ETST_FaultCode_t m_ulFaultCode;
+			// Code de défaillance SPN
+			unsigned long m_ulSPNFailureCode;
+			// Code de défaillance FMI
+			unsigned long m_ulFMIFailureCode;
+			// Nombre d'occurrence dans la session courante
+			unsigned short m_unOccurence;
+			// Etat de l'alerte
+			COM::ECOM_AlertState_t m_unAlertState;
+		};
+		#pragma keylist TST_CANFaultCode m_ulFaultCode 
+	
+		// Etat des équipements des fonctions de l'état technique système
+		struct TST_ComponentState
+		{
+			// Composants des fonctions état système
+			COM::ECOM_SystemComponents_t m_unComponentID;
+			// Etat système de la demande d'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist TST_ComponentState m_unComponentID 
+	
+		// Acquittement d'état des MFDs
+		struct TST_MFDStateAck
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// La position du MFD
+			COM::ECOM_MFDPosition_t m_unMFDType;
+			// Si MFD global (valeur = 0) sinon identifiant d'une sous fonction ( le LCCS fait le lien directement entre le numéro et la sous fonction correspondante)
+			unsigned short m_unStateType;
+			// Etat operationel du MFD ou de la sous fonction pour testabilité
+			ETST_OperationalState_t m_unOpeState;
+		};
+		#pragma keylist TST_MFDStateAck m_unOperatorID m_unMFDType m_unStateType 
+	
+		// Remise à Zero des potentiels mission par l'opérateur
+		struct TST_PotentialRAZ
+		{
+			// Clé par défaut
+			unsigned short m_unKey;
+			// Remise à zéro de la partie Mission des potentiels consommés.
+			boolean m_bRAZ;
+		};
+		#pragma keylist TST_PotentialRAZ m_unKey 
+	
+		// Informations sur les potentiels restants
+		struct TST_RemainingPotential
+		{
+			// Identifiant du potentiel restant
+			unsigned short m_unPotentialID;
+			// Valeur du potentiel restant
+			unsigned short m_unPotentialValue;
+		};
+		#pragma keylist TST_RemainingPotential m_unPotentialID 
+	
+		// Etat des sous équipements
+		struct TST_SubComponentState
+		{
+			// Sous composants et sous fonctions
+			COM::ECOM_SubComponents_t m_unSubComponentID;
+			// Composants des fonctions état système
+			COM::ECOM_SystemComponents_t m_unComponentID;
+			// Etat système de la demande d'activation
+			COM::ECOM_ActivatedState_t m_unActivation;
+		};
+		#pragma keylist TST_SubComponentState m_unSubComponentID 
+	
+		// Etat fonctionnel système
+		struct TST_SystemFunctionalState
+		{
+			// Fonction système
+			ETST_SystemFunction_t m_unFunction;
+			// Etat fonctionnel
+			COM::ECOM_FunctionState_t m_unState;
+		};
+		#pragma keylist TST_SystemFunctionalState m_unFunction 
+	};
+	
+	module VISU
+	{
+	
+		typedef unsigned short EVISU_Pictogram_t;
+	
+		typedef unsigned short EVISU_PictoState_t;
+	
+		// Etat des pictogrammes
+		struct VISU_PictogramState
+		{
+			// Pictogramme concerné par la mise à jour
+			EVISU_Pictogram_t m_unPictogram;
+			// Etat du pictogramme
+			EVISU_PictoState_t m_unState;
+			// Couleur du pictogramme
+			unsigned short m_unColor;
+		};
+		#pragma keylist VISU_PictogramState m_unPictogram 
+	
+		// Etat des séquences de ralliement commandées par le chef / pilote / tireur
+		struct VISU_RallyingSequenceState
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Etat du ralliement
+			COM::ECOM_ActivatedState_t m_unRallying;
+			// Histogramme temps de ralliement
+			COM::ECOM_BargraphType_t m_unBargraph;
+			// Destination à rallier
+			COM::ECOM_SlewingDirection_t m_unDestination;
+		};
+		#pragma keylist VISU_RallyingSequenceState m_unOperatorID 
+	
+		// Permet d'afficher un texte sur la molette en ins-tanciant le numéro de l'application publisher de ce topic
+		struct VISU_StripTextReturn
+		{
+			// Permet d'afficher un texte sur la molette en instanciant le numéro de l'application publisher de ce topic
+			unsigned short m_unAppInstanceID;
+			// Séquence de string pour texte à afficher sur molette
+			string50 m_sLabel;
+		};
+		#pragma keylist VISU_StripTextReturn m_unAppInstanceID 
+	
+		// Profil utilisateur sélectionné
+		struct VISU_UserProfilSelected
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Profil utilisateur
+			COM::ECOM_UserProfile_t m_unUserProfile;
+		};
+		#pragma keylist VISU_UserProfilSelected m_unOperatorID 
+	};
+	
+	module VIVA
+	{
+	
+		typedef unsigned short EVIVA_AirCondType_t;
+	
+		typedef unsigned short EVIVA_AirCondCmdMode_t;
+	
+		typedef unsigned short EVIVA_AirCondActivMode_t;
+	
+		typedef unsigned short EVIVA_NBCVentilationMode_t;
+	
+		typedef unsigned short EVIVA_OpeningID_t;
+	
+		typedef unsigned short EVIVA_OpeningNature_t;
+	
+		// Informations sur les ouvrants
+		struct TVIVA_OpeningInformation
+		{
+			// Vrai si état ouvrant ouvert
+			boolean m_bOpeningState;
+			// Vrai si état ouvrant verrouillé
+			boolean m_bLockedState;
+			// Position du verrouillage
+			float m_fLockedPosition;
+			// Vrai si état ouvrant arrêté
+			boolean m_bMovementState;
+		};
+	
+		// Commande du type de climatisation
+		struct VIVA_AirConditioningTypeReq
+		{
+			// Type de climatisation concernée
+			EVIVA_AirCondType_t m_unAirCondType;
+			// Mode choici pour l'air conditionné (manuel  auto  arrêt  test)
+			EVIVA_AirCondCmdMode_t m_unCmdMode;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation mode de la climatisation selon le mode manuel
+			EVIVA_AirCondActivMode_t m_unActivMode;
+		};
+		#pragma keylist VIVA_AirConditioningTypeReq m_unAirCondType 
+	
+		// Surpression habitacle
+		struct VIVA_CrewCompartmentOverpressure
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Valeur de la surpression de l'habitacle
+			float m_fOverpressure;
+		};
+		#pragma keylist VIVA_CrewCompartmentOverpressure m_unKey 
+	
+		// Température de l'habitacle
+		struct VIVA_CrewCompartmentTemperature
+		{
+			// Zone véhicule (interieur  extérieur)
+			COM::ECOM_ZoneVeh_t m_unZone;
+			// Identifiant du porteur : porteur principal  porteur secondaire (robot)  …
+			COM::ECOM_CarrierType_t m_unCarrierType;
+			// Valeur de la température demandée
+			float m_fTemp;
+		};
+		#pragma keylist VIVA_CrewCompartmentTemperature m_unZone m_unCarrierType 
+	
+		// Etat filtre NBC et état des modes ventilation NBC
+		struct VIVA_NBCFilterVentilationState
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Présence état filtre monté sur le véhicule
+			boolean m_bFilterPresence;
+			// Retour d'état du mode de ventilation NBC
+			EVIVA_NBCVentilationMode_t m_unMode;
+		};
+		#pragma keylist VIVA_NBCFilterVentilationState m_unKey 
+	
+		// Etat d'un des capteurs de l'ouvrant
+		struct VIVA_OpeningSensorState
+		{
+			// Identifiant de l'ouvrant
+			EVIVA_OpeningID_t m_unOpeningID;
+			// Identifiant du capteur de l'ouvrant
+			unsigned short m_unSensorID;
+			// Etat équipement
+			COM::ECOM_Status_t m_unState;
+		};
+		#pragma keylist VIVA_OpeningSensorState m_unOpeningID m_unSensorID 
+	
+		// Etat de l'ouvrant
+		struct VIVA_OpeningState
+		{
+			// Identifiant de l'ouvrant
+			EVIVA_OpeningID_t m_unOpeningID;
+			// Nature de l'ouvrant
+			EVIVA_OpeningNature_t m_unOpeningNature;
+			// Informations sur l'ouvrant
+			TVIVA_OpeningInformation m_tOpeningInfo;
+		};
+		#pragma keylist VIVA_OpeningState m_unOpeningID m_unOpeningNature 
+	
+		// Etat de la température
+		struct VIVA_TemperatureState
+		{
+			// Zone véhicule (interieur  extérieur)
+			COM::ECOM_ZoneVeh_t m_unZone;
+			// Identifiant du porteur : porteur principal  porteur secondaire (robot)  …
+			COM::ECOM_CarrierType_t m_unCarrierType;
+			// Valeur de la température
+			float m_fTemp;
+		};
+		#pragma keylist VIVA_TemperatureState m_unZone m_unCarrierType 
+	
+		// Etat de la climatisation et de la ventilation
+		struct VIVA_VentilationAirCondState
+		{
+			// Type de climatisation concernée
+			EVIVA_AirCondType_t m_unAirCondType;
+			// Mode choici pour l'air conditionné (manuel  auto  arrêt  test)
+			EVIVA_AirCondCmdMode_t m_unCmdMode;
+			// Retour d'état du bloc de climatisation selon le mode manuel
+			COM::ECOM_EquipmentState_t m_unState;
+			// Retour d'état de la ventillation
+			float m_fVentilationOutput;
+		};
+		#pragma keylist VIVA_VentilationAirCondState m_unAirCondType 
+	
+		// Commande de débit de ventilation
+		struct VIVA_VentilationOutputReq
+		{
+			// Commande de débit de ventilation
+			unsigned short m_unKey;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Commande de débit de ventilation
+			float m_fVentilationOutput;
+		};
+		#pragma keylist VIVA_VentilationOutputReq m_unKey 
+	};
+	
+	module PWR
+	{
+	
+		typedef unsigned short EPWR_BatteryGroup_t;
+	
+		typedef unsigned short EPWR_BatteryNum_t;
+	
+		typedef unsigned short EPWR_Equipment_t;
+	
+		// Temps d'utilisation restant des batteries
+		struct PWR_BatteryAverageRemainingTime
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Valeur calculée du temps restant avant la décharge des batteries
+			unsigned short m_unAverageRemainingTime;
+		};
+		#pragma keylist PWR_BatteryAverageRemainingTime m_unKey 
+	
+		// Niveau de charge moyen des batteries
+		struct PWR_BatteryAverageStateOfCharge
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Etat moyen de charge des batteries
+			float m_fAverageStateOfCharge;
+		};
+		#pragma keylist PWR_BatteryAverageStateOfCharge m_unKey 
+	
+		// Tension moyenne aux bornes des batteries
+		struct PWR_BatteryAverageVoltage
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Valeur moyenne de la tension des batteries
+			float m_fAverageVoltage;
+		};
+		#pragma keylist PWR_BatteryAverageVoltage m_unKey 
+	
+		// Temps restant avant la décharge complète de la batterie
+		struct PWR_BatteryRemainingTime
+		{
+			// Identifiant du BMS
+			EPWR_BatteryGroup_t m_unGroup;
+			// Identifiant de la batterie
+			EPWR_BatteryNum_t m_unNum;
+			// Valeur du temps restant avant la décharge complète de la batterie
+			unsigned short m_unRemainingTime;
+		};
+		#pragma keylist PWR_BatteryRemainingTime m_unGroup m_unNum 
+	
+		// Etat de charge de la batterie
+		struct PWR_BatteryStateOfCharge
+		{
+			// Identifiant du porteur : porteur principal  porteur secondaire (robot)  …
+			COM::ECOM_CarrierType_t m_unType;
+			// Identifiant du BMS
+			EPWR_BatteryGroup_t m_unGroup;
+			// Identifiant de la batterie
+			EPWR_BatteryNum_t m_unNum;
+			// Etat de charge de la batterie en %
+			float m_fStateOfCharge;
+		};
+		#pragma keylist PWR_BatteryStateOfCharge m_unType m_unGroup m_unNum 
+	
+		// Température batterie mesurée par le BMS
+		struct PWR_BatteryTemperature
+		{
+			// Identifiant du BMS
+			EPWR_BatteryGroup_t m_unGroup;
+			// Identifiant de la batterie
+			EPWR_BatteryNum_t m_unNum;
+			// Valeur de la température batterie mesurée par le BMS
+			float m_fTemperature;
+		};
+		#pragma keylist PWR_BatteryTemperature m_unGroup m_unNum 
+	
+		// Tension batterie mesurée par le BMS
+		struct PWR_BatteryVoltage
+		{
+			// Identifiant du BMS
+			EPWR_BatteryGroup_t m_unGroup;
+			// Identifiant de la batterie
+			EPWR_BatteryNum_t m_unNum;
+			// Valeur de la tension batterie mesurée par le BMS
+			float m_fVolatge;
+		};
+		#pragma keylist PWR_BatteryVoltage m_unGroup m_unNum 
+	
+		// Demande d'activation des équipements
+		struct PWR_EquipmentActivationReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Identifiant de l'équipement
+			COM::ECOM_Equipment_t m_unEquipement;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Activation (vrai) / Desactivation (faux) de l'alimentation électrique
+			boolean m_bActivation;
+		};
+		#pragma keylist PWR_EquipmentActivationReq m_unOperatorID m_unEquipement 
+	
+		// Etat d'activation des équipements
+		struct PWR_EquipmentActivationState
+		{
+			// Identifiant de l'équipement
+			COM::ECOM_Equipment_t m_unEquipement;
+			// Etat de l'activation de l'équipement
+			COM::ECOM_ActivatedState_t m_unActivation;
+			// Durée de l'autonomie restante
+			unsigned long m_ulDuration;
+		};
+		#pragma keylist PWR_EquipmentActivationState m_unEquipement 
+	
+		// Présence ou non du BMS et génératrice
+		struct PWR_EquipmentsPresence
+		{
+			// Equipements de puissance
+			EPWR_Equipment_t m_unEquipment;
+			// Etat equipement (present ou pas)
+			COM::ECOM_HWPresence_t m_unPresence;
+		};
+		#pragma keylist PWR_EquipmentsPresence m_unEquipment 
+	
+		// Pourcentage de charge de la génératrice
+		struct PWR_GeneratorLoadCapacity
+		{
+			// Clé par défaut du topic
+			unsigned short m_unKey;
+			// Capacité de charge de la génératrice
+			unsigned short m_unCapacity;
+		};
+		#pragma keylist PWR_GeneratorLoadCapacity m_unKey 
+	
+		// Demande dd'activation de l'alimentation électrique
+		struct PWR_PowerSupplyReq
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Equipements des fonctions état système
+			unsigned short m_unLineID;
+			// Origine de la demande (Mfd)
+			unsigned short m_unRequestorID;
+			// Vrai si activation de l'alimentation électrique  sinon Faux
+			boolean m_bActivation;
+		};
+		#pragma keylist PWR_PowerSupplyReq m_unOperatorID m_unLineID 
+	
+		// Etat des equipemensts
+		struct PWR_PowerSupplyState
+		{
+			// Identifiant de la ligne
+			unsigned short m_unLineID;
+			// Etat système de la demande d'activation
+			COM::ECOM_PowerActivState_t m_unActivation;
+		};
+		#pragma keylist PWR_PowerSupplyState m_unLineID 
+	};
+	
+	module HUMS
+	{
+	
+		// Operator action origin
+		typedef unsigned short EHUMS_OriginUserAction_t;
+	
+		// Operator action type
+		typedef unsigned short EHUMS_UserActionType_t;
+	
+		// Actions de l'opérateur
+		struct HUMS_UserActions
+		{
+			// Nom de l'applicatif
+			unsigned short m_unAppInstanceID;
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Profil utilisateur
+			COM::ECOM_UserProfile_t m_unUserProfile;
+			// Origine de l'action opérateur
+			EHUMS_OriginUserAction_t m_unOriginUserAction;
+			// Type de l'action opérateur
+			EHUMS_UserActionType_t m_unTypeUserAction;
+			// Nom de l'attribut/variable concerné par l'action opérateur
+			stringShort m_sAttributeName;
+			// Valeur de l'attribut/variable concerné par l'action opérateur
+			stringShort m_sAttributeValue;
+		};
+		#pragma keylist HUMS_UserActions m_unAppInstanceID m_unOperatorID 
+	};
+	
+	module HMI
+	{
+	
+		typedef unsigned short EHMI_JoystickAction_t;
+	
+		typedef unsigned short EHMI_PushButtonState_t;
+	
+		// Etat du VDC et du Joystick(molette  bouton)
+		struct HMI_Joystick
+		{
+			// Identifiant de l'opérateur (Chef  Tireur  Pilote  etc.)
+			COM::ECOM_OperatorIdentifier_t m_unOperatorID;
+			// Indentfiant du joystick (en cas de l'utilisation de plusieurs VDC)
+			unsigned short m_unJoystickID;
+			// nombre de graduation de la molette tournante
+			unsigned short m_unJoystickRotaryEncoder;
+			// Action Joystick
+			EHMI_JoystickAction_t m_unJoystickAction;
+			// Etat du bouton
+			EHMI_PushButtonState_t m_unButtonState;
+		};
+		#pragma keylist HMI_Joystick m_unOperatorID m_unJoystickID 
+	};
+	
+};

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+. $OSPL_HOME/install/make_functions
+
+# update copy right with the current year
+update_copyright ../.././bld/${SPLICE_TARGET}/src

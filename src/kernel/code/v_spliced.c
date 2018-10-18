@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -58,7 +59,8 @@
 #include "v__kernel.h"
 #include "v_public.h"
 #include "v_entity.h"
-#include "v_observable.h"
+#include "v__observer.h"
+#include "v__observable.h"
 #include "v_event.h"
 #include "v_dataReaderSample.h"
 #include "v__subscriber.h"
@@ -118,9 +120,6 @@ doCleanupPublication(
     c_bool isLocal,
     c_bool isImplicit);
 
-/**************************************************************
- * Private functions
- **************************************************************/
 static v_actionResult
 readerTakeAction(
     c_object s,
@@ -137,22 +136,6 @@ readerTakeAction(
     v_actionResultSet(result, V_PROCEED);
     return result;
 }
-
-#if 0
-static c_bool
-lookupAction(
-    c_object o,
-    c_voidp arg)
-{
-    c_iter *messages = (c_iter *)arg;
-
-    if (o != NULL) {
-        *messages = c_iterAppend(*messages, c_keep(o));
-    }
-
-    return TRUE;
-}
-#endif
 
 static v_actionResult
 takeOne(
@@ -195,128 +178,10 @@ static v_dataReader gidClaimDataReader(v_gid id, v_kernel kernel)
     return r;
 }
 
-struct matchArg {
-    c_bool  matched;
-    c_array partition;
-};
-
-static c_bool
-partitionNotMatched(
-    v_entity o,
-    c_voidp arg)
-{
-    struct matchArg *matchArg = (struct matchArg *)arg;
-    c_value match;
-    c_value partitionName;
-    c_value expr;
-    c_ulong i;
-
-    /* Don't re-evaluate if a matching partition has already been found */
-    if (!matchArg->matched && v_objectKind(o) == K_DOMAIN) {
-        match.kind = V_BOOLEAN;
-        match.is.Boolean = FALSE;
-        i = 0;
-        while ((match.is.Boolean == FALSE) && (i < c_arraySize(matchArg->partition))) {
-            partitionName = c_stringValue(v_entityName(o));
-            expr = c_stringValue(matchArg->partition[i]);
-            match = c_valueStringMatch(expr, partitionName);
-            i++;
-        }
-        matchArg->matched = match.is.Boolean;
-    }
-
-    return TRUE;
-}
-
-static c_bool
-readerWriterMatch(
-    struct v_subscriptionInfo *rInfo,
-    v_dataReader r,
-    struct v_publicationInfo *oInfo,
-    v_writer w)
-{
-    struct matchArg matchArg;
-    v_gid gid;
-    v_public publ;
-
-    /**
-     * If (w != NULL) then it is a local writer.
-     */
-    if ((w == NULL) && (r == NULL)) {
-        /* nothing to check.... */
-        matchArg.matched = FALSE;
-    } else {
-        if (w != NULL) {
-            /* for every partition of w, check if it matches
-               with the requested partition.
-            */
-            matchArg.matched = FALSE;
-            matchArg.partition = rInfo->partition.name;
-
-            /*Claim publisher first before walking over relations.*/
-            gid = v_publicGid(v_public(w->publisher));
-            publ = v_gidClaim(gid, v_objectKernel(w));
-
-            if (publ) {
-                v_entityWalkEntities(v_entity(publ), partitionNotMatched, &matchArg);
-                v_gidRelease(gid, v_objectKernel(w));
-            }
-        } else { /* w == NULL && r != NULL */
-            /* for every partition of r check if it matches
-               with the offered partition.
-            */
-            matchArg.matched = FALSE;
-            matchArg.partition = oInfo->partition.name;
-
-            /*Claim subscriber first before walking over relations*/
-            gid = v_publicGid(v_public(v_reader(r)->subscriber));
-            publ = v_gidClaim(gid, v_objectKernel(r));
-
-            if (publ) {
-                v_entityWalkEntities(v_entity(publ), partitionNotMatched, &matchArg);
-                v_gidRelease(gid, v_objectKernel(r));
-            }
-        }
-    }
-    return matchArg.matched;
-}
-
-#if 0
-/* spliced->builtinDataMutex must be locked before calling this function */
-static c_iter
-lookupMatchingReadersByTopic(
-    v_spliced spliced,
-    struct v_publicationInfo *oInfo)
-{
-    c_iter requestedMessages;
-    q_expr qExpr;
-    c_value params[1];
-    c_query q;
-    c_bool proceed;
-
-    if (spliced->builtinData[V_SUBSCRIPTIONINFO_ID] == NULL) {
-        return NULL; /* this builtin topic is disabled */
-    }
-
-    requestedMessages = NULL;
-    qExpr = (q_expr)q_parse("userData.topic_name like %0");
-    params[0] = c_stringValue(oInfo->topic_name);
-    q = c_queryNew((c_collection)spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
-                   qExpr, params);
-    q_dispose(qExpr);
-    proceed = c_readAction(q, (c_action)lookupAction, (c_voidp)&requestedMessages);
-    assert(proceed == TRUE);
-    OS_UNUSED_ARG(proceed);
-    c_free(q);
-
-    return requestedMessages;
-}
-#else
-
 typedef struct getMatchingReaderArg_s {
     c_iter iter;
-    c_char *topicName;
     v_kernel kernel;
+    struct v_publicationInfo *pubInfo;
 } *getMatchingReaderArg;
 
 static c_bool
@@ -328,7 +193,7 @@ getMatchingReader(
     struct v_subscriptionInfo *info = v_builtinSubscriptionInfoData(o);
 
     if (o != NULL) {
-        if (strcmp(a->topicName, info->topic_name) == 0) {
+        if (strcmp(a->pubInfo->topic_name, info->topic_name) == 0) {
             a->iter = c_iterAppend(a->iter, c_keep(o));
         }
     }
@@ -344,7 +209,7 @@ lookupMatchingReadersByTopic(
     struct getMatchingReaderArg_s arg;
 
     arg.iter = NULL;
-    arg.topicName = oInfo->topic_name;
+    arg.pubInfo = oInfo;
     arg.kernel = v_objectKernel(spliced);
 
     (void)c_walk((c_collection)spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
@@ -353,34 +218,6 @@ lookupMatchingReadersByTopic(
 
     return arg.iter;
 }
-#endif
-
-#if 0
-/* spliced->builtinDataMutex must be locked before calling this function */
-static c_iter
-lookupMatchingWritersByTopic(
-    v_spliced spliced,
-    struct v_subscriptionInfo *rInfo)
-{
-    c_iter offeredMessages;
-    q_expr qExpr;
-    c_value params[1];
-    c_query q;
-    c_bool proceed;
-
-    offeredMessages = NULL;
-    qExpr = (q_expr)q_parse("userData.topic_name like %0");
-    params[0] = c_stringValue(rInfo->topic_name);
-    q = c_queryNew((c_collection)spliced->builtinData[V_PUBLICATIONINFO_ID],
-                   qExpr, params);
-    q_dispose(qExpr);
-    proceed = c_readAction(q, (c_action)lookupAction, (c_voidp)&offeredMessages);
-    assert(proceed == TRUE);
-    c_free(q);
-
-    return offeredMessages;
-}
-#else
 
 typedef struct getMatchingWriterArg_s {
     c_iter iter;
@@ -421,7 +258,7 @@ lookupMatchingWritersByTopic(
 
     return arg.iter;
 }
-#endif
+
 static c_bool
 checkOfferedRequested(
     struct v_publicationInfo *oInfo,
@@ -628,36 +465,9 @@ checkTopicConsistency(
                     info->name, info->key.systemId);
     }
     if (consistent == FALSE) {
-        v_observerLock(v_observer(topic));
         v_topicNotifyInconsistentTopic(topic);
-        v_observerUnlock(v_observer(topic));
     }
     return consistent;
-}
-
-static c_bool
-matchPartition(
-    c_array name1,
-    c_array name2)
-{
-    c_ulong i, j;
-    c_value val;
-    c_value str1, str2;
-
-    val.kind = V_BOOLEAN;
-    val.is.Boolean = FALSE;
-
-    for (i = 0; val.is.Boolean == FALSE && i < c_arraySize(name1); i++) {
-        str1 = c_stringValue(name1[i]);
-        for (j = 0; val.is.Boolean == FALSE && j < c_arraySize(name2); j++) {
-            str2 = c_stringValue(name2[j]);
-            val = c_valueStringMatch(str1, str2);
-            if (!val.is.Boolean) {
-                val = c_valueStringMatch(str2, str1);
-            }
-        }
-    }
-    return val.is.Boolean;
 }
 
 static conformState
@@ -667,19 +477,9 @@ determineState(
 {
     conformState state = CONFORM_STATE_UNKNOWN;
 
-#define COMPATIBLE_QOS(offered, requested) \
-    (v_reliabilityPolicyCompatible((offered)->reliability, (requested)->reliability) && \
-     v_durabilityPolicyCompatible((offered)->durability, (requested)->durability) && \
-     v_presentationPolicyCompatible((offered)->presentation, (requested)->presentation) && \
-     v_latencyPolicyCompatible((offered)->latency_budget, (requested)->latency_budget) && \
-     v_orderbyPolicyCompatible((offered)->destination_order, (requested)->destination_order) && \
-     v_deadlinePolicyCompatible((offered)->deadline, (requested)->deadline) && \
-     v_livelinessPolicyCompatible((offered)->liveliness, (requested)->liveliness) && \
-     v_ownershipPolicyCompatible((offered)->ownership, (requested)->ownership))
-
     if ((oInfo != NULL) && (rInfo != NULL)) {
-        if (matchPartition(oInfo->partition.name, rInfo->partition.name) == TRUE) {
-            if (COMPATIBLE_QOS(oInfo, rInfo) == TRUE) {
+        if (v_builtinTestPartitionMatch(oInfo, rInfo) == TRUE) {
+            if (v_builtinTestQosMatch(oInfo, rInfo) == TRUE) {
                 state = CONFORM_STATE_OK;
             } else {
                 state = CONFORM_STATE_MATCH_NOT_COMPATIBLE;
@@ -688,8 +488,6 @@ determineState(
             state = CONFORM_STATE_NO_MATCH;
         }
     }
-#undef COMPATIBLE_QOS
-
     return state;
 }
 
@@ -750,21 +548,23 @@ v_splicedProcessSubscriptionInfo(
 
     kernel = v_objectKernel(spliced);
 
-    /* Try to take one subscriptionInfo message from the built-in DataRaeder.
-     */
+    /* Try to take one subscriptionInfo message from the built-in DataRaeder. */
     rSample = NULL;
     if (spliced->readers[V_SUBSCRIPTIONINFO_ID] != NULL) {
         (void)v_dataReaderTake(spliced->readers[V_SUBSCRIPTIONINFO_ID], V_MASK_ANY,
                                takeOne,
                                &rSample, OS_DURATION_ZERO);
     }
-    /* If a subscriptionInfo message exists then process it.
-     */
+    /* If a subscriptionInfo message exists then process it. */
     if (rSample != NULL) {
         result = 1;
 
+        v_builtinLogSubscription(kernel->builtin, rSample);
+
         msg = v_dataReaderSampleMessage(rSample);
         rInfo = (struct v_subscriptionInfo *) (msg + 1);
+
+        v_kernelNotifySubscription(kernel, msg);
 
         if (v_stateTest(v_readerSample(rSample)->sampleState, L_DISPOSED)) {
 
@@ -773,23 +573,16 @@ v_splicedProcessSubscriptionInfo(
             /* The subscription is disposed so the following
              * code will remove and free the registration.
              */
-            oldMsg = c_remove(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
-                              msg, NULL, NULL);
-
+            oldMsg = c_remove(spliced->builtinData[V_SUBSCRIPTIONINFO_ID], msg, NULL, NULL);
             if (oldMsg == NULL) {
-                /* The instance is not yet know no need to
-                 * take action.
-                 */
+                /* The instance is not yet know no need to take action. */
                 c_mutexUnlock(&spliced->builtinDataMutex);
             } else {
-                /* Notify the nodal delivery service about any synchronous
-                 * DataReader topology changes.
-                 */
+                /* Notify the nodal delivery service about any synchronous DataReader topology changes. */
                  oldInfo = v_builtinSubscriptionInfoData(oldMsg);
                  if (oldInfo->reliability.synchronous) {
                      v_deliveryServiceUnregister(kernel->deliveryService, oldMsg);
                  }
-
                  /* Notify matching writers that a matching subscription disappeared */
                  offeredMessages = lookupMatchingWritersByTopic(spliced, oldInfo);
 
@@ -817,32 +610,24 @@ v_splicedProcessSubscriptionInfo(
                  c_iterFree(offeredMessages);
             }
         } else {
-            /* Notify the nodal delivery service about any synchronous
-             * DataReader topology changes.
-             */
+            /* Notify the nodal delivery service about any synchronous DataReader topology changes. */
             if (rInfo->reliability.synchronous) {
                 v_deliveryServiceRegister(kernel->deliveryService,msg);
             }
-
             c_mutexLock(&spliced->builtinDataMutex);
 
-            oldMsg = c_replace(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
-                               msg, NULL, NULL);
-
+            oldMsg = c_replace(spliced->builtinData[V_SUBSCRIPTIONINFO_ID], msg, NULL, NULL);
             if (oldMsg == NULL) {
-                /* A new registration.
-                 */
+                /* A new registration. */
                 oldInfo = NULL;
             } else if (oldMsg->sequenceNumber >= msg->sequenceNumber) {
-                /* Sample already received, ignore duplicate.
-                 */
+                /* Sample already received, ignore duplicate. */
                 found = c_replace(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
                                 oldMsg, NULL, NULL);
                 c_free(found);
                 cont = FALSE;
             } else {
-                /* An update of a registration.
-                 */
+                /* An update of a registration. */
                 oldInfo = v_builtinSubscriptionInfoData(oldMsg);
             }
 
@@ -850,9 +635,7 @@ v_splicedProcessSubscriptionInfo(
                 c_mutexUnlock(&spliced->builtinDataMutex);
             } else {
                 r = gidClaimDataReader(rInfo->key, kernel);
-                /* Check if there are matching DataWriters i.e. with
-                 * compatible qos policies.
-                 */
+                /* Check if there are matching DataWriters i.e. with compatible qos policies. */
 
                 /* Read all publicationInfo, with the same topic name, this way
                  * all remote publications are also taken into account.
@@ -920,14 +703,11 @@ v_splicedProcessSubscriptionInfo(
                 }
             }
         }
-
         c_free(v_dataReaderSampleInstance(rSample));
         c_free(rSample); /* msg is freed here */
         c_free(oldMsg);
         rSample = NULL;
-
     }
-
     return result;
 }
 
@@ -976,35 +756,43 @@ v_splicedProcessPublicationInfo
     if (oSample != NULL) {
         result = 1;
 
-        /* Read all subscriptionInfo, with the same topic name, this way
-           all remote subscriptions are also taken into account.
-         */
+        v_builtinLogPublication(kernel->builtin, oSample);
+
         msg = v_dataReaderSampleMessage(oSample);
         oInfo = (struct v_publicationInfo *) (msg + 1);
+
+        /* Update publication in the kernel.
+         * In case of newly created local writers this is not necessary but doing it
+         * doesn't change the state, only causes an undesired scan of local readers.
+         * For local writers this call is already performed by the v_writerEnabe.
+         * Optimize in V6.9 when improved locking is available and after this code has moved to the kernel.
+         */
+        v_kernelNotifyPublication(kernel, msg);
 
         if (v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) {
             c_bool validSample = v_dataReaderSampleStateTest(oSample, L_VALIDDATA);
             c_bool isImplicit = v_messageStateTest(msg, L_IMPLICIT);
 
             c_mutexLock(&spliced->builtinDataMutex);
-            oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID],
-                              msg, NULL, NULL);
-            /* If there is no predecessor but the sample is valid, then interpret the sample itself.
-             * (This is for example the case when the builtin topics have been disabled, in which
-             * case only the dispose message will be transmitted as a VOLATILE sample.)
-             */
-            if (oldMsg == NULL &&
-                validSample &&
-                !kernel->builtin->kernelQos->builtin.v.enabled) {
+            oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID], msg, NULL, NULL);
+            if (oldMsg == NULL && validSample && !kernel->builtin->kernelQos->builtin.v.enabled) {
+                /* If there is no predecessor but the sample is valid, then interpret the sample itself.
+                 * (This is for example the case when the builtin topics have been disabled, in which
+                 * case only the dispose message will be transmitted as a VOLATILE sample.)
+                 */
                 oldMsg = msg;
             }
             if (oldMsg != NULL) {
                 oldInfo = v_builtinPublicationInfoData(oldMsg);
 
+                /* Read all subscriptionInfo, with the same topic name, this way
+                 * all remote subscriptions are also taken into account.
+                 */
                 /* the resulting readers are not matched on partition so the readers that do not belong
                  * to the required partition need to be filtered out later on.
                  * This is because of the partition field being an internal sequence so no expression
-                 * can be done on it*/
+                 * can be done on it.
+                 */
                 requestedMessages = lookupMatchingReadersByTopic(spliced, oldInfo);
             }
             c_mutexUnlock(&spliced->builtinDataMutex);
@@ -1068,9 +856,13 @@ v_splicedProcessPublicationInfo
                 }
                 c_iterFree(requestedMessages);
             }
-            v_kernelNotifyGroupCoherentPublication(kernel, msg);
+            if (oInfo->presentation.coherent_access) {
+                v_kernelNotifyCoherentPublication(kernel, msg);
+            }
         } else {
-            v_kernelNotifyGroupCoherentPublication(kernel, msg);
+            if (oInfo->presentation.coherent_access) {
+                v_kernelNotifyCoherentPublication(kernel, msg);
+            }
             c_mutexLock(&spliced->builtinDataMutex);
 
             oldMsg = c_replace(spliced->builtinData[V_PUBLICATIONINFO_ID], msg, NULL, NULL);
@@ -1081,20 +873,15 @@ v_splicedProcessPublicationInfo
              */
 
             if (oldMsg == NULL) {
-                /* A new registration.
-                 */
+                /* A new registration. */
                 oldInfo = NULL;
             } else if (oldMsg->sequenceNumber >= msg->sequenceNumber) {
-                /* Sample already received, ignore duplicate.
-                 */
-                found = c_replace(spliced->builtinData[V_PUBLICATIONINFO_ID],
-                                 oldMsg, NULL, NULL);
+                /* Duplicate: sample already received, ignore duplicate. */
+                found = c_replace(spliced->builtinData[V_PUBLICATIONINFO_ID], oldMsg, NULL, NULL);
                 c_free(found);
                 cont = FALSE;
             } else {
-                /* An update of a registration.
-                 */
-
+                /* An update of a registration. */
                 oldInfo = v_builtinPublicationInfoData(oldMsg);
             }
             if (cont == TRUE) {
@@ -1131,8 +918,7 @@ v_splicedProcessPublicationInfo
                     } else if ((oldState == CONFORM_STATE_OK) &&
                                (newState == CONFORM_STATE_OK)) {
                         if (r != NULL) {
-                            /* oldInfo can't be NULL here.
-                             */
+                            /* oldInfo can't be NULL here. */
                             if (oldInfo->ownership_strength.value != oInfo->ownership_strength.value) {
                                 /* Notify reader ownership strength might have changed for it's instances. */
                                 ownership.exclusive = (oInfo->ownership.kind == V_OWNERSHIP_EXCLUSIVE ? TRUE : FALSE);
@@ -1184,7 +970,8 @@ v_splicedProcessPublicationInfo
 }
 
 /* returns 0, when no DCPSTopicInfo sample was available.
- * Otherwise 1 is returned */
+ * Otherwise 1 is returned
+ */
 static int
 v_splicedProcessTopicInfo(
     v_spliced spliced)
@@ -1213,6 +1000,8 @@ v_splicedProcessTopicInfo(
         kernel = v_objectKernel(spliced);
         s = v_dataReaderSample(c_iterTakeFirst(samples));
         while (s != NULL) {
+            v_builtinLogTopic(kernel->builtin, s);
+
             proceed = TRUE;
             m = v_dataReaderSampleMessage(s);
             info = (struct v_topicInfo *) (m + 1);
@@ -1260,7 +1049,8 @@ v_splicedProcessTopicInfo(
 
 
 /* returns 0, when no DCPSTypeInfo sample was available.
- * Otherwise 1 is returned */
+ * Otherwise 1 is returned
+ */
 static int
 v_splicedProcessTypeInfo(
     v_spliced spliced)
@@ -1311,6 +1101,165 @@ v_splicedProcessTypeInfo(
     }
 }
 
+static int
+v_splicedProcessDataWriterCMInfo (
+    v_spliced spliced)
+{
+    int result = 0;
+    c_iter samples;
+    v_dataReaderSample s;
+    v_kernel kernel;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    if (!spliced->readers[V_CMDATAWRITERINFO_ID]) return 0;
+
+    samples = NULL;
+    (void)v_dataReaderTake(spliced->readers[V_CMDATAWRITERINFO_ID], V_MASK_ANY,
+                           readerTakeAction, &samples, OS_DURATION_ZERO);
+    if (samples) {
+        kernel = v_objectKernel(spliced);
+        s = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (s != NULL) {
+            v_builtinLogCMDataWriter(kernel->builtin, s);
+            c_free(s);
+            s = v_dataReaderSample(c_iterTakeFirst(samples));
+        }
+    }
+    assert(c_iterLength(samples) == 0);
+    c_iterFree(samples);
+
+    return result;
+}
+
+static int
+v_splicedProcessDataReaderCMInfo (
+    v_spliced spliced)
+{
+    int result = 0;
+    c_iter samples;
+    v_dataReaderSample s;
+    v_kernel kernel;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    if (!spliced->readers[V_CMDATAREADERINFO_ID]) return 0;
+
+    samples = NULL;
+    (void)v_dataReaderTake(spliced->readers[V_CMDATAREADERINFO_ID], V_MASK_ANY,
+                           readerTakeAction, &samples, OS_DURATION_ZERO);
+    if (samples) {
+        kernel = v_objectKernel(spliced);
+        s = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (s != NULL) {
+            v_builtinLogCMDataReader(kernel->builtin, s);
+            c_free(s);
+            s = v_dataReaderSample(c_iterTakeFirst(samples));
+        }
+    }
+    assert(c_iterLength(samples) == 0);
+    c_iterFree(samples);
+
+    return result;
+}
+
+static int
+v_splicedProcessPublisherCMInfo (
+    v_spliced spliced)
+{
+    int result = 0;
+    c_iter samples;
+    v_dataReaderSample s;
+    v_kernel kernel;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    if (!spliced->readers[V_CMPUBLISHERINFO_ID]) return 0;
+
+    samples = NULL;
+    (void)v_dataReaderTake(spliced->readers[V_CMPUBLISHERINFO_ID], V_MASK_ANY,
+                           readerTakeAction, &samples, OS_DURATION_ZERO);
+    if (samples) {
+        kernel = v_objectKernel(spliced);
+        s = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (s != NULL) {
+            v_builtinLogCMPublisher(kernel->builtin, s);
+            c_free(s);
+            s = v_dataReaderSample(c_iterTakeFirst(samples));
+        }
+    }
+    assert(c_iterLength(samples) == 0);
+    c_iterFree(samples);
+
+    return result;
+}
+
+static int
+v_splicedProcessSubscriberCMInfo (
+    v_spliced spliced)
+{
+    int result = 0;
+    c_iter samples;
+    v_dataReaderSample s;
+    v_kernel kernel;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    if (!spliced->readers[V_CMSUBSCRIBERINFO_ID]) return 0;
+
+    samples = NULL;
+    (void)v_dataReaderTake(spliced->readers[V_CMSUBSCRIBERINFO_ID], V_MASK_ANY,
+                           readerTakeAction, &samples, OS_DURATION_ZERO);
+    if (samples) {
+        kernel = v_objectKernel(spliced);
+        s = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (s != NULL) {
+            v_builtinLogCMSubscriber(kernel->builtin, s);
+            c_free(s);
+            s = v_dataReaderSample(c_iterTakeFirst(samples));
+        }
+    }
+    assert(c_iterLength(samples) == 0);
+    c_iterFree(samples);
+
+    return result;
+}
+
+static int
+v_splicedProcessParticipantCMInfo (
+    v_spliced spliced)
+{
+    int result = 0;
+    c_iter samples;
+    v_dataReaderSample s;
+    v_kernel kernel;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    if (!spliced->readers[V_CMPARTICIPANTINFO_ID]) return 0;
+
+    samples = NULL;
+    (void)v_dataReaderTake(spliced->readers[V_CMPARTICIPANTINFO_ID], V_MASK_ANY,
+                           readerTakeAction, &samples, OS_DURATION_ZERO);
+    if (samples) {
+        kernel = v_objectKernel(spliced);
+        s = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (s != NULL) {
+            v_builtinLogCMParticipant(kernel->builtin, s);
+            c_free(s);
+            s = v_dataReaderSample(c_iterTakeFirst(samples));
+        }
+    }
+    assert(c_iterLength(samples) == 0);
+    c_iterFree(samples);
+
+    return result;
+}
 
 struct matchHeartbeatHelper {
         c_ulong systemId; /* systemId from key of participantInfo sample */
@@ -1358,6 +1307,7 @@ v_splicedProcessParticipantInfo(
         (void)v_dataReaderTake(spliced->readers[V_PARTICIPANTINFO_ID], V_MASK_ANY, readerTakeAction, &samples, OS_DURATION_ZERO);
         sample = v_dataReaderSample(c_iterTakeFirst(samples));
         while (sample != NULL) {
+            v_builtinLogParticipant(kernel->builtin, sample);
             /* Only process this instance if it isn't seen before */
             if (v_dataReaderSampleStateTest(sample, L_NEW)) {
                 v_message msg = v_dataReaderSampleMessage(sample);
@@ -1372,8 +1322,9 @@ v_splicedProcessParticipantInfo(
                                        matchHeartbeatAction, &helper, OS_DURATION_ZERO);
                 if (!helper.found) {
                     /* fake heartbeat to ensure eventual cleanup if the DCPSParticipant
-                       arrived via durability and the node has disappeared without us ever
-                       receiving a heartbeat */
+                     * arrived via durability and the node has disappeared without us ever
+                     * receiving a heartbeat
+                     */
                     v_writer writer = v_builtinWriterLookup(kernel->builtin,
                                                             V_HEARTBEATINFO_ID);
                     (void)v_builtinWriteHeartbeat(
@@ -1387,288 +1338,6 @@ v_splicedProcessParticipantInfo(
     }
 
     return 0; /* is just a garbage collector, so no worries */
-}
-
-v_result
-v_splicedGetMatchedSubscriptions(
-    v_spliced spliced,
-    v_writer w,
-    v_subscriptionInfo_action action,
-    c_voidp arg)
-{
-    v_kernel  kernel;
-    v_result result;
-    c_iter requestedMessages = NULL;
-    v_message msg;
-    v_message reqMsg;
-    struct v_subscriptionInfo *rInfo;
-    struct v_publicationInfo *oInfo;
-
-    v_dataReader r;
-    v_policyId compatible[V_POLICY_ID_COUNT];
-
-    result = V_RESULT_OK;
-
-    assert(w != NULL);
-    assert(C_TYPECHECK(w,v_writer));
-
-    assert(spliced != NULL);
-    assert(C_TYPECHECK(spliced,v_spliced));
-
-    kernel = v_objectKernel(spliced);
-
-    if (w != NULL) {
-        /* Create a template message */
-        msg = v_builtinCreatePublicationInfo(kernel->builtin, w);
-        if (msg != NULL) {
-            oInfo = (struct v_publicationInfo *) (msg + 1);
-            v_gidClaim(oInfo->key, kernel);
-
-            if (oInfo != NULL) {
-                /* get topic-matching subscriptions */
-                c_mutexLock(&spliced->builtinDataMutex);
-
-                requestedMessages = lookupMatchingReadersByTopic(spliced, oInfo);
-                reqMsg = c_iterTakeFirst(requestedMessages);
-                while (reqMsg != NULL && result == V_RESULT_OK) {
-                    rInfo = v_builtinSubscriptionInfoData(reqMsg);
-                    r = gidClaimDataReader(rInfo->key, kernel);
-
-                    /* if QoS are matching then add the subscription to return list */
-                    if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE) {
-                        if (checkOfferedRequested(oInfo, rInfo, compatible) == TRUE) {
-                            result = action(rInfo, arg);
-                        }
-                    }
-                    if(r != NULL)
-                    {
-                        v_gidRelease(rInfo->key, kernel);
-                    }
-                    c_free(reqMsg);
-                    reqMsg = c_iterTakeFirst(requestedMessages);
-                }
-                c_iterFree(requestedMessages);
-
-                c_mutexUnlock(&spliced->builtinDataMutex);
-            }
-            v_gidRelease(oInfo->key, kernel);
-            c_free(msg);
-        }
-    }
-    return result;
-}
-
-v_result
-v_splicedGetMatchedSubscriptionData(
-    v_spliced spliced,
-    v_writer w,
-    v_gid subscription,
-    v_subscriptionInfo_action action,
-    c_voidp arg)
-{
-    v_kernel  kernel;
-    v_result result;
-    c_iter requestedMessages;
-    v_message msg;
-    v_message reqMsg;
-    struct v_subscriptionInfo *rInfo;
-    struct v_publicationInfo *oInfo;
-
-    v_dataReader r;
-    v_policyId compatible[V_POLICY_ID_COUNT];
-
-    result = V_RESULT_ILL_PARAM;
-
-    assert(w != NULL);
-    assert(C_TYPECHECK(w,v_writer));
-
-    assert(spliced != NULL);
-    assert(C_TYPECHECK(spliced,v_spliced));
-
-    kernel = v_objectKernel(spliced);
-
-    if (w != NULL) {
-        /* Create a template message */
-        msg = v_builtinCreatePublicationInfo(kernel->builtin, w);
-        if (msg != NULL) {
-            oInfo = (struct v_publicationInfo *) (msg + 1);
-            v_gidClaim(oInfo->key, kernel);
-
-            if (oInfo != NULL) {
-                /* get topic-matching subscriptions */
-                c_mutexLock(&spliced->builtinDataMutex);
-
-                requestedMessages = lookupMatchingReadersByTopic(spliced, oInfo);
-                reqMsg = c_iterTakeFirst(requestedMessages);
-                while (reqMsg != NULL) {
-                    rInfo = v_builtinSubscriptionInfoData(reqMsg);
-                    r = gidClaimDataReader(rInfo->key, kernel);
-
-                    if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE) {
-                        if (checkOfferedRequested(oInfo, rInfo, compatible) == TRUE) {
-                            /*if(v_gidCompare(rInfo->key, subscription) == C_EQ)*/
-                            if (rInfo->key.systemId == subscription.systemId
-                                    && rInfo->key.localId == subscription.localId) {
-                                result = action(rInfo, arg);
-                            }
-                        }
-                    }
-                    if(r != NULL)
-                    {
-                        v_gidRelease(rInfo->key, kernel);
-                    }
-                    c_free(reqMsg);
-                    reqMsg = c_iterTakeFirst(requestedMessages);
-                }
-                c_iterFree(requestedMessages);
-
-                c_mutexUnlock(&spliced->builtinDataMutex);
-            }
-            v_gidRelease(oInfo->key, kernel);
-            c_free(msg);
-        }
-    }
-    return result;
-}
-
-v_result
-v_splicedGetMatchedPublications(
-    v_spliced spliced,
-    v_dataReader r,
-    v_publicationInfo_action action,
-    c_voidp arg)
-{
-    v_kernel  kernel;
-    v_result result;
-    c_iter requestedMessages;
-    v_message msg;
-    v_message reqMsg;
-    struct v_subscriptionInfo *rInfo;
-    struct v_publicationInfo *oInfo;
-
-    v_writer w;
-    v_policyId compatible[V_POLICY_ID_COUNT];
-
-    result = V_RESULT_OK;
-
-    assert(r != NULL);
-    assert(C_TYPECHECK(r,v_reader));
-
-    assert(spliced != NULL);
-    assert(C_TYPECHECK(spliced,v_spliced));
-
-    kernel = v_objectKernel(spliced);
-
-    if (r != NULL) {
-        /* Create a template message */
-        msg = v_builtinCreateSubscriptionInfo(kernel->builtin, v_reader(r));
-        if (msg != NULL) {
-            rInfo = (struct v_subscriptionInfo *) (msg + 1);
-            v_gidClaim(rInfo->key, kernel);
-
-            if (rInfo != NULL) {
-                /* get topic-matching publications */
-                c_mutexLock(&spliced->builtinDataMutex);
-
-                requestedMessages = lookupMatchingWritersByTopic(spliced, rInfo);
-                reqMsg = c_iterTakeFirst(requestedMessages);
-                while (reqMsg != NULL && result == V_RESULT_OK) {
-                    oInfo = (struct v_publicationInfo *) (reqMsg + 1);
-                    w = v_writer(v_gidClaim(oInfo->key, kernel));
-                    /* if QoS are matching then add the publication to return list */
-                    if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE) {
-                        if (checkOfferedRequested(oInfo, rInfo, compatible) == TRUE) {
-                            result = action(oInfo, arg);
-                        }
-                    }
-                    if(w != NULL)
-                    {
-                        v_gidRelease(oInfo->key, kernel);
-                    }
-                    c_free(reqMsg);
-                    reqMsg = c_iterTakeFirst(requestedMessages);
-                }
-                c_iterFree(requestedMessages);
-
-                c_mutexUnlock(&spliced->builtinDataMutex);
-            }
-            v_gidRelease(rInfo->key, kernel);
-            c_free(msg);
-        }
-    }
-    return result;
-}
-
-v_result
-v_splicedGetMatchedPublicationData(
-    v_spliced spliced,
-    v_dataReader r,
-    v_gid publication,
-    v_publicationInfo_action action,
-    c_voidp arg)
-{
-    v_kernel  kernel;
-    v_result  result;
-    c_iter requestedMessages;
-    v_message msg;
-    v_message reqMsg;
-    struct v_subscriptionInfo *rInfo;
-    struct v_publicationInfo *oInfo;
-    v_writer w;
-    v_policyId compatible[V_POLICY_ID_COUNT];
-
-    result = V_RESULT_ILL_PARAM;
-
-    assert(r != NULL);
-    assert(C_TYPECHECK(r,v_dataReader));
-
-    assert(spliced != NULL);
-    assert(C_TYPECHECK(spliced,v_spliced));
-
-    kernel = v_objectKernel(spliced);
-
-    if (r != NULL) {
-        /* Create a template message */
-        msg = v_builtinCreateSubscriptionInfo(kernel->builtin, v_reader(r));
-        if (msg != NULL) {
-            rInfo = (struct v_subscriptionInfo *) (msg + 1);
-            v_gidClaim(rInfo->key, kernel);
-
-            if (rInfo != NULL) {
-                /* get topic-matching publications */
-                c_mutexLock(&spliced->builtinDataMutex);
-
-                requestedMessages = lookupMatchingWritersByTopic(spliced, rInfo);
-                reqMsg = c_iterTakeFirst(requestedMessages);
-                while (reqMsg != NULL) {
-                    oInfo = (struct v_publicationInfo *) (reqMsg + 1);
-                    w = v_writer(v_gidClaim(oInfo->key, kernel));
-
-                    if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE) {
-                        if (checkOfferedRequested(oInfo, rInfo, compatible) == TRUE) {
-                            /*if(v_gidCompare(oInfo->key, publication) == C_EQ)*/
-                            if (oInfo->key.systemId == publication.systemId
-                                    && oInfo->key.localId == publication.localId) {
-                                result = action(oInfo, arg);
-                            }
-                        }
-                    }
-                    if(w != NULL)
-                    {
-                        v_gidRelease(oInfo->key, kernel);
-                    }
-                    c_free(reqMsg);
-                    reqMsg = c_iterTakeFirst(requestedMessages);
-                }
-                c_iterFree(requestedMessages);
-
-                c_mutexUnlock(&spliced->builtinDataMutex);
-            }
-            v_gidRelease(rInfo->key, kernel);
-            c_free(msg);
-        }
-    }
-    return result;
 }
 
 static c_char *
@@ -1723,10 +1392,10 @@ messageKeyExpr(
     expr = q_parse("select * from " _name);\
     spliced->readers[_id] = v_dataReaderNew(spliced->builtinSubscriber,\
                                    _name "Reader", \
-                                   expr, NULL, rQos, TRUE);\
+                                   expr, NULL, 0, rQos);\
+    (void)v_entityEnable(v_entity(spliced->readers[_id])); \
     q_dispose(expr); \
-    v_observableAddObserver(v_observable(spliced->readers[_id]),\
-                            v_observer(spliced->ws), NULL)
+    OSPL_ADD_OBSERVER(spliced->readers[_id],spliced->ws, V_EVENT_DATA_AVAILABLE, NULL)
 
 static void
 v_splicedManageKernel(
@@ -1747,7 +1416,7 @@ v_splicedManageKernel(
     kernel = v_objectKernel(spliced);
 
     spliced->ws = v_waitsetNew(v_participant(spliced));
-    v_observerSetEventMask(v_observer(spliced->ws),
+    OSPL_SET_EVENT_MASK(spliced->ws,
         V_EVENT_OBJECT_DESTROYED |
         V_EVENT_DATA_AVAILABLE   |
         V_EVENT_TRIGGER          |
@@ -1761,7 +1430,9 @@ v_splicedManageKernel(
     sQos->partition.v = c_stringNew(c_getBase(c_object(kernel)), V_BUILTIN_PARTITION);
     sQos->entityFactory.v.autoenable_created_entities = TRUE;
     spliced->builtinSubscriber = v_subscriberNew(v_participant(spliced),
-                                                 "Builtin subscriber", sQos, TRUE);
+                                                 "Builtin subscriber", sQos);
+    assert(spliced->builtinSubscriber);
+    (void)v_entityEnable(v_entity(spliced->builtinSubscriber));
     v_subscriberQosFree(sQos);
 
     rQos = v_readerQosNew(kernel, NULL);
@@ -1776,6 +1447,13 @@ v_splicedManageKernel(
     if (kernel->qos->builtin.v.enabled) {
         _INIT_BUILTIN_DATA_(V_SUBSCRIPTIONINFO_ID, V_SUBSCRIPTIONINFO_NAME);
         _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
+        if (kernel->builtin->logfile) {
+            _INIT_BUILTIN_DATA_(V_CMDATAWRITERINFO_ID, V_CMDATAWRITERINFO_NAME);
+            _INIT_BUILTIN_DATA_(V_CMDATAREADERINFO_ID, V_CMDATAREADERINFO_NAME);
+            _INIT_BUILTIN_DATA_(V_CMPUBLISHERINFO_ID, V_CMPUBLISHERINFO_NAME);
+            _INIT_BUILTIN_DATA_(V_CMSUBSCRIBERINFO_ID, V_CMSUBSCRIBERINFO_NAME);
+            _INIT_BUILTIN_DATA_(V_CMPARTICIPANTINFO_ID, V_CMPARTICIPANTINFO_NAME);
+        }
     } else {
         rQos->durability.v.kind = V_DURABILITY_VOLATILE;
         _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
@@ -1815,10 +1493,11 @@ v_splicedManageKernel(
     spliced->readers[V_HEARTBEATINFO_ID] =
                 v_dataReaderNew(spliced->builtinSubscriber,
                                 V_HEARTBEATINFO_NAME "Reader",
-                                expr, params,
-                                NULL, TRUE);
+                                expr, params, 0,
+                                NULL);
+    (void)v_entityEnable(v_entity(spliced->readers[V_HEARTBEATINFO_ID]));
     q_dispose(expr);
-    v_observableAddObserver(v_observable(spliced->readers[V_HEARTBEATINFO_ID]), v_observer(spliced->ws), NULL);
+    OSPL_ADD_OBSERVER(spliced->readers[V_HEARTBEATINFO_ID], spliced->ws, V_EVENT_DATA_AVAILABLE, NULL);
     topic = v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID);
     str = messageKeyExpr(topic);
     spliced->missedHB = c_tableNew(v_topicMessageType(topic), str);
@@ -1831,9 +1510,10 @@ v_splicedManageKernel(
         spliced->readers[V_PARTICIPANTINFO_ID] =
                     v_dataReaderNew(spliced->builtinSubscriber,
                                     V_PARTICIPANTINFO_NAME "Reader",
-                                    expr, params,
-                                    rQos, TRUE);
-        v_observableAddObserver(v_observable(spliced->readers[V_PARTICIPANTINFO_ID]), v_observer(spliced->ws), NULL);
+                                    expr, params, 0,
+                                    rQos);
+        (void)v_entityEnable(v_entity(spliced->readers[V_PARTICIPANTINFO_ID]));
+        OSPL_ADD_OBSERVER(spliced->readers[V_PARTICIPANTINFO_ID], spliced->ws, V_EVENT_DATA_AVAILABLE, NULL);
         q_dispose(expr);
     }
     v_readerQosFree(rQos);
@@ -1846,21 +1526,20 @@ v_splicedManageKernel(
     spliced->readers[V_C_AND_M_COMMAND_ID] =
                 v_dataReaderNew(spliced->builtinSubscriber,
                                 C_AND_M_READER_NAME,
-                                expr, params,
-                                rQos, TRUE);
+                                expr, params, 0,
+                                rQos);
+    (void)v_entityEnable(v_entity(spliced->readers[V_C_AND_M_COMMAND_ID]));
     v_readerQosFree(rQos);
     q_dispose(expr);
 
 }
 #undef _INIT_BUILTIN_DATA_
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
+_Check_return_
+_Ret_notnull_
 v_spliced
 v_splicedNew(
-    v_kernel kernel,
-    c_bool enable)
+    _In_ v_kernel kernel)
 {
     v_spliced spliced;
 
@@ -1868,15 +1547,14 @@ v_splicedNew(
     assert(C_TYPECHECK(kernel,v_kernel));
 
     spliced = v_spliced(v_objectNew(kernel, K_SPLICED));
-    v_splicedInit(spliced, enable);
+    v_splicedInit(spliced);
 
     return spliced;
 }
 
 void
 v_splicedInit(
-    v_spliced spliced,
-    c_bool enable)
+    _Inout_ v_spliced spliced)
 {
     v_kernel kernel;
     v_participantQos q;
@@ -1904,16 +1582,15 @@ v_splicedInit(
     os_free(hostName);
 #undef MAX_HOST_NAME_LENGTH
 
-    v_serviceInit(v_service(spliced), V_SPLICED_NAME, NULL, V_SERVICETYPE_SPLICED, q, enable);
+    v_serviceInit(v_service(spliced), V_SPLICED_NAME, NULL, V_SERVICETYPE_SPLICED, q, TRUE);
     c_free(q);
     /* replace my leaseManager (created in v_serviceInit())
      * with the kernel leaseManager */
     c_free(v_participant(spliced)->leaseManager);
     v_participant(spliced)->leaseManager = c_keep(kernel->livelinessLM);
 
-    c_mutexInit(c_getBase(spliced), &spliced->mtx);
-    c_mutexInit(c_getBase(spliced), &spliced->cAndMCommandMutex);
-    c_mutexInit(c_getBase(spliced), &spliced->builtinDataMutex);
+    (void)c_mutexInit(c_getBase(spliced), &spliced->cAndMCommandMutex);
+    (void)c_mutexInit(c_getBase(spliced), &spliced->builtinDataMutex);
 
     spliced->readers[V_PARTICIPANTINFO_ID] = NULL;
     spliced->readers[V_TOPICINFO_ID] = NULL;
@@ -1921,6 +1598,12 @@ v_splicedInit(
     spliced->readers[V_PUBLICATIONINFO_ID] = NULL;
     spliced->readers[V_SUBSCRIPTIONINFO_ID] = NULL;
     spliced->readers[V_C_AND_M_COMMAND_ID] = NULL;
+
+    spliced->readers[V_CMPARTICIPANTINFO_ID] = NULL;
+    spliced->readers[V_CMDATAWRITERINFO_ID] = NULL;
+    spliced->readers[V_CMDATAREADERINFO_ID] = NULL;
+    spliced->readers[V_CMPUBLISHERINFO_ID] = NULL;
+    spliced->readers[V_CMSUBSCRIBERINFO_ID] = NULL;
 
     spliced->builtinData[V_PARTICIPANTINFO_ID] = NULL;
     spliced->builtinData[V_TOPICINFO_ID] = NULL;
@@ -1952,9 +1635,11 @@ v_splicedFree(
 
     kernel = v_objectKernel(spliced);
     /* set builtin writer to NULL, to prevent
-       using those writers while publishing builtin topic information
-    */
+     * using those writers while publishing builtin topic information
+     */
     v_builtinWritersDisable(kernel->builtin);
+    c_free(kernel->spliced);
+    kernel->spliced = NULL;
 
     /* Stop heartbeats */
     v_serviceFree(v_service(spliced));
@@ -1979,13 +1664,6 @@ v_splicedDeinit(
     v_serviceDeinit(v_service(spliced));
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
 void
 v_splicedHeartbeat(
     v_spliced spliced)
@@ -2079,7 +1757,8 @@ static v_actionResult processHeartbeatReadAction(c_object o, c_voidp varg)
 static int v_splicedProcessHeartbeat (v_spliced spliced)
 {
     /* Trigger the heartbeat lease action so that the actual processing is single
-       threaded by the thread at the correct priority. */
+     * threaded by the thread at the correct priority.
+     */
     struct processHeartbeatReadActionArg arg;
     arg.spliced = spliced;
     arg.resched = 0;
@@ -2105,8 +1784,9 @@ v_splicedCheckHeartbeats(
         v_dataReaderSample s;
 
         /* Read updates first, ignoring disposes. NOT_ALIVE_NO_WRITERS instances
-           will be disposed (so will be taken below), writes result in checking the
-           heartbeat. */
+         * will be disposed (so will be taken below), writes result in checking the
+         * heartbeat.
+         */
         rtarg.result = NULL;
         rtarg.isdisposed = 0;
         v_dataReaderRead(spliced->readers[V_HEARTBEATINFO_ID], V_MASK_ANY, readTakeAction, &rtarg, OS_DURATION_ZERO);
@@ -2120,14 +1800,16 @@ v_splicedCheckHeartbeats(
                 assert(v_gidEqual(hb->id, v_publicGid(v_public(spliced))) == FALSE);
                 if (OS_DURATION_ISINFINITE(hb_period)) {
                     /* Unregister a fake heartbeats just in case we wrote one when
-                       processing a DCPSParticipant sample */
+                     * processing a DCPSParticipant sample
+                     */
                     v_writer writer = v_builtinWriterLookup(
                         v_objectKernel(spliced)->builtin, V_HEARTBEATINFO_ID);
                     (void)v_builtinWriteHeartbeat(
                         writer, hb->id.systemId, msg->writeTime, hb_period, L_UNREGISTER);
                 } else if (os_durationCompare(os_timeEDiff(tnow, msg->allocTime), hb_period) == OS_MORE) {
                     /* Expired heartbeat, dispose to let the next part of the
-                       processing hand it off to the garbage collector */
+                     * processing hand it off to the garbage collector
+                     */
                     disposeHeartbeat(spliced, s);
                 } else if (os_durationCompare(hb_period, nextPeriod) == OS_LESS) {
                     /* This node's heartbeat is set to expire first. */
@@ -2139,28 +1821,26 @@ v_splicedCheckHeartbeats(
         c_iterFree(rtarg.result);
 
         /* For all heartbeats that we missed or were disposed, get the garbage collector
-           to eventually clean up all associated data (dispose built-in topics for remote
-           entities, (auto dispose and) unregister samples for remote writers, &c.) */
+         * to eventually clean up all associated data (dispose built-in topics for remote
+         * entities, (auto dispose and) unregister samples for remote writers, &c.)
+         */
         rtarg.result = NULL;
         rtarg.isdisposed = 1;
         (void)v_dataReaderTake(spliced->readers[V_HEARTBEATINFO_ID], V_MASK_ANY, readTakeAction, &rtarg, OS_DURATION_ZERO);
-        c_mutexLock(&spliced->mtx);
+        OSPL_LOCK(spliced);
         while ((s = c_iterTakeFirst(rtarg.result)) != NULL) {
             if(v_dataReaderSampleStateTest(s, L_VALIDDATA)) {
-                ospl_c_insert(spliced->missedHB, c_keep(v_dataReaderSampleMessage(s)));
+                ospl_c_insert(spliced->missedHB, v_dataReaderSampleMessage(s));
             }
             c_free(s);
         }
-        c_mutexUnlock(&spliced->mtx);
+        OSPL_UNLOCK(spliced);
         c_iterFree(rtarg.result);
     }
 
     v_leaseRenew(spliced->hbCheck, nextPeriod);
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 void
 v_splicedKernelManager(
     v_spliced spliced)
@@ -2178,6 +1858,11 @@ v_splicedKernelManager(
         if (builtinEnabled) {
             dataProcessed += v_splicedProcessSubscriptionInfo(spliced);
             dataProcessed += v_splicedProcessParticipantInfo(spliced);
+            dataProcessed += v_splicedProcessDataWriterCMInfo(spliced);
+            dataProcessed += v_splicedProcessDataReaderCMInfo(spliced);
+            dataProcessed += v_splicedProcessPublisherCMInfo(spliced);
+            dataProcessed += v_splicedProcessSubscriberCMInfo(spliced);
+            dataProcessed += v_splicedProcessParticipantCMInfo(spliced);
         }
         if (dataProcessed == 0) {
             (void)v_waitsetWait(spliced->ws, NULL, NULL, OS_DURATION_INFINITE);
@@ -2203,7 +1888,8 @@ v_splicedCAndMCommandDispatcherQuit(
    c_mutexLock(&spliced->cAndMCommandMutex);
    spliced->cAndMCommandDispatcherQuit = TRUE;
    /* Wakeup the C&M command dispatcher thread to take notice and terminate.
-    * Waitset mask must be set sensitive to V_EVENT_TRIGGER. */
+    * Waitset mask must be set sensitive to V_EVENT_TRIGGER.
+    */
    v_waitsetTrigger(spliced->cAndMCommandWaitSet, NULL);
    c_mutexUnlock(&spliced->cAndMCommandMutex);
 }
@@ -2230,10 +1916,11 @@ v_splicedBuiltinCAndMCommandDispatcher(
 
     c_mutexLock(&spliced->cAndMCommandMutex);
     reader = spliced->readers[V_C_AND_M_COMMAND_ID];
-    boolRes = v_waitsetAttach(spliced->cAndMCommandWaitSet, (v_observable)reader, NULL);
 
     /* The V_EVENT_TRIGGER interest is used stop the C&M command dispatcher thread. */
-    v_observerSetEventMask((v_observer)spliced->cAndMCommandWaitSet, V_EVENT_DATA_AVAILABLE | V_EVENT_TRIGGER);
+    OSPL_SET_EVENT_MASK(spliced->cAndMCommandWaitSet, V_EVENT_DATA_AVAILABLE | V_EVENT_TRIGGER);
+    boolRes = v_waitsetAttach(spliced->cAndMCommandWaitSet, (v_observable)reader, NULL);
+
     assert( boolRes );
     OS_UNUSED_ARG(boolRes);
 
@@ -2255,7 +1942,6 @@ v_splicedPrepareTermination(
     v_spliced spliced)
 {
     C_STRUCT(v_event) term;
-    v_observer o;
     v_kernel k;
 
     k = v_objectKernel(spliced);
@@ -2264,14 +1950,10 @@ v_splicedPrepareTermination(
     term.kind = V_EVENT_TRIGGER;
     term.source = v_observable(spliced);
     term.data = NULL;
-    c_mutexLock(&spliced->mtx);
+    OSPL_LOCK(spliced);
     spliced->quit = TRUE;
-    c_mutexUnlock(&spliced->mtx);
-
-    o = v_observer(spliced->ws);
-    v_observerLock(o);
-    v_observerNotify(o, &term, NULL);
-    v_observerUnlock(o);
+    OSPL_TRIGGER_EVENT(v_observer(spliced->ws), &term, NULL);
+    OSPL_UNLOCK(spliced);
 }
 
 static void
@@ -2372,7 +2054,7 @@ v_splicedGarbageCollectorMissedHB (
     c_bool pubComplete;
 
     /* Wait for alignment of DCPSPublication topic */
-    vresult = v_readerWaitForHistoricalData(v_reader(spliced->readers[V_PUBLICATIONINFO_ID]), OS_DURATION_ZERO);
+    vresult = v_readerWaitForHistoricalData(v_reader(spliced->readers[V_PUBLICATIONINFO_ID]), OS_DURATION_ZERO, FALSE);
     pubComplete = (vresult == V_RESULT_OK);
 
     OS_REPORT(OS_INFO, "v_spliced", vresult,
@@ -2393,7 +2075,7 @@ v_splicedGarbageCollectorMissedHB (
              */
             v_groupDisconnectNode(g, systemId, cleanTime);
             v__kernelProtectWaitEnter(NULL, NULL);
-            os_sleep(delay);
+            ospl_os_sleep(delay);
             v__kernelProtectWaitExit();
             c_free(g);
             g = NULL;
@@ -2410,7 +2092,7 @@ v_splicedGarbageCollectorMissedHB (
         {
             v_groupDisconnectNode(g, systemId, cleanTime);
             v__kernelProtectWaitEnter(NULL, NULL);
-            os_sleep(delay);
+            ospl_os_sleep(delay);
             v__kernelProtectWaitExit();
             c_free(g);
             g = v_group(c_iterTakeFirst(groups));
@@ -2437,14 +2119,14 @@ v_spliced spliced)
 
     /* wait until kernelmanager has initialized */
     while (!spliced->missedHB) {
-        os_sleep(delay);
+        ospl_os_sleep(delay);
     }
     /*Continue for as long as the spliced doesn't need to terminate*/
     while (!spliced->quit) {
         /*Check if a heartbeat has been missed*/
-        c_mutexLock(&spliced->mtx);
+        OSPL_LOCK(spliced);
         missedHBMsg = c_take(spliced->missedHB);
-        c_mutexUnlock(&spliced->mtx);
+        OSPL_UNLOCK(spliced);
 
         /* If a heartbeat has been missed, walk over all groups and clean up
          * data from writers on the removed node.
@@ -2456,7 +2138,8 @@ v_spliced spliced)
             os_timeW cleanTime;
             if (OS_DURATION_ISINFINITE(v_durationToOsDuration(hb->period))) {
                 /* Can't trust the time stamp in msg->writeTime: it is that of the
-                   original write, not of the unregister */
+                 * original write, not of the unregister
+                 */
                 cleanTime = os_timeWGet ();
             } else {
                 cleanTime = os_timeWAdd (missedHBMsg->writeTime, v_durationToOsDuration(hb->period));
@@ -2475,9 +2158,9 @@ v_spliced spliced)
                  * of purgeLists. If a heartbeat has been missed, stop
                  * updating purgeLists.
                  */
-                c_mutexLock(&spliced->mtx);
+                OSPL_LOCK(spliced);
                 length = c_tableCount(spliced->missedHB);
-                c_mutexUnlock(&spliced->mtx);
+                OSPL_UNLOCK(spliced);
 
                 /* A heartbeat has been missed, stop updating purgeLists now
                  * but don't forget to free the iter of groups.
@@ -2486,7 +2169,7 @@ v_spliced spliced)
                     g = NULL;
                 } else {
                     v__kernelProtectWaitEnter(NULL, NULL);
-                    os_sleep(delay);
+                    ospl_os_sleep(delay);
                     v__kernelProtectWaitExit();
                     g = v_group(c_iterTakeFirst(groups));
                 }
@@ -2498,7 +2181,6 @@ v_spliced spliced)
                 c_free(g);
             }
             g = v_group(c_iterTakeFirst(groups));
-
             while(g != NULL) {
                 c_free(g);
                 g = v_group(c_iterTakeFirst(groups));
@@ -2773,121 +2455,39 @@ static void v_splicedTakeCandMCommand(v_spliced spliced)
     }
 }
 
-struct lookupPublicationArg {
-    v_gid wgid;
-    struct v_publicationInfo *info;
-};
-
-static c_bool
-lookupPublication(
-    c_object o,
-    c_voidp arg)
-{
-    v_message msg = v_message(o);
-    struct lookupPublicationArg *a = (struct lookupPublicationArg *)arg;
-    struct v_publicationInfo *info;
-
-    info = v_builtinPublicationInfoData(msg);
-    if (v_gidEqual(info->key, a->wgid)) {
-        a->info = info;
-        return FALSE;
-    }
-    return TRUE;
-}
 
 v_result
-v_splicedLookupPublicationInfo(
-    v_spliced _this,
-    v_gid wgid,
-    publicationInfoAction action,
-    void *arg)
+v_splicedWalkSubscriptions(
+    v_spliced spliced,
+    v_subscription_action action,
+    c_voidp arg)
 {
-    v_result result = V_RESULT_UNDEFINED;
-    c_bool found = FALSE;
-    struct lookupPublicationArg lpa;
+    v_result result = V_RESULT_OK;
 
-    lpa.wgid = wgid;
-    lpa.info = NULL;
-    c_mutexLock(&_this->builtinDataMutex);
-    found = !c_walk(_this->builtinData[V_PUBLICATIONINFO_ID], lookupPublication, &lpa);
-    if (found && action) {
-        result = action(lpa.info, arg);
-    }
-    c_mutexUnlock(&_this->builtinDataMutex);
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    c_mutexLock(&spliced->builtinDataMutex);
+    (void)c_walk((c_collection)spliced->builtinData[V_SUBSCRIPTIONINFO_ID], (c_action)action, arg);
+    c_mutexUnlock(&spliced->builtinDataMutex);
+
     return result;
 }
 
-#if 1 /* Following code is deprecated and must be removed as soon as group transactions no longer depends on this*/
-
-struct countMatchesArg {
-    v_spliced spliced;
-    struct v_publicationInfo  *pInfo;
-    c_ulong count;
-};
-
-static c_bool
-countMatches(
-    v_reader o,
+v_result
+v_splicedWalkPublications(
+    v_spliced spliced,
+    v_publication_action action,
     c_voidp arg)
 {
-    struct countMatchesArg *a = (struct countMatchesArg *)arg;
-    v_subscriptionInfoTemplate msg;
-    conformState state;
+    v_result result = V_RESULT_OK;
 
-    /* Following is a bit too expensive.
-     * It would be better not to create a msg and to cache the resulting lookup
-     * in the v_transactionPublisher for future lookups.
-     */
-    msg = (v_subscriptionInfoTemplate)
-                v_builtinCreateSubscriptionInfo(v_objectKernel(o)->builtin, o);
-    if (msg) {
-        if (strcmp(msg->userData.topic_name, a->pInfo->topic_name) == 0) {
-            state = determineState(a->pInfo, &msg->userData);
-            if (state == CONFORM_STATE_OK) {
-                a->count++;
-            }
-        }
-        c_free(msg);
-    }
-    return TRUE;
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    c_mutexLock(&spliced->builtinDataMutex);
+    (void)c_walk((c_collection)spliced->builtinData[V_PUBLICATIONINFO_ID], (c_action)action, arg);
+    c_mutexUnlock(&spliced->builtinDataMutex);
+
+    return result;
 }
-
-c_bool
-v_splicedPublicationMatchCount(
-    v_spliced _this,
-    v_object scope,  /* matching scope: v_kernel or v_subscriber */
-    v_gid wgid,
-    c_ulong *count)
-{
-    c_bool found = FALSE;
-    struct lookupPublicationArg arg;
-    struct countMatchesArg cma;
-
-    arg.wgid = wgid;
-    arg.info = NULL;
-    c_mutexLock(&_this->builtinDataMutex);
-    found = !c_walk(_this->builtinData[V_PUBLICATIONINFO_ID], lookupPublication, &arg);
-    c_mutexUnlock(&_this->builtinDataMutex);
-    if (found) {
-        /* Now check if the found publication matches any of the readers in the matching scope. */
-        if (v_objectKind(scope) == K_SUBSCRIBER) {
-            cma.spliced = _this;
-            cma.pInfo = arg.info;
-            cma.count = 0;
-            /* Only required for subscribers, kernel scope always matches. */
-            v_subscriberWalkReaders(v_subscriber(scope), countMatches, &cma);
-            *count = cma.count;
-        } else {
-            /* The scope is the kernel which implies the durability service.
-             * Completeness at the durability service depends on namespace interest but
-             * this dependency is not yet implemented.
-             * For now the assumption is made that interest always exists which implies
-             * that the match count is 1 (fictive durability reader).
-             */
-            assert(v_objectKind(scope) == K_KERNEL);
-            *count = 1;
-        }
-    }
-    return found;
-}
-#endif

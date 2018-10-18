@@ -237,8 +237,8 @@ supply different arguments.</p>
 making some changes using Multi you will have to make other changes by
 hand in order for the project to build correctly.</p>
 <p>The following section describes the second method.</p>
-<div class="section" id="changing-the-generated-opensplice-dds-project-using-multi">
-<h3>13.4.1. Changing the generated OpenSplice DDS project using <em>Multi</em><a class="headerlink" href="#changing-the-generated-opensplice-dds-project-using-multi" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="changing-the-generated-vortex-opensplice-project-using-multi">
+<h3>13.4.1. Changing the generated Vortex OpenSplice project using <em>Multi</em><a class="headerlink" href="#changing-the-generated-vortex-opensplice-project-using-multi" title="Permalink to this headline">¶</a></h3>
 <p>You can make changes to any of the settings you specified with
 <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> by following these steps:</p>
 <p><strong>Step 1</strong></p>
@@ -247,7 +247,7 @@ click <em>Set Options...</em>.</p>
 <p><strong>Step 2</strong></p>
 <p>Select the <em>All Options</em> tab and expand the <em>Advanced</em> section.</p>
 <p><strong>Step 3</strong></p>
-<p>Select <em>Advanced OpenSplice DDS XML To Int Convertor Options</em>. In the
+<p>Select <em>Advanced Vortex OpenSplice XML To Int Convertor Options</em>. In the
 right-hand pane you will see the options that you have set with the
 <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> tool with their values, similar to
 <a class="reference internal" href="#integrity-changing-project-options-in-multi">Integrity: changing project options in Multi</a> below.</p>
@@ -269,7 +269,7 @@ please see section <a class="reference internal" href="#the-ospl-xml2int-command
 <dd>Note that if you do remove filesystem support from the kernel image you
 should also remove all references to the <tt class="docutils literal"><span class="pre">ivfs</span></tt> library, and make
 appropriate changes to the <tt class="docutils literal"><span class="pre">ospl_log.c</span></tt> file as well. See section
-<a class="reference internal" href="#amending-opensplice-dds-configuration-with-multi">Amending OpenSplice DDS Configuration with Multi</a> for information
+<a class="reference internal" href="#amending-vortex-opensplice-configuration-with-multi">Amending Vortex OpenSplice Configuration with Multi</a> for information
 about <tt class="docutils literal"><span class="pre">ospl_log.c</span></tt>.</dd>
 </dl>
 <p>Similarly you can change any other option and the changes are applied
@@ -279,7 +279,7 @@ instantly.</p>
 </div>
 <div class="section" id="the-ospl-xml2int-tool">
 <h3>13.4.2. The ospl_xml2int Tool<a class="headerlink" href="#the-ospl-xml2int-tool" title="Permalink to this headline">¶</a></h3>
-<p>The <tt class="docutils literal"><span class="pre">ospl_xml2int</span></tt> tool is used to inspect your OpenSplice DDS
+<p>The <tt class="docutils literal"><span class="pre">ospl_xml2int</span></tt> tool is used to inspect your Vortex OpenSplice
 configuration file (<tt class="docutils literal"><span class="pre">ospl.xml</span></tt>) and generate an appropriate Integrate
 file (<tt class="docutils literal"><span class="pre">ospl.int</span></tt>). For more information on Integrate files please
 consult the Integrity manual.</p>
@@ -336,7 +336,7 @@ in conjunction with one of the examples.</p>
 <dt><tt class="docutils literal"><span class="pre">-o</span> <span class="pre">&lt;file&gt;</span></tt></dt>
 <dd>Name of the generated Integrate file.</dd>
 </dl>
-<p>Applications linking with OpenSplice DDS must comply with the following
+<p>Applications linking with Vortex OpenSplice must comply with the following
 requirements:</p>
 <ul class="simple">
 <li>The <tt class="docutils literal"><span class="pre">First</span></tt> and <tt class="docutils literal"><span class="pre">Length</span></tt> parameters must match those of <tt class="docutils literal"><span class="pre">spliced</span></tt>
@@ -395,8 +395,8 @@ files to match your setup. These files can be found under
 <p class="caption"><strong>Integrity: changing global_table.c and mounttable.c</strong></p>
 </div>
 <p>Once you have made all of the required changes to <tt class="docutils literal"><span class="pre">ospl.int</span></tt>, you must
-rebuild the whole project. Your changes will be picked up by OpenSplice
-DDS automatically.</p>
+rebuild the whole project. Your changes will be picked up by Vortex OpenSplice
+automatically.</p>
 </div>
 </div>
 <div class="section" id="critical-warning-about-object-10-and-object-11">
@@ -411,36 +411,36 @@ you <strong>must</strong> change <strong>all</strong> of the address spaces wher
 <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> are defined (except those for <tt class="docutils literal"><span class="pre">ResourceStore</span></tt> as noted
 below). The value replacing <tt class="docutils literal"><span class="pre">10</span></tt> must be the same for every address
 space, and likewise for the value replacing <tt class="docutils literal"><span class="pre">11</span></tt>. You <strong>must</strong> change
-<strong>all</strong> references in order for OpenSplice DDS to work correctly.</p>
+<strong>all</strong> references in order for Vortex OpenSplice to work correctly.</p>
 <p class="last"><em>The only exception is the</em> <tt class="docutils literal"><span class="pre">ResourceStore</span></tt> <em>address space.</em>
-<tt class="docutils literal"><span class="pre">Object</span> <span class="pre">10</span></tt> <em>and</em> <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> <em>are unique to the OpenSplice DDS</em>
+<tt class="docutils literal"><span class="pre">Object</span> <span class="pre">10</span></tt> <em>and</em> <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> <em>are unique to the Vortex OpenSplice</em>
 <em>ResourceStore and they</em> <strong>MUST NOT</strong> <em>be altered.</em>
-<em>If you do change them, OpenSplice DDS</em>  <strong>WILL NOT WORK!</strong></p>
+<em>If you do change them, Vortex OpenSplice</em>  <strong>WILL NOT WORK!</strong></p>
 </dd>
 </dl>
 <p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
 </div>
-<div class="section" id="amending-opensplice-dds-configuration-with-multi">
-<h2>13.6. Amending OpenSplice DDS Configuration with <em>Multi</em><a class="headerlink" href="#amending-opensplice-dds-configuration-with-multi" title="Permalink to this headline">¶</a></h2>
-<p>You can make changes to the OpenSplice DDS configuration from Multi by
+<div class="section" id="amending-vortex-opensplice-configuration-with-multi">
+<h2>13.6. Amending Vortex OpenSplice Configuration with <em>Multi</em><a class="headerlink" href="#amending-vortex-opensplice-configuration-with-multi" title="Permalink to this headline">¶</a></h2>
+<p>You can make changes to the Vortex OpenSplice configuration from Multi by
 editing the files under the project
 <tt class="docutils literal"><span class="pre">src/projgen.gpj/opensplice_configuration.gpj/libospl_cfg.gpj</span></tt>. See
-<a class="reference internal" href="#integrity-changing-opensplice-dds-configuration-in-multi">Integrity: changing OpenSplice DDS configuration in Multi</a> below:</p>
-<div class="figure" id="integrity-changing-opensplice-dds-configuration-in-multi">
-<a class="reference internal image-reference" href="_images/Integrity-DDSconfigMulti.png"><img alt="Integrity: changing OpenSplice DDS configuration in Multi" src="_images/Integrity-DDSconfigMulti.png" style="height: 70mm;" /></a>
-<p class="caption"><strong>Integrity: changing OpenSplice DDS configuration in Multi</strong></p>
+<a class="reference internal" href="#integrity-changing-vortex-opensplice-configuration-in-multi">Integrity: changing Vortex OpenSplice configuration in Multi</a> below:</p>
+<div class="figure" id="integrity-changing-vortex-opensplice-configuration-in-multi">
+<a class="reference internal image-reference" href="_images/Integrity-DDSconfigMulti.png"><img alt="Integrity: changing Vortex OpenSplice configuration in Multi" src="_images/Integrity-DDSconfigMulti.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Integrity: changing Vortex OpenSplice configuration in Multi</strong></p>
 </div>
 <dl class="docutils">
 <dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
 <dd>There are five files here but you may <em>only</em> change <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> and
 <tt class="docutils literal"><span class="pre">ospl_log.c</span></tt>. The others must <strong>NOT</strong> be altered!</dd>
 <dt><tt class="docutils literal"><span class="pre">ospl.xml</span></tt></dt>
-<dd>This is your OpenSplice DDS configuration file. (See
-<a class="reference internal" href="install-configure.html#configuration"><em>Configuration</em></a> for more information about the options an OpenSplice DDS
+<dd>This is your Vortex OpenSplice configuration file. (See
+<a class="reference internal" href="install-configure.html#configuration"><em>Configuration</em></a> for more information about the options an Vortex OpenSplice
 configuration file may have.)</dd>
 <dt><tt class="docutils literal"><span class="pre">ospl_log.c</span></tt></dt>
 <dd>This file determines where the log entries (errors,
-warnings and informational messages) from OpenSplice DDS go. The way the
+warnings and informational messages) from Vortex OpenSplice go. The way the
 default file is generated by <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> depends on whether you have
 specified filesystem support or not. (See comments within the file for
 more information.)</dd>
@@ -467,13 +467,13 @@ more information.)</dd>
 </li>
 <li><a class="reference internal" href="#pingpong-example">13.3. PingPong Example</a></li>
 <li><a class="reference internal" href="#changing-the-ospl-projgen-arguments">13.4. Changing the ospl_projgen Arguments</a><ul>
-<li><a class="reference internal" href="#changing-the-generated-opensplice-dds-project-using-multi">13.4.1. Changing the generated OpenSplice DDS project using <em>Multi</em></a></li>
+<li><a class="reference internal" href="#changing-the-generated-vortex-opensplice-project-using-multi">13.4.1. Changing the generated Vortex OpenSplice project using <em>Multi</em></a></li>
 <li><a class="reference internal" href="#the-ospl-xml2int-tool">13.4.2. The ospl_xml2int Tool</a></li>
 <li><a class="reference internal" href="#the-ospl-xml2int-command">13.4.3. The ospl_xml2int command</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#critical-warning-about-object-10-and-object-11">13.5. Critical Warning about <em>Object 10</em> and <em>Object 11</em></a></li>
-<li><a class="reference internal" href="#amending-opensplice-dds-configuration-with-multi">13.6. Amending OpenSplice DDS Configuration with <em>Multi</em></a></li>
+<li><a class="reference internal" href="#amending-vortex-opensplice-configuration-with-multi">13.6. Amending Vortex OpenSplice Configuration with <em>Multi</em></a></li>
 </ul>
 </li>
 </ul>
@@ -522,7 +522,7 @@ more information.)</dd>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

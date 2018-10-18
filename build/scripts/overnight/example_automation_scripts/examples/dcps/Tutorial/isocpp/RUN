@@ -1,9 +1,0 @@
-. $OSPL_HOME/examples/functions
-
-check_osplhome
-
-startOSPL
-
-runTutorial
-
-stopOSPL

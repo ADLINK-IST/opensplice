@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -77,7 +78,8 @@ idl_cutXMLmeta (
          * let's cut it between two tags.
          * So let's find a '>' after the first MIN_SUBMETA_LENGTH chars after we check that are
          * sufficient chars to do this, if not it means we have split it sufficiently and just
-         * use the remaining chars. */
+         * use the remaining chars.
+         */
         if(currentPosLength > MIN_SUBMETA_LENGTH)
         {
             tmp = strchr(currentPos + MIN_SUBMETA_LENGTH, '>');
@@ -111,7 +113,8 @@ idl_cutXMLmeta (
 
 char *
 idl_genXMLmeta (
-    c_type type)
+    c_type type,
+    c_bool escapeQuote)
 {
     sd_serializer metaSer;
     sd_serializedData serData;
@@ -121,14 +124,15 @@ idl_genXMLmeta (
 
     replaceInfo = idl_catsDefConvertAll(idl_catsDefDefGet());
     replaceInfoStac = idl_stacDefConvertAll(idl_stacDefDefGet());
-    metaSer = sd_serializerXMLTypeinfoNew (c_getBase(c_object(type)), TRUE);
+    metaSer = sd_serializerXMLTypeinfoNew (c_getBase(c_object(type)), escapeQuote);
     if (metaSer)
     {
         serData = sd_serializerSerialize (metaSer, c_object(type));
         if (serData)
         {
-	    metaDescription = sd_serializerToString (metaSer, serData);
-	}
+            metaDescription = sd_serializerToString (metaSer, serData);
+            sd_serializedDataFree(serData);
+        }
         sd_serializerFree (metaSer);
     }
     idl_catsDefRestoreAll(idl_catsDefDefGet(), replaceInfo);

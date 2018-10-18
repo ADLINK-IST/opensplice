@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,6 +30,7 @@
 #include "v__subscriber.h"
 #include "v__reader.h"
 #include "v__observer.h"
+#include "v__observable.h"
 #include "v_message.h"
 #include "v_public.h"
 #include "v_topic.h"
@@ -37,6 +39,7 @@
 #include "os_abstract.h"
 #include "os_report.h"
 #include "os_heap.h"
+#include "os_atomics.h"
 
 /* Pick a block size that is small enough to fit in the 'small slab'categorie.
  * Be aware that additional headers may be inserted by the c_array, by the
@@ -78,9 +81,9 @@ do { \
  */
 v_transactionAdmin
 v_transactionAdminNew(
-    v_object owner,
-    v_transactionGroupAdmin groupAdmin,
-    v_topic topic)
+    _In_ v_object owner,
+    _In_opt_ v_transactionGroupAdmin groupAdmin,
+    _In_ v_topic topic)
 {
     v_transactionAdmin _this;
     v_kernel kernel;
@@ -213,12 +216,12 @@ v_transactionNew(
         transaction->count = 0;
         transaction->eotCount = 0;
         transaction->size = 0;
-        transaction->elementZero = FALSE;
         transaction->aborted = FALSE;
         transaction->sampleLostNotified = FALSE;
         transaction->transactionId = transactionId;
         transaction->isMarked = FALSE;
         transaction->transactionGroup = NULL;
+        pa_st32(&transaction->historyLinks, 0);
         transaction->elements = c_arrayNew(v_kernelType(kernel, K_TRANSACTIONELEMENT),
                                            V_TRANSACTION_BLOCKSIZE);
         if (transaction->elements == NULL) {
@@ -231,7 +234,7 @@ v_transactionNew(
             assert(FALSE);
         }
         TRACE_COHERENT_UPDATE("v_transactionNew(%s) Writer(0x%"PA_PRIxADDR") WGID(%d) TID(%d) => 0x%"PA_PRIxADDR"\n",
-                              WRITER_SCOPE(writer), (os_address)writer, 
+                              WRITER_SCOPE(writer), (os_address)writer,
                               writer->writerGID.localId, transactionId,
                               (os_address)transaction);
     } else {
@@ -289,6 +292,9 @@ getTransactionElement(
     if (transaction->elements[index] == NULL) {
         transaction->elements[index] = c_new(v_kernelType(v_objectKernel(transaction),
                                                           K_TRANSACTIONELEMENT));
+        ((v_transactionElement)transaction->elements[index])->inserted = FALSE;
+        ((v_transactionElement)transaction->elements[index])->instance = NULL;
+        ((v_transactionElement)transaction->elements[index])->message = NULL;
     }
     return transaction->elements[index];
 }
@@ -416,37 +422,65 @@ storeMessageEOT(
     v_transactionElement targetElement;
     c_bool storeEOT = FALSE;
 
-    if ((_this->eotCount > 0) &&
-        (v_objectKind(v_object(TRANSACTION_OWNER(_this))) == K_GROUP)) {
-        assert(_this->eot);
-        if ((!v_messageStateTest(message, L_TRANSACTION)) &&
-            (v_messageStateTest(_this->eot, L_TRANSACTION))) {
-            /* EOT messages without the L_TRANSACTION flag indicate completeness.
-             * These messages are always more important than the messages with
-             * the flag. This can only happen for K_GROUP owned transactions as
-             * the group forwards the EOT to the readers when the group has become
-             * complete.
-             */
-            storeEOT = TRUE;
-        }
-    } else {
+    assert(v_messageStateTest(message, L_ENDOFTRANSACTION));
+    assert(_this->eotCount >= 0);
+    assert(_this->size == 0 ? TRUE : _this->size == (c_long)index);
+
+    if (_this->eotCount == 0) {
         assert(!_this->eot);
         storeEOT = TRUE;
+    } else {
+        assert(_this->eot);
+        /* Already have an EOT message stored, only replace it with an EOT message
+         * without the L_TRANSACTION flag as this indicated completeness. An EOT
+         * messages without the L_TRANSACTION flag is therefore always more important
+         * than an EOT messages with.
+         */
+        if ((!v_messageStateTest(message, L_TRANSACTION)) &&
+            (v_messageStateTest(_this->eot, L_TRANSACTION))) {
+            /* When an EOT message without L_TRANSACTION flag is received
+             * reset the eotCount as we now expect those EOT messages from
+             * all subscribed groups.
+             */
+            _this->eotCount = 0;
+            /* Free to old to make room for the new */
+            c_free(_this->eot);
+            _this->eot = NULL;
+            storeEOT = TRUE;
+        }
+    }
+
+    if (v_objectKind(v_object(TRANSACTION_OWNER(_this))) == K_DATAREADER) {
+        if (_this->eot == NULL) {
+            _this->eotCount++;
+        } else if ((v_messageStateTest(message, L_TRANSACTION)) ?
+                    (v_messageStateTest(_this->eot, L_TRANSACTION)) :
+                    (!v_messageStateTest(_this->eot, L_TRANSACTION))) {
+            /* Only increase the eotCount when the stored EOT message has the
+             * same L_TRANSACTION state as the received EOT message (xor)
+             */
+            _this->eotCount++;
+        }
+    } else {
+        assert(v_objectKind(v_object(TRANSACTION_OWNER(_this))) == K_GROUP);
+        _this->eotCount = 1;
     }
 
     if (storeEOT) {
-        if (v_objectKind(v_object(TRANSACTION_OWNER(_this))) == K_GROUP) {
-            _this->eotCount = 1;
-        } else {
-            _this->eotCount++;
-        }
-
         targetElement = getTransactionElement(_this, index);
         if (targetElement) {
+            if (targetElement->inserted) {
+                /* Should not be possible to receive a EOT which has the same
+                 * index a transactional sample.
+                 */
+                assert(FALSE);
+                _this->count--;
+            }
             c_free(targetElement->message);
             c_free(targetElement->instance);
             targetElement->instance = NULL;
             targetElement->message = c_keep(message);
+            targetElement->inserted = FALSE;
         }
         _this->size = (c_long)index;
         _this->eot = c_keep(message);
@@ -490,10 +524,6 @@ v_transactionInsertMessage (
                 C_MAX_ULONG - message->transactionId + message->sequenceNumber + 1;
     }
 
-    if (index == 0) {
-        _this->elementZero = TRUE;
-    }
-
     /* If this is the End Of Transaction Marker, then calculate
      * the amount of expected samples and subtract it from the
      * amount of samples already received. If the end result
@@ -509,9 +539,21 @@ v_transactionInsertMessage (
 
     /* Handle message */
     _this->count++; // increase message count
-    if ((v_messageStateTest(message, L_REGISTER)) ||
-        (v_messageStateTest(message, L_UNREGISTER)) ||
-        (v_messageStateTest(message, L_DISPOSED | L_AUTO))) {
+    if (((v_messageStateTest(message, L_REGISTER)) ||
+         (v_messageStateTest(message, L_UNREGISTER)) ||
+         (v_messageStateTest(message, L_DISPOSED | L_AUTO))) &&
+        (instance)) {
+
+        if (v_objectKind(v_object(instance)) == K_GROUPINSTANCE) {
+            if (v_messageStateTest(message, L_UNREGISTER)) {
+                v_writeResult wres;
+                wres = v_groupInstanceUnregister(v_groupInstance(instance), message, _this);
+                if (wres == V_WRITE_UNREGISTERED) {
+                    (void)v_groupInstanceFlushTransaction(v_groupInstance(instance), message, _this);
+                }
+            }
+        }
+
         /* Can never be lost, should always be added and don't require a claim. */
     } else if (_this->aborted || abort) {
         /* If this transaction was aborted then this message is lost. */
@@ -557,7 +599,7 @@ v_transactionInsertMessage (
     if (result == V_WRITE_SUCCESS) {
         targetElement = getTransactionElement(_this, index);
         if (targetElement) {
-            if (targetElement->message) {
+            if (targetElement->inserted) {
                 _this->count--;
             }
             c_free(targetElement->message);
@@ -569,6 +611,8 @@ v_transactionInsertMessage (
                 targetElement->message = NULL;
                 targetElement->instance = NULL;
             }
+            /* element is inserted even when instance is NULL */
+            targetElement->inserted = TRUE;
         }
     }
     /* If message is NOT_STORED then abort the transaction. */
@@ -691,30 +735,18 @@ v_transactionAdminFlush(
     }
     if (_this->groupAdmin &&
         (v_messageQos_presentationKind(v_message(transaction->eot)->qos) == V_PRESENTATION_GROUP)) {
-        v_topicQos topicQos = NULL;
-        if (v_objectKind(v_object(_this->owner)) == K_GROUP) {
-            topicQos = v_topicGetQos(_this->topic);
-            assert(topicQos);
-            result = FALSE;
-        }
-        if ((topicQos != NULL) && (topicQos->durability.v.kind == V_DURABILITY_VOLATILE)) {
+        if ((v_objectKind(v_object(_this->owner)) == K_GROUP) &&
+            (v_messageQos_durabilityKind(v_message(transaction->eot)->qos) == V_DURABILITY_VOLATILE)) {
             /* Do not insert transaction in TGA when group owned and volatile.
              * Do abort and flush the transaction so that unregisters are processed.
              */
             v_transactionAbort(transaction);
-            v_transactionFlush(transaction, _this);
+            v_transactionFlush_nl(transaction);
         } else {
             result = v_transactionGroupAdminInsertTransaction(_this->groupAdmin, transaction, _this->topic);
         }
-        c_free(topicQos);
     } else {
-        v_transactionFlush(transaction, _this);
-        if (v_objectKind(v_object(_this->owner)) == K_GROUP) {
-            assert(_this->history != NULL);
-            (void)c_append(_this->history, transaction);
-
-            v_transactionAdminPurgeHistory(_this);
-        }
+        v_transactionFlush_nl(transaction);
     }
     return result;
 }
@@ -725,9 +757,6 @@ v_transactionAdminFlush(
  * param _this   : The transaction this operation operates on.
  * return        : TRUE if complete or FALSE if incomplete.
  *
- * The count represents the number of messages for as long the transaction is
- * incomplete, as soon as a transaction becomes complete the count is set to
- * zero to indicate completeness.
  */
 static c_bool
 v_transactionComplete(
@@ -743,17 +772,14 @@ v_transactionComplete(
     owner = TRANSACTION_OWNER(_this);
     if (_this->eot) {
         if (v_objectKind(owner) == K_DATAREADER) {
-            if ((_this->elementZero) ||
-                (!v_messageStateTest(_this->eot, L_TRANSACTION))) {
-                partitions = v_transactionWriter(_this->writer)->matchCount;
-                if (partitions == 0) {
-                    if ((v_readerSubscriber(v_reader(owner))) &&
-                        (v_subscriberPartitionCount(v_readerSubscriber(v_reader(owner))) == 1)) {
-                        partitions = 1; /* no need to wait for discovery if subscriber has only one partition. */
-                    }
+            partitions = v_transactionWriter(_this->writer)->matchCount;
+            if (partitions == 0) {
+                if ((v_readerSubscriber(v_reader(owner))) &&
+                    (v_subscriberPartitionCount(v_readerSubscriber(v_reader(owner))) == 1)) {
+                    partitions = 1; /* no need to wait for discovery if subscriber has only one partition. */
                 }
-                result = (_this->eotCount == (c_long)partitions);
             }
+            result = (_this->eotCount == (c_long)partitions);
         } else {
             /* If L_TRANSACTION is not set on an EOT message then its complete */
             if (!v_messageStateTest(_this->eot, L_TRANSACTION)) {
@@ -862,6 +888,7 @@ v_transactionAdminNotifyPublication(
     assert(_this);
     assert(C_TYPECHECK(_this,v_transactionAdmin));
 
+    OSPL_ASSERT_LOCK(_this->owner);
     TRACE_COHERENT_UPDATE("v_transactionAdminNotifyPublication(%s): WGID(%d)\n",
                           ADMIN_SCOPE(_this), writerGID.localId);
     if (dispose) {
@@ -875,7 +902,7 @@ v_transactionAdminNotifyPublication(
                     }
                     /* Fall through */
                 default:
-                    result = v_transactionGroupAdminNotifyGroupCoherentPublication(_this->groupAdmin, writer, dispose, info);
+                    result = v_transactionGroupAdminNotifyPublication(_this->groupAdmin, writer, dispose, info);
                 }
             }
             while ((txn = c_take(writer->transactions)) != NULL) {
@@ -890,10 +917,13 @@ v_transactionAdminNotifyPublication(
                      */
                     v_transactionNotifySampleLost(txn, _this);
                 }
-                v_transactionFlush(txn, _this);
+                if (txn->admin == _this) {
+                    v_transactionFlush_nl(txn);
+                } else {
+                    v_transactionFlush(txn);
+                }
                 c_free(txn);
             }
-            v_transactionAdminPurgeHistory(_this);
         }
     } else {
         writer = v_transactionAdminLookupWriter(_this, writerGID);
@@ -952,7 +982,7 @@ v_transactionAdminNotifyPublication(
                         if (transaction->eot->publisherId != 0) {
                             writer->publisherId = transaction->eot->publisherId;
                         }
-                        (void)v_transactionAdminFlush(_this, transaction);
+                        result = v_transactionAdminFlush(_this, transaction);
                         c_free(transaction);
                     }
                     c_iterFree(list);
@@ -966,7 +996,9 @@ v_transactionAdminNotifyPublication(
                     }
                     /* Fall through */
                 default:
-                    result = v_transactionGroupAdminNotifyGroupCoherentPublication(_this->groupAdmin, writer, dispose, info);
+                    if(v_transactionGroupAdminNotifyPublication(_this->groupAdmin, writer, dispose, info)) {
+                        result = TRUE;
+                    }
                 }
             }
         }
@@ -1133,8 +1165,16 @@ v_transactionPurge(
  */
 void
 v_transactionFlush(
-    v_transaction _this,
-    v_transactionAdmin owner)
+    v_transaction _this)
+{
+    OSPL_LOCK(v_transactionAdmin(_this->admin)->owner);
+    v_transactionFlush_nl(_this);
+    OSPL_UNLOCK(v_transactionAdmin(_this->admin)->owner);
+}
+
+void
+v_transactionFlush_nl(
+    v_transaction _this)
 {
     v_transactionAdmin admin;
     struct v_groupFlushTransactionArg arg;
@@ -1143,48 +1183,19 @@ v_transactionFlush(
     assert(C_TYPECHECK(_this,v_transaction));
 
     admin = v_transactionAdmin(_this->admin);
+    OSPL_ASSERT_LOCK(admin->owner);
     switch(v_objectKind(v_object(admin->owner))) {
     case K_GROUP:
         arg.group = admin->owner;
         arg.txn = _this;
-        if (admin != owner) {
-            c_mutexLock(&v_group(admin->owner)->mutex);
-        }
         v_transactionWalk(_this, v_groupFlushTransactionNoLock, &arg);
-        if (admin != owner) {
-            c_mutexUnlock(&v_group(admin->owner)->mutex);
-        }
         v_transactionPurge(_this);
     break;
     case K_DATAREADER:
-        if (admin != owner) {
-            v_observerLock(v_observer(admin->owner));
-        }
         v_transactionWalk(_this, v_dataReaderEntryFlushTransactionNoLock, NULL);
-        if (admin != owner) {
-            v_observerUnlock(v_observer(admin->owner));
-        }
     break;
     default: assert(0);
     break;
-    }
-}
-
-void
-v_transactionTriggerList(
-    v_transaction _this,
-    c_iter triggerList)
-{
-    v_transactionAdmin admin;
-
-    assert(_this);
-    assert(C_TYPECHECK(_this,v_transaction));
-
-    admin = v_transactionAdmin(_this->admin);
-    if (v_objectKind(v_object(admin->owner)) == K_DATAREADER) {
-        if (_this->size > 0) {
-            c_iterInsert(triggerList, admin->owner);
-        }
     }
 }
 
@@ -1300,7 +1311,6 @@ v_transactionAdminWalkTransactions(
     walkArg.action = action;
     walkArg.arg = arg;
 
-    v_transactionAdminPurgeHistory(_this);
     (void)c_walk(_this->history, action, arg);
     (void)c_walk(_this->writers, writerWalk, &walkArg);
 }
@@ -1338,15 +1348,6 @@ v_transactionGetGroupAdmin(
     v_transactionAdmin _this)
 {
     return (v_transactionGroupAdmin)_this->groupAdmin;
-}
-
-void
-v_transactionAdminTrigger(
-    v_transactionAdmin _this)
-{
-    if (_this && _this->groupAdmin) {
-        v_transactionGroupAdminTrigger((v_transactionGroupAdmin)_this->groupAdmin, NULL);
-    }
 }
 
 /**
@@ -1400,9 +1401,9 @@ v_transactionNotifySampleLost(
 
             if (nrSamplesLost > 0) {
                 if (_this->admin == admin) {
-                    v_dataReaderNotifySampleLost(v_dataReader(owner), nrSamplesLost);
+                    v_dataReaderNotifySampleLost_nl(v_dataReader(owner), nrSamplesLost);
                 } else {
-                    v_dataReaderNotifySampleLostLock(v_dataReader(owner), nrSamplesLost);
+                    v_dataReaderNotifySampleLost(v_dataReader(owner), nrSamplesLost);
                 }
             }
         }
@@ -1462,32 +1463,58 @@ v_transactionAdminNoMessageFromWriterExist(
     return c_walk(_this->writers, writerWalk, &walkArg);
 }
 
-
-/**
- * \brief              This operation removes transactions from the history when
- *                     the contained transactions are not referenced by samples
- *                     anymore
- *
- * \param _this      : The v_transactionAdmin this operation operates on.
- *
- * \return           : None
- */
 void
-v_transactionAdminPurgeHistory(
-    v_transactionAdmin _this)
+v_transactionLink(
+    v_transaction _this)
 {
-    v_transaction txn;
-    struct c_collectionIterD it;
+    os_uint32 value;
+    v_transactionAdmin admin;
+    v_transaction found;
 
-    if (v_objectKind(ADMIN_OWNER(_this)) == K_GROUP) {
-        for (txn = c_collectionIterDFirst(_this->history, &it); txn; txn = c_collectionIterDNext(&it)) {
-            if (c_refCount(txn) == 1) {
-                TRACE_COHERENT_UPDATE("%s(%s) Admin(0x%"PA_PRIxADDR") Removed TID(%u) from history\n",
-                                      OS_FUNCTION, ADMIN_SCOPE(_this), (os_address)_this, txn->transactionId);
-                c_collectionIterDRemove(&it);
-                c_free(txn);
-            }
+    if (_this) {
+        assert(C_TYPECHECK(_this,v_transaction));
+
+        value = pa_inc32_nv(&_this->historyLinks);
+        if (_this->transactionGroup) {
+            v_transactionGroupLink(_this->transactionGroup);
+        } else if (value == 1) {
+            admin = v_transactionAdmin(_this->admin);
+            assert(v_objectKind(v_object(admin->owner)) == K_GROUP);
+
+            TRACE_COHERENT_UPDATE("%s(%s) Admin(0x%"PA_PRIxADDR") Add TID(%u) to history\n",
+                                  OS_FUNCTION, ADMIN_SCOPE(admin), (os_address)admin, _this->transactionId);
+
+            found = c_append(admin->history, _this);
+            assert(found == _this);
+            OS_UNUSED_ARG(found);
         }
     }
 }
 
+void
+v_transactionUnlink(
+    v_transaction _this)
+{
+    os_uint32 value;
+    v_transactionAdmin admin;
+    v_transaction found;
+
+    if (_this != NULL) {
+        assert(C_TYPECHECK(_this,v_transaction));
+
+        value = pa_dec32_nv(&_this->historyLinks);
+        if (_this->transactionGroup) {
+            v_transactionGroupUnlink(_this->transactionGroup);
+        } else if (value == 0) {
+            admin = v_transactionAdmin(_this->admin);
+            assert(v_objectKind(v_object(admin->owner)) == K_GROUP);
+
+            TRACE_COHERENT_UPDATE("%s(%s) Admin(0x%"PA_PRIxADDR") Remove TID(%u) from history\n",
+                                  OS_FUNCTION, ADMIN_SCOPE(admin), (os_address)admin, _this->transactionId);
+
+            found = c_remove(admin->history, _this, NULL, NULL);
+            assert(found == _this);
+            c_free(found);
+        }
+    }
+}

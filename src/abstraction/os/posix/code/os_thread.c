@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -128,7 +129,7 @@ os_threadMemInit (
  *    or
  *       an appropriate error report is generated
  */
-static void
+void
 os_threadMemExit(
     void)
 {
@@ -232,7 +233,7 @@ os_threadModuleInit (
     pthread_setspecific (os_threadNameKey, "main thread");
 
 #ifndef INTEGRITY
-    sigfillset(&os_threadBlockAllMask);
+    (void)sigfillset(&os_threadBlockAllMask);
 #endif
 
     os_threadMemInit();

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -81,16 +82,20 @@ public class SubscriberImpl extends SubscriberBase implements DDS.Subscriber {
                          * that events that can trigger a listener on an owning
                          * entity are propagated instead of being consumed by
                          * the listener being destroyed. */
-                        set_listener(this.listener, 0);
+                        result = set_listener(this.listener, 0);
                     }
-                    this.disable_callbacks();
-                    result = ((EntityImpl) this).detach_statuscondition();
                     if (result == DDS.RETCODE_OK.value) {
-                        this.participant = null;
-                        this.name = null;
-                        result = jniSubscriberFree(uSubscriber);
+                        result = this.disable_callbacks();
                         if (result == DDS.RETCODE_OK.value) {
-                            result = super.deinit();
+                            result = ((EntityImpl) this).detach_statuscondition();
+                            if (result == DDS.RETCODE_OK.value) {
+                                this.participant = null;
+                                this.name = null;
+                                result = jniSubscriberFree(uSubscriber);
+                                if (result == DDS.RETCODE_OK.value) {
+                                    result = super.deinit();
+                                }
+                            }
                         }
                     }
                 } else {
@@ -153,6 +158,7 @@ public class SubscriberImpl extends SubscriberBase implements DDS.Subscriber {
                                 result = reader.set_dispatcher(dispatcher);
                             } else {
                                 reader = null;
+                                ReportStack.report(result,"DataReader could not be initialized.");
                             }
                             if (result == DDS.RETCODE_OK.value) {
                                 result = reader.set_listener(a_listener, mask);
@@ -160,9 +166,11 @@ public class SubscriberImpl extends SubscriberBase implements DDS.Subscriber {
                             if (result == DDS.RETCODE_OK.value) {
                                 if (this.factoryAutoEnable && this.is_enabled()) {
                                     result = reader.enable();
+                                    if (result != DDS.RETCODE_OK.value) {
+                                        ReportStack.report(result,"DataReader could not be enabled.");
+                                    }
                                 }
                             }
-
                             if (result != DDS.RETCODE_OK.value
                                     && reader != null) {
                                 this.delete_datareader(reader);

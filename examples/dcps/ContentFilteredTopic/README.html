@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - ContentFilteredTopic</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li>ContentFilteredTopic</li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -39,8 +40,8 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <p>It consists of 4 units : </p>
 <ul><li> CheckStatus : provides return status checking</li>
     <li> DDSEntityManager : implements a class providing operations to set up DCPS entities (creation, deletion)</li>
-    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_contentfilteredtopic_sub" data-langcpp="sacpp_contentfilteredtopic_sub" data-langjava="ContentFilteredTopicDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_contentfilteredtopic_sub" data-langjava5="ContentFilteredTopicDataSubscriber" data-langisocpp2="subscriber">ContentFilteredTopicDataSubscriber</span> <span class="ex-unit-desc">application uses Content-based subscription</span></li>
-    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_contentfilteredtopic_pub" data-langcpp="sacpp_contentfilteredtopic_pub" data-langjava="ContentFilteredTopicDataPublisher" data-langisocpp="publisher" data-langcs="sacs_contentfilteredtopic_pub" data-langjava5="ContentFilteredTopicDataPublisher" data-langisocpp2="publisher">ContentFilteredTopicDataPublisher</span> <span class="ex-unit-desc">generates stock quotes for two ticker symbols, GE and MSFT.</span></li>
+    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_contentfilteredtopic_sub" data-langcpp="sacpp_contentfilteredtopic_sub" data-langjava="ContentFilteredTopicDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_contentfilteredtopic_sub" data-langjava5="sub/target/classes/ContentFilteredTopicDataSubscriber" data-langisocpp2="subscriber">ContentFilteredTopicDataSubscriber</span> <span class="ex-unit-desc">application uses Content-based subscription</span></li>
+    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_contentfilteredtopic_pub" data-langcpp="sacpp_contentfilteredtopic_pub" data-langjava="ContentFilteredTopicDataPublisher" data-langisocpp="publisher" data-langcs="sacs_contentfilteredtopic_pub" data-langjava5="pub/target/classes/ContentFilteredTopicDataPublisher" data-langisocpp2="publisher">ContentFilteredTopicDataPublisher</span> <span class="ex-unit-desc">generates stock quotes for two ticker symbols, GE and MSFT.</span></li>
 </ul>
 <h3>3) Scenario</h3>
 
@@ -113,9 +114,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
                 </ul>
 
 <p>For java5</p>
-                <ul><li>saj5_contentfilteredtopic_pub.jar </li>
-                    <li>saj5_contentfilteredtopic_sub.jar </li>
-                    <li>saj5_contentfilteredtopic_types.jar </li>
+                <ul><li>java5_ContentFilteredTopic_pub.jar </li>
+                    <li>java5_ContentFilteredTopic_sub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
@@ -153,7 +153,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_contentfilteredtopic_sub GE</i></b> for C  </li>
           <li><b><i>sacpp_contentfilteredtopic_sub GE</i></b> for C++  </li>
           <li><b><i>java -jar saj_contentfilteredtopic_sub.jar GE</i></b> for Java </li>
-          <li><b><i>java -jar saj5_contentfilteredtopic_sub.jar GE</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/java5_ContentFilteredTopic_sub.jar GE</i></b> for Java5 </li>
           <li><b><i>subscriber GE</i></b> for isocpp2 </li>
         </ul>
     </li>
@@ -162,7 +162,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_contentfilteredtopic_pub</i></b> for C  </li>
           <li><b><i>sacpp_contentfilteredtopic_pub</i></b> for C++ </li>
           <li><b><i>java -jar saj_contentfilteredtopic_pub.jar </i></b> for Java </li>
-          <li><b><i>java -jar saj5_contentfilteredtopic_pub.jar </i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_ContentFilteredTopic_pub.jar </i></b> for Java5 </li>
           <li><b><i>publisher</i></b> for isocpp2 </li>
            </ul>
     </ul>
@@ -208,9 +208,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
                 </ul>
 
 <p>For java5</p>
-                <ul><li>saj5_contentfilteredtopic_pub.jar </li>
-                        <li>saj5_contentfilteredtopic_sub.jar </li>
-                        <li>saj5_contentfilteredtopic_types.jar </li>
+                <ul><li>java5_ContentFilteredTopic_pub.jar </li>
+                    <li>java5_ContentFilteredTopic_sub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
@@ -249,7 +248,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_contentfilteredtopic_sub GE</i></b> for C++</li>
           <li><b><i>sacs_contentfilteredtopic_sub GE</i></b> for C# </li>
           <li><b><i>java -jar saj_contentfilteredtopic_sub.jar GE</i></b> for Java </li>
-          <li><b><i>java -jar saj5_contentfilteredtopic_sub.jar GE</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/java5_ContentFilteredTopic_sub.jar GE</i></b> for Java5 </li>
           <li><b><i>subscriber</i></b> for isocpp2</li>
         </ul>
     </li>
@@ -259,7 +258,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_contentfilteredtopic_pub</i></b> for C++ </li>
           <li><b><i>sacs_contentfilteredtopic_pub</i></b> for C# </li>
           <li><b><i>java -jar saj_contentfilteredtopic_pub.jar </i></b> for Java </li>
-          <li><b><i>java -jar saj5_contentfilteredtopic_pub.jar </i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_ContentFilteredTopic_pub.jar </i></b> for Java5 </li>
           <li><b><i>publisher</i></b> for isocpp2</li>
            </ul>
     </ul>

@@ -5,7 +5,7 @@ Installation and Configuration
 ##############################
 
 *Follow the instructions in this chapter to install and configure
-Vortex OpenSplice and its tools. Information on running the OpenSplice
+Vortex OpenSplice and its tools. Information on running the Vortex OpenSplice
 examples are provided at the end of the chapter under* `Examples`_.
 
 
@@ -14,14 +14,12 @@ Vortex OpenSplice Development and Run-Time
 ******************************************
 
 Vortex OpenSplice is provided in two installers. The **HDE** (Host
-Development Environment) is the standard and it requires approximately
-60 Mb of disk space after installation; the **RTS** (Run Time System)
-requires approximately 35 Mb of disk space.
+Development Environment) is the standard and the **RTS** (Run Time System).
 
 The HDE contains all of the services, libraries, header files and tools
-needed to develop applications using OpenSplice, and the RTS is a subset
+needed to develop applications using Vortex OpenSplice, and the RTS is a subset
 of the HDE which contains all of the services, libraries and tools
-needed to deploy applications using OpenSplice.
+needed to deploy applications using Vortex OpenSplice.
 
 .. _`Installation for UNIX and Windows Platforms`:
 
@@ -31,7 +29,7 @@ Installation for UNIX and Windows Platforms
 
 This section describes the normal procedure to install Vortex OpenSplice
 on a UNIX or Windows platform. The exception is the procedure to install
-Vortex OpenSplice on a UNIX ARM platform which is described in section :ref:`UNIX ARM platform` 
+Vortex OpenSplice on a UNIX ARM platform which is described in section :ref:`UNIX ARM platform`
 
 **Step 1**
 
@@ -44,7 +42,7 @@ Vortex OpenSplice on a UNIX ARM platform which is described in section :ref:`UNI
 
   where, some being optional,
 
-  *<code>* - PrismTech's code for the platform
+  *<code>* - ADLINK's code for the platform
   *<version>* - the Vortex OpenSplice version number,
   for example ``V6.0``
 
@@ -76,7 +74,7 @@ Vortex OpenSplice on a UNIX ARM platform which is described in section :ref:`UNI
   *Configure the Vortex OpenSplice environment variables.*
 
   (This is only necessary on UNIX, as the Windows environment
-  is configured by the OpenSplice installer.)
+  is configured by the Vortex OpenSplice installer.)
 
   Go to the *<install_dir>/<E>/<platform>* directory, where *<E>* is ``HDE``
   or ``RTS`` and *<platform>* is, for example, ``x86.linux2.6``.
@@ -90,7 +88,7 @@ Vortex OpenSplice on a UNIX ARM platform which is described in section :ref:`UNI
 
   Usually not required, but install your desired ORB when the C++ language mapping is used with
   CORBA cohabitation. Ensure your chosen ORB and compiler is appropriate
-  for the CCPP library being used (either OpenSplice's default library or
+  for the CCPP library being used (either Vortex OpenSplice's default library or
   other custom-built library). Refer to the *Release Notes* for ORB and
   compiler information pertaining to Vortex OpenSplice' default CCPP library.
 
@@ -111,8 +109,8 @@ Configuration
 
 Vortex OpenSplice is configured using an XML configuration file, as
 shown under `Example XML Configuration Settings`_ .
-It is advisable to use the ``osplconf`` tool (UNIX) 
-or *OpenSplice DDS Configurator Tool* (Windows *Start Menu* ) to
+It is advisable to use the ``osplconf`` tool (UNIX)
+or *Vortex OpenSplice Configurator Tool* (Windows *Start Menu* ) to
 edit your xml files. The configurator tool provides
 explanations of each attribute and also validates the input.
 
@@ -122,7 +120,7 @@ available in this directory, to assist in other scenarios). The default
 value of the environment variable ``OSPL_URI`` is set to this
 configuration file.
 
-The configuration file defines and configures the following OpenSplice
+The configuration file defines and configures the following Vortex OpenSplice
 services:
 
 *spliced*
@@ -139,11 +137,11 @@ services:
   in a domain.
 
 *tuner*
-  This service provides a SOAP interface for the OpenSplice Tuner to connect
+  This service provides a SOAP interface for the Vortex OpenSplice Tuner to connect
   to the node remotely from any other reachable node.
 
 The default deployment specified by the XML configuration file is for a
-*Single Process* deployment. This means that the OpenSplice Domain
+*Single Process* deployment. This means that the Vortex OpenSplice Domain
 Service, database administration and associated services are all started
 within the DDS application process. This is implicitly done when the
 user's application invokes the DDS *create\_participant* operation.
@@ -152,7 +150,7 @@ The deployment mode and other configurable properties can be changed by
 using a different ``OSPL_URI`` file. Several sample configuration files
 are provided at the same location.
 
-|info| 
+|info|
   If using a shared memory configuration, a *<Database>* attribute
   is specified in the XML configuration.
   The default Database Size that is mapped on
@@ -161,8 +159,8 @@ are provided at the same location.
 
 |caution|
   *Note:* The maximum user-creatable shared-memory segment is limited
-  on certain machines, including Solaris, so it must either be 
-  adjusted or OpenSplice must be started as root.
+  on certain machines, including Solaris, so it must either be
+  adjusted or Vortex OpenSplice must be started as root.
 
 A complete configuration file that enables durability as well as
 Real Time Native Networking is shown below. (The relevant lines are not enabled in
@@ -179,7 +177,7 @@ created). In the example below this directory is ``/tmp/Pdata``.
 
 For the networking service, the network interface-address that is to be
 used is specified by the *<NetworkInterfaceAddress>* element. The
-default value is set to ``first available`` , meaning that OpenSplice will
+default value is set to ``first available`` , meaning that Vortex OpenSplice will
 determine the first available interface that is broadcast or multicast
 enabled. However, an alternative address may be specified as well
 (specify as ``a.b.c.d``).
@@ -351,13 +349,13 @@ and run it on Unix/Linux and Windows systems.
 For VxWorks and Integrity, please refer to :ref:`VxWorks 5.5.1`,
 :ref:`VxWorks 6.x RTP`, and :ref:`Integrity` in this *Guide*.
 
-Using the OpenSplice Tools
-==========================
+Using the Vortex OpenSplice Tools
+=================================
 
 |caution|
   *Note:* The following instructions apply only to the *shared memory*
   deployment of Vortex OpenSplice. When deploying in single process
-  configuration, there is no need to manually start the OpenSplice
+  configuration, there is no need to manually start the Vortex OpenSplice
   infrastructure prior to running a DDS application process, as the
   administration will be created within the application process. Please
   refer to the Vortex OpenSplice *Deployment Guide* for a discussion of these
@@ -369,12 +367,12 @@ Windows *Start Menu* , as well as the Tuner and Configurator.
 
 **Step 1**
 
-  *Manually start the OpenSplice infrastructure*
+  *Manually start the Vortex OpenSplice infrastructure*
 
   1. Enter ``ospl start`` on the command line [#f1]_.
-     This starts the OpenSplice services.
+     This starts the Vortex OpenSplice services.
 
-  These log files may be created in the current directory when OpenSplice
+  These log files may be created in the current directory when Vortex OpenSplice
   is started:
 
     *ospl-info.log* - contains information and warning reports
@@ -390,9 +388,9 @@ Windows *Start Menu* , as well as the Tuner and Configurator.
 
 **Step 2**
 
-  *Start the OpenSplice Tuner Tool*
+  *Start the Vortex OpenSplice Tuner Tool*
 
-  1. Read the *OpenSplice Tuner Guide* (``TunerGuide.pdf``)
+  1. Read the *Vortex OpenSplice Tuner Guide* (``TunerGuide.pdf``)
      before running the Tuner Tool.
 
   2. Start the tool by entering ``ospltun`` on the command line.
@@ -402,30 +400,30 @@ Windows *Start Menu* , as well as the Tuner and Configurator.
   environment variable (the default
   URI is: ``file://$OSPL_HOME/etc/config/ospl.xml``).
 
-  The OpenSplice system can now be monitored.
+  The Vortex OpenSplice system can now be monitored.
 
 **Step 3**
 
-  *Experiment with the OpenSplice tools and applications*
+  *Experiment with the Vortex OpenSplice tools and applications*
 
-  Use the OpenSplice Tuner to monitor all DDS entities and
+  Use the Vortex OpenSplice Tuner to monitor all DDS entities and
   their (dynamic) relationships.
 
 **Step 4**
 
-  *Manually stop the OpenSplice infrastructure*
+  *Manually stop the Vortex OpenSplice infrastructure*
 
-  1. Choose *File > Disconnect* from the OpenSplice Tuner menu.
+  1. Choose *File > Disconnect* from the Vortex OpenSplice Tuner menu.
 
   2. Enter ``ospl stop`` on the command line; this stops all
-     OpenSplice services.
+     Vortex OpenSplice services.
 
-  
 
- 
+
+
 .. rubric:: Footnotes
- 
-.. [#f1] ``ospl`` is the command executable for OpenSplice DDS.
+
+.. [#f1] ``ospl`` is the command executable for Vortex OpenSplice.
 
 
 
@@ -449,4 +447,4 @@ Windows *Start Menu* , as well as the Tuner and Configurator.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-   
+

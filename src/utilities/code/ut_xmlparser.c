@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -188,7 +189,8 @@ static int make_chars_available (struct ut_xmlpState *st, size_t nmin)
         st->cbuf = os_realloc (st->cbuf, st->cbufmax);
     }
     /* try to refill buffer if a backing file is present; eof (or end-of-string) is
-       reached when this doesn't add any bytes to the buffer */
+     * reached when this doesn't add any bytes to the buffer
+     */
     if (st->fp != NULL) {
         n = fread (st->cbuf + st->cbufn, 1, st->cbufmax - st->cbufn, st->fp);
         st->cbufn += n;
@@ -506,7 +508,7 @@ static void drop_peek_token (struct ut_xmlpState *st)
 static int next_token (struct ut_xmlpState *st, char **payload)
 {
     /* Always return a valid pointer to allocated memory or a null
-     pointer, regardless of token type */
+     * pointer, regardless of token type */
     if (payload) {
         *payload = NULL;
     }
@@ -639,7 +641,8 @@ static int parse_element (struct ut_xmlpState *st, os_address parentinfo)
                         }
                     }
                     /* if the mark-up happens to be a CDATA, consume it, and gobble up characters
-                       until the closing marker is reached, which then also gets consumed */
+                     * until the closing marker is reached, which then also gets consumed
+                     */
                     if (peek_chars (st, "<![CDATA[", 1)) {
                         while (!peek_chars (st, "]]>", 1) && peek_char (st) != TOK_EOF) {
                             if (append_to_payload (st, next_char (st), 1) < 0) {

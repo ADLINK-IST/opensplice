@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,9 +46,9 @@
 
 /** Text indentation level (4 spaces per indent) */
 static c_long loopIndent;
-    /** Index for array loop variables, incremented for each array dimension */
+/** Index for array loop variables, incremented for each array dimension */
 static c_long varIndex;
-    /** Preset discriminator assignment action */
+/** Preset discriminator assignment action */
 static c_char set_discriminator[256];
 
 static void
@@ -119,33 +120,52 @@ idl_valueFromLabelVal(
     return labelName;
 }
 
-#if 0
-/** @brief Checks if the type is an enum when generating for ISOCpp
- *
- * @param type specifies the type to check it is an enum
- * @return TRUE when generating for ISOcpp and type is an enum
- */
-static os_boolean
-idl_getIsISOCppEnum(
+/***********************************************************
+ * Identifies contiguous types for Cxx11.
+ * Indentifies if a type can be copied straight in or out
+ * of the internal database rep with a vanilla memcpy on account
+ * of being laid out exactly the same. For the IDL-Cxx11 mapping
+ * this has different results than for conventional IDL-C(++)
+ * language mappings, due to the fact that enums are now mapped
+ * enum classes and structs consist of classes with encapsulated
+ * private attributes.
+ * @param type The definition of the type.
+ * @return TRUE if it is a contiguous / copyable type, FALSE otherwise.
+ ***********************************************************/
+c_bool
+idl_isCxx11Contiguous(
     c_type type)
 {
-    os_boolean isEnum;
-
     switch (c_baseObject(type)->kind) {
+    case M_EXCEPTION:
+    case M_STRUCTURE:
+        /* Since in ISOCPP2 structs are mapped to C++ classes with property getters/setters
+         * (and not to C++ structs with only members!!!) they cannot be copied blockwise anymore.
+         * and That means an IDL struct in ISOCPP2 is by definition not contiguous.
+         */
+        return FALSE;
+    break;
+    case M_PRIMITIVE:
+        if (c_primitive(type)->kind == P_BOOLEAN &&
+             idl_getIsISOCpp() && idl_getIsISOCppTypes())
+        {
+            /* Those clever chaps at the STL have optimised
+             * vector<bool> for size. One bit per bool apparently. */
+            return FALSE;
+        }
+        return TRUE;
+        break;
     case M_ENUMERATION:
-        isEnum = OS_TRUE;
-        break;
+        return FALSE;
+    break;
     case M_TYPEDEF:
-        isEnum = idl_getIsISOCppEnum(c_typeDef(type)->alias);
-        break;
+        return idl_isCxx11Contiguous(c_typeDef(type)->alias);
+    break;
     default:
-        isEnum = OS_FALSE;
-        break;
+        return FALSE;
+    break;
     }
-
-    return isEnum;
 }
-#endif
 
 static c_bool
 idl_requiresInitializedSequence(
@@ -158,7 +178,7 @@ idl_requiresInitializedSequence(
         result = TRUE;
     }
     if (idl_typeSpecType(nextType) == idl_tstruct) {
-        result = !idl_isContiguous(idl_typeSpecDef(nextType));
+        result = !idl_isCxx11Contiguous(idl_typeSpecDef(nextType));
     }
     if (idl_typeSpecType(nextType) == idl_ttypedef) {
         idl_typeSpec alias = idl_typeDefActual(idl_typeDef(nextType));
@@ -167,13 +187,16 @@ idl_requiresInitializedSequence(
                 idl_typeSpecType(alias) == idl_tbasic) {
             result = TRUE;
         } else if (idl_typeSpecType(alias) == idl_tseq) {
-            result = idl_requiresInitializedSequence(idl_typeSeq(nextType));
+            result = TRUE;
         } else if (idl_typeSpecType(alias) == idl_tstruct) {
-            result = !idl_isContiguous(idl_typeSpecDef(alias));
+            result = !idl_isCxx11Contiguous(idl_typeSpecDef(alias));
         }
     }
     if (idl_typeSpecType(nextType) == idl_tseq) {
-        result = idl_requiresInitializedSequence(idl_typeSeq(nextType));
+        result = TRUE;
+    }
+    if (idl_typeSpecType(nextType) == idl_tenum) {
+        result = TRUE;
     }
 
     return result;
@@ -890,7 +913,7 @@ idl_arrayLoopCopyBody(
     c_char destin[256];
     c_long total_indent;
     c_char *functionPrefix = idl_scopedTypeName(typeSpec);
-    c_char *dbTypeName;
+    c_char *dbTypeName, *cxxTypeName;
 
     loopIndent++;
     switch (idl_typeSpecType(typeSpec)) {
@@ -910,11 +933,9 @@ idl_arrayLoopCopyBody(
         idl_fileOutPrintf(idl_fileCur(), ");\n");
     break;
     case idl_ttypedef:
-        if(stacRequested)
-        {
+        if(stacRequested) {
             /* stac found, bypass the typedef and recurse deeper */
-            if(idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tarray)
-            {
+            if(idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tarray) {
                 /* An array type is not handled by idl_arrayLoopCopyBody operation
                  * so we have to go up to the idl_arrayElements operation
                  */
@@ -925,8 +946,7 @@ idl_arrayLoopCopyBody(
                     indent,
                     stacRequested,
                     catsRequested);
-            } else
-            {
+            } else {
                 idl_arrayLoopCopyBody(
                     typeArray,
                     idl_typeDefActual(idl_typeDef(typeSpec)),
@@ -936,10 +956,9 @@ idl_arrayLoopCopyBody(
                     stacRequested,
                     catsRequested);
             }
-        } else
-        {
-        idl_printIndent(loopIndent + indent);
-        switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec)))) {
+        } else {
+            idl_printIndent(loopIndent + indent);
+            switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec)))) {
             case idl_tstruct:
             case idl_tunion:
             case idl_tarray:
@@ -957,16 +976,20 @@ idl_arrayLoopCopyBody(
             case idl_tbasic:
                 /* QAC EXPECT 3416; No side effect here */
                 if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
-                    idl_fileOutPrintf(idl_fileCur(), "(%s).data()", to);
+                    idl_fileOutPrintf(idl_fileCur(), "(%s)", to);
                     idl_arrayLoopCopyIndex(typeArray);
                     idl_fileOutPrintf(idl_fileCur(), " = ((*%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
                     idl_fileOutPrintf(idl_fileCur(), ") ? ");
-                    idl_fileOutPrintf(idl_fileCur(), "((*%s)", from);
+                    idl_fileOutPrintf(idl_fileCur(), "(*%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), ") : \"\";\n");
+                    idl_fileOutPrintf(idl_fileCur(), " : \"\";\n");
                 } else {
-                    idl_fileOutPrintf(idl_fileCur(), "%s = %s;\n", to, from);
+                    idl_fileOutPrintf(idl_fileCur(), "(%s)", to);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf(idl_fileCur(), " = (*%s)", from);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf(idl_fileCur(), ";\n");
                 }
             break;
             case idl_tenum:
@@ -989,12 +1012,26 @@ idl_arrayLoopCopyBody(
             idl_fileOutPrintf(idl_fileCur(), " = ((*%s)", from);
             idl_arrayLoopCopyIndex(typeArray);
             idl_fileOutPrintf(idl_fileCur(), ") ? ");
-            idl_fileOutPrintf(idl_fileCur(), "((*%s)", from);
+            idl_fileOutPrintf(idl_fileCur(), "(*%s)", from);
             idl_arrayLoopCopyIndex(typeArray);
-            idl_fileOutPrintf(idl_fileCur(), ") : \"\";\n");
+            idl_fileOutPrintf(idl_fileCur(), " : \"\";\n");
         } else {
-            assert(0);
+            idl_fileOutPrintf(idl_fileCur(), "(%s)", to);
+            idl_arrayLoopCopyIndex(typeArray);
+            idl_fileOutPrintf(idl_fileCur(), " = (*%s)", from);
+            idl_arrayLoopCopyIndex(typeArray);
+            idl_fileOutPrintf(idl_fileCur(), ";\n");
         }
+    break;
+    case idl_tenum:
+        cxxTypeName = idl_ISOCxx2TypeFromTypeSpec(typeSpec);
+        idl_printIndent(loopIndent + indent);
+        idl_fileOutPrintf(idl_fileCur(), "(%s)", to);
+        idl_arrayLoopCopyIndex(typeArray);
+        idl_fileOutPrintf(idl_fileCur(), " = (%s)(*%s)", cxxTypeName, from);
+        idl_arrayLoopCopyIndex(typeArray);
+        idl_fileOutPrintf(idl_fileCur(), ";\n");
+        os_free(cxxTypeName);
     break;
     case idl_tseq:
         nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
@@ -1162,7 +1199,6 @@ idl_arrayElements(
     os_boolean stacRequested,
     os_boolean catsRequested)
 {
-    char *buf;
     idl_typeSpec subType;
     idl_type idlType;
 
@@ -1184,25 +1220,27 @@ idl_arrayElements(
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(subType)) == idl_string) {
-            loopIndent = 0;
             idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
-        } else if(catsRequested)
-        {
+        } else if(catsRequested) {
             idl_printIndent(indent);
             idl_fileOutPrintf(idl_fileCur(),"   strncpy((char *)(%s).data(), %s, %d);\n", to, from, idl_typeArraySize(typeArray));
-        } else
-        {
+        } else if (idl_typeSpecType(idl_typeArrayType(typeArray)) != idl_tarray){
             idl_printIndent(indent);
             idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)(%s).data(), %s, sizeof (*%s));\n", to, from, from);
+        } else {
+            idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
         }
     break;
     case idl_tenum:
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)(%s).data(), %s, sizeof (*%s));\n", to, from, from);
+        if (idl_typeSpecType(idl_typeArrayType(typeArray)) != idl_tarray){
+            idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)(%s).data(), %s, sizeof (*%s));\n", to, from, from);
+        } else {
+            idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
+        }
     break;
     case idl_tstruct:
     case idl_tunion:
-        loopIndent = 0;
         idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
     break;
     case idl_ttypedef:
@@ -1211,20 +1249,18 @@ idl_arrayElements(
             /* QAC EXPECT 3416; No side effect here */
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(subType)))) == idl_string) {
                 loopIndent = 0;
-                buf = os_malloc(strlen(from)+4);
-                os_sprintf(buf, "(*%s)", from);
-                idl_arrayLoopCopy(typeArray, buf, to, indent, stacRequested, catsRequested);
-                os_free(buf);
-            } else {
+                idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
+            } else if (idl_typeSpecType(idl_typeArrayType(typeArray)) != idl_tarray){
                 idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)(%s).data(), %s, sizeof (*%s));\n", to, from, from);
+            } else {
+                idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
             }
             /* QAC EXPECT 3416; No side effect here */
         } else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tenum) {
             idl_printIndent(indent);
             idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)(%s).data(), %s, sizeof (*%s));\n", to, from, from);
         } else {
-            loopIndent = 0;
             idl_arrayLoopCopy(typeArray, from, to, indent, stacRequested, catsRequested);
         }
     break;
@@ -1325,7 +1361,7 @@ idl_seqIndex(
  * Structure types (not unions) that do not contain any reference types (or unions)
  * are copied via a plain memory copy because the sequence elements are
  * located in consequtive memory with the same memory map for C++ CORBA and OpenSpliceDDS.
- * These cases are identified by idl_isContiguous()
+ * These cases are identified by idl_isCxx11Contiguous()
  *
  * @param typeSpec The specification of the actual type of the sequence
  * @param from Specifies the identification of the source
@@ -1348,31 +1384,25 @@ idl_seqLoopCopy(
     c_char *cxxTypeName;
     c_char *functionPrefix;
     c_char *dbTypeName;
-    c_char *seqIndex = idl_seqIndex(loop_index);
+    c_char *seqIndex;
 
-    if (idl_isContiguous(idl_typeSpecDef(typeSpec))) {
+    if (idl_isCxx11Contiguous(idl_typeSpecDef(typeSpec))) {
         c_char *dbTypeName = idl_scopedSplTypeName(typeSpec);
-        idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    std::vector<%s>* cv = reinterpret_cast< std::vector<%s>* >(%s);\n",
-            dbTypeName,
-            dbTypeName,
-            (strlen(to) > 1) ? to+1 : "&x");
+        seqIndex = idl_seqIndex(loop_index-1);
 
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    cv->insert(cv->end(), %s, %s + size%d);\n",
+        idl_fileOutPrintf(idl_fileCur(), "    (%s)%s.assign(%s, %s + size%d);\n",
+            to, seqIndex,
             from,
             from,
             loop_index-1);
 
-        idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "}\n");
         os_free(dbTypeName);
         os_free(seqIndex);
         return;
     }
 
+    seqIndex = idl_seqIndex(loop_index);
     idl_printIndent(indent);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     idl_printIndent(indent);

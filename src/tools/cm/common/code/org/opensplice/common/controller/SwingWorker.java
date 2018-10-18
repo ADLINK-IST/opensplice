@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,12 +24,12 @@ import javax.swing.SwingUtilities;
 /**
  * This is the 3rd version of SwingWorker (also known as
  * SwingWorker 3), an abstract class that you subclass to
- * perform GUI-related work in a dedicated thread.  
+ * perform GUI-related work in a dedicated thread.
  */
 public abstract class SwingWorker {
     private Object value;
 
-    /** 
+    /**
      * Class to maintain reference to current worker thread
      * under separate synchronization control.
      */
@@ -41,23 +42,23 @@ public abstract class SwingWorker {
 
     private ThreadVar threadVar;
 
-    /** 
-     * Get the value produced by the worker thread, or null if it 
+    /**
+     * Get the value produced by the worker thread, or null if it
      * hasn't been constructed yet.
      */
-    protected synchronized Object getValue() { 
-        return value; 
+    protected synchronized Object getValue() {
+        return value;
     }
 
-    /** 
-     * Set the value produced by worker thread 
+    /**
+     * Set the value produced by worker thread
      */
-    private synchronized void setValue(Object x) { 
-        value = x; 
+    private synchronized void setValue(Object x) {
+        value = x;
     }
 
-    /** 
-     * Compute the value to be returned by the <code>get</code> method. 
+    /**
+     * Compute the value to be returned by the <code>get</code> method.
      */
     public abstract Object construct();
 
@@ -81,14 +82,14 @@ public abstract class SwingWorker {
     }
 
     /**
-     * Return the value created by the <code>construct</code> method.  
+     * Return the value created by the <code>construct</code> method.
      * Returns null if either the constructing thread or the current
      * thread was interrupted before a value was produced.
-     * 
+     *
      * @return the value created by the <code>construct</code> method
      */
     public Object get() {
-        while (true) {  
+        while (true) {
             Thread t = threadVar.get();
             if (t == null) {
                 return getValue();

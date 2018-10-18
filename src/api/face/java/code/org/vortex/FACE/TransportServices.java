@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -213,7 +214,8 @@ public class TransportServices {
 
     /**
      * The Receive_Message Function is used to receive data from another source.
-     * For Java this needs to be called on the generated type interface without using the TS Interface.
+     * For Java this needs to be called on the generated type interface without
+     * using the TS Interface.
      *
      * Possible return codes:
      * <ul>
@@ -231,17 +233,19 @@ public class TransportServices {
      * </ul>
      *
      * @param connection_id
-     *        The connection_id which is used to get the connection where to receive messages on.
+     *        The connection_id which is used to get the connection where to
+     *        receive messages on.
      *        This is an input parameter.
      * @param timeout
-     *        The timeout in nanoseconds, this is used to determine how long DDS should wait for new messages
-     *        to arrive before returning the result.
+     *        The timeout in nanoseconds, this is used to determine how long DDS
+     *        should wait for new messages to arrive before returning the result.
      *        This is an input parameter.
      * @param transaction_id
-     *        The transaction_id, each time a message is read an unique transaction_id is generated for it.
+     *        The transaction_id, each time a message is read an unique
+     *        transaction_id is generated for it.
      *        This is an output parameter.
      * @param message
-     *        The message that is read by DDS
+     *        The message that is read by DDS.
      *        This is an output parameter.
      * @param message_type_id
      *        The message_type_id for DDS this parameter is not relevant.
@@ -301,7 +305,8 @@ public class TransportServices {
 
     /**
      * The Send_Message Function is used to send data to another source.
-     * For Java this needs to be called on the generated type interface without using the TS Interface.
+     * For Java this needs to be called on the generated type interface without
+     * using the TS Interface.
      *
      * Possible return codes:
      * <ul>
@@ -324,17 +329,21 @@ public class TransportServices {
      * </ul>
      *
      * @param connection_id
-     *        The connection_id which is used to get the connection where to send messages to.
+     *        The connection_id which is used to get the connection where to
+     *        send messages to.
      *        This is an input parameter.
      * @param timeout
-     *        The timeout in nanoseconds, this is used to determine how long DDS at maximum can wait to send the message.
-     *        This timeout cannot be greater than max_blocking_time of the supplied DataWriter QoS.
+     *        The timeout in nanoseconds, this is used to determine how long DDS
+     *        at maximum can wait to send the message.
+     *        This timeout cannot be greater than max_blocking_time of the
+     *        supplied DataWriter QoS.
      *        This is an input parameter.
      * @param transaction_id
-     *        The transaction_id, each time a message is send an unique transaction_id is generated for it.
+     *        The transaction_id, each time a message is send an unique
+     *        transaction_id is generated for it.
      *        This is an output parameter.
      * @param message
-     *        The message that is read by DDS
+     *        The message that is read by DDS.
      *        This is an output parameter.
      * @param message_type_id
      *        The message_type_id for DDS this parameter is not relevant.
@@ -397,8 +406,9 @@ public class TransportServices {
     }
 
     /**
-     * The purpose of Register_Callback is to provide a mechanism to read data without polling.
-     * For Java this needs to be called on the generated type interface without using the TS Interface.
+     * The purpose of Register_Callback is to provide a mechanism to read data
+     * without polling. For Java this needs to be called on the generated type
+     * interface without using the TS Interface.
      * There can only be one callback registration per connection_id.
      *
      * Possible return codes:
@@ -415,17 +425,20 @@ public class TransportServices {
      * </ul>
      *
      * @param connection_id
-     *        The connection_id of the connection that needs to be used for the callback.
+     *        The connection_id of the connection that needs to be used for the
+     *        callback.
      *        This is an input parameter.
      * @param waitset
      *        The waitset for DDS this parameter is not relevant.
      *        This is an input parameter.
      * @param data_callback
-     *        The data_callback class in which an action can be set on how to react when receiving data.
+     *        The data_callback class in which an action can be set on how to
+     *        react when receiving data.
      *        This is an output parameter.
      * @param max_message_size
-     *        The max_message_size for DDS this parameter is not relevant however the max_message_size supplied
-     *        needs to be less then the max_message_size of the configured connection.
+     *        The max_message_size for DDS this parameter is not relevant
+     *        however the max_message_size supplied needs to be less then the
+     *        max_message_size of the configured connection.
      *        This is an input parameter.
      * @param return_code the return_code
      *        This is an output parameter.

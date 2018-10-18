@@ -1,0 +1,21 @@
+module basic{
+
+	module module_SequenceOfStructArray{
+
+		struct Inner{
+			short short1;
+			double double1;
+		};
+		
+		typedef Inner inner_struct;
+		typedef inner_struct arr[2];
+		
+		struct SequenceOfStructArray_struct{
+			long long1;
+			Sequence<arr> seq1;
+		};
+		
+		#pragma keylist SequenceOfStructArray_struct long1
+	};
+};
+		

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -56,14 +57,19 @@ extern "C" {
 OS_API v_dataReaderEntry
 v_dataReaderEntryNew(
     v_dataReader dataReader,
-    v_index index,
     v_topic topic,
     q_expr _where,
-    const c_value *params[]);
+    const c_value *params[],
+    os_uint32 nrOfParams);
 
 OS_API void
 v_dataReaderEntryFree(
     v_dataReaderEntry _this);
+
+OS_API void
+v_dataReaderEntrySetTransactionAdmin(
+    _Inout_ v_dataReaderEntry _this,
+    _In_opt_ v_transactionGroupAdmin admin);
 
 OS_API v_writeResult
 v_dataReaderEntryWrite(

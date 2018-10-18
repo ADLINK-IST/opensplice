@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -62,9 +63,9 @@ import org.opensplice.common.view.table.QoSTable;
 
 /**
  * Editor for a QoSTable component. It allows a user to edit the QoS within
- * the QoSTable. 
- * 
- * @date Feb 2, 2005 
+ * the QoSTable.
+ *
+ * @date Feb 2, 2005
  */
 public class QoSTableEditor extends AbstractCellEditor implements TableCellEditor, ActionListener, KeyListener {
     private Object curValue = null;
@@ -75,7 +76,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     private StatusPanel status = null;
     private int editRow, editColumn;
     private Component curEditor = null;
-    
+
     /**
      * Constructs a new QoSTableEditor.
      *
@@ -86,21 +87,21 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         this.view = view;
         this.model = (EntityQoSTableModel)view.getModel();
     }
-    
+
     /**
-     * Stores the supplied object that will receive validation and assigment
+     * Stores the supplied object that will receive validation and assignment
      * information from now.
-     * 
+     *
      * @param _status The component that will receive the information.
      */
     public void setStatusListener(StatusPanel  _status){
         status = _status;
     }
-    
+
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         Component result = null;
-        
+
         editRow = row;
         editColumn = column;
         curValue = value;
@@ -138,7 +139,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         curEditor = result;
         curEditor.setBackground(editColor);
         curEditor.addKeyListener(this);
-        
+
         return result;
     }
 
@@ -155,10 +156,10 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     }
 
     /**
-     * Called when the user releases a key on the keyboard. When currently 
+     * Called when the user releases a key on the keyboard. When currently
      * editing a field, the input is validated. When a status listener is
      * attached status information is provided to that listener.
-     * 
+     *
      * @param e The key event that occurred.
      */
     @Override
@@ -166,16 +167,16 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
                 AssignmentResult test = this.testAssignment();
-                
+
                 if(test.isValid()){
                     curEditor.setBackground(editColor);
-                    
+
                     if(status != null){
                         status.setStatus("Current input valid.", false, false);
                     }
                 } else {
                     curEditor.setBackground(errorColor);
-                    
+
                     if(status != null){
                         status.setStatus(test.getErrorMessage(), false, false);
                     }
@@ -183,17 +184,17 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if(e.getSource() instanceof JComboBox){
                 /*Do nothing.*/
             }
-        }       
+        }
     }
-    
+
     /**
      * Validates whether the current value in the editor is valid.
-     * 
+     *
      * @return Whether or not the value in the editor can be assigned.
      */
     public AssignmentResult testAssignment(){
         AssignmentResult result = new AssignmentResult(true, null);
-        
+
         if(curEditor != null){
             try{
                 if(curValue instanceof Integer){
@@ -219,7 +220,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     /**
      * Called when editing has been cancelled.
      */
@@ -227,19 +228,19 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     public void cancelCellEditing(){
         super.cancelCellEditing();
         curEditor = null;
-        
+
         if(status != null){
             status.setStatus("Editing cancelled", false, false);
         }
     }
-    
+
     /**
      * Called when editing has been stopped.
      */
     @Override
     public boolean stopCellEditing(){
         boolean result = true;
-        
+
         if(curEditor != null){
             result = this.assign().isValid();
         }
@@ -249,13 +250,13 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     /**
      * Does nothing.
      */
     @Override
     public void keyTyped(KeyEvent e) {}
-    
+
     /**
      * Does nothing.
      */
@@ -265,12 +266,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     public boolean isEditing(){
         return (curEditor != null);
     }
-    
+
     private AssignmentResult assign(){
         String name, field;
         Object value = null;
         AssignmentResult test = this.testAssignment();
-        
+
         if(test.isValid()){
             if(status != null){
                 status.setStatus("Input valid.", false, false);
@@ -283,9 +284,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             QoS qos = model.getQoS();
             name = (String)model.getValueAt(editRow, editColumn-2);
             field = (String)model.getValueAt(editRow, editColumn-1);
-            
-            //model.setUserDataField( (String)model.getValueAt(editRow, editColumn-1), (String)curValue);
-            
+
             if(qos instanceof ParticipantQoS){
                 curValue = this.assignParticipant(name, field, value);
             } else if(qos instanceof PublisherQoS){
@@ -308,11 +307,11 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return test;
     }
-    
+
     private Component getTimeEditor(Object value){
         return this.getTextFieldEditor(value);
     }
-    
+
     private Component getCheckboxEditor(Object value) {
         JCheckBox result = new JCheckBox();
         result.setSelected((Boolean) value);
@@ -321,87 +320,87 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
 
     private Component getBooleanEditor(Object value){
         Object bool[] = {Boolean.TRUE, Boolean.FALSE};
-        
+
         return this.getEnumEditor(value, bool);
     }
-    
+
     private Component getTextFieldEditor(Object value){
         JTextField result = null;
         result = new JTextField();
         result.setText(value.toString());
-        
+
         return result;
     }
-    
+
     private Component getEnumEditor(Object defaultValue, Object[] values){
         JComboBox result = new JComboBox(values);
         result.setSelectedItem(defaultValue);
-        
+
         return result;
     }
-    
+
     private Component getDurabilityKindEditor(Object value){
-        Object[] values = { DurabilityKind.VOLATILE, 
+        Object[] values = { DurabilityKind.VOLATILE,
                             DurabilityKind.TRANSIENT_LOCAL,
-                            DurabilityKind.TRANSIENT, 
+                            DurabilityKind.TRANSIENT,
                             DurabilityKind.PERSISTENT};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getPresentationKindEditor(Object value){
-        Object[] values = { PresentationKind.INSTANCE, 
+        Object[] values = { PresentationKind.INSTANCE,
                             PresentationKind.TOPIC,
                             PresentationKind.GROUP};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getLivelinessKindEditor(Object value){
-        Object[] values = { LivelinessKind.AUTOMATIC, 
+        Object[] values = { LivelinessKind.AUTOMATIC,
                             LivelinessKind.PARTICIPANT,
                             LivelinessKind.TOPIC};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getReliabilityKindEditor(Object value){
         Object[] values = { ReliabilityKind.BESTEFFORT,
                             ReliabilityKind.RELIABLE};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getOwnershipKindEditor(Object value){
         Object[] values = { OwnershipKind.SHARED,
                             OwnershipKind.EXCLUSIVE};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getHistoryQosKindEditor(Object value){
         Object[] values = { HistoryQosKind.KEEPLAST,
                             HistoryQosKind.KEEPALL};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getOrderbyKindEditor(Object value){
         Object[] values = { OrderbyKind.BY_RECEPTION_TIMESTAMP,
                             OrderbyKind.BY_SOURCE_TIMESTAMP};
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getScheduleKindEditor(Object value){
         Object[] values = {ScheduleKind.DEFAULT,
                            ScheduleKind.TIMESHARING,
                            ScheduleKind.REALTIME };
         return this.getEnumEditor(value, values);
     }
-    
+
     private Component getSchedulePriorityKindEditor(Object value){
         Object[] values = {SchedulePriorityKind.RELATIVE,
                            SchedulePriorityKind.ABSOLUTE };
         return this.getEnumEditor(value, values);
     }
-    
+
     private byte[] getByteArray(String value) throws NumberFormatException {
         byte[] result = null;
-        
+
         if (value == null || value.length() < 3) {
             throw new NumberFormatException("Value not valid.");
         } else if("NULL".equalsIgnoreCase(value)){
@@ -417,11 +416,11 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             String val = value.substring(1, value.length()-1);
             StringTokenizer tokenizer = new StringTokenizer(val, ",", true);
             ArrayList<String> list = new ArrayList<String>();
-            
-            
+
+
             while(tokenizer.hasMoreTokens()){
                 token = tokenizer.nextToken();
-                
+
                 if(prevComma){
                     Byte.parseByte(token);
                     list.add(token);
@@ -433,19 +432,19 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                     prevComma = true;
                 }
             }
-            
+
             if(prevComma){
                 throw new NumberFormatException("Comma's not valid");
             }
             result = new byte[list.size()];
-            
+
             for(int i=0; i<result.length; i++){
                 result[i] = Byte.parseByte(list.get(i));
             }
         }
         return result;
     }
-    
+
     private Time getTime(String value){
         Time t = null;
         if (value != null) {
@@ -453,11 +452,11 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return t;
     }
-    
+
     private Object assignParticipant(String name, String field, Object value){
         Object result = null;
         ParticipantQoS qos = (ParticipantQoS)model.getQoS();
-        
+
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
                 if (value != null) {
@@ -484,17 +483,17 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if("priority".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getWatchdogScheduling().priority = i; 
+                qos.getWatchdogScheduling().priority = i;
             }
         }
         return result;
     }
-    
+
     private Object assignSubscriber(String name, String field, Object value){
         Object result = null;
         SubscriberQoS qos = (SubscriberQoS)model.getQoS();
         result = value;
-        
+
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
                 if (value != null) {
@@ -553,12 +552,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     private Object assignPublisher(String name, String field, Object value){
         Object result = null;
         PublisherQoS qos = (PublisherQoS)model.getQoS();
         result = value;
-        
+
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
                 if (value != null) {
@@ -602,12 +601,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     private Object assignTopic(String name, String field, Object value){
         Object result = null;
         TopicQoS qos = (TopicQoS)model.getQoS();
         result = value;
-        
+
         if("DURABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getDurability().kind = (DurabilityKind)value;
@@ -617,23 +616,23 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                 qos.getDurabilityService().history_kind = (HistoryQosKind)value;
             } else if("service_cleanup_delay".equals(field)){
                 result = this.getTime((String)value);
-                qos.getDurabilityService().service_cleanup_delay = (Time)result; 
+                qos.getDurabilityService().service_cleanup_delay = (Time)result;
             } else if("history_depth".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getDurabilityService().history_depth = i; 
+                qos.getDurabilityService().history_depth = i;
             } else if("max_samples".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getDurabilityService().max_samples = i; 
+                qos.getDurabilityService().max_samples = i;
             } else if("max_instances".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getDurabilityService().max_instances = i; 
+                qos.getDurabilityService().max_instances = i;
             } else if("max_samples_per_instance".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getDurabilityService().max_samples_per_instance = i; 
+                qos.getDurabilityService().max_samples_per_instance = i;
             }
         } else if("TOPIC_DATA".equals(name)){
             if("value".equals(field)){
@@ -656,14 +655,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                 qos.getLiveliness().kind = (LivelinessKind)value;
             } else if("lease_duration".equals(field)){
                 result = this.getTime((String)value);
-                qos.getLiveliness().lease_duration = (Time)result; 
+                qos.getLiveliness().lease_duration = (Time)result;
             }
         } else if("RELIABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getReliability().kind = (ReliabilityKind)value;
             } else if("max_blocking_time".equals(field)){
                 result = this.getTime((String)value);
-                qos.getReliability().max_blocking_time = (Time)result; 
+                qos.getReliability().max_blocking_time = (Time)result;
             }
         } else if("DESTINATION_ORDER".equals(name)){
             if("kind".equals(field)){
@@ -675,27 +674,27 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if("depth".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getHistory().depth = i; 
+                qos.getHistory().depth = i;
             }
         } else if("RESOURCE_LIMITS".equals(name)){
             if("max_samples".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples = i; 
+                qos.getResource().max_samples = i;
             } else if("max_instances".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_instances = i; 
+                qos.getResource().max_instances = i;
             } else if("max_samples_per_instance".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples_per_instance = i; 
+                qos.getResource().max_samples_per_instance = i;
             }
         } else if("TRANSPORT_PRIORITY".equals(name)){
             if("value".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getTransport().value = i; 
+                qos.getTransport().value = i;
             }
         } else if("LIFESPAN".equals(name)){
             if("duration".equals(field)){
@@ -709,12 +708,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     private Object assignReader(String name, String field, Object value){
         Object result = null;
         ReaderQoS qos = (ReaderQoS)model.getQoS();
         result = value;
-        
+
         if("DURABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getDurability().kind = (DurabilityKind)value;
@@ -734,14 +733,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                 qos.getLiveliness().kind = (LivelinessKind)value;
             } else if("lease_duration".equals(field)){
                 result = this.getTime((String)value);
-                qos.getLiveliness().lease_duration = (Time)result; 
+                qos.getLiveliness().lease_duration = (Time)result;
             }
         } else if("RELIABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getReliability().kind = (ReliabilityKind)value;
             } else if("max_blocking_time".equals(field)){
                 result = this.getTime((String)value);
-                qos.getReliability().max_blocking_time = (Time)result; 
+                qos.getReliability().max_blocking_time = (Time)result;
             }
         } else if("DESTINATION_ORDER".equals(name)){
             if("kind".equals(field)){
@@ -753,21 +752,21 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if("depth".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getHistory().depth = i; 
+                qos.getHistory().depth = i;
             }
         } else if("RESOURCE_LIMITS".equals(name)){
             if("max_samples".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples = i; 
+                qos.getResource().max_samples = i;
             } else if("max_instances".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_instances = i; 
+                qos.getResource().max_instances = i;
             } else if("max_samples_per_instance".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples_per_instance = i; 
+                qos.getResource().max_samples_per_instance = i;
             }
         } else if("USER_DATA".equals(name)){
             if("value".equals(field)){
@@ -860,12 +859,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         }
         return result;
     }
-    
+
     private Object assignWriter(String name, String field, Object value){
         Object result = null;
         WriterQoS qos = (WriterQoS)model.getQoS();
         result = value;
-        
+
         if("DURABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getDurability().kind = (DurabilityKind)value;
@@ -885,14 +884,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                 qos.getLiveliness().kind = (LivelinessKind)value;
             } else if("lease_duration".equals(field)){
                 result = this.getTime((String)value);
-                qos.getLiveliness().lease_duration = (Time)result; 
+                qos.getLiveliness().lease_duration = (Time)result;
             }
         } else if("RELIABILITY".equals(name)){
             if("kind".equals(field)){
                 qos.getReliability().kind = (ReliabilityKind)value;
             } else if("max_blocking_time".equals(field)){
                 result = this.getTime((String)value);
-                qos.getReliability().max_blocking_time = (Time)result; 
+                qos.getReliability().max_blocking_time = (Time)result;
             }
         } else if("DESTINATION_ORDER".equals(name)){
             if("kind".equals(field)){
@@ -904,21 +903,21 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if("depth".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getHistory().depth = i; 
+                qos.getHistory().depth = i;
             }
         } else if("RESOURCE_LIMITS".equals(name)){
             if("max_samples".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples = i; 
+                qos.getResource().max_samples = i;
             } else if("max_instances".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_instances = i; 
+                qos.getResource().max_instances = i;
             } else if("max_samples_per_instance".equals(field)){
                 int i = Integer.parseInt((String)value);
                 result = new Integer(i);
-                qos.getResource().max_samples_per_instance = i; 
+                qos.getResource().max_samples_per_instance = i;
             }
         } else if("TRANSPORT_PRIORITY".equals(name)){
             if("value".equals(field)){

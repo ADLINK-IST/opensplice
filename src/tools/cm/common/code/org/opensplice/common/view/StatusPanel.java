@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,7 +42,7 @@ public class StatusPanel extends JPanel {
      * Creates a new StatusPanel that can be used to provide information about
      * the status of the application of a certain action. The StatusPanel
      * optionally provides a connection light and a progressbar.
-     * 
+     *
      * @param width
      *            The width of the panel.
      * @param _defaultText
@@ -171,7 +172,7 @@ public class StatusPanel extends JPanel {
 
     /**
      * Sets the connection light to green when connected and to red if not.
-     * 
+     *
      * @param connected
      *            Whether or not the application has a connection.
      * @param toolTip
@@ -202,7 +203,7 @@ public class StatusPanel extends JPanel {
      * Sets the status message to the supplied message and sets the progressbar
      * to indeterminate mode or resets it. This is done by calling the
      * setStatus(String, boolean) method as well as the setBusy method.
-     * 
+     *
      * @param message
      *            The message to set.
      * @param persistent
@@ -220,9 +221,6 @@ public class StatusPanel extends JPanel {
         final boolean b = busy;
         final boolean p = persistent;
 
-        /*
-         * Runnable runner = new Runnable() { public void run(){
-         */
         String myMsg = message;
 
         if ("".equals(message)) {
@@ -293,11 +291,6 @@ public class StatusPanel extends JPanel {
                 lastPersistent = false;
             }
         }
-        /*
-         * }
-         * 
-         * }; runner.run(); SwingUtilities.invokeLater(runner);
-         */
     }
 
     /**
@@ -306,7 +299,7 @@ public class StatusPanel extends JPanel {
      * not be shown. If the message starts with "Warning:" the background color
      * will become yellow and the "Warning:" part of the string will not be
      * displayed.
-     * 
+     *
      * @param message
      *            The new status message.
      * @param persistent
@@ -320,11 +313,11 @@ public class StatusPanel extends JPanel {
 
     /**
      * Sets the progressbar status. When true, the progressbar will go into
-     * inderminate mode and display 'busy...', when false the progressbar will
+     * indeterminate mode and display 'busy...', when false the progressbar will
      * leave indeterminate mode and display 'ready'
-     * 
+     *
      * @param busy
-     *            When true, the progressbar will go into inderminate mode
+     *            When true, the progressbar will go into indeterminate mode
      */
     private synchronized void setBusy(boolean busy) {
         if (progressBar != null) {
@@ -343,7 +336,7 @@ public class StatusPanel extends JPanel {
 
     /**
      * Provides access to the current status.
-     * 
+     *
      * @return The currently displayed status.
      */
     public synchronized String getStatus() {

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,8 +28,11 @@
 
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_classbase.h"
 
 #include <assert.h>
+
+OS_CLASS(os_implData);
 
 struct os_sharedHandle_s {
     os_sharedAttr attr;
@@ -36,6 +40,7 @@ struct os_sharedHandle_s {
     char *name;
     os_int32 id;
     char *keyfile;
+    os_implData data;
 };
 
 /** \brief Create a handle for shared memory operations
@@ -63,6 +68,7 @@ os_sharedCreateHandle (
             sh->mapped_address = (void *)0;
             sh->id = id;
             sh->keyfile = NULL;
+            os_sharedMemoryImplDataCreate(sh);
         } else {
             os_free (sh);
             sh = NULL;
@@ -90,6 +96,7 @@ os_sharedDestroyHandle (
 {
     assert (sharedHandle != NULL);
     assert (sharedHandle->name != NULL);
+    os_sharedMemoryImplDataDestroy(sharedHandle);
     os_free (sharedHandle->name);
     sharedHandle->name = NULL;
     os_free (sharedHandle->keyfile);

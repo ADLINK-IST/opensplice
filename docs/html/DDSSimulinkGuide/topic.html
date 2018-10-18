@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Topic Block &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="7. Domain Block" href="domain.html" />
+    <link rel="prev" title="5. QoS Provider" href="qos_provider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="domain.html" title="7. Domain Block"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="topic-block">
+<span id="id1"></span><h1>6. Topic Block<a class="headerlink" href="#topic-block" title="Permalink to this headline">¶</a></h1>
+<p>The topic block represents a DDS topic type.  The DDS topic corresponds to a single data type.  In DDS, data is distributed by publishing and subscribing topic data samples.</p>
+<p>For a DDS Topic type definition, a corresponding BUS should be defined in the MATLAB workspace.  The name of the BUS and the fields and field types should correspond to the DDS topic IDL definition.</p>
+<p>In Simulink, a BUS definition can be used as an input or output signal of the Simulink building blocks.</p>
+<div class="figure">
+<img alt="DDS Topic Block" src="_images/topic_block.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="12%" />
+<col width="9%" />
+<col width="36%" />
+<col width="27%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Port Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>pp</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>topic</td>
+<td>DDS Topic entity instance</td>
+<td>Writer, Reader</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="topic-block-parameters">
+<h2>6.1. Topic Block Parameters<a class="headerlink" href="#topic-block-parameters" title="Permalink to this headline">¶</a></h2>
+<div class="figure">
+<img alt="Topic Block Parameters" src="_images/topic_block_parameters.png" />
+</div>
+<div class="section" id="topic-tab">
+<h3>6.1.1. Topic Tab<a class="headerlink" href="#topic-tab" title="Permalink to this headline">¶</a></h3>
+<p>The output port named <strong>topic</strong>, needs to be configured by the user.  No defaults are provided.  To configure the <strong>topic</strong> output port, edit the required parameters in the <strong>Block Parameters / Topic</strong> tab.  The following topic parameters must be specified:   <strong>Bus Type</strong> and <strong>Topic Name</strong>.</p>
+</div>
+<div class="section" id="ports-tab">
+<h3>6.1.2. Ports Tab<a class="headerlink" href="#ports-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>Ports</strong> tab allows the user to toggle on or off optional ports.</p>
+</div>
+<div class="section" id="qos-tab">
+<h3>6.1.3. QoS Tab<a class="headerlink" href="#qos-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>QoS</strong> tab is used to set the QoS profile.   By default, the OSPL default profile is used.</p>
+<p>In DDS - The Data-Distribution Service (DDS) relies on the usage of QoS.  A QoS (Quality of Service) is a set of characteristics that controls some aspect of the behavior of the DDS Service.</p>
+<p>Each DDS block has an associated QoS profile.   By default, the OSPL default profile is used.  An XML file that specifies QoS profiles can be used to set the QoS of a DDS block.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Topic Block</a><ul>
+<li><a class="reference internal" href="#topic-block-parameters">6.1. Topic Block Parameters</a><ul>
+<li><a class="reference internal" href="#topic-tab">6.1.1. Topic Tab</a></li>
+<li><a class="reference internal" href="#ports-tab">6.1.2. Ports Tab</a></li>
+<li><a class="reference internal" href="#qos-tab">6.1.3. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="previous chapter">5. QoS Provider</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="domain.html"
+                        title="next chapter">7. Domain Block</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topic.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="domain.html" title="7. Domain Block"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

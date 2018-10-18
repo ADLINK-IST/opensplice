@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,16 +21,15 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_genCHelper.h"
 #include "idl_genCxxHelper.h"
+#include "idl_genISOCxx2Helper.h"
 #include "idl_genSACSHelper.h"
 #include "idl_genJavaHelper.h"
+#include "idl_genPythonHelper.h"
 
 #include "os_stdlib.h"
 
 static IDL_LANGUAGE lang = IDL_LANG_UNKNOWN;
 static IDL_CORBA_MODE corba_mode = IDL_MODE_UNKNOWN;
-/** @internal
- * @bug OSPL-3369 Handle both below as other modes and languages once
- * re-engineered and no side effects confirmed */
 static os_boolean is_isocpp = OS_FALSE;
 static os_boolean is_isocpp2 = OS_FALSE;
 static os_boolean is_isocpp_types = OS_FALSE;
@@ -38,8 +38,8 @@ static os_boolean is_isocpp_testmethods = OS_FALSE;
 static os_boolean is_face = OS_FALSE;
 static os_boolean is_isocpp_streams = OS_FALSE;
 /* columns are the IDL_MODE attributes
-   rows are the IDL_LANG attributes
-*/
+ * rows are the IDL_LANG attributes
+ */
 static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
   /* IDL_LANG_UNKNOWN  */        {0, 0, 0},
   /* IDL_LANG_C        */        {0, 0, 1},
@@ -48,7 +48,12 @@ static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
   /* IDL_LANG_JAVA     */        {0, 1, 1},
   /* IDL_LANG_ISOCPP2  */        {0, 0, 1},
   /* IDL_LANG_LITE_CXX */        {0, 0, 1},
-  /* IDL_LANG_C99      */        {0, 0, 1}
+  /* IDL_LANG_C99      */        {0, 0, 1},
+  /* IDL_LANG_SIMULINK */        {0, 0, 1},
+  /* IDL_LANG_MATLAB   */        {0, 0, 1},
+  /* IDL_LANG_PYTHON_DESCRIPTORS*/{0, 0, 1},
+  /* IDL_LANG_LABVIEW  */        {0, 0, 1},
+  /* IDL_LANG_PYTHON   */        {0, 0, 1},
     };
 
 
@@ -89,6 +94,21 @@ idl_getLanguageStr(void)
     case IDL_LANG_ISOCPP2:
         str = "ISOCPP";
         break;
+    case IDL_LANG_SIMULINK:
+        str = "SIMULINK";
+        break;
+    case IDL_LANG_MATLAB:
+    	str = "MATLAB";
+    	break;
+    case IDL_LANG_PYTHON_DESCRIPTORS:
+    	str = "PYTHON_DESCRIPTORS";
+    	break;
+    case IDL_LANG_LABVIEW:
+        str = "LABVIEW";
+        break;
+    case IDL_LANG_PYTHON:
+        str = "PYTHON";
+        break;
     case IDL_LANG_UNKNOWN:
     default:
         str = "<unknown>";
@@ -115,9 +135,6 @@ idl_getCorbaModeStr(void)
 {
     const char *str = NULL;
 
-    /** @internal
-     * @bug OSPL-3369 Have confirmed this is only used in output (where
-     * it leaked previously) */
     if (idl_getIsISOCppTypes())
       return "ISO/IEC C++ 2003";
 
@@ -143,8 +160,6 @@ idl_languageAndModeSupported(void)
     int is_ok = idl_supportedLanguageAndMode[lang][corba_mode];
     if (is_ok)
     {
-      /** @internal
-       * @bug OSPL-3369 Temporary sanity check for isocpp settings */
       if (idl_getIsISOCppTypes()
             && lang != IDL_LANG_CXX
             && lang != IDL_LANG_ISOCPP2
@@ -157,9 +172,9 @@ idl_languageAndModeSupported(void)
 }
 
 /* Translate an IDL identifier into a language specific identifier.
-   The IDL specification states that all identifiers that match
-   a language keyword must be prepended by a language specific prefix.
-*/
+ * The IDL specification states that all identifiers that match
+ * a language keyword must be prepended by a language specific prefix.
+ */
 c_char *
 idl_languageId(
     const char *identifier)
@@ -172,15 +187,20 @@ idl_languageId(
         id = idl_cId (identifier);
     break;
     case IDL_LANG_CXX:
-    case IDL_LANG_ISOCPP2:
     case IDL_LANG_LITE_CXX:
         id = idl_cxxId (identifier);
+    break;
+    case IDL_LANG_ISOCPP2:
+        id = idl_ISOCxx2Id (identifier);
     break;
     case IDL_LANG_CS:
         id = idl_CsharpId (identifier, FALSE, FALSE);
     break;
     case IDL_LANG_JAVA:
         id = idl_javaId (identifier);
+    break;
+    case IDL_LANG_PYTHON:
+        id = idl_pythonId(identifier);
     break;
     case IDL_LANG_UNKNOWN:
     default:
@@ -190,9 +210,9 @@ idl_languageId(
 }
 
 /* Build a textual presenation of the provided scope stack taking the
-   language keyword identifier translation into account. Further the function
-   equals "idl_scopeStack".
-*/
+ * language keyword identifier translation into account. Further the function
+ * equals "idl_scopeStack".
+ */
 c_char *
 idl_scopeStackLanguage(
     idl_scope scope,
@@ -206,14 +226,19 @@ idl_scopeStackLanguage(
         id = idl_scopeStackC (scope, "_", name);
     break;
     case IDL_LANG_CXX:
-    case IDL_LANG_ISOCPP2:
         id = idl_scopeStackCxx (scope, "::", name);
+    break;
+    case IDL_LANG_ISOCPP2:
+        id = idl_scopeStackISOCxx2 (scope, "::", name);
     break;
     case IDL_LANG_CS:
         id = idl_scopeStackCsharp(scope, ".", name);
     break;
     case IDL_LANG_JAVA:
         id = idl_scopeStackJava (scope, ".", name);
+    break;
+    case IDL_LANG_PYTHON:
+        id = idl_scopeStackPython (scope, ".", name);
     break;
     case IDL_LANG_UNKNOWN:
     default:
@@ -223,8 +248,8 @@ idl_scopeStackLanguage(
 }
 
 /* Return the Language specific type identifier for the
-   specified type specification
-*/
+ * specified type specification
+ */
 c_char *
 idl_corbaLanguageTypeFromTypeSpec (
     idl_typeSpec typeSpec)
@@ -249,6 +274,45 @@ idl_corbaLanguageTypeFromTypeSpec (
     break;
     }
     return id;
+}
+
+c_char *
+idl_genLanguageLiteralValueImage(
+    c_value literal,
+    c_type type,
+    void *userData)
+{
+    c_char * valueImg = NULL;
+
+    switch (lang) {
+    case IDL_LANG_C:
+    case IDL_LANG_C99:
+    case IDL_LANG_CXX:
+    case IDL_LANG_PYTHON_DESCRIPTORS:
+    case IDL_LANG_SIMULINK:
+    case IDL_LANG_MATLAB:
+    case IDL_LANG_LABVIEW:
+        valueImg = idl_genCLiteralValueImage(literal, type);
+        break;
+    case IDL_LANG_ISOCPP2:
+    case IDL_LANG_LITE_CXX:
+        valueImg = idl_genISOCxx2LiteralValueImage(literal, type);
+        break;
+    case IDL_LANG_CS:
+        valueImg = idl_genCsharpLiteralValueImage(literal, type, userData);
+        break;
+    case IDL_LANG_JAVA:
+        valueImg = idl_genJavaLiteralValueImage(literal, type);
+        break;
+    case IDL_LANG_PYTHON:
+        valueImg = idl_genPythonLiteralValueImage(literal, type);
+        break;
+    case IDL_LANG_UNKNOWN:
+    default:
+    break;
+    }
+
+    return valueImg;
 }
 
 /* Return the language specific constant value getter */

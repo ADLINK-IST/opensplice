@@ -1,0 +1,15 @@
+/**
+ * test javascript xml parsing
+ */
+ 
+modulex Test {
+struct Inner {
+    long foo;
+};
+
+structy Outer {
+    long id;
+    Inner inner;
+};
+#pragma keylist Outer id
+};

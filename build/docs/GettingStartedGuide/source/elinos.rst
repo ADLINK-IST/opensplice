@@ -5,7 +5,7 @@ ELinOS
 ######
 
 
-*This chapter provides notes about deploying OpenSplice DDS on ELinOS.*
+*This chapter provides notes about deploying Vortex OpenSplice on ELinOS.*
 
 
 ****************

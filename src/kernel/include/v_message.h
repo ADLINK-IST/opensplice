@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -110,16 +111,23 @@ extern "C" {
 #endif
 
 /**
- * Returns the relative order two v_message's.
- * @param m1 The address of a v_message
- * @param m2 The address of a v_message
- * @return C_EQ, C_LT or C_GT if m1 is respectively equal, less or greater than m2
+ * Returns the relative order two v_message's. It is important to realize that
+ * the outcome of this function is not commutative: the sample that is to be
+ * inserted needs to be passed first, and the already available sample that it
+ * is compared to needs to be passed second. The reason for this is that the
+ * semantical meaning of the L_IMPLICIT flag is different for a sample that is
+ * to be inserted (it will always be newer than any existing sample) than for
+ * a sample that is already available (any non-implicit sample will always be
+ * newer than an available implicit sample).
+ * @param insertedMessage The address of the v_message to be inserted
+ * @param availableMessage The address of the already available v_message that it is compared to.
+ * @return C_EQ, C_LT or C_GT if insertedMessage is respectively equal, less or greater than availableMessage
  */
 OS_API
 c_equality
 v_messageCompare (
-    v_message m1,
-    v_message m2);
+    v_message insertedMessage,
+    v_message availableMessage);
 
 
 /**

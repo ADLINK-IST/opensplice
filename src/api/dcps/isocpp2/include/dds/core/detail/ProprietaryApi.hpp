@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -329,6 +330,63 @@ namespace topic {
         const org::opensplice::core::policy::Share& share() const
     };
 
+namespace qos {
+
+    /**
+     * Creates a transient reliable topic QoS.
+     *
+     * This convenience function will create a TopicQos with default values.
+     * Except the Durability and Reliability policies are set to
+     *      dds::core::policy::Durability::Transient()
+     *      dds::core::policy::Reliability::Reliable()
+     * Respectively.
+     *
+     * With this TopicQos, transient reliable Topics can be created. This seems
+     * somewhat redundant because that can also be achieved by setting these
+     * policies manually. However, the TopicQos created by this convenience
+     * function has another effect.
+     *
+     * Topics have to be supplied when creating DataReaders and DataWriters.
+     * Normally, these DataReaders and DataWriters will get the default QoS
+     * when no QoS is provided, or use the given QoS. When a Topic is used
+     * that was given the QoS returned by this convenience function, the
+     * Topic QoS is automatically merged into the DataReader or DataWriter QoS.
+     * This means that they will automatically be transient reliable as well.
+     *
+     * In short, when using this function, you can easily create transient and
+     * reliable DataReaders and DataWriters without having to manage the different
+     * types of QoSses and policies.
+     * @code{.cpp}
+     * // Data type dds::core::BytesTopicType is used for this example, but
+     * // this is possible with other data types as well.
+     * // Readers are created similarly.
+     *
+     * // Create a transient reliable Topic
+     * dds::topic::Topic<dds::core::BytesTopicType> topic(
+     *               dds::core::null,
+     *               "TopicName",
+     *               org::opensplice::topic::qos::TransientReliable());
+     *
+     * // Create a transient reliable DataWriter
+     * dds::pub::DataWriter<dds::core::BytesTopicType> writer1(
+     *               dds::core::null,
+     *               topic);
+     *
+     * // Or directly
+     * dds::pub::DataWriter<dds::core::BytesTopicType> writer2(
+     *               dds::core::null,
+     *               dds::topic::Topic<dds::core::BytesTopicType>(
+     *                              dds::core::null,
+     *                              "TopicName",
+     *                              org::opensplice::topic::qos::TransientReliable()));
+     * @endcode
+     *
+     * @return Transient Reliable TopicQos, which DataReaders and DataWriters
+     *         will inherit.
+     */
+    dds::topic::qos::TopicQos TransientReliable(void);
+
+} /* namespace qos */
 
 } /* namespace topic */
 

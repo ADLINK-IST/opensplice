@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,7 +39,7 @@ extern "C" {
 #define u_dataView(o) \
         ((u_dataView)u_objectCheckType(u_object(o),U_DATAVIEW))
 
-OS_API u_dataView 
+OS_API u_dataView
 u_dataViewNew(
     const u_dataReader r,
     const os_char *name,
@@ -54,15 +55,15 @@ u_dataViewSetQos (
     const u_dataView _this,
     const u_dataViewQos qos);
 
-OS_API u_result    
+OS_API u_result
 u_dataViewRead(
     const u_dataView _this,
     u_sampleMask mask,
     u_readerAction action,
     void *actionArg,
     const os_duration timeout);
-                
-OS_API u_result    
+
+OS_API u_result
 u_dataViewTake(
     const u_dataView _this,
     u_sampleMask mask,
@@ -70,7 +71,7 @@ u_dataViewTake(
     void *actionArg,
     const os_duration timeout);
 
-OS_API u_result    
+OS_API u_result
 u_dataViewReadInstance(
     const u_dataView _this,
     u_instanceHandle h,
@@ -78,8 +79,8 @@ u_dataViewReadInstance(
     u_readerAction action,
     void *actionArg,
     const os_duration timeout);
-                
-OS_API u_result    
+
+OS_API u_result
 u_dataViewTakeInstance(
     const u_dataView _this,
     u_instanceHandle h,
@@ -87,8 +88,8 @@ u_dataViewTakeInstance(
     u_readerAction action,
     void *actionArg,
     const os_duration timeout);
-                
-OS_API u_result    
+
+OS_API u_result
 u_dataViewReadNextInstance(
     const u_dataView _this,
     u_instanceHandle h,
@@ -96,8 +97,8 @@ u_dataViewReadNextInstance(
     u_readerAction action,
     void *actionArg,
     const os_duration timeout);
-                
-OS_API u_result    
+
+OS_API u_result
 u_dataViewTakeNextInstance(
     const u_dataView _this,
     u_instanceHandle h,
@@ -112,8 +113,8 @@ u_dataViewLookupInstance(
     void *keyTemplate,
     u_copyIn copyIn,
     u_instanceHandle *handle);
-    
-#undef OS_API 
+
+#undef OS_API
 
 #if defined (__cplusplus)
 }

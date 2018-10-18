@@ -1,0 +1,14 @@
+{
+  "name": "jsshapes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "demo.js",
+  "dependencies": {
+    "path": "^0.12.7",
+    "util": "^0.10.3",
+    "vortexdds": "file:../../vortexdds-0.1.0.tgz"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
+}

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -532,3 +533,77 @@ v_configurationGetSchedulingPolicy (
     }
 }
 
+
+static c_bool
+v_configurationScanBoolean(
+    c_char *value)
+{
+    c_bool result = FALSE;
+    size_t l;
+
+    l = strspn(value, " \t\n");
+    if (l <= strlen(value)) {
+        if (os_strncasecmp(&value[l], "TRUE", 4) == 0) {
+            result = TRUE;
+        }
+    }
+
+    return result;
+}
+
+#define V_SERVICE_ENTRY_FMT         "Domain/Service[@name='%s']"
+#define V_SERVICE_ATTR_NAME         "name"
+#define V_SERVICE_ATTR_ENABLED      "enabled"
+
+static c_bool
+v_configurationServiceIsEnabled(
+    v_configuration config,
+    const c_char *serviceName)
+{
+    c_bool enabled = FALSE;
+    v_cfAttribute attr;
+    c_char *path;
+    c_value value;
+
+    path = os_malloc(strlen(V_SERVICE_ENTRY_FMT) + strlen(serviceName) + 1);
+    os_sprintf(path, V_SERVICE_ENTRY_FMT, serviceName);
+    attr = ResolveAttribute(config->root, path, V_SERVICE_ATTR_ENABLED);
+    if (attr) {
+        value = v_cfAttributeValue(attr);
+        if (value.kind == V_STRING) {
+            enabled = v_configurationScanBoolean(value.is.String);
+        }
+    } else {
+        enabled = TRUE;
+    }
+    os_free(path);
+
+    return enabled;
+}
+
+c_bool
+v_configurationContainsService(
+    v_configuration config,
+    const char *serviceName)
+{
+    c_bool found = FALSE;
+    c_iter nodes;
+    v_cfNode node;
+    c_value value;
+
+    nodes = v_cfElementXPath(config->root, serviceName);
+    node = v_cfNode(c_iterTakeFirst(nodes));
+    while (!found && node) {
+        if (v_cfNodeKind(node) == V_CFELEMENT) {
+            value = v_cfElementAttributeValue(v_cfElement(node), V_SERVICE_ATTR_NAME);
+            if (value.kind == V_STRING) {
+                found = v_configurationServiceIsEnabled(config, value.is.String);
+            }
+        }
+        node = v_cfNode(c_iterTakeFirst(nodes));
+    }
+
+    c_iterFree(nodes);
+
+    return found;
+}

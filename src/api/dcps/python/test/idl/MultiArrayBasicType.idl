@@ -1,0 +1,11 @@
+module basic{
+	module module_MultiArrayBasicType{
+	    
+		struct MultiArrayBasicType_struct{
+			long long1;
+			long array1[2][3][2];
+		};
+		
+		#pragma keylist MultiArrayBasicType_struct long1
+	};
+};	

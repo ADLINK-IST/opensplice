@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,11 +18,12 @@
  *   limitations under the License.
  *
  */
+#include "sd_cdr.h"
 #include "FooDataWriter_impl.h"
 #include "MiscUtils.h"
 #include "ReportUtils.h"
 #include "Constants.h"
-
+#include "ccpp_dds_cdrBlob.h"
 
 typedef struct writerCopyInfo_s {
     DDS::OpenSplice::FooDataWriter_impl *writer;
@@ -33,7 +35,9 @@ DDS::OpenSplice::FooDataWriter_impl::FooDataWriter_impl() :
         DDS::OpenSplice::DataWriter(),
         copyIn(NULL),
         copyOut(NULL),
-        participant(NULL)
+        cdrMarshaler(NULL),
+        participant(NULL),
+        writerCopy(NULL)
 {
     /* Empty */
 }
@@ -51,7 +55,9 @@ DDS::OpenSplice::FooDataWriter_impl::nlReq_init(
     DDS::OpenSplice::Topic *a_topic,
     const char *name,
     DDS::OpenSplice::cxxCopyIn copyIn,
-    DDS::OpenSplice::cxxCopyOut copyOut)
+    DDS::OpenSplice::cxxCopyOut copyOut,
+    u_writerCopy writerCopy,
+    void *cdrMarshaler)
 {
     DDS::ReturnCode_t result;
 
@@ -64,6 +70,8 @@ DDS::OpenSplice::FooDataWriter_impl::nlReq_init(
         this->participant = participant;
         this->copyIn = copyIn;
         this->copyOut = copyOut;
+        this->writerCopy = writerCopy;
+        this->cdrMarshaler = cdrMarshaler;
     }
 
     return result;
@@ -146,10 +154,10 @@ DDS::OpenSplice::FooDataWriter_impl::register_instance_w_timestamp(
             data.data = (void *)instance_data;
             uResult = u_writerRegisterInstance(
                     uWriter,
-                    (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                    writerCopy,
                     (void *)&data,
                     timestamp,
-                    &handle);
+                    (u_instanceHandle *) &handle);
             result = uResultToReturnCode(uResult);
         }
     }
@@ -206,7 +214,7 @@ DDS::OpenSplice::FooDataWriter_impl::unregister_instance_w_timestamp(
             }
             uResult = u_writerUnregisterInstance(
                     uWriter,
-                    (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                    writerCopy,
                     (void *)_data,
                     timestamp,
                     handle);
@@ -262,7 +270,7 @@ DDS::OpenSplice::FooDataWriter_impl::write_w_timestamp(
             data.data = (void *)instance_data;
             uResult = u_writerWrite(
                     uWriter,
-                    (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                    writerCopy,
                     (void *)&data,
                     timestamp,
                     handle);
@@ -316,7 +324,7 @@ DDS::OpenSplice::FooDataWriter_impl::dispose_w_timestamp(
             data.data = (void *)instance_data;
             uResult = u_writerDispose(
                     uWriter,
-                    (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                    writerCopy,
                     (void *)&data,
                     timestamp,
                     handle);
@@ -371,7 +379,7 @@ DDS::OpenSplice::FooDataWriter_impl::writedispose_w_timestamp(
             data.data = (void *)instance_data;
             uResult = u_writerWriteDispose(
                     uWriter,
-                    (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                    writerCopy,
                     (void *)&data,
                     timestamp,
                     handle);
@@ -435,9 +443,9 @@ DDS::OpenSplice::FooDataWriter_impl::lookup_instance(
         data.data = (void *)instance_data;
         uResult = u_writerLookupInstance(
                 uWriter,
-                (u_writerCopy)DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn,
+                writerCopy,
                 (void *)&data,
-                &handle);
+                (u_instanceHandle *) &handle);
         result = uResultToReturnCode(uResult);
     }
 
@@ -458,6 +466,31 @@ DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn (
 
     /* TODO: Add copy cache, see SAC _DataWriterCopy(). */
     result = info->writer->copyIn (base, info->data, to);
+
+    return result;
+}
+
+v_copyin_result
+DDS::OpenSplice::FooDataWriter_impl::rlReq_cdrCopyIn (
+	c_type type,
+	void *data,
+	void *to)
+{
+    v_copyin_result result;
+    writerCopyInfo *info = (writerCopyInfo *)data;
+    DDS::CDRSample *from = (DDS::CDRSample *) info->data;
+    int cdrResult;
+
+    OS_UNUSED_ARG(type);
+
+    cdrResult = sd_cdrDeserializeRaw(to, (sd_cdrInfo *) info->writer->cdrMarshaler, from->blob.length(), from->blob.get_buffer());
+    if (cdrResult == SD_CDR_OK) {
+    	result = V_COPYIN_RESULT_OK;
+    } else if (cdrResult == SD_CDR_OUT_OF_MEMORY) {
+    	result = V_COPYIN_RESULT_OUT_OF_MEMORY;
+    } else {
+    	result = V_COPYIN_RESULT_INVALID;
+    }
 
     return result;
 }

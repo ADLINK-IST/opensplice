@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -672,21 +673,6 @@ c_valueCompare(
     return C_NE;
 }
 
-#if 0
-/* Some compilers have an optimizer that turns this very simple matcher
-   into something just as fast as the one below, but not all of them. So
-   better use the one in which the recursion has been partially eliminated
-   by hand. */
-static int patmatch (const char *pat, const char *str)
-{
-    switch (*pat) {
-        case 0:   return *str == 0;
-        case '?': return *str == 0 ? 0 : patmatch (pat+1, str+1);
-        case '*': return patmatch (pat+1, str) || (*str != 0 && patmatch (pat, str+1));
-        default:  return *str != *pat ? 0 : patmatch (pat+1, str+1);
-    }
-}
-#else
 static int patmatch (const char *pat, const char *str)
 {
     while (*pat) {
@@ -698,7 +684,8 @@ static int patmatch (const char *pat, const char *str)
             pat++;
         } else if (*pat == '*') {
             /* collapse a sequence of wildcards, requiring as many
-               characters in str as there are ?s in the sequence */
+             * characters in str as there are ?s in the sequence
+             */
             while (*pat == '*' || *pat == '?') {
                 if (*pat == '?' && *str++ == 0) {
                     return 0;
@@ -722,7 +709,6 @@ static int patmatch (const char *pat, const char *str)
     }
     return *str == 0;
 }
-#endif
 
 c_value
 c_valueStringMatch (

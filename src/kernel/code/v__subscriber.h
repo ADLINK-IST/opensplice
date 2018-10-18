@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,16 +37,14 @@ extern "C" {
 
 #define v_subscriberPartitionCount(_this) v_partitionAdminCount(v_subscriber(_this)->partitions)
 
-#define v_subscriberLock(_this) \
-        c_mutexLock(&_this->mutex)
-
-#define v_subscriberUnlock(_this) \
-        c_mutexUnlock(&_this->mutex)
+v_result
+v__subscriberEnable(
+    _Inout_ v_subscriber _this);
 
 void
 v_subscriberWalkReaders(
     v_subscriber _this,
-    c_bool (*action)(v_reader reader, c_voidp arg),
+    c_action action,
     c_voidp arg);
 
 void
@@ -58,70 +57,30 @@ v_subscriberConnectNewGroup(
     v_subscriber s,
     v_group g);
 
-v_reader
-v_subscriberRemoveShareUnsafe(
+v_dataReader
+v_subscriberAddShare(
+    _Inout_ v_subscriber _this,
+    _In_ v_dataReader reader);
+
+c_ulong
+v_subscriberRemoveShare(
     v_subscriber _this,
-    v_reader reader);
-
-v_reader
-v_subscriberAddShareUnsafe(
-    v_subscriber _this,
-    v_reader r);
-
-v_reader
-v_subscriberRemoveShareUnsafe(
-    v_subscriber _this,
-    v_reader r);
+    v_dataReader reader);
 
 void
-v_subscriberLockShares(
+v_subscriberGroupTransactionFlush(
     v_subscriber _this);
-
-void
-v_subscriberUnlockShares(
-    v_subscriber _this);
-
-/* This operation will return the subscriber's transactionGroup admin.
- * It will lazy create a new admin in case it didn't exist already.
- */
-v_transactionGroupAdmin
-v_subscriberLookupTransactionGroupAdmin(
-    v_subscriber _this);
-
-c_bool
-v__subscriberRequireAccessLockCoherent(
-    v_subscriber _this);
-
-c_bool
-v__subscriberRequireAccessLockOrdered(
-    v_subscriber _this);
-
-v_result
-v_subscriberTestBeginAccess(
-    v_subscriber _this);
-
-void
-v_subscriberLockAccess(
-    v_subscriber _this);
-
-c_bool
-v_subscriberTryLockAccess(
-    v_subscriber _this);
-
-void
-v_subscriberUnlockAccess(
-    v_subscriber _this);
-
-void
-v_subscriberTriggerGroupCoherent(
-    v_subscriber _this,
-    v_reader owner);
 
 void
 v_subscriberNotifyGroupCoherentPublication(
     v_subscriber _this,
     v_message msg);
 
+void
+v_subscriberNotify(
+    v_subscriber _this,
+    v_event event,
+    c_voidp userData);
 #if defined (__cplusplus)
 }
 #endif

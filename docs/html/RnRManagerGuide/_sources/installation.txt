@@ -71,7 +71,7 @@ Installing the license file
   Please refer to the Vortex OpenSplice *Getting Started Guide*
   for full details of how Vortex OpenSplice is licensed.
 
-PrismTech supplies a license file for the RnR Manager product. This file 
+ADLINK supplies a license file for the RnR Manager product. This file 
 is *not* included in the software distribution.
 
 During the installation, you have the option of specifying the license 

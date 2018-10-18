@@ -84,7 +84,7 @@ Creating the ``start`` Configuration
   *Location* text box.
 
   For example, on Windows this could be 
-  ``"C:\Program Files (x86)\PrismTech\Vortex_v2\Device\VortexOpenSplice\6.6.0p1\HDE\x86.win32\bin\ospl.exe"``.
+  ``"C:\Program Files (x86)\ADLINK\Vortex_v2\Device\VortexOpenSplice\6.6.0p1\HDE\x86.win32\bin\ospl.exe"``.
 
 **Step 5**
 

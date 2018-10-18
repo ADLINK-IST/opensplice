@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -114,19 +115,6 @@ C_STRUCT(c_qPred) {
     c_array varList;   /* ARRAY<c_qVar> */
     c_qPred next;
 };
-
-#if 0
-c_array
-c_keyNew (
-    c_type t,
-    c_iter fieldNames);
-
-c_array
-c_keyDcl (
-    c_type t,
-    c_long size,
-    ...);
-#endif
 
 OS_API c_qResult
 c_qPredNew (

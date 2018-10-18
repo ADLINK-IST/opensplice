@@ -9,7 +9,7 @@ SPECIAL      = DEBUG
 # Compiler flags
 CFLAGS_OPT       = -O0
 # -DE_DEBUG is needed to enable debugging info for the SACPP apis
-CFLAGS_DEBUG     = -g -D_TYPECHECK_ -DE_DEBUG
+CFLAGS_DEBUG     = -g -D_TYPECHECK_ -DE_DEBUG -funwind-tables
 CFLAGS_STRICT_UNINITIALIZED =
 JCFLAGS          = -g
 

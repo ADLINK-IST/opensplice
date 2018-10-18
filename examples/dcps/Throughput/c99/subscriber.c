@@ -235,7 +235,7 @@ int main (int argc, char **argv)
     partitionName = argv[3]; /* The name of the partition */
   }
 
-  printf ("Cycles: %llu | PollingDelay: %lu | Partition: %s\n",
+  printf ("maxCycles: %llu | pollingDelay: %lu | partitionName: %s\n",
     maxCycles, pollingDelay, partitionName);
 
   /* Initialise entities */

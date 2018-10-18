@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -62,7 +63,7 @@ OS_API void           v_statusInit      (v_status s, const c_char *name);
 OS_API void           v_statusDeinit    (v_status s);
 
 OS_API void           v_statusReset     (v_status s, c_ulong mask);
-OS_API c_ulong        v_statusGetMask   (v_status s);
+OS_API c_ulong        v_statusGetMask   (_In_ v_status s);
 
 #undef OS_API
 

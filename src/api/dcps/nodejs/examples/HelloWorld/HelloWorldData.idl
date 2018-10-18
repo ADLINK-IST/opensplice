@@ -1,0 +1,19 @@
+/**
+ * @addtogroup examplesdcpsHelloWorldisocpp
+ */
+/** @{*/
+/** @file */
+
+module HelloWorldData
+{
+   struct Msg
+   {
+      /** User ID */
+      long userID;
+      /**  message */
+      string message;
+   };
+   #pragma keylist Msg userID
+};
+
+/** @}*/

@@ -7,10 +7,10 @@ call %FUNCTIONS% :startOSPL
 
 echo "=== Launching WaitSet "
 
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes WaitSetDataSubscriber > subResult.txt
+start "" /B java -jar sub/java5_WaitSet_sub.jar > subResult.txt
 
 %SLEEP2% >NUL
 
-call java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes WaitSetDataPublisher > pubResult.txt
+call java -jar pub/java5_WaitSet_pub.jar > pubResult.txt
 
 call %FUNCTIONS% :waitsetCheckResults >> run.log

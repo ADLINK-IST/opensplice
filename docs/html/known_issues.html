@@ -15,11 +15,11 @@
  </head>
  <body class="composite">
     <div id="banner">
-       <a href="http://www.prismtech.com" id="bannerLeft">
-          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       <a href="http://ist.adlinktech.com/" id="bannerLeft">
+          <img src="../images/logo_adlink_transparent.png" alt="ADLINK" />
        </a>
-       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
-          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       <a href="http://vortex.adlinktech.com/" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex OpenSplice" />
        </a>
        <div class="clear">
           <hr/>
@@ -27,8 +27,8 @@
     </div>
     <div id="breadcrumbs">
        <div class="xright">
-          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
-          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+          <a href="http://ist.adlinktech.com/" class="externalLink" title="ADLINK on the Web: http://ist.adlinktech.com/">ADLINK on the Web: http://ist.adlinktech.com/</a>
+          | <a href="http://vortex.adlinktech.com/" title="OpenSplice">Vortex OpenSplice</a>
        </div>
        <div class="clear">
          <hr/>
@@ -87,6 +87,42 @@
           <th width="86%">
             Description
           </th>
+        </tr>
+        <tr>
+          <td>
+            OSPL-11144
+          </td>
+          <td>
+            <b>SignalHandler has small chance of deadlocking.</b><br/>
+            <i>
+            The signalHandler released in V6.8.3 has a small chance of getting deadlocked, when the thread that is handling an ExitRequest was just busy registering a new handler. This is because the the function registering a handler uses a mutex to protect the handler administration, while the signalHandler needs the same mutex when iterating through the handlers.
+Right now, the chance of the signalHandler deadlocking as a consequence is pretty small, since most handlers are set right at the start of the application and that is not typically a time in which ExitRequest signals are sent to such an application.
+            </i>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            OSPL-11136
+          </td>
+          <td>
+            <b>DDS block compile errors with Simulink Coder and VS 2015</b><br/>
+            <i>
+            A Simulink model compiled with Simulink Coder and with Visual Studio 2015 will fail with a compilation error:
+            fatal error C1083: Cannot open include file: 'dds.h': No such file or directory
+            This is due to an underlying change in how NMAKE treats quoted environment variables.
+            Work around:<br/>
+            <ul>
+            <li>1) Start MATLAB</li>
+            <li>2) From the Home menu, choose Add-ons > Manage Add-ons</li>
+            <li>3) Select the Open Folder Vortex_DDS_Block_Set (R2017a), or choose Open Folder from the Vortex_DDS_Block_Set menu options menu (three vertical dots) (R2017b)<br/>
+            <li>4) open the file rtwmakecfg.m</li>
+            <li>5) Change line 11 to be as follows:<br/>
+                 <pre><code>osplhome = getenv('OSPL_HOME'); </pre></code></li>
+            <li>6) Save the rtwmakecfg.m file and rebuild your simulink model.</li>
+            </ul>
+            </i>
+          </td>
         </tr>
         <tr>
           <td>
@@ -450,7 +486,7 @@
             sending node will partially aligns data as a coherent update and
             partially aligns data as completed, the receiving node will not be
             able to detect completeness of the whole and eventually discard the
-            part of the data that was send as a coherent update. 
+            part of the data that was send as a coherent update.
             </i>
           </td>
         </tr>
@@ -503,7 +539,7 @@
                In the current implementation it is possible that the update to the
                NO_WRITERS state is not detected and that the instance state of the
                reader's instances remain alive.
-            libcrypto libraries on your system. 
+            libcrypto libraries on your system.
             </i>
           </td>
         </tr>
@@ -649,9 +685,8 @@ const DDS::Duration_t globalStructC = {DURATION_INFINITE_SEC, DURATION_INFINITE_
             The problem is that, for request handling order, RMI Java uses the native
             java.util.concurrent.PriorityBlockingQueue. This does not work properly on
             PERC.
-            </i>
           </td>
-        </tr>
+       </tr>
         <tr>
           <td>
             OSPL-9113
@@ -663,6 +698,303 @@ const DDS::Duration_t globalStructC = {DURATION_INFINITE_SEC, DURATION_INFINITE_
             there is a unfinished transaction present for which no writer exists anymore
             (thus the transaction will never become complete) then this non-coherent reader
             may not receive the historical data from this transaction.
+          </td>
+       </tr>
+       <tr>
+          <td>
+            OSPL-9595
+          </td>
+          <td>
+            <b>Potential deadlock when deleting publisher/subscriber with open
+            begin_access call</b><br/>
+            <i>When after the begin_access and before end_access a publisher or
+            subscriber is deleted from the common factory participant a deadlock
+            can occur when the participant receives an asynchronous internal event.
+            </br></br>
+            Advised is to not delete entities from the participant while access
+            is started
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-9358
+          </td>
+          <td>
+            <b>Mastership handover not supported when configuring different master priorities.</b><br/>
+            <i>
+            With the master_priority setting it is possible for a late joining
+            fellow with a higher priority to become master. To recognise this
+            situation the original node should give up its mastership as soon as
+            it hears about the presence of a node with a higher priority. The
+            conditions to recognise such a situation are currently not
+            implemented yet
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-9612
+          </td>
+          <td>
+            <b>Incomplete solution for OSPL-9433</b><br/>
+            <i>The solution implemented for OSPL-9433 is not complete. There is
+            no support for using RTNetworking with more than 1 channel with that
+            solution. There is furthermore a small window when a node
+            (re)connects at the time when durability finishes merging. In that
+            case it is possible that the purge-suppression isn't effectuated
+            properly.
+            </br></br>
+            Advised is to not delete entities from the participant while access
+            is started
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-9882
+          </td>
+          <td>
+            <b>Linux: MATLAB/Simulink hangs when connecting to shared memory domain</b><br/>
+            <i>On Linux, a MATLAB script or Simulink model connecting to a Vortex OpenSplice domain via shared memory will hang.
+            </br></br>
+            <b>Resolution:</b>MATLAB, like Java applications requires that the environment variable LD_PRELOAD be set to reference the active Java installations libjsig.so library. The MATLAB user interface uses Java, and thus requires the same signal handling strategy as Java applications connecting to Vortex OpenSplice. The precise syntax for setting the LD_PRELOAD environment variable will depend on the shell being used. For Oracle JVMs, LD_PRELOAD should contain this value:
+            <br/><br/>$JAVA_HOME/jre/lib/amd64/libjsig.so
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-9919
+          </td>
+          <td>
+            <b>No QoS XML file validation in MATLAB integration</b><br/>
+            <i>Currently users are allowed to specify an invalid QoS file for a block type. The user can set the QoS block
+            parameter by selecting QoS XML files for all DDS block types. There is no validation to ensure that there
+            is a correct entry for the DDS block type. For example, on a DataReader block, it is possible to select a QoS
+            profile with no policies for datareader_qos. There is no warning on the setting of invalid QoS block parameters,
+            but it can fail at run time. Verify manually the QoS XML file contains the correct QoS policies for the block type.</i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10006
+          </td>
+          <td>
+            <b>MATLAB aborts on Exit after connecting to DDS.</b><br/>
+            <i>
+            On exit, MATLAB will report a segmentation violation if all of the following conditions at satisfied:
+            <ul>
+                <li>MATLAB is run from a Linux system,</li>
+                <li>the OSPL_URI environment variable refers to a Single Process configuration of Open Splice,</li>
+                <li>the MATLAB instance has connected to OpenSplice via the Vortex DDS Block Set for Simulink.</li>
+                <li>The segmentation fault is reported because Open Splice installs exit handler that gets unloaded from memory before it is called. On Linux systems, the exit handler does nothing. Other MATLAB threads appear to continue to shutdown normally.</li>
+            </ul>
+            Impact:
+            <ul>
+                <li>here is no impact on system integrity or MATLAB</li>
+                <li>each MATLAB exit can produce a file in the user's home directory starting with 'matlab_crash_dump'. These files can safely be deleted to reclaim disk space.</li>
+            </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10018
+          </td>
+          <td>
+            <b>MATLAB: Shared Memory Database Address on Windows needs to be changed from default</b><br/>
+            <i>
+            On a Windows 64-bit system, an OpenSplice system configured with Shared Memory, MATLAB cannot connect to the OpenSplice domain if the Shared Memory Database Address is set to its default value of 0x40000000. The error log (ospl-error.log) will show entries such as:
+
+            <br/></br/>Report : Can not Map View Of file: Attempt to access invalid address.
+            <br/>Internals : OS Abstraction/code/os_sharedmem.c/1764/0/1487951812.565129500
+            <br/><br/>
+            As workaround use the configuration editor to change the default data base address. Use the 'Domain' tab, and select the 'Database' element in the tree. If necessary, right click the Database element to add an 'Address' element. Change the address. In general, a larger number is less likely to be problematic. On a test machine, appending two zeros to the default address allowed for successful connections.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10075
+          </td>
+          <td>
+            <b>Tuner pre 6.6.0 is not forward compatible with cmsoap of 6.6.0 and newer</b><br/>
+            <i>
+            When trying to connect a Tuner with version &lt;6.6.0 to a cmsoap service
+            with version &gt=6.6.0, the connection will fail. The cmsoap service will
+            trace errors like <code>Creation of qos failed</code> and <code>Unexpected
+            opening tag</code>.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10242
+          </td>
+          <td>
+            <b>DDSI2 support for Cloud/Fog fault-tolerance</b><br/>
+            <i>
+            Cloud/Fog only forward discovery information for (proxy) endpoints,
+            but DDSI2 internally requires the existence of (proxy) participants
+            as owners of these endpoints. Because of this, DDSI2 infers the
+            existence of such participants, creating them just-in-time when the
+            first endpoint is discovered, and deleting them automatically when
+            the last endpoint of that participant is deleted.
+            When a Cloud/Fog node disappears, these proxy participants become
+            detached and start a lease of Discovery/DSGracePeriod. If another
+            Cloud/Fog node takes over before the lease ends, the lease is reset
+            and the proxy participant attached to the new Cloud/Fog node;
+            conversely, if the lease ends before this happens, the proxy
+            participant is deleted along with its endpoints.
+            In the particular case where the Cloud/Fog node taking over has no
+            knowledge of some of these endpoints, e.g., because an endpoints was
+            deleted by its application while the entire cluster of Cloud/Fog
+            nodes was being restarted, the proxy participant will be attached to
+            the new Cloud/Fog node, but there will never be a notification that
+            the proxy endpoint corresponding to the deleted endpoint should also
+            be deleted. Thus, it is strongly advised to either: (1) have a true
+            fault-tolerant setup of Cloud/Fog nodes; or (2) set DSGracePeriod to
+            0 and never restart a Cloud/Fog cluster within the lease duration of
+            the services.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10396
+          </td>
+          <td>
+            <b>IDL containing nested typedef'd sequence is not handled for IDLPP
+            language targets c and c99.</b><br/>
+            <i>Having a sequence parameterized by a typedef'd sequence is not supported.
+            In IDL this would look like<br/>
+            <pre><code>
+typedef sequence&lt;Point&gt; walk;
+struct Adventurer {
+    long id;
+    walk favourite_walk;
+    sequence&lt;walk,50&gt; recent_walks;
+};
+            </code></pre>
+            <br/>
+            IDLPP would output some error "idl_seqLoopCopy: Unexpected type".
+            A workaround would be to fully expand out nested sequence definitions and typedef them like,
+            <br/>
+            <pre><code>
+typedef sequence&lt;Point&gt; walk;
+typedef sequence&lt;sequence&lt;Point&gt;, 50&gt; walk_seq;
+struct Adventurer {
+    long id;
+    walk favourite_walk;
+    walk_seq recent_walks;
+};
+            </code></pre>
+            <br/>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10408
+          </td>
+          <td>
+            <b>Tuner support for group coherence - writer cannot be created with
+            QoS history KEEPLAST</b><br/>
+            <i>If the user attempts to create a writer for a publisher with group
+            coherence settings, the writer creation will fail, if the history QoS
+            for the writer is KEEPLAST. The error message does not give a clear
+            indication as to why the writer create is failing. The user must
+            manually set the WriterQoS History policy to KEEP_ALL.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10418
+          </td>
+          <td>
+            <b>Simulink Coder - MS Visual Studio Solution file builds fail with
+            'cannot open file dcpsc99.obj'</b><br/>
+            <i>Simulink Coder builds of models that use the "grt.tlc - Create Visual
+            C/C++ Solution File for Simulink Coder" target will fail on build with
+            the following error:
+            <br/>
+            error LNK1104: cannot open file 'dcpsc99.obj'
+            <br/>
+            A workaround is to use a "grt.tlc - Generic Real-Time Target" instead.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10434
+          </td>
+          <td>
+            <b>Simulink Coder does not support spaces in OSPL_HOME value</b><br/>
+            <i>
+            On the Windows platform, C compilation or linking errors will result when Simulink Coder
+            performs a build of a model using the Vortex DDS Block Set, and, when the OSPL_HOME
+            environment variable's value contains a space. MATLAB and Simulink Coder do not support
+            spaces in paths when performing C compilation and linking on Windows.
+            <br/>
+            The workaround is to use Windows 'short filenames'. For example,
+            instead of having OSPL_HOME contain Program Files, the path could be set to contain the
+            windows short path equivalent, which would be something like PROGRA~1. The release.bat
+            script already does this, but users should take care to do the same if setting OSPL_HOME
+            manually.
+            <br/>
+            If the Vortex DDS Block Set detects a space in OSPL_HOME during a Simulink Coder build,
+            a warning will be issued.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10485
+          </td>
+          <td>
+            <b>Connecting to DDS from within MATLAB or Simulink can result in errors logged to
+            ospl-error.log and warnings to ospl-info.log, and in the durability service not
+            starting.</b><br/>
+            <i>
+            This is known issue with MATLAB. MATLAB ships with a private version of libstdc++.so.6
+            which may be older than the one provided by the host Linux operating system. The
+            following MathWorks support document describes how to resolve the problem:
+            <br/>
+            <a href="https://www.mathworks.com/matlabcentral/answers/329796-issue-with-libstdc-so-6">
+            https://www.mathworks.com/matlabcentral/answers/329796-issue-with-libstdc-so-6</a>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10615
+          </td>
+          <td>
+            <b>Running Launcher in Debian 9 environment fails with long installation directory</b><br/>
+            <i>
+            In the Debian 9 environment, the Vortex OpenSplice Launcher tool will fail to open if
+            the Vortex OpenSplice installation directory path is too long. (Exception snippet:
+            /usr/lib/X11/locale/libpackager.so not found)
+            <br/>
+            Workaround 1: Install Vortex OpenSplice as superuser.
+            <br/>
+            Workaround 2: Shorten the Vortex OpenSplice installation directory path.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-10678
+          </td>
+          <td>
+            <b>The generated copy routines for C# unions do not support cross-compilation</b><br/>
+            <i>
+              The code generated by idlpp to support C# unions is host platform dependent. The code
+              generated by idlpp for a C# union is either 32 bit or 64 bit depending on which
+              version of OpenSplice is installed on the host platform. Thus cross-compile of the
+              generated C# union code is not possible when host and target do not match.
             </i>
           </td>
         </tr>
@@ -680,7 +1012,7 @@ const DDS::Duration_t globalStructC = {DURATION_INFINITE_SEC, DURATION_INFINITE_
             </i>
           </td>
         </tr>
-		<tr>
+        <tr>
           <td>
             TSTTOOL-181
           </td>
@@ -883,7 +1215,7 @@ check test_SimpleCollectionTopic (
     </div>
     <div id="footer">
       <div class="xright">
-       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.
+       Copyright &#169; 2017 <a href="http://ist.adlinktech.com/">ADLINK</a>. All Rights Reserved.
       </div>
      <div class="clear">
      <hr/>

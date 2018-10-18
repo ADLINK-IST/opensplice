@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,9 +39,12 @@ DDS::OpenSplice::set_topic_listener_mask (
 {
     DDS::OpenSplice::Topic *topic = dynamic_cast<DDS::OpenSplice::Topic *>(element);
     DDS::StatusMask *mask = (DDS::StatusMask *)arg;
+    DDS::Boolean result = false;
 
-    topic->set_participant_listener_mask(*mask);
-    return true;
+    if (topic) {
+        result = topic->set_participant_listener_mask(*mask) == DDS::RETCODE_OK;
+    }
+    return result;
 }
 
 DDS::OpenSplice::Topic::Topic() :
@@ -202,7 +206,7 @@ DDS::OpenSplice::Topic::validate_filter (
 
     if (expr) {
         uTopic = u_topic(DDS::OpenSplice::Entity::rlReq_get_user_entity());
-        if (u_topicContentFilterValidate2(uTopic, expr, params)) {
+        if (u_topicContentFilterValidate2(uTopic, expr, params, length)) {
             result = DDS::RETCODE_OK;
         } else {
             CPP_REPORT(result, "filter_expression '%s' is invalid.", filter_expression);

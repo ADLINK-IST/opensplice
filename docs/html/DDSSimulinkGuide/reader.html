@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>11. Reader Block &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="12. Tutorial" href="tutorial.html" />
+    <link rel="prev" title="10. Writer Block" href="writer.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="12. Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="writer.html" title="10. Writer Block"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="reader-block">
+<span id="id1"></span><h1>11. Reader Block<a class="headerlink" href="#reader-block" title="Permalink to this headline">¶</a></h1>
+<p>The Reader block represents a DDS data reader entity.</p>
+<p>In DDS - &#8220;To access the received data, the application must use a typed DataReader attached to the subscriber.&#8221;</p>
+<div class="figure">
+<img alt="DDS Reader Block" src="_images/reader_block.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="11%" />
+<col width="16%" />
+<col width="34%" />
+<col width="25%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Port Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>psub</td>
+<td>DDS Subscriber
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>no</td>
+<td>topic</td>
+<td>DDS Topic entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>status</td>
+<td>0 for successful reader
+creation</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>data</td>
+<td>BUS</td>
+<td>user</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>info</td>
+<td>BUS</td>
+<td>user</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>yes</td>
+<td>samples read</td>
+<td>Number of samples read</td>
+<td>user</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="reader-block-parameters">
+<h2>11.1. Reader Block Parameters<a class="headerlink" href="#reader-block-parameters" title="Permalink to this headline">¶</a></h2>
+<div class="figure">
+<img alt="Reader Block Parameters" src="_images/reader_block_parameters.png" />
+</div>
+<div class="section" id="data-tab">
+<h3>11.1.1. Data Tab<a class="headerlink" href="#data-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>Data</strong> tab is used to set:</p>
+<ul>
+<li><p class="first">Bus Type</p>
+<blockquote>
+<div><p>The output data type (BUS) for the <strong>data</strong> output port</p>
+</div></blockquote>
+</li>
+<li><p class="first">Mode: take or read</p>
+<blockquote>
+<div><p>Specify whether the reader block is accessing the samples using DDS take or DDS read.</p>
+</div></blockquote>
+</li>
+<li><p class="first">Sample Time</p>
+<blockquote>
+<div><p>&#8220;The sample time of a block is a parameter that indicates when, during simulation, the block produces outputs and if appropriate, updates its internal state.&#8221; -Simulink documentation</p>
+<p>Default is -1, meaning it will inherit the Simulink sample time from inputs or the model.
+Valid values: -1 and Numeric &gt; 0</p>
+</div></blockquote>
+</li>
+<li><p class="first">Bus Width</p>
+<blockquote>
+<div><p>The bus width is the maximum number of samples that can be read or take(n) per block step.
+Valid values for the bus width are:  integers &gt;= 1.</p>
+</div></blockquote>
+</li>
+</ul>
+<ul>
+<li><p class="first">Wait for</p>
+<blockquote>
+<div><p>Checking the Historical Data field in the Wait for section specifies that the Reader will wait for historical data to arrive. The Timeout field is for setting time period (in seconds) determining how long the Reader should wait for the historical data.
+If the timeout is reached, then any remaining historical data may be interleaved with new data.</p>
+<p>The Data Available field is for specifying whether the Reader should read only if the data is available. The following Timeouts field determines how long the Reader should wait for the availability of data.
+If the timeout is reached, then the block returns no data and the simulation continues.</p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="ports-tab">
+<h3>11.1.2. Ports Tab<a class="headerlink" href="#ports-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>Ports</strong> tab allows the user to toggle on or off optional ports.</p>
+</div>
+<div class="section" id="qos-tab">
+<h3>11.1.3. QoS Tab<a class="headerlink" href="#qos-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>QoS</strong> tab is used to set the QoS profile.   By default, the OSPL default profile is used.</p>
+<p>In DDS - The Data-Distribution Service (DDS) relies on the usage of QoS.  A QoS (Quality of Service) is a set of characteristics that controls some aspect of the behavior of the DDS Service.</p>
+<p>Each DDS block has an associated QoS profile.   By default, the OSPL default profile is used.  An XML file that specifies QoS profiles can be used to set the QoS of a DDS block.</p>
+</div>
+<div class="section" id="filters-tab">
+<h3>11.1.4. Filters Tab<a class="headerlink" href="#filters-tab" title="Permalink to this headline">¶</a></h3>
+<p>The filters tab allows for the filtering of incoming samples.
+The filtering can happen based on a query and/or on a sample read condition(s).</p>
+<p><strong>Query</strong></p>
+<p>Expression: The expression is a SQL condition.</p>
+<p>Parameters: N parameters in the format {&#8216;a&#8217;, &#8216;b&#8217;}
+Each parameter element must be a char array (string).</p>
+<p><em>Note: Query expressions are only validated at runtime.</em></p>
+<p><strong>Read Condition</strong></p>
+<p>The read conditions specified will filter the samples that are read or take(n).</p>
+<p>Example: For a reader, the Sample State has <strong>Read</strong> selected and  <strong>Not Read</strong> deselected.</p>
+<p>Only samples with a Sample State <strong>Read</strong> will be processed with read or take.
+Any samples with the <strong>Not Read</strong> sample state will not be read or take(n).</p>
+<p><em>Note:  At least one read condition must be selected for each category of Sample State, View State, or Instance State.
+If not, an error will be thrown when a diagram simulation is run.</em></p>
+<div class="figure">
+<img alt="Reader Block Parameters : Filters" src="_images/reader_filters_tab.png" />
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">11. Reader Block</a><ul>
+<li><a class="reference internal" href="#reader-block-parameters">11.1. Reader Block Parameters</a><ul>
+<li><a class="reference internal" href="#data-tab">11.1.1. Data Tab</a></li>
+<li><a class="reference internal" href="#ports-tab">11.1.2. Ports Tab</a></li>
+<li><a class="reference internal" href="#qos-tab">11.1.3. QoS Tab</a></li>
+<li><a class="reference internal" href="#filters-tab">11.1.4. Filters Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="writer.html"
+                        title="previous chapter">10. Writer Block</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="next chapter">12. Tutorial</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/reader.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="12. Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="writer.html" title="10. Writer Block"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

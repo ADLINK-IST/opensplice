@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -31,6 +32,14 @@ void
 v_entityFree (
     v_entity _this);
 
+c_bool
+v__entityEnabled_nl (
+    _In_ v_entity _this);
+
+c_bool
+v__entityDisabled_nl (
+    _In_ v_entity _this);
+
 /**
  * The initialisation of an entity object.
  * This method initialises all attributes of the entity class and must
@@ -39,11 +48,10 @@ v_entityFree (
  * \param _this  the reference to an entity object.
  * \param name   the name of the entity.
  */
-v_result
+void
 v_entityInit (
-    v_entity _this,
-    const c_char *name,
-    c_bool enable);
+    _Inout_ v_entity _this,
+    _In_opt_z_ const c_char *name);
 
 /**
  * The de-initialisation of an entity object.
@@ -58,7 +66,7 @@ v_entityDeinit (
 
 c_ulong
 v_entityGetTriggerValue(
-    v_entity _this);
+    _In_ v_entity _this);
 
 #if defined (__cplusplus)
 }

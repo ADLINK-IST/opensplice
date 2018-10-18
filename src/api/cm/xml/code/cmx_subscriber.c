@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,12 +43,13 @@ cmx_subscriberNew(
     cmx_entity ce;
     c_char* result;
     c_char* context;
+    u_subscriberQos uqos = NULL;
 
     result = NULL;
 
     ce = cmx_entityClaim(participant);
     if(ce != NULL){
-        sub = u_subscriberNew(u_participant(ce->uentity), name, NULL, FALSE);
+        sub = u_subscriberNew(u_participant(ce->uentity), name, NULL);
         if(sub != NULL){
             ur = U_RESULT_OK;
             if ((qos != NULL) && (strlen(qos) > 0)) {
@@ -55,8 +57,17 @@ cmx_subscriberNew(
                 context = "u_entitySetXMLQos";
             }
             if (ur == U_RESULT_OK) {
-                ur = u_entityEnable(u_entity(sub));
-                context = "u_entityEnable";
+                ur = u_subscriberGetQos(sub, &uqos);
+                context = "u_subscriberGetQos";
+            }
+            if (ur == U_RESULT_OK) {
+                if(!(uqos->presentation.v.coherent_access && uqos->presentation.v.access_scope == V_PRESENTATION_GROUP)) {
+                    ur = u_entityEnable(u_entity(sub));
+                    context = "u_entityEnable";
+                }
+            }
+            if(uqos) {
+                u_subscriberQosFree(uqos);
             }
             if (ur == U_RESULT_OK) {
                 ur = cmx_entityRegister(u_object(sub), ce, &result);

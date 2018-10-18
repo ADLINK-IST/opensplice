@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -65,8 +66,8 @@ v_topicFree(
 }
 
 v_result
-v_topicEnable(
-    v_topic _this)
+v__topicEnable(
+    _Inout_ v_topic _this)
 {
     v_topicImpl ti;
 
@@ -75,7 +76,8 @@ v_topicEnable(
     } else {
         ti = v_topicAdapter(_this)->topic;
     }
-    return v_topicImplEnable(ti);
+    assert(ti);
+    return v__topicImplEnable(ti);
 }
 
 v_topicQos
@@ -267,35 +269,20 @@ v_topicMetaDescriptor (
     return v_topicImplMetaDescriptor(ti);
 }
 
-
-void
-v_topicNotify (
-    v_topic _this,
-    v_event event,
-    c_voidp userData)
-{
-    v_topicImpl ti;
-
-    if (v_objectKind(_this) == K_TOPIC) {
-        ti = v_topicImpl(_this);
-    } else {
-        ti = v_topicAdapter(_this)->topic;
-    }
-    v_topicImplNotify(ti, event, userData);
-}
-
 void
 v_topicNotifyInconsistentTopic (
     v_topic _this)
 {
     v_topicImpl ti;
 
+    OSPL_LOCK(_this);
     if (v_objectKind(_this) == K_TOPIC) {
         ti = v_topicImpl(_this);
     } else {
         ti = v_topicAdapter(_this)->topic;
     }
     v_topicImplNotifyInconsistentTopic(ti);
+    OSPL_UNLOCK(_this);
 }
 
 void
@@ -304,12 +291,14 @@ v_topicNotifyAllDataDisposed(
 {
     v_topicImpl ti;
 
+    OSPL_LOCK(_this);
     if (v_objectKind(_this) == K_TOPIC) {
         ti = v_topicImpl(_this);
     } else {
         ti = v_topicAdapter(_this)->topic;
     }
     v_topicImplNotifyAllDataDisposed(ti);
+    OSPL_UNLOCK(_this);
 }
 
 void

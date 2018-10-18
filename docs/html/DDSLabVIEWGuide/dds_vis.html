@@ -1,0 +1,583 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Vortex DDS Virtual Instruments (VIs) &mdash; The Vortex OpenSplice LabVIEW Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice LabVIEW Guide" href="index.html" />
+    <link rel="next" title="4. LabVIEW Generation from IDL" href="IDL-LabVIEW.html" />
+    <link rel="prev" title="2. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="IDL-LabVIEW.html" title="4. LabVIEW Generation from IDL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vortex-dds-virtual-instruments-vis">
+<span id="vortex-dds-virtual-instruments"></span><h1>3. Vortex DDS Virtual Instruments (VIs)<a class="headerlink" href="#vortex-dds-virtual-instruments-vis" title="Permalink to this headline">¶</a></h1>
+<p>The DDS LabVIEW Integration provides a function palette with custom virtual instruments (VIs) to model reading and writing data with DDS.</p>
+<div class="figure">
+<img alt="VortexDDS VIs" src="_images/dds_palette.png" />
+</div>
+<p>The Vortex DDS LabVIEW VIs are included in <strong>VortexDDS</strong> functions palette.</p>
+<p>The following DDS VIs are provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li>create_participant.vi</li>
+<li>create_publisher.vi</li>
+<li>create_subscriber.vi</li>
+<li>create_writer.vi</li>
+<li>create_reader.vi</li>
+<li>wait_historical_data.vi</li>
+<li>delete_entity.vi</li>
+</ul>
+</div></blockquote>
+<div class="section" id="dds-vis-usage">
+<h2>3.1. DDS VIs usage<a class="headerlink" href="#dds-vis-usage" title="Permalink to this headline">¶</a></h2>
+<p>The typical way to model a DDS application in LabVIEW is as follows:</p>
+<ul class="simple">
+<li>model your DDS topics using IDL</li>
+<li>using the LabVIEW IDLPP process generate DDS Topic, Read and Write VIs from the IDL file</li>
+<li>add the generated VIs to your LabVIEW project</li>
+<li>create a DDS LabVIEW application using the VortexDDS functions palette and the generated VIs from the previous step</li>
+</ul>
+</div>
+<div class="section" id="qos-profiles">
+<h2>3.2. QoS Profiles<a class="headerlink" href="#qos-profiles" title="Permalink to this headline">¶</a></h2>
+<p>In DDS - “The Data-Distribution Service (DDS) relies on the usage of QoS.  A QoS (Quality of Service) is a set of characteristics that controls some aspect of the behavior of the DDS Service.&#8221;</p>
+<p>Each DDS entity VI has an associated QoS profile.   By default, the OSPL default profile is used.  An XML file that specifies QoS profiles can be used to set the QoS of a DDS entity.</p>
+<p>The QoS profile of an entity is set using the <strong>qos_uri</strong> and <strong>qos_profile</strong> terminals.</p>
+<p>Please see section <a class="reference internal" href="qos_provider.html#qos-provider"><em>QoS Provider</em></a> for more information.</p>
+</div>
+<div class="section" id="create-participant-vi">
+<h2>3.3. create_participant.vi<a class="headerlink" href="#create-participant-vi" title="Permalink to this headline">¶</a></h2>
+<p>The create_participant VI represents a DDS domain participant entity.</p>
+<p>In DDS - &#8220;A domain participant represents the local membership of the application in a domain. A domain is a distributed concept that links all the applications able to communicate with each other. It represents a communication plane: only the publishers and subscribers attached to the same domain may interact.&#8221;</p>
+<p>The domain id is the OSPL default domain id specified in the OSPL configuration file (file pointed by &#8220;OSPL_URI&#8221; environment variable).</p>
+<div class="figure">
+<img alt="create_participant VI" src="_images/dds_participant.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Output</td>
+<td>no</td>
+<td>pp</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>create_publisher.vi
+create_subscriber.vi
+RegisterTopic.vi</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>qos_uri</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>qos_profile</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="create-publisher-vi">
+<h2>3.4. create_publisher.vi<a class="headerlink" href="#create-publisher-vi" title="Permalink to this headline">¶</a></h2>
+<p>The create_publisher VI represents a DDS publisher entity.</p>
+<p>In DDS, a publisher is &#8220;an object responsible for data distribution.  It may publish data of different data types.&#8221;</p>
+<div class="figure">
+<img alt="create_publisher VI" src="_images/create_publisher.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>pp</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>qos_uri</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>qos_profile</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>no</td>
+<td>pub</td>
+<td>DDS publisher
+entity instance</td>
+<td>create_writer.vi</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="create-subscriber-vi">
+<h2>3.5. create_subscriber.vi<a class="headerlink" href="#create-subscriber-vi" title="Permalink to this headline">¶</a></h2>
+<p>The create_subscriber VI represents a DDS subscriber entity.</p>
+<p>In DDS, a subscriber is &#8220;an object responsible for receiving published data and making it available to the receiving application.  It may receive and dispatch data of different specified types.&#8221;</p>
+<div class="figure">
+<img alt="create_subscriber VI" src="_images/create_subscriber.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>pp</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>qos_uri</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>qos_profile</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>no</td>
+<td>sub</td>
+<td>DDS subscriber
+entity instance</td>
+<td>create_reader.vi</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="create-writer-vi">
+<h2>3.6. create_writer.vi<a class="headerlink" href="#create-writer-vi" title="Permalink to this headline">¶</a></h2>
+<p>The create_writer VI represents a DDS data writer entity.</p>
+<p>In DDS - &#8220;The DataWriter is the object the application must use to communicate to a publisher the existence and value of data-objects of a given type.&#8221;</p>
+<div class="figure">
+<img alt="create_writer VI" src="_images/create_writer.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>pub</td>
+<td>DDS publisher
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>no</td>
+<td>topic</td>
+<td>DDS Topic
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>qos_uri</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>qos_profile</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>writer</td>
+<td>DDS writer
+entity instance</td>
+<td>write.vi</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="create-reader-vi">
+<h2>3.7. create_reader.vi<a class="headerlink" href="#create-reader-vi" title="Permalink to this headline">¶</a></h2>
+<p>The create_reader VI represents a DDS data reader entity.</p>
+<p>In DDS - &#8220;To access the received data, the application must use a typed DataReader attached to the subscriber.&#8221;</p>
+<div class="figure">
+<img alt="create_reader VI" src="_images/create_reader.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>sub</td>
+<td>DDS subscriber
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>no</td>
+<td>topic</td>
+<td>DDS Topic
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>qos_uri</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>qos_profile</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>reader</td>
+<td>DDS reader
+entity instance</td>
+<td>read.vi</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="wait-historical-data-vi">
+<h2>3.8. wait_historical_data.vi<a class="headerlink" href="#wait-historical-data-vi" title="Permalink to this headline">¶</a></h2>
+<p>The wait_historical_data VI specifies that the Reader will wait for historical data to arrive. The timeout terminal is for setting time period (in seconds) determining how long the Reader should wait for the historical data. If the timeout is reached, then any remaining historical data may be interleaved with new data.</p>
+<div class="figure">
+<img alt="wait_historical VI" src="_images/wait_historical.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>reader</td>
+<td>DDS Reader
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>historical_timeout</td>
+<td>wait for historical data
+timeout (seconds)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="delete-entity-vi">
+<h2>3.9. delete_entity.vi<a class="headerlink" href="#delete-entity-vi" title="Permalink to this headline">¶</a></h2>
+<p>The delete_entity VI is used to delete a DDS entity. Connect the DDS participant to the entity terminal to delete the participant (pp) in a LabVIEW DDS application.</p>
+<blockquote>
+<div><em>NOTE:   If the user application VI stops due to an error and does not run to completion, the participant entity is not deleted and leaks occur. The participants are deleted once the user closes LabVIEW.</em></div></blockquote>
+<div class="figure">
+<img alt="delete_entity VI" src="_images/delete_entity.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>entity</td>
+<td>DDS entity instance</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Vortex DDS Virtual Instruments (VIs)</a><ul>
+<li><a class="reference internal" href="#dds-vis-usage">3.1. DDS VIs usage</a></li>
+<li><a class="reference internal" href="#qos-profiles">3.2. QoS Profiles</a></li>
+<li><a class="reference internal" href="#create-participant-vi">3.3. create_participant.vi</a></li>
+<li><a class="reference internal" href="#create-publisher-vi">3.4. create_publisher.vi</a></li>
+<li><a class="reference internal" href="#create-subscriber-vi">3.5. create_subscriber.vi</a></li>
+<li><a class="reference internal" href="#create-writer-vi">3.6. create_writer.vi</a></li>
+<li><a class="reference internal" href="#create-reader-vi">3.7. create_reader.vi</a></li>
+<li><a class="reference internal" href="#wait-historical-data-vi">3.8. wait_historical_data.vi</a></li>
+<li><a class="reference internal" href="#delete-entity-vi">3.9. delete_entity.vi</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">2. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="IDL-LabVIEW.html"
+                        title="next chapter">4. LabVIEW Generation from IDL</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dds_vis.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="IDL-LabVIEW.html" title="4. LabVIEW Generation from IDL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

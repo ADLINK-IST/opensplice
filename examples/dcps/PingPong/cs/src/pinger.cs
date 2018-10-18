@@ -1,9 +1,10 @@
 
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 
 using System;
 using DDS.OpenSplice;
+using System.Diagnostics;
 
 namespace PingPong
 {
@@ -92,11 +94,9 @@ namespace PingPong
         private stats roundtrip = new stats("roundtrip");
         private stats write_access = new stats("write_access");
         private stats read_access = new stats("read_access");
-        private time roundTripTime = new time();
-        private time preWriteTime = new time();
-        private time postWriteTime = new time();
-        private time preTakeTime = new time();
-        private time postTakeTime = new time();
+        private long roundTripTicks;
+        private long writeTicks;
+        private long takeTicks;
 
         /*
          * P I N G
@@ -104,7 +104,7 @@ namespace PingPong
 
         public void run(String[] args)
         {
-            System.Console.WriteLine("starting PING");
+            System.Console.WriteLine("Starting ping example");
             DDS.ICondition[] conditionList = null;
             DDS.IWaitSet w;
 
@@ -353,9 +353,11 @@ namespace PingPong
                                 pingpong.PP_min_msg PPdata = new pingpong.PP_min_msg();
                                 PPdata.count = 0;
                                 PPdata.block = block;
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_min_writer.Write(PPdata);
-                                postWriteTime.timeGet();
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                             }
                             break;
                         case 'q':
@@ -364,9 +366,11 @@ namespace PingPong
                                 pingpong.PP_seq_msg PPdata = new pingpong.PP_seq_msg();
                                 PPdata.count = 0;
                                 PPdata.block = block;
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_seq_writer.Write(PPdata);
-                                postWriteTime.timeGet();
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                             }
                             break;
                         case 's':
@@ -376,10 +380,12 @@ namespace PingPong
                                 PPdata.count = 0;
                                 PPdata.block = block;
                                 PPdata.a_string = "a_string " + block.ToString();
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_string_writer.Write(PPdata);
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                                 ErrorHandler.checkStatus(result, "writing PPData in case S");
-                                postWriteTime.timeGet();
                             }
                             break;
                         case 'f':
@@ -388,10 +394,12 @@ namespace PingPong
                                 pingpong.PP_fixed_msg PPdata = new pingpong.PP_fixed_msg();
                                 PPdata.count = 0;
                                 PPdata.block = block;
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_fixed_writer
                                         .Write(PPdata);
-                                postWriteTime.timeGet();
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                             }
                             break;
                         case 'a':
@@ -411,10 +419,12 @@ namespace PingPong
                                 PPdata.str_arr_float = new float[10];
                                 PPdata.str_arr_double = new double[10];
                                 PPdata.str_arr_boolean = new Boolean[11];
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_array_writer
                                         .Write(PPdata);
-                                postWriteTime.timeGet();
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                             }
                             break;
                         case 't':
@@ -425,9 +435,11 @@ namespace PingPong
                                 terminate = true;
                                 finish_flag = true;
                                 System.Threading.Thread.Sleep(1000);
-                                preWriteTime.timeGet();
+                                Stopwatch stopWatch = new Stopwatch();
+                                stopWatch.Start();
                                 result = PP_quit_writer.Write(PPdata);
-                                postWriteTime.timeGet();
+                                stopWatch.Stop();
+                                writeTicks = stopWatch.ElapsedTicks;
                                 System.Threading.Thread.Sleep(1000);
                             }
                             break;
@@ -438,8 +450,8 @@ namespace PingPong
 
                     if (!terminate)
                     {
-                        roundTripTime.set(preWriteTime.get());
-                        write_access.add_stats(postWriteTime.sub(preWriteTime));
+                        roundTripTicks = writeTicks;
+                        write_access.add_stats(writeTicks);
 
                         /*
                          * Wait for response, calculate timing, and send another
@@ -450,54 +462,54 @@ namespace PingPong
                             result = w.Wait(ref conditionList, wait_timeout);
 							if(result == DDS.ReturnCode.Ok || result == DDS.ReturnCode.NoData || result == DDS.ReturnCode.Timeout)
 							{
-								//ErrorHandler.checkStatus(result, "wait did not work condition list is probably null!");
-								if (conditionList != null)
-								{
-									imax = conditionList.Length;
-									if (imax != 0)
-									{
-										for (i = 0; i < imax; i++)
-										{
-											if (conditionList[i] == PP_min_sc)
-											{
-												finish_flag = PP_min_handler(nof_cycles);
-											}
-											else if (conditionList[i] == PP_seq_sc)
-											{
-												finish_flag = PP_seq_handler(nof_cycles);
-											}
-											else if (conditionList[i] == PP_string_sc)
-											{
-												finish_flag = PP_string_handler(nof_cycles);
-											}
-											else if (conditionList[i] == PP_fixed_sc)
-											{
-												finish_flag = PP_fixed_handler(nof_cycles);
-											}
-											else if (conditionList[i] == PP_array_sc)
-											{
-												finish_flag = PP_array_handler(nof_cycles);
-											}
-											else
-											{
-												System.Console.WriteLine("PING: unexpected condition triggered: "
-																+ conditionList[i] + ", terminating");
-												finish_flag = true;
+                                //ErrorHandler.checkStatus(result, "wait did not work condition list is probably null!");
+                                if (conditionList != null)
+                                {
+                                    imax = conditionList.Length;
+                                    if (imax != 0)
+                                    {
+                                        for (i = 0; i < imax; i++)
+                                        {
+                                            if (conditionList[i] == PP_min_sc)
+                                            {
+                                                finish_flag = PP_min_handler(nof_cycles);
+                                            }
+                                            else if (conditionList[i] == PP_seq_sc)
+                                            {
+                                                finish_flag = PP_seq_handler(nof_cycles);
+                                            }
+                                            else if (conditionList[i] == PP_string_sc)
+                                            {
+                                                finish_flag = PP_string_handler(nof_cycles);
+                                            }
+                                            else if (conditionList[i] == PP_fixed_sc)
+                                            {
+                                                finish_flag = PP_fixed_handler(nof_cycles);
+                                            }
+                                            else if (conditionList[i] == PP_array_sc)
+                                            {
+                                                finish_flag = PP_array_handler(nof_cycles);
+                                            }
+                                            else
+                                            {
+                                                System.Console.WriteLine("PING: unexpected condition triggered: "
+                                                                + conditionList[i] + ", terminating");
+                                                finish_flag = true;
                                                 terminate = true;
-											}
-										}
-									}
-									else
-									{
-										System.Console.WriteLine("PING: TIMEOUT - message lost (1)");
-										timeout_flag = true;
-									}
-								}
-								else
-								{
-									System.Console.WriteLine("PING: TIMEOUT - message lost (2)");
-									timeout_flag = true;
-								}
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        System.Console.WriteLine("PING: TIMEOUT - message lost (1)");
+                                        timeout_flag = true;
+                                    }
+                                }
+                                else
+                                {
+                                    System.Console.WriteLine("PING: TIMEOUT - message lost (2)");
+                                    timeout_flag = true;
+                                }
 							} else
 							{
 								System.Console.WriteLine("PING: Waitset wait failed (code "+result+"), terminating");
@@ -518,10 +530,24 @@ namespace PingPong
                         System.Console.WriteLine("# Block     Count   mean    min    max      Count   mean    min    max      Count   mean    min    max");
                     }
 
+                    /* frequency of the timer as the number of ticks per second. */
+                    double frequency = Stopwatch.Frequency;
+                    /* times are meassured in ticks so convert them to ms */
+                    double microsecPerTick = (1000L * 1000L) / frequency;
+
                     System.Console.WriteLine(String.Format("{0,-6} {1, 10} {2, 6} {3, 6} {4, 6} {5, 10} {6, 6} {7, 6} {8, 6} {9, 10} {10, 6} {11, 6} {12, 6}",
-                        block,roundtrip.count,roundtrip.average,roundtrip.min, roundtrip.max,write_access.count,
-                        write_access.average,write_access.min, write_access.max, read_access.count, read_access.average,
-                        read_access.min, read_access.max));
+                        block,roundtrip.count,
+                        Math.Ceiling(roundtrip.average* microsecPerTick),
+                        Math.Ceiling(roundtrip.min * microsecPerTick),
+                        Math.Ceiling(roundtrip.max * microsecPerTick),
+                        write_access.count,
+                        Math.Ceiling(write_access.average * microsecPerTick),
+                        Math.Ceiling(write_access.min * microsecPerTick),
+                        Math.Ceiling(write_access.max * microsecPerTick),
+                        read_access.count,
+                        Math.Ceiling(read_access.average * microsecPerTick),
+                        Math.Ceiling(read_access.min * microsecPerTick),
+                        Math.Ceiling(read_access.max * microsecPerTick)));
                     Console.Out.Flush();
                     write_access.init_stats();
                     read_access.init_stats();
@@ -574,7 +600,9 @@ namespace PingPong
 
 
 
-            preTakeTime.timeGet();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
 
             dds_result = PP_min_reader.Take(ref PP_min_dataList, ref infoList,
                     DDS.SampleStateKind.Any,
@@ -583,7 +611,8 @@ namespace PingPong
 
             //assert (dds_result == RETCODE_OK.value);
 
-            postTakeTime.timeGet();
+            stopWatch.Stop();
+            takeTicks = stopWatch.ElapsedTicks;
 
             amount = PP_min_dataList.Length;
             if (amount != 0)
@@ -596,19 +625,20 @@ namespace PingPong
                 PP_min_dataList[0].count++;
                 if (PP_min_dataList[0].count < nof_cycles)
                 {
-                    preWriteTime.timeGet();
+                    stopWatch = Stopwatch.StartNew();
                     dds_result = PP_min_writer.Write(PP_min_dataList[0], DDS.InstanceHandle.Nil);
                     //assert (dds_result == RETCODE_OK.value);
-                    postWriteTime.timeGet();
-                    write_access.add_stats(postWriteTime.sub(preWriteTime));
+                    stopWatch.Stop();
+                    writeTicks = stopWatch.ElapsedTicks;
+                    write_access.add_stats(writeTicks);
                 }
                 else
                 {
                     result = true;
                 }
-                read_access.add_stats(postTakeTime.sub(preTakeTime));
-                roundtrip.add_stats(postTakeTime.sub(roundTripTime));
-                roundTripTime.set(preWriteTime.get());
+                read_access.add_stats(takeTicks);
+                roundtrip.add_stats(roundTripTicks + takeTicks);
+                roundTripTicks = writeTicks;
                 dds_result = PP_min_reader.ReturnLoan(ref PP_min_dataList, ref infoList);
                 //assert (dds_result == RETCODE_OK.value);
             }
@@ -628,12 +658,14 @@ namespace PingPong
 
             /* System.out.println "PING: PING_fixed arrived"); */
 
-            preTakeTime.timeGet();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             dds_result = PP_fixed_reader.Take(ref PP_fixed_dataList, ref infoList,
                      DDS.SampleStateKind.Any,
                     DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
             //assert (dds_result == RETCODE_OK.value);
-            postTakeTime.timeGet();
+            stopWatch.Stop();
+            takeTicks = stopWatch.ElapsedTicks;
 
             amount = PP_fixed_dataList.Length;
             if (amount != 0)
@@ -646,20 +678,21 @@ namespace PingPong
                 PP_fixed_dataList[0].count++;
                 if (PP_fixed_dataList[0].count < nof_cycles)
                 {
-                    preWriteTime.timeGet();
+                    stopWatch = Stopwatch.StartNew();
                     dds_result = PP_fixed_writer.Write(PP_fixed_dataList[0],
                             DDS.InstanceHandle.Nil);
                     //assert (dds_result == RETCODE_OK.value);
-                    postWriteTime.timeGet();
-                    write_access.add_stats(postWriteTime.sub(preWriteTime));
+                    stopWatch.Stop();
+                    writeTicks = stopWatch.ElapsedTicks;
+                    write_access.add_stats(writeTicks);
                 }
                 else
                 {
                     result = true;
                 }
-                read_access.add_stats(postTakeTime.sub(preTakeTime));
-                roundtrip.add_stats(postTakeTime.sub(roundTripTime));
-                roundTripTime.set(preWriteTime.get());
+                read_access.add_stats(takeTicks);
+                roundtrip.add_stats(roundTripTicks + takeTicks);
+                roundTripTicks = writeTicks;
                 dds_result = PP_fixed_reader.ReturnLoan(ref PP_fixed_dataList, ref infoList);
                 //assert (dds_result == RETCODE_OK.value);
             }
@@ -679,12 +712,14 @@ namespace PingPong
 
             /* System.out.println "PING: PING_array arrived"); */
 
-            preTakeTime.timeGet();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             dds_result = PP_array_reader.Take(ref PP_array_dataList, ref infoList,
                     DDS.SampleStateKind.Any,
                     DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
             //assert (dds_result == RETCODE_OK.value);
-            postTakeTime.timeGet();
+            stopWatch.Stop();
+            takeTicks = stopWatch.ElapsedTicks;
 
             amount = PP_array_dataList.Length;
             if (amount != 0)
@@ -697,20 +732,21 @@ namespace PingPong
                 PP_array_dataList[0].count++;
                 if (PP_array_dataList[0].count < nof_cycles)
                 {
-                    preWriteTime.timeGet();
+                    stopWatch = Stopwatch.StartNew();
                     dds_result = PP_array_writer.Write(PP_array_dataList[0],
                             DDS.InstanceHandle.Nil);
                     //assert (dds_result == RETCODE_OK.value);
-                    postWriteTime.timeGet();
-                    write_access.add_stats(postWriteTime.sub(preWriteTime));
+                    stopWatch.Stop();
+                    writeTicks = stopWatch.ElapsedTicks;
+                    write_access.add_stats(writeTicks);
                 }
                 else
                 {
                     result = true;
                 }
-                read_access.add_stats(postTakeTime.sub(preTakeTime));
-                roundtrip.add_stats(postTakeTime.sub(roundTripTime));
-                roundTripTime.set(preWriteTime.get());
+                read_access.add_stats(takeTicks);
+                roundtrip.add_stats(roundTripTicks + takeTicks);
+                roundTripTicks = writeTicks;
                 dds_result = PP_array_reader.ReturnLoan(ref PP_array_dataList, ref infoList);
                 //assert (dds_result == RETCODE_OK.value);
             }
@@ -729,12 +765,14 @@ namespace PingPong
 
             /* System.out.println "PING: PING_seq arrived"); */
 
-            preTakeTime.timeGet();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             dds_result = PP_seq_reader.Take(ref PP_seq_dataList, ref infoList,
                     DDS.SampleStateKind.Any,
                     DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
             //assert (dds_result == RETCODE_OK.value);
-            postTakeTime.timeGet();
+            stopWatch.Stop();
+            takeTicks = stopWatch.ElapsedTicks;
 
             amount = PP_seq_dataList.Length;
             if (amount != 0)
@@ -747,20 +785,21 @@ namespace PingPong
                 PP_seq_dataList[0].count++;
                 if (PP_seq_dataList[0].count < nof_cycles)
                 {
-                    preWriteTime.timeGet();
+                    stopWatch = Stopwatch.StartNew();
                     dds_result = PP_seq_writer.Write(PP_seq_dataList[0],
                             DDS.InstanceHandle.Nil);
                     //assert (dds_result == RETCODE_OK.value);
-                    postWriteTime.timeGet();
-                    write_access.add_stats(postWriteTime.sub(preWriteTime));
+                    stopWatch.Stop();
+                    writeTicks = stopWatch.ElapsedTicks;
+                    write_access.add_stats(writeTicks);
                 }
                 else
                 {
                     result = true;
                 }
-                read_access.add_stats(postTakeTime.sub(preTakeTime));
-                roundtrip.add_stats(postTakeTime.sub(roundTripTime));
-                roundTripTime.set(preWriteTime.get());
+                read_access.add_stats(takeTicks);
+                roundtrip.add_stats(roundTripTicks + takeTicks);
+                roundTripTicks = writeTicks;
                 dds_result = PP_seq_reader.ReturnLoan(ref PP_seq_dataList, ref infoList);
                 //assert (dds_result == RETCODE_OK.value);
             }
@@ -781,12 +820,14 @@ namespace PingPong
 
             /* System.out.println "PING: PING_string arrived"); */
 
-            preTakeTime.timeGet();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             dds_result = PP_string_reader.Take(ref PP_string_dataList, ref infoList,
                     DDS.Length.Unlimited, DDS.SampleStateKind.Any,
                     DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
             //assert (dds_result == RETCODE_OK.value);
-            postTakeTime.timeGet();
+            stopWatch.Stop();
+            takeTicks = stopWatch.ElapsedTicks;
 
             amount = PP_string_dataList.Length;
             if (amount != 0)
@@ -799,20 +840,21 @@ namespace PingPong
                 PP_string_dataList[0].count++;
                 if (PP_string_dataList[0].count < nof_cycles)
                 {
-                    preWriteTime.timeGet();
+                    stopWatch = Stopwatch.StartNew();
                     dds_result = PP_string_writer.Write(
                             PP_string_dataList[0], DDS.InstanceHandle.Nil);
                     //assert (dds_result == RETCODE_OK.value);
-                    postWriteTime.timeGet();
-                    write_access.add_stats(postWriteTime.sub(preWriteTime));
+                    stopWatch.Stop();
+                    writeTicks = stopWatch.ElapsedTicks;
+                    write_access.add_stats(writeTicks);
                 }
                 else
                 {
                     result = true;
                 }
-                read_access.add_stats(postTakeTime.sub(preTakeTime));
-                roundtrip.add_stats(postTakeTime.sub(roundTripTime));
-                roundTripTime.set(preWriteTime.get());
+                read_access.add_stats(takeTicks);
+                roundtrip.add_stats(roundTripTicks + takeTicks);
+                roundTripTicks = writeTicks;
                 dds_result = PP_string_reader.ReturnLoan(ref PP_string_dataList,
                         ref infoList);
                 //assert (dds_result == RETCODE_OK.value);

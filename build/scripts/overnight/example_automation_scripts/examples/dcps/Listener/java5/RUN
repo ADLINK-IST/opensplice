@@ -8,11 +8,11 @@ startOSPL
 
 echo "=== Launching Listener "
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ListenerDataSubscriber > subResult.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Listener_sub.jar > subResult.txt &
 
 sleep 5
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ListenerDataPublisher > pubResult.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Listener_pub.jar > pubResult.txt
 sleep 10
 
 listenerCheckResult

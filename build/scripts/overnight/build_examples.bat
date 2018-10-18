@@ -7,7 +7,7 @@ ECHO Set Microsoft Visual Studio Environment using VS supplied batch file
 
 IF "%VS_ENV_SCRIPT%"=="" EXIT 1
 
-IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%"
+IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%" %VS_ENV_SCRIPT_ARGS%
 
 cd "%OSPL_HOME%"
 
@@ -25,6 +25,9 @@ REM filter it out as it occurs across two lines & we don't want to ignore
 REM the forst line always in case a different "wrong" environment variable is referenced.
 REM So: we set BOOST_ROOT to some harmless nonsense value if it's not already set.
 IF "%BOOST_ROOT%"=="" SET BOOST_ROOT=bibble
+
+REM Output environment
+set
 
 ECHO Change to the examples directory
 
@@ -60,12 +63,13 @@ FOR %%f IN (BUILD*.bat) DO (
 
 ECHO -----------------------------------------------------------------------
 
-cd "%OSPL_HOME%"/examples/protobuf/java5/standalone
+ECHO Building Java5 examples....
+cd "%OSPL_HOME%"/examples/
 IF ERRORLEVEL 1 (
-    ECHO ***** java5 protobuf example not found. Return code %ERRORLEVEL%
+    ECHO ***** examples not found. Return code %ERRORLEVEL%
 ) else (
-   call BUILD.bat
-   IF ERRORLEVEL 1 ECHO ***** building java5 protobuf example failed. Return code %ERRORLEVEL%
+   call mvn package
+   IF ERRORLEVEL 1 ECHO ***** building java5 examples failed. Return code %ERRORLEVEL%
 )
 
 ECHO Building Isocpp2 protobuf example....

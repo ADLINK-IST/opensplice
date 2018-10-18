@@ -38,17 +38,17 @@ extends QosPolicy.ForTopic,
 
     /**
      * Copy this policy and override the value of the property.
-     * 
+     *
      * @return  a new policy
      */
     public TypeConsistencyEnforcement withKind(Kind kind);
 
     public TypeConsistencyEnforcement withExactTypeTypeConsistency();
-    
+
     public TypeConsistencyEnforcement withExactNameTypeConsistency();
-    
+
     public TypeConsistencyEnforcement withDeclaredTypeConsistency();
-    
+
     public TypeConsistencyEnforcement withAssignableTypeConsistency();
 
     // -----------------------------------------------------------------------

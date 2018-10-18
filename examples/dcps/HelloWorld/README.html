@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - HelloWorld</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -50,8 +51,8 @@ discussion of these deployment strategies.
 <ul>
     <li>CheckStatus : provides return status checking</li>
     <li>DDSEntityManager : implements a class providing operations to setup DCPS entities (creation, deletion) </li>
-    <li class="ex-unit"><span class="ex-unit-key" data-langc="sac_helloworld_pub" data-langcpp="sacpp_helloworld_pub" data-langjava="HelloWorldDataPublisher" data-langisocpp="publisher" data-langjava5="HelloWorldDataPublisher" data-langisocpp2="publisher" data-langcs="sacs_helloworld_pub">HelloWorldPublisher</span>  : <span class="ex-unit-desc">implements the publisher's main</span> (uses DDSEntityManager)</li>
-    <li class="ex-unit"><span class="ex-unit-key" data-langc="sac_helloworld_sub" data-langcpp="sacpp_helloworld_sub" data-langjava="HelloWorldDataSubscriber" data-langisocpp="subscriber" data-langjava5="HelloWorldDataSubscriber" data-langisocpp2="subscriber" data-langcs="sacs_helloworld_sub">HelloWorldSubscriber</span> : <span class="ex-unit-desc">implements the subscriber's main</span> (uses DDSEntityManager)</li>
+    <li class="ex-unit"><span class="ex-unit-key" data-langc="sac_helloworld_pub" data-langcpp="sacpp_helloworld_pub" data-langjava="HelloWorldDataPublisher" data-langisocpp="publisher" data-langjava5="pub/target/classes/HelloWorldDataPublisher" data-langisocpp2="publisher" data-langcs="sacs_helloworld_pub">HelloWorldPublisher</span>  : <span class="ex-unit-desc">implements the publisher's main</span> (uses DDSEntityManager)</li>
+    <li class="ex-unit"><span class="ex-unit-key" data-langc="sac_helloworld_sub" data-langcpp="sacpp_helloworld_sub" data-langjava="HelloWorldDataSubscriber" data-langisocpp="subscriber" data-langjava5="sub/target/classes/HelloWorldDataSubscriber" data-langisocpp2="subscriber" data-langcs="sacs_helloworld_sub">HelloWorldSubscriber</span> : <span class="ex-unit-desc">implements the subscriber's main</span> (uses DDSEntityManager)</li>
 </ul>
 <h3>3) Scenario</h3>
 <p>The publisher sends a single HelloWorld sample.
@@ -106,8 +107,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <p>For Java5</p>
                 <ul><li>saj5_helloworld_sub.jar </li>
-                    <li>saj5_helloworld_pub.jar </li>
-                        <li>saj5_helloworld_types.jar </li>
+                    <li>java5_HelloWorld_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
@@ -145,7 +145,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_helloworld_sub</i></b> for C </li>
           <li><b><i>sacpp_helloworld_sub</i></b> for C++ </li>
           <li><b><i>java -jar saj_helloworld_sub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_helloworld_sub.jar</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/saj5_helloworld_sub.jar</i></b> for Java5 </li>
           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
@@ -154,7 +154,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_helloworld_pub</i></b> for C </li>
           <li><b><i>sacpp_helloworld_pub</i></b> for C++ </li>
           <li><b><i>java -jar saj_helloworld_pub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_helloworld_pub.jar</i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_HelloWorld_pub.jar</i></b> for Java5 </li>
           <li><b><i>publisher</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>
@@ -201,8 +201,7 @@ To do this open an <i>OpenSplice  Command Prompt</i> which will set up the envir
 
 <p>For Java5</p>
                 <ul><li>saj5_helloworld_sub.jar </li>
-                    <li>saj5_helloworld_pub.jar </li>
-                        <li>saj5_helloworld_types.jar </li>
+                    <li>java5_HelloWorld_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
@@ -241,7 +240,7 @@ To do this open an <i>OpenSplice  Command Prompt</i> which will set up the envir
           <li><b><i>sacpp_helloworld_sub</i></b> for C++  </li>
           <li><b><i>sacs_helloworld_sub</i></b> for C# </li>
           <li><b><i>java -jar saj_helloworld_sub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_helloworld_sub.jar</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/saj5_helloworld_sub.jar</i></b> for Java5 </li>
           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
@@ -251,7 +250,7 @@ To do this open an <i>OpenSplice  Command Prompt</i> which will set up the envir
           <li><b><i>sacpp_helloworld_pub</i></b> for C++ </li>
           <li><b><i>sacs_helloworld_pub</i></b> for C# </li>
           <li><b><i>java -jar saj_helloworld_pub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_helloworld_pub.jar</i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_HelloWorld_pub.jar</i></b> for Java5 </li>
           <li><b><i>publisher</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>

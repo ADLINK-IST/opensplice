@@ -7,12 +7,12 @@ get_libjsig
 startOSPL
 
 echo "=== Launching HelloWorld "
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP HelloWorldDataSubscriber > subResult.txt&
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_HelloWorld_sub.jar > subResult.txt&
 cmd_pid=$!
 
 sleep 5
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP HelloWorldDataPublisher > pubResult.txt 
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_HelloWorld_pub.jar > pubResult.txt
 PUB_RESULT=$?
 
 wait $cmd_pid &> /dev/null

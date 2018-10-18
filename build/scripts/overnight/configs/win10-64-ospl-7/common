@@ -1,0 +1,13 @@
+export VS_HOME='/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2017/Community'
+export VS_ENV_SCRIPT=`cygpath -w "${VS_HOME}/Common7/Tools/VsDevCmd.bat"`
+export WINDOWSSDKDIR='/cygdrive/C/Program Files (x86)/Windows Kits/10'
+export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap-2.7
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0/src
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=$PROTOBUF_HOME/bin:$PATH
+
+#There is no TAO for VS2015
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

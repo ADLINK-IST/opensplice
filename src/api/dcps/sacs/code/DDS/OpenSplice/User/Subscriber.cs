@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -30,15 +31,13 @@ namespace DDS.OpenSplice.User
          *     u_subscriberNew(
          *         const u_participant _scope,
          *         const os_char *name,
-         *         const u_subscriberQos qos,
-         *         u_bool enable);
+         *         const u_subscriberQos qos);
          */
         [DllImport("ddskernel", EntryPoint = "u_subscriberNew", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr New(
             IntPtr _scope,
             string name,
-            IntPtr qos,
-            byte enable);
+            IntPtr qos);
 
         /*
          *     u_result

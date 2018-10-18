@@ -913,7 +913,7 @@ module kernelModuleI {
         K_READER,            K_WRITER,
         K_ENTRY,             K_DATAREADERENTRY,    K_DELIVERYSERVICEENTRY,
         K_GROUP,             K_WRITERGROUP,        K_CACHE,
-        K_GROUPACTION,       K_GROUPSTREAM,
+        K_GROUPACTION,       K_GROUPSTREAM,        K_GROUPSTORE,
         K_GROUPQUEUE,        K_GROUPQUEUESAMPLE,
         K_DATAREADER,        K_DELIVERYSERVICE,    K_PARTICIPANT,
         K_PURGELISTITEM,     K_GROUPPURGEITEM,
@@ -928,7 +928,7 @@ module kernelModuleI {
         K_WAITSETEVENTPERSISTENTSNAPSHOT, K_WAITSETEVENTCONNECTWRITER,
         K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
         K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
-        K_RNR,               K_NWBRIDGE,
+        K_RNR,               K_NWBRIDGE,           K_DBMSCONNECT,
         K_LEASEMANAGER,      K_LEASE,              K_LEASEACTION,
         K_SPLICED,
         K_CONFIGURATION,
@@ -971,36 +971,38 @@ module kernelModuleI {
         attribute c_ulong       index;
     };
 
+    class v_observer;
     /* This proxy can be used for both local and remote
        public objects.
     */
     class v_proxy extends v_object {
         attribute v_handle                       source;
+        attribute c_ulong                        eventMask;
         attribute c_voidp                        userData;
-        attribute c_voidp                        source2;
+        attribute v_observer                     source2;
         attribute v_proxy                        next;
     };
 
     class v_observable extends v_public {
-        attribute c_mutex                        mutex;
-        attribute v_proxy observers;
+        attribute c_mutex mutex;       /* General purpose Object lock. */
+        attribute c_mutex eventLock;   /* Event lock protects observers list and is used by v_observer to block events */
+        attribute v_proxy observers;   /* All observers that will be notified about events. */
     };
 
+    typedef c_ulong v_eventKind;
+
     class v_observer extends v_observable {
-        attribute c_cond                         cv;
-        attribute c_mutex                        mutex;
-        attribute c_long                         waitCount;
-        attribute c_ulong                        eventMask;
-        attribute c_ulong                        eventFlags;
-        /* place to store event data by the observer */
-        attribute c_voidp                        eventData;
+        attribute c_cond cv;
+        attribute c_long waitCount;
+        attribute c_ulong eventMask;
+        attribute c_ulong eventFlags;
     };
 
     class v_status extends v_object {
         attribute c_ulong                        state;
     };
 
-    enum v_entityState { V_ENTITYSTATE_DISABLED, V_ENTITYSTATE_SUSPENDED, V_ENTITYSTATE_ENABLED };
+    enum v_entityState { V_ENTITYSTATE_DISABLED, V_ENTITYSTATE_ENABLING, V_ENTITYSTATE_ENABLED };
 
     typedef c_ulong v_eventMask;
 
@@ -1030,12 +1032,12 @@ module kernelModuleI {
         attribute v_listener                     listener;
         attribute v_eventMask                    listenerInterest;
         attribute c_voidp                        listenerData;
-        attribute c_bool                         enabled;
+        attribute v_entityState                  state;
         attribute v_objectLoan                   loan;
     };
 
     class v_statusCondition extends v_observer {
-        attribute v_proxy entity;
+        attribute v_handle entity;
     };
 
     class v_query;
@@ -1088,6 +1090,7 @@ module kernelModuleI {
         attribute c_bool waitsetEventEnabled;
         attribute c_ulong waitDisconnectCount;
         attribute c_cond syncDisconnect;
+        attribute v_waitsetEvent eventList;
     };
 
     enum v_leaseActionId {
@@ -1638,11 +1641,12 @@ module kernelModuleI {
     };
 
     class v_topicImpl extends v_topic {
-        attribute c_type                         messageType;
-        attribute c_type                         dataType;
+        attribute c_type                         messageType; // v_message<dataType>
+        attribute c_type                         messageExtType; // v_messageExt<dataType>
+        attribute c_type                         dataType; // topic data type
         attribute v_topicQos                     qos;
-        attribute c_string                       keyExpr;
-        attribute ARRAY<c_field>                 messageKeyList;
+        attribute c_string                       keyExpr; // topic data type key expression
+        attribute ARRAY<c_field>                 messageKeyList; // v_message<dataType> key list
         attribute v_accessMode                   accessMode;
         /* keyType is a reference to a generated type 'topicName<Key>'.
            It is a structure that contains fields 'field1'.. 'fieldN'.
@@ -1650,7 +1654,7 @@ module kernelModuleI {
            Note that this reference is only for convenience so default
            DataWriters and DataReaders do not have to create the type themselves.
         */
-        attribute c_type                         keyType;
+        attribute c_type                         keyType; // Internal key type
         attribute c_ulong                        crcOfName;
         attribute c_ulong                        crcOfTypeName;
     };
@@ -1660,8 +1664,9 @@ module kernelModuleI {
     };
 
     class v_filter {
-        attribute v_topic                        topic;
-        attribute c_object                       predicate;
+        attribute ARRAY<c_object>                _key; /* condition list holding key part of condition[i] */
+        attribute ARRAY<c_object>                nonkey; /* condition list holding nonkey part of condition[i] */
+        attribute c_ulong                        flags; /* HAS_KEY and HAS_NONKEY bits */
     };
 
     class v_typeRepresentation {
@@ -1688,6 +1693,7 @@ module kernelModuleI {
     class v_instance extends v_public {
         attribute v_state                        state;
         attribute c_voidp                        entity; /* Owner of the instance. */
+        attribute c_voidp                        userData; /* Application specific user data. */
     };
 
     class v_deadLineInstance extends v_instance {
@@ -1760,6 +1766,67 @@ module kernelModuleI {
         attribute c_long           sampleCount;
         attribute v_lifespanSample head;
         attribute v_lifespanSample tail;
+    };
+
+    /* -------------------------------------------------------------------------- */
+    /* Built-in Topic type definitions                                            */
+    /* -------------------------------------------------------------------------- */
+
+    enum v_infoId {
+        V_PARTICIPANTINFO_ID,
+        V_TYPEINFO_ID,
+        V_TOPICINFO_ID,
+        V_PUBLICATIONINFO_ID,
+        V_SUBSCRIPTIONINFO_ID,
+        V_HEARTBEATINFO_ID,
+        V_DELIVERYINFO_ID,
+        V_C_AND_M_COMMAND_ID,
+        V_CMPARTICIPANTINFO_ID,
+        V_CMDATAWRITERINFO_ID,
+        V_CMDATAREADERINFO_ID,
+        V_CMPUBLISHERINFO_ID,
+        V_CMSUBSCRIBERINFO_ID,
+        V_INFO_ID_COUNT
+    };
+
+    class v_heartbeatInfoTemplate extends v_message {
+        attribute kernelModule::v_heartbeatInfo userData;
+    };
+
+    class v_topicInfoTemplate extends v_message {
+        attribute kernelModule::v_topicInfo userData;
+    };
+
+    class v_typeInfoTemplate extends v_message {
+        attribute kernelModule::v_typeInfo userData;
+    };
+
+    class v_publicationInfoTemplate extends v_message {
+        attribute kernelModule::v_publicationInfo userData;
+    };
+
+    class v_dataWriterCMInfoTemplate extends v_message {
+        attribute kernelModule::v_dataWriterCMInfo userData;
+    };
+
+    class v_subscriptionInfoTemplate extends v_message {
+        attribute kernelModule::v_subscriptionInfo userData;
+    };
+
+    class v_dataReaderCMInfoTemplate extends v_message {
+        attribute kernelModule::v_dataReaderCMInfo userData;
+    };
+
+    class v_publisherCMInfoTemplate extends v_message {
+        attribute kernelModule::v_publisherCMInfo userData;
+    };
+
+    class v_subscriberCMInfoTemplate extends v_message {
+        attribute kernelModule::v_subscriberCMInfo userData;
+    };
+
+    class v_deliveryInfoTemplate extends v_message {
+        attribute kernelModule::v_deliveryInfo userData;
     };
 
     /* -------------------------------------------------------------------------- */
@@ -1905,7 +1972,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_bool                         inNotEmptyList;
         attribute os_timeE                       lastInsertionTime;
         attribute v_dataReaderSampleTemplate     pending;
-        attribute c_voidp                        userData;
     };
 
     class v_orderedInstance extends v_dataViewInstanceTemplate {
@@ -1922,16 +1988,19 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_voidp                        oldest;
     };
 
+    /* N.B.: Order of labels is important! */
+    enum v_alignState {
+        V_ALIGNSTATE_INCOMPLETE, /* Purging suppressed, wait-for-historical-data blocks */
+        V_ALIGNSTATE_NO_INTEREST, /* Purging enabled, wait-for-historical-data blocks */
+        V_ALIGNSTATE_COMPLETE, /* Purging enabled, wait-for-hsitorical-data returns */
+        V_ALIGNSTATE_COUNT
+    };
+
     class v_entry extends v_object {
         attribute c_voidp                        reader;
         attribute SET<v_proxy>                   groups;
-        attribute c_bool                         complete; /* completeness of all groups */
+        attribute v_alignState                   alignState; /* completeness of group */
         attribute c_long                         nvgCount; /* number of attached non volatile groups */
-    };
-
-    struct v_entrySet {
-        c_mutex                                  mutex;
-        SET<v_entry>                             entries;
     };
 
     class v_historicalDeleteRequest extends v_object {
@@ -1956,7 +2025,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
     };
 
     class v_reader extends v_collection {
-        attribute v_entrySet                     entrySet;
+        attribute SET<v_entry>                   entries;
         attribute c_voidp                        subscriber;
         attribute v_subscriberQos                subQos; /* ref is ro */
         attribute v_readerQos                    qos;
@@ -1978,7 +2047,8 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_groupSample                  older;
         attribute c_voidp                        newer;
         attribute c_voidp                        instance;
-        attribute v_transaction                  transaction; /* Reference to the transaction it was part of */
+        attribute c_voidp                        transaction; /* Backref to the transaction it is part of */
+        attribute c_ulong                        readid; /* used during read to avoid duplicates */
     };
 
     class v_groupSampleTemplate extends v_groupSample {
@@ -1992,7 +2062,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_ulong                        sequenceNumber; /* sequenceNumber of the original message */
         attribute os_timeE                       unregisterTime; /* Elapsed (monotonic) time */
         attribute v_state                        state; /* message state of the original message */
-        attribute v_transaction                  transaction; /* Reference to the transaction it was part of */
+        attribute c_voidp                        transaction; /* Backref to the transaction it is part of */
         attribute v_registration                 next;
     };
 
@@ -2015,6 +2085,10 @@ class v_orderedInstanceSample extends v_dataViewSample {
      * when complete.
      */
     class v_transactionElement {
+        /* When instered is true the message for this element is received and counted.
+         * This boolean is required when receiving the same message multiple times, it
+         * should then only increase the transaction count once. */
+        attribute c_bool                         inserted;
         attribute v_message                      message;
         attribute v_instance                     instance;
     };
@@ -2027,12 +2101,12 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_long                         count; /* equals nr of unique messages received */
         attribute c_long                         eotCount; /* equals nr of EOTs received */
         attribute c_long                         size; /* equals nr of messages in transaction */
-        attribute c_bool                         elementZero; /* true when first element of transaction is received */
         attribute c_bool                         aborted; /* true when transaction is prematuraly aborted. */
         attribute c_bool                         sampleLostNotified; /* true when sampleLostNotification is sent. */
         attribute ARRAY<v_transactionElement>    elements; /* received messages */
         attribute c_bool                         isMarked; /* true is the L_MARK flag was set on a message */
         attribute c_voidp                        transactionGroup; /* transactionGroup backref */
+        attribute pa_uint32_t                    historyLinks; /* amount of flushed samples linked to this transaction */
     };
 
     class v_transactionWriter extends v_object {
@@ -2053,7 +2127,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute kernelModule::v_gid            gid; /* key */
         attribute c_voidp                        publisher; /* owner backref */
         attribute c_bool                         discovered;
-        attribute v_topic                        topic;
+        attribute c_string                       topicName;
         attribute v_rxoData                      rxo;
         attribute SET<v_transactionGroupReader>  readers; /* set of readers with matching qos */
     };
@@ -2061,12 +2135,17 @@ class v_orderedInstanceSample extends v_dataViewSample {
     class v_transactionGroup extends v_object {
         attribute c_ulong                        transactionId; /* key */
         attribute c_voidp                        publisher; /* owner backref */
+        attribute c_voidp                        admin; /* admin backref */
         attribute c_ulong                        publisherId;
         attribute c_bool                         aborted; /* true when transaction is prematuraly aborted. */
         attribute LIST<v_transaction>            transactions; /* complete writer transactions */
         attribute SET<v_transactionWriter>       writers; /* discovered matching writers for incomplete transactions */
         attribute c_ulong                        matchCount; /*  */
-        attribute c_bool                         triggered; /* true when data_available trigger is sent for group */
+        attribute c_bool                         obsolete; /* true when a never transaction is added to the pending list */
+        attribute c_bool                         deleted; /* temporary variable until OSPL-9429 is implemented */
+        attribute os_timeE                       allocTime; /* elapse time; to indicate when the group is allocated */
+        attribute os_timeW                       writeTime; /* wall time; source time stamp */
+        attribute pa_uint32_t                    historyLinks; /* amount of flushed samples linked to this transaction */
     };
 
     class v_transactionPublisher extends v_object {
@@ -2075,7 +2154,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_voidp                        admin;    /* Backref to v_transactionGroupAdmin */
         attribute SET<v_transactionGroupWriter>  writers; /* discovered writers with matchCounts */
         attribute LIST<v_transactionGroup>       transactions; /* reception time ordered incomplete coherent groups */
-        attribute c_ulong                        lastRemovedTransactionId;
     };
 
     class v_transactionAdmin extends v_object {
@@ -2097,6 +2175,10 @@ class v_orderedInstanceSample extends v_dataViewSample {
 
     class v_groupInstanceTemplate extends v_groupInstance {
         attribute v_groupSampleTemplate          newest;
+    };
+
+    class v_groupInstanceGID extends v_groupInstanceTemplate {
+        attribute kernelModule::v_gid            gid;
     };
 
     class v_groupEntry {
@@ -2124,8 +2206,18 @@ class v_orderedInstanceSample extends v_dataViewSample {
     };
 
     class v_groupwriterAdministration {
-        attribute kernelModule::v_gid                          gid;
+        attribute kernelModule::v_gid            gid;
         attribute c_ulong                        seqNumber;
+    };
+
+    class v_groupStore {
+        attribute c_mutex                        mutex;
+        attribute c_voidp                        group;
+        attribute SET<v_groupInstance>           instances;
+        /* next attributes for caching local processing state. */
+        attribute c_array messageKeyList;
+        attribute c_bool gidkey;
+        attribute c_ulong readid;
     };
 
     /** Class v_group:
@@ -2142,6 +2234,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_topic                        topic;
         attribute v_partition                    partition;
         attribute v_accessMode                   partitionAccessMode;
+        attribute v_filter                       filter;
         /* Group associated Reader Entries */
         attribute v_groupEntrySet                topicEntrySet;   /* Normal dataReader entries. */
         attribute v_groupEntrySet                networkEntrySet; /* Network interface entries. */
@@ -2149,15 +2242,12 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_groupEntrySet                variantEntrySet; /* Variant keyed dataReader entries. */
         attribute SET<v_groupStream>             streams;         /* Streams interested in all actions */
 
-        /* Group process control. */
-        attribute c_mutex                        mutex;
-
         /* Group state */
         attribute c_long                         sequenceNumber;
         attribute c_long                         resourceSampleCount;
         attribute os_timeW                       lastDisposeAllTime;
         attribute c_bool                         infWait;
-        attribute c_bool                         complete;
+        attribute v_alignState                   alignState;
         attribute c_bool                         routingEnabled;
 
         /* Service attachment states*/
@@ -2165,7 +2255,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute SET<c_string>                  notInterestedServices;
 
         /* group data storage */
-        attribute SET<v_groupInstance>           instances;
+        attribute v_groupStore                   store;
         attribute v_groupPurgeItem               disposedInstances;
         attribute c_voidp                        disposedInstancesLast;
         attribute v_groupPurgeItem               purgeListEmpty;
@@ -2174,10 +2264,10 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_lifespanAdmin                lifespanAdmin;
 
         /* Group resource optimisation */
-        attribute v_message                          cachedRegMsg;
-        attribute v_groupInstance                    cachedInstance;
+        attribute c_bool                             gidkey;
         attribute c_type                             instanceType;
         attribute c_type                             sampleType;
+        attribute c_array                            keyList;
         attribute SET<v_groupwriterAdministration>   writerAdministration; /* c_table writerAdministration<v_groupwriterAdministration> */
         attribute v_transactionAdmin                 transactionAdmin;
         attribute c_bool                             onRequest;
@@ -2297,6 +2387,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
 
         attribute c_type                         instanceType;
         attribute c_type                         sampleType;
+        attribute v_message                      pubInfo; /* current published publicationInfo message */
 
         attribute v_deliveryGuard                deliveryGuard;
 
@@ -2318,9 +2409,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
     class v_subscriber extends v_entity {
         attribute v_partitionAdmin               partitions;
         attribute SET<v_reader>                  readers;
-        attribute c_mutex                        sharesMutex;
         attribute SET<v_reader>                  shares;
-        attribute c_mutex                        mutex;
         attribute c_cond                         cond;
 
         attribute c_voidp                        participant;
@@ -2328,8 +2417,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_ulong                        shareCount;
         attribute v_transactionGroupAdmin        transactionGroupAdmin;
         attribute c_ulong                        accessCount; /* number of active Begin access */
-        attribute c_bool                         accessBusy;  /* access is in progress */
-        attribute c_address                      accessOwner; /* debug: threadIdInteger of the thread which set accessBusy */
         /* When ordered_access is true and access_scope is set to group, the
          * destination_order across all readers must be enforced. Creating a reader
          * that does not abide to the ordering policy will result in inconsistent
@@ -2338,13 +2425,12 @@ class v_orderedInstanceSample extends v_dataViewSample {
          * first reader is added.
          */
         attribute v_orderedInstance              orderedInstance;
-        attribute kernelModule::v_presentationPolicy presentation;
+        attribute kernelModule::v_orderbyKind    orderby;
     };
 
     class v_publisher extends v_entity {
         attribute v_partitionAdmin               partitions;
         attribute SET<v_writer>                  writers;
-        attribute c_lock                         lock;
         attribute c_voidp                        participant;
         attribute v_publisherQos                 qos;
         attribute os_timeE                       suspendTime; /* inf means not suspended */
@@ -2359,10 +2445,16 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute kernelModule::v_orderbyKind    orderby;
     };
 
+    class v_ignoreAdmin {
+        attribute ARRAY<kernelModule::v_gid>     participants;
+        attribute ARRAY<kernelModule::v_gid>     publications;
+        attribute ARRAY<kernelModule::v_gid>     subscriptions;
+        attribute ARRAY<kernelModule::v_gid>     topics;
+    };
+
     const string V_BUILT_IN_PARTICIPANT_NAME = "Built-in participant";
     class v_participant extends v_entity {
         attribute SET<v_object>                  entities;
-        attribute c_lock                         lock;
         attribute v_participantQos               qos;
         attribute v_leaseManager                 leaseManager;
         /* resend thread will wait on this condition. This thread is created in the
@@ -2373,14 +2465,11 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_mutex                        resendMutex;
         attribute SET<v_proxy>                   resendWriters;
         attribute c_ulong                        resendIteration;
-        attribute c_mutex                        builtinLock;
-        attribute v_subscriber                   builtinSubscriber;
-        attribute c_mutex                        newGroupListMutex;
-        attribute LIST<v_group>                  newGroupList;
         attribute c_longlong                     processId;
         attribute c_string                       processName;
         attribute SET<v_typeRepresentation>      typeRepresentations;
         attribute c_bool                         processIsZombie;
+        attribute v_ignoreAdmin                  ignore;
     };
 
     /* -------------------------------------------------------------------------- */
@@ -2419,7 +2508,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
 
     class v_serviceState extends v_observable {
         attribute c_string           name;
-        attribute c_lock             lock;
         attribute v_serviceStateKind stateKind;
     };
 
@@ -2427,6 +2515,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_lease lease;
         attribute v_serviceState state;
         attribute v_serviceType serviceType;
+        attribute SET<v_group> newGroups;
     };
 
     class v_networking extends v_service {
@@ -2450,8 +2539,11 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_rnrStatistics  statistics;
     };
 
+    class v_dbmsconnect extends v_service {
+        attribute c_long dummy; /* unused variable, empty class not supported */
+    };
+
     class v_serviceManager extends v_entity {
-        attribute c_mutex             mutex;
         attribute SET<v_serviceState> serviceStates;
     };
 
@@ -2498,67 +2590,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
     };
 
     /* -------------------------------------------------------------------------- */
-    /* Built-in Topic type definitions                                            */
-    /* -------------------------------------------------------------------------- */
-
-    enum v_infoId {
-        V_PARTICIPANTINFO_ID,
-        V_TYPEINFO_ID,
-        V_TOPICINFO_ID,
-        V_PUBLICATIONINFO_ID,
-        V_SUBSCRIPTIONINFO_ID,
-        V_HEARTBEATINFO_ID,
-        V_DELIVERYINFO_ID,
-        V_C_AND_M_COMMAND_ID,
-        V_CMPARTICIPANTINFO_ID,
-        V_CMDATAWRITERINFO_ID,
-        V_CMDATAREADERINFO_ID,
-        V_CMPUBLISHERINFO_ID,
-        V_CMSUBSCRIBERINFO_ID,
-        V_INFO_ID_COUNT
-    };
-
-    class v_heartbeatInfoTemplate extends v_message {
-        attribute kernelModule::v_heartbeatInfo userData;
-    };
-
-    class v_topicInfoTemplate extends v_message {
-        attribute kernelModule::v_topicInfo userData;
-    };
-
-    class v_typeInfoTemplate extends v_message {
-        attribute kernelModule::v_typeInfo userData;
-    };
-
-    class v_publicationInfoTemplate extends v_message {
-        attribute kernelModule::v_publicationInfo userData;
-    };
-
-    class v_dataWriterCMInfoTemplate extends v_message {
-        attribute kernelModule::v_dataWriterCMInfo userData;
-    };
-
-    class v_subscriptionInfoTemplate extends v_message {
-        attribute kernelModule::v_subscriptionInfo userData;
-    };
-
-    class v_dataReaderCMInfoTemplate extends v_message {
-        attribute kernelModule::v_dataReaderCMInfo userData;
-    };
-
-    class v_publisherCMInfoTemplate extends v_message {
-        attribute kernelModule::v_publisherCMInfo userData;
-    };
-
-    class v_subscriberCMInfoTemplate extends v_message {
-        attribute kernelModule::v_subscriberCMInfo userData;
-    };
-
-    class v_deliveryInfoTemplate extends v_message {
-        attribute kernelModule::v_deliveryInfo userData;
-    };
-
-    /* -------------------------------------------------------------------------- */
     /* Table reader type implementation                                           */
     /* -------------------------------------------------------------------------- */
 
@@ -2583,8 +2614,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
     class v_dataReaderEntry extends v_entry {
         attribute v_topic                        topic;
         attribute v_index                        index;
-        attribute ARRAY<v_filter>                filterInstance;
-        attribute ARRAY<v_filter>                filterData;
+        attribute v_filter                       filter;
         /* timed list of samples with a limited lifespan. */
         attribute v_lifespanAdmin                lifespanAdmin;
         /* Lists for garbagecollection/autopurging
@@ -2593,6 +2623,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_transactionAdmin             transactionAdmin;
         attribute LIST<v_purgeListItem>          purgeListDisposed; /* No Writers */
         attribute LIST<v_purgeListItem>          purgeListNotEmpty; /* No Writers */
+        attribute ARRAY<kernelModule::v_gid>     ignore; /* ignored publications */
     };
 
     class v_deadLineReaderInstanceList {
@@ -2618,6 +2649,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
 
     class v_dataReader extends v_reader {
         /* Attributes are protected by the observer lock! */
+        attribute v_dataReaderEntry              entry;
         attribute v_index                        index;
         attribute SET<v_dataView>                views;
         attribute v_deadLineInstanceList         deadLineList;
@@ -2630,13 +2662,15 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_long                         notReadTriggerCount;
         attribute c_bool                         maxInstances;
         /* Attributes maintaining the current state wrt the policies */
-        attribute c_ulong                        shareCount;
+        attribute c_ulong                        shareCount; /* only used by v_subscriber under control of subscriber lock. */
         attribute c_type                         sampleType;
+        attribute v_message                      subInfo; /* current published subscriptionInfo message */
         attribute v_projection                   projection;
         attribute v_orderedInstance              orderedInstance;
         attribute v_dataReaderSample             triggerValue;
         attribute c_bool                         walkRequired;
         attribute v_dataReaderStatistics         statistics;
+        attribute c_bool                         accessBusy;
 
         /* This Count is the read/take sequence number of the reader.
          * Any read or take operation will increment this value and mark
@@ -2677,7 +2711,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
     class v_deliveryService extends v_reader {
         attribute SET<v_subscriptionInfoTemplate> subscriptions;
         attribute SET<v_deliveryGuard> guards;
-        attribute c_mutex mutex;
     };
 
     class v_deliveryServiceEntry extends v_entry {
@@ -2885,6 +2918,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_waitset     waitset;
         attribute c_bool        terminate;
         attribute c_bool        y2038ready;
+        attribute c_bool        alignBuiltin;
         attribute c_mutex       mutex;
         attribute c_ulong       requestId;                 /* last requestId handed out, initially 0 */
         attribute c_voidp       chains;                    /* table of chains allocated on heap */
@@ -2900,7 +2934,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
     /* Kernel Class implementation                                                */
     /* -------------------------------------------------------------------------- */
 
-    class v_groupSet extends v_observable {
+    class v_groupSet extends v_object {
         attribute SET<v_group>                   groups;
         attribute c_lock                         lock;
         attribute c_long                         sequenceNumber;
@@ -2913,6 +2947,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_topic                        topics[V_INFO_ID_COUNT];
         attribute v_writer                       writers[V_INFO_ID_COUNT];
         attribute v_kernelQos                    kernelQos;
+        attribute c_voidp                        logfile;
     };
 
     class v_pendingDisposeElement {
@@ -2922,6 +2957,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
 
     class v_kernel extends v_entity {
         attribute kernelModule::v_gid            GID;
+        attribute v_service                      spliced;
         attribute SET<v_participant>             participants;
         attribute SET<v_topic>                   topics;
         attribute SET<v_partition>               partitions;
@@ -2934,15 +2970,19 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute v_transactionGroupAdmin        transactionGroupAdmin;
         /* Following attributes are for synchronisation between group flushing and durability alignment requests. */
         attribute c_mutex                        accessLock;  /* Begin and End access lock */
-        attribute c_ulong                        accessCount; /* multi durability service support, number of active Begin access */
+        attribute pa_uint32_t                    accessCount; /* multi durability service support, number of active Begin access */
         attribute c_bool                         accessBusy;  /* access is in progress */
         attribute c_cond                         accessCond;  /* triggered on accessBusy set FALSE */
+#ifndef NDEBUG
+        attribute c_address                      accessOwner; /* debug: threadIdInteger of the thread which set accessBusy */
+#endif
         attribute v_serviceManager               serviceManager;
         attribute v_leaseManager                 livelinessLM;
         attribute v_deliveryService              deliveryService;
         attribute v_configuration                configuration;
         attribute c_ulong                        networkServiceCount;
         attribute pa_uint32_t                    transactionCount;
+        attribute pa_uint32_t                    isolate;
         /* ES: dds2476: Added a boolean to indicate if the spliced is running or not
          * this boolean is set to false when it is detected by any (non-service)
          * participant that the splice deamon is not longer running.
@@ -2973,13 +3013,19 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_mutex                        pendingDisposeListMutex;
 
         /* Set of shared entities */
-        attribute c_mutex                        sharesMutex;
         attribute SET<v_entity>                  shares;
         attribute SET<v_processInfo>             attachedProcesses;
         attribute os_duration                    retentionPeriod;
 
         /* Flag to determine if (client)durability is enabled */
         attribute c_bool                         durabilitySupport;
+        /* Flag to determine if a durability service is enabled */
+        attribute c_bool                         hasDurabilityService;
+        /* Flag to indicate if durability is aligned (handling conflicts) */
+        attribute c_bool                         durabilityAligned;
+        /* Counter that suppresses purging while durability is handling a new
+         * or reconnected node. */
+        attribute pa_uint32_t                    purgeSuppressCount;
     };
 
     /* -------------------------------------------------------------------------- */
@@ -3001,7 +3047,6 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_bool          cAndMCommandDispatcherQuit;
         attribute v_waitset       cAndMCommandWaitSet;
 
-        attribute c_mutex         mtx;
         attribute c_mutex         cAndMCommandMutex;
         attribute c_mutex         builtinDataMutex;
         attribute SET<v_message>  missedHB; /* c_table missedHB<v_message> */

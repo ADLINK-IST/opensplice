@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -61,11 +62,10 @@ extern "C" {
 C_CLASS(c_base);
 C_CLASS(c_type);
 
-/** @def NULL
- * @bug OSPL-2272 */
 /* VERSION is the deprecated form of OSPL_VERSION
  * This is only defined when building OpenSplice itself */
 #if defined (VERSION) || defined (OSPL_VERSION)
+/* TODO: Check this definition of NULL. See OSPL-2272 */
 #undef NULL
 #define NULL (0)
 #endif

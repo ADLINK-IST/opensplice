@@ -1,48 +1,18 @@
-
-%option never-interactive
-
 %{
-/**********************************************************************
- *
- * include-statements
- *
- **********************************************************************/
 #include <ctype.h>
 
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_errno.h"
 
-
-/**********************************************************************
- *
- * global macro definitions
- *
- **********************************************************************/
-#define YY_NEVER_INTERACTIVE 1 /* stops flex from calling isatty() */
-
-#define isatty thisisnotisatty
-
-int isatty (int x) { OS_UNUSED_ARG(x); return 0; }
-
-/**********************************************************************
- *
- * local macro definitions
- *
- **********************************************************************/
-
-#define pc(x) v_parser_column+=x
-
-#define RETURN(t) v_parser_column+=(int)strlen(yytext);return t
-
-/**********************************************************************
- *
- * static function prototypes
- *
- **********************************************************************/
+#define RETURN(t) context->column += (int)strlen(yytext);return t
 
 static long
 getParameterValue (
+    char *str);
+
+static char *
+removeDoubleQuotes(
     char *str);
 
 /* Removed tokens because these are currently unused
@@ -92,15 +62,22 @@ flatten            { RETURN (FLATTEN); }
 
 %}
 
-/* %option noyywrap */
+%option noyywrap
+%option nounistd
+%option never-interactive
+
+%option prefix="v__parser_"
+
+%option reentrant bison-bridge
 
 INTEGER             -[0-9]+
 UINTEGER            \+?[0-9]+
 FLOAT               [+-]?({UINTEGER}"."{UINTEGER})(e[+-]?{UINTEGER})?
 CHAR                \'[^\']\'
-STR                 \"([^"]*\"\")*[^"]*\"
-STR2                \'([^']*\'\')*[^']*\'
-STR3                \`([^']*\'\')*[^']*\'
+STR                 ([^']|(\'\'))*
+STRSTART            (\'|\`)
+STREND              (\')
+
 
 IDENT               [a-zA-Z_/][a-zA-Z0-9_/]*
 FIELDNAME           {IDENT}(\.{IDENT})*
@@ -108,6 +85,7 @@ PARAM               [$%][0-9][0-9]?
 
 BLANK               [ \t]+
 NEWLINE             \n
+%x STRING
 %x COMMENT1
 COMMENT2            "//"[^\n]*
 
@@ -147,87 +125,77 @@ JOIN                { RETURN (JOIN); }
 BETWEEN             { RETURN (BETWEEN); }
 
 {BLANK}             {
-                        v_parser_column+=(int)strlen(yytext);
+                        context->column += (int)strlen(yytext);
                     }
 {COMMENT2}          {
-                        v_parser_column=0;
+                        context->column = 0;
                     }
 {NEWLINE}           {
-                        v_parser_line++;
-                        v_parser_column=0;
+                        context->line++;
+                        context->column = 0;
                     }
 {PARAM}             {
-                        yylval.Integer = getParameterValue(yytext);
-                        v_parser_column+=(int)strlen(yytext);
+                        context->column += (int)strlen(yytext);
+                        yylval->Integer = getParameterValue(yytext);
                         return (PARAM);
                     }
 {IDENT}             {
-                        /* variable length string values are allocated dynamically and
-                           must be freed by the parser calling this scanner.
-                        */
-                        yylval.String = (char*)malloc(strlen(yytext)+1);
-                        v_parser_column+=(int)strlen(yytext);
-                        os_strcpy(yylval.String,yytext);
+                        context->column += (int)strlen(yytext);
+                        /* ensure parser frees memory */
+                        yylval->String = os_strdup(yytext);
                         return (IDENTIFIER);
                     }
 {FIELDNAME}         {
-                        yylval.String = (char*)malloc(strlen(yytext)+1);
-                        v_parser_column+=(int)strlen(yytext);
-                        os_strcpy(yylval.String,yytext);
+                        context->column += (int)strlen(yytext);
+                        yylval->String = os_strdup(yytext);
                         return (FIELDNAME);
                     }
 {INTEGER}           {
-                        c_char *ptr = NULL;
-                        yylval.Integer = os_strtoll(yytext, &ptr, 0);
-                        v_parser_column+=(int)strlen(yytext);
+                        context->column += (int)strlen(yytext);
+                        yylval->Integer = os_strtoll(yytext, NULL, 0);
                         return (INTEGERVALUE);
                     }
 {UINTEGER}          {
-                        c_char *ptr = NULL;
-                        yylval.UInteger = os_strtoull(yytext, &ptr, 0);
-                        v_parser_column+=(int)strlen(yytext);
+                        context->column += (int)strlen(yytext);
+                        yylval->UInteger = os_strtoull(yytext, NULL, 0);
                         return (UINTEGERVALUE);
                     }
 {FLOAT}             {
-                        yylval.Float = (double)atof(yytext);
-                        v_parser_column+=(int)strlen(yytext);
+                        context->column += (int)strlen(yytext);
+                        yylval->Float = (double)atof(yytext);
                         return (FLOATVALUE);
                     }
 {CHAR}              {
-/*
-                        yylval.Char = yytext[1];
-                        v_parser_column+=(int)strlen(yytext);
-                        return (CHARVALUE);
-*/
-                        os_size_t length = strlen(yytext);
-                        v_parser_column+=length;
-                        /* variable length string values are allocated dynamically and
-                           must be freed by the parser calling this scanner.
-                        */
-                        yylval.String = (char*)malloc(length-1);
-                        os_strncpy(yylval.String, (char *)&yytext[1], length-2);
-                        yylval.String[length-2]=0;
+                        context->column += (int)strlen(yytext);
+                        /* ensure parser frees memory */
+                        yylval->String = os_strndup(&yytext[1], 1);
                         return (STRINGVALUE);
                     }
-{STR2}|{STR3}       {
-                        os_size_t length = strlen(yytext);
-                        v_parser_column+=length;
-                        /* variable length string values are allocated dynamically and
-                           must be freed by the parser calling this scanner.
-                        */
-                        yylval.String = (char*)malloc(length-1);
-                        os_strncpy(yylval.String, (char *)&yytext[1], length-2);
-                        yylval.String[length-2]=0;
+\'|\`               {
+                        context->column++;
+                        BEGIN(STRING);
+                    }
+<STRING>{STR}       {
+                        context->column += (int)strlen(yytext);
+                        yylval->String = removeDoubleQuotes(yytext);
                         return (STRINGVALUE);
                     }
-.                   {   v_parser_column+=(int)strlen(yytext);
+<STRING>\'          {
+                        context->column++;
+                        BEGIN(INITIAL);
+                    }
+.                   {
+                        context->column += (int)strlen(yytext);
                         return (UNDEFINEDTOKEN);
                     }
 #endif
 "/*"                BEGIN(COMMENT1);
 <COMMENT1>[^*\n]*
 <COMMENT1>"*"+[^*/\n]*
-<COMMENT1>\n             { ++v_parser_line; v_parser_column=0; }
+<COMMENT1>\n        {
+                        context->line++;
+                        context->column = 0;
+                    }
 <COMMENT1>"*"+"/"        BEGIN(INITIAL);
 
 %%
@@ -244,4 +212,29 @@ getParameterValue (
     value = atol(str);
 
     return value;
+}
+
+static char *
+removeDoubleQuotes(
+    char *str)
+{
+    os_size_t i, j;
+    os_size_t len;
+    char *s = NULL;
+
+    if (str) {
+        len = strlen(str);
+
+        s = os_malloc(len+1);
+
+        for (i = 0, j = 0; i < len; i++, j++) {
+            if (str[i] == '\'' && str[i+1] == '\'') {
+                i++;
+            }
+            s[j] = str[i];
+        }
+        s[j] = '\0';
+    }
+
+    return s;
 }

@@ -45,8 +45,8 @@ if [ "$EXRUNTYPE" = "shm" ]
 then
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_shmem_no_network.xml/'`
     NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
-    
-    # Mac OS builds seem to have a problem with the \ in the sed command 
+
+    # Mac OS builds seem to have a problem with the \ in the sed command
     if [ "$CURRENT_PL_DARWIN" != "" ]
     then
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" -e "s@<PortNr>50000</PortNr>@<PortNr>Auto</PortNr>@" -e "s@<Size>10485760</Size>@<Size>$DBSIZE</Size>@" < $XMLFILE > $NEWXMLFILE
@@ -63,11 +63,11 @@ else
     NEWXMLFILE=`echo $XMLFILE | sed 's/ospl_sp_ddsi.xml$/ospl_sp_ddsi_uniq.xml/'`
 
     if [ -n "$UNIQE_MC_ADDRESS" ]
-    then 
+    then
         grep SPDPMulticastAddress $XMLFILE
         if [ $? = 0 ]
         then
-            echo "ERROR : SPDPMulticastAddress already exists"  
+            echo "ERROR : SPDPMulticastAddress already exists"
             exit 1;
         fi
 
@@ -86,7 +86,7 @@ else
         grep MulticastRecvNetworkInterfaceAddresses $XMLFILE
         if [ $? = 0 ]
         then
-            echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"  
+            echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"
             exit 1;
         fi
 
@@ -94,8 +94,6 @@ else
             -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
             -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
               <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
-
-        sed -e '/<DDSI2Service name=\"ddsi2\">/a<Internal><AssumeMulticastCapable>*</AssumeMulticastCapable></Internal>' -i $NEWXMLFILE
 
         # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
         grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
@@ -114,7 +112,7 @@ echo "NEWXMLFILE is $NEWXMLFILE"
 
 ODBCINI="$ODBCHOME/etc/odbc.ini"
 ODBCINST="$ODBCHOME/etc/odbcinst.ini"
-ODBC_MSSQL_SERVER="10.1.0.189"
+ODBC_MSSQL_SERVER="10.1.5.197"
 ODBC_MYSQL_SERVER="10.1.0.191"
 ODBCSYSINI="$ODBCHOME/etc"
 LD_LIBRARY_PATH="$ODBCHOME/lib:.:$LD_LIBRARY_PATH"

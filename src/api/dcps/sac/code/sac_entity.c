@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -62,7 +63,6 @@ _Entity_deinit (
         if (entity->uEntity != NULL) {
             uResult = u_objectFree_s(u_object(entity->uEntity));
             result = DDS_ReturnCode_get(uResult);
-            assert(result == DDS_RETCODE_OK);
         } else {
             result = DDS_RETCODE_OK;
         }
@@ -679,11 +679,11 @@ DDS_Entity_reset_dataAvailable_status (
     u_entity uEntity;
     u_result uResult;
 
-/* TODO OSPL-8179: This is a bit tricky, the entity may already been deleted and in that case
- * this operation will perform a dirty memory read.
- * It may be better to wipe all pending events belonging to an entity when it is deleted or
- * if that is too intrusive find another way to safely detect/avoid deletion.
- */
+    /* TODO OSPL-8179: This is a bit tricky, the entity may already been deleted and in that case
+     * this operation will perform a dirty memory read.
+     * It may be better to wipe all pending events belonging to an entity when it is deleted or
+     * if that is too intrusive find another way to safely detect/avoid deletion.
+     */
     uEntity = _Entity_get_user_entity(_Entity(_this));
     uResult = u_observableAction(u_observable(uEntity), resetDataAvailable, NULL);
     return DDS_ReturnCode_get(uResult);
@@ -706,11 +706,11 @@ DDS_Entity_reset_on_data_on_readers_status (
     u_entity uEntity;
     u_result uResult;
 
-/* TODO OSPL-8179: This is a bit tricky, the entity may already been deleted and in that case
- * this operation will perform a dirty memory read.
- * It may be better to wipe all pending events belonging to an entity when it is deleted or
- * if that is too intrusive find another way to safely detect/avoid deletion.
- */
+    /* TODO OSPL-8179: This is a bit tricky, the entity may already been deleted and in that case
+     * this operation will perform a dirty memory read.
+     * It may be better to wipe all pending events belonging to an entity when it is deleted or
+     * if that is too intrusive find another way to safely detect/avoid deletion.
+     */
     uEntity = _Entity_get_user_entity(_Entity(_this));
     uResult = u_observableAction(u_observable(uEntity), resetOnDataOnReaders, NULL);
     return DDS_ReturnCode_get(uResult);
@@ -798,6 +798,39 @@ DDS_Entity_get_kind(
     return kind;
 }
 
+const char *
+DDS_EntityKind_image(
+    DDS_EntityKind_t kind)
+{
+    char * image;
+
+    switch(kind) {
+    case DDS_ENTITY_KIND_DOMAINPARTICIPANT:
+        image = "DomainParticipant";
+        break;
+    case DDS_ENTITY_KIND_TOPIC:
+        image = "Topic";
+        break;
+    case DDS_ENTITY_KIND_PUBLISHER:
+        image = "Publisher";
+        break;
+    case DDS_ENTITY_KIND_SUBSCRIBER:
+        image = "Subscriber";
+        break;
+    case DDS_ENTITY_KIND_DATAWRITER:
+        image = "DataWriter";
+        break;
+    case DDS_ENTITY_KIND_DATAREADER:
+        image = "DataReader";
+        break;
+    default:
+        image = "Undefined";
+        break;
+    }
+
+    return image;
+}
+
 void
 DDS_Entity_user_data_init(
    DDS_EntityUserData userData,
@@ -838,8 +871,13 @@ DDS_Entity_claim_user_data(
     if (userData) {
         result = DDS_EntityClaim(_this, &entity);
         if (result == DDS_RETCODE_OK) {
-            *userData = entity->userData;
-            pa_inc32(&entity->userData->refCount);
+            if (entity->userData) {
+                *userData = entity->userData;
+                pa_inc32(&entity->userData->refCount);
+            }
+            else {
+                result = DDS_RETCODE_ALREADY_DELETED;
+            }
             DDS_EntityRelease(_this);
         }
     } else {

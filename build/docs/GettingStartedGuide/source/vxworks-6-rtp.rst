@@ -24,17 +24,17 @@ Installation
 The following instructions describe installing Vortex OpenSplice for
 VxWorks 6.x on the Windows host environment.
 
-Start the installation process by double-clicking the Vortex OpenSplice 
+Start the installation process by double-clicking the Vortex OpenSplice
 Host Development Environment (HDE) installer file. Follow the on-screen
 instructions and complete the installation. When asked to configure the
 installation with a license file, choose *No*. The installer will
 create an Vortex OpenSplice entry in *Start > Programs* which contains
-links to the OpenSplice tools, documentation, and an Uninstall option.
+links to the Vortex OpenSplice tools, documentation, and an Uninstall option.
 
 |caution|
   Please note that WindRiver's Workbench GUI must be run in an environment
-  where the OpenSplice variables have already been set. If you chose to
-  set the OpenSplice variables globally during the installation stage,
+  where the Vortex OpenSplice variables have already been set. If you chose to
+  set the Vortex OpenSplice variables globally during the installation stage,
   then Workbench can be run directly. Otherwise, Workbench must be run
   from the Vortex OpenSplice command prompt. Start the command prompt by
   clicking *Start > Programs > Vortex OpenSplice menu entry > Vortex OpenSplice
@@ -84,7 +84,7 @@ Vortex OpenSplice domain service ``spliced`` and a number of optional services
 described within the Vortex OpenSplice configuration file (``ospl.xml``). On
 VxWorks 6.x, a Real Time Process for each of these services is deployed
 on to the target hardware. The sample ``ospl.xml`` configuration file
-provided with the VxWorks 6.x edition of OpenSplice has particular
+provided with the VxWorks 6.x edition of Vortex OpenSplice has particular
 settings so that these RTPs can operate effectively.
 
 The instructions below describe how to deploy these RTPs using the
@@ -118,7 +118,7 @@ connection and choosing *Run > Run RTP on Target...*.
 **Step 5**
 
 Create a new configuration for the *spliced* deployment that points to
-the ``spliced.vxe`` executable from the OpenSplice installation. The
+the ``spliced.vxe`` executable from the Vortex OpenSplice installation. The
 following parameters should be set in the dialog:
 
 +------------------------+----------------------------------------+
@@ -143,7 +143,7 @@ For simplicity it has been assumed that ``spliced.vxe`` and the other
 executables (located in the ``bin`` directory of the installation) and
 ``ospl.xml`` (located in the ``etc/config`` directory of the installation)
 have been copied to the directory made available as ``/tgtsvr`` described
-above. It is possible, if required, to copy the entire OpenSplice
+above. It is possible, if required, to copy the entire Vortex OpenSplice
 installation directory to the ``/tgtsvr`` location so that all files are
 available, but please be aware that log and information files will be
 written to the same ``/tgtsvr`` location when the ``spliced.vxe`` is
@@ -165,7 +165,7 @@ The configuration can be deployed by clicking *Run*, where an RTP for
 each service described in the configuration file should be created.
 These can be seen in Workbench in the Real Time Processes list for the
 target connection. An example is shown below in
-`Workbench showing deployed OpenSplice RTPs`_.
+`Workbench showing deployed Vortex OpenSplice RTPs`_.
 (The list may need to be refreshed with the *F5* key.)
 
 Deployment problems are listed in ``ospl-error.txt`` and ``ospl-info.txt``,
@@ -173,22 +173,22 @@ which are created in the ``/tgtsvr`` directory if the configuration
 described above is used.
 
 
-.. _`Workbench showing deployed OpenSplice RTPs`:
+.. _`Workbench showing deployed Vortex OpenSplice RTPs`:
 
 .. figure:: /images/VxWorks-deployedRTPs.png
    :height: 70mm
-   :alt: Workbench showing deployed OpenSplice RTPs
+   :alt: Workbench showing deployed Vortex OpenSplice RTPs
 
-   **Workbench showing deployed OpenSplice RTPs**
+   **Workbench showing deployed Vortex OpenSplice RTPs**
 
 
-*******************
-OpenSplice Examples
-*******************
+**************************
+Vortex OpenSplice Examples
+**************************
 
 .. note: xref to install-configure.rst
 
-PrismTech provides a number of examples both for C and C++ that are
+ADLINK provides a number of examples both for C and C++ that are
 described in the :ref:`Examples` section. These example are provided in the form of
 Workbench projects which can be easily built and then deployed on to the
 target hardware in a similar process to that described above.
@@ -204,7 +204,7 @@ The example projects can be imported into Workbench by clicking
 *File > Import... > General > Existing Projects into Workspace*.
 
 In the *Import Projects* dialog, browse to the ``examples`` directory of
-the OpenSplice installation. Select the required projects for importing
+the Vortex OpenSplice installation. Select the required projects for importing
 from the list that Workbench has detected.
 
 Ensure that the *Copy projects into workspace* box is un-checked.
@@ -221,7 +221,7 @@ Projects in a workspace can be built individually or as a group.
   *Project > Build All*.
 
 
-Deploying OpenSplice Examples
+Deploying Vortex OpenSplice Examples
 =============================
 
 The PingPong and the Tutorial examples are run in identical ways with
@@ -234,7 +234,7 @@ Deploying PingPong
 
 The PingPong example consists of the ``ping.vxe`` and ``pong.vxe``
 executables. If these executables have been copied to the directory made
-available as ``/tgtsvr`` as described in `Deploying OpenSplice DDS`_,
+available as ``/tgtsvr`` as described in `Deploying Vortex OpenSplice`_,
 RTP configurations should have the following parameters:
 
 +-----------------------------------+----------------------------------------+
@@ -251,8 +251,8 @@ RTP configurations should have the following parameters:
 +-----------------------------------+----------------------------------------+
 | Stack Size                        | ``0x10000``                            |
 +-----------------------------------+----------------------------------------+
-  
-  
+
+
 +-----------------------------------+----------------------------------------+
 | RTP configuration for ping                                                 |
 +===================================+========================================+
@@ -280,7 +280,7 @@ Deploying the Chat Tutorial
 The Chat Tutorial consists of the ``chatter.vxe``, ``messageboard.vxe`` and
 ``userload.vxe`` executables. If these executables have been copied to the
 directory made available as ``/tgtsvr`` as described in
-`Deploying OpenSplice DDS`_, RTP configurations should have the following
+`Deploying Vortex OpenSplice`_, RTP configurations should have the following
 parameters:
 
 +-----------------------------------+----------------------------------------+
@@ -297,8 +297,8 @@ parameters:
 +-----------------------------------+----------------------------------------+
 | Stack Size                        | ``0x10000``                            |
 +-----------------------------------+----------------------------------------+
-  
-   
+
+
 +-----------------------------------+----------------------------------------+
 | RTP configuration for messageboard                                         |
 +===================================+========================================+
@@ -313,8 +313,8 @@ parameters:
 +-----------------------------------+----------------------------------------+
 | Stack Size                        | ``0x10000``                            |
 +-----------------------------------+----------------------------------------+
-  
-  
+
+
 +-----------------------------------+----------------------------------------+
 | RTP configuration for chatter                                              |
 +===================================+========================================+
@@ -329,8 +329,8 @@ parameters:
 +-----------------------------------+----------------------------------------+
 | Stack Size                        | ``0x10000``                            |
 +-----------------------------------+----------------------------------------+
-  
-  
+
+
 When deployment is successful, the console will show output from each
 RTP. In particular the message board will show the messages sent by the
 ``chatter`` process. The console view can be switched to show the output

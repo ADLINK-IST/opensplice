@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,7 +43,7 @@ namespace pub
 AnyDataWriterDelegate::AnyDataWriterDelegate(
         const dds::pub::qos::DataWriterQos& qos,
         const dds::topic::TopicDescription& td)
-    : copyIn(NULL), copyOut(NULL), qos_(qos), td_(td)
+    : qos_(qos), copyIn(NULL), copyOut(NULL), td_(td)
 {
 }
 
@@ -385,10 +386,9 @@ v_copyin_result
 AnyDataWriterDelegate::copy_data(c_type t, void *data, void *to)
 {
     v_copyin_result result;
-    c_base base = c_getBase(c_object(t));
     struct WriterCopyInfo *info = (struct WriterCopyInfo *)data;
 
-    result = info->helper->getCopyIn()(base, info->data, to);
+    result = info->helper->getCopyIn()(t, info->data, to);
 
     return result;
 }

@@ -4,6 +4,7 @@
  * include-statements
  *
  **********************************************************************/
+#include "os_heap.h"
 
 /**********************************************************************
  *
@@ -11,15 +12,18 @@
  *
  **********************************************************************/
 
-#define pc(x) q_parser_column+=x
-
-#define RETURN(t) q_parser_column += (int)strlen(yytext); return t
+#define RETURN(t) context->column += (int)strlen(yytext); return t
 
 /**********************************************************************
  *
  * static function prototypes
  *
  **********************************************************************/
+
+static char *
+removeDoubleQuotes(
+    char *str,
+    char ch);
 
 /* Removed tokens because these are currently unused
 
@@ -68,16 +72,23 @@ flatten         { RETURN (FLATTEN); }
 
 %}
 
-/* %option noyywrap */
+%option noyywrap
+%option nounistd
 %option never-interactive
+
+%option prefix="q_parser_"
+
+%option reentrant bison-bridge
 
 INTEGER         -[0-9]+
 UINTEGER        \+?[0-9]+
 FLOAT           [+-]?({UINTEGER}"."{UINTEGER})(e[+-]?{UINTEGER})?
 CHAR            \'[^\']\'
-STR             \"([^"]*\"\")*[^"]*\"
-STR2            \'([^']*\'\')*[^']*\'
-STR3            \`([^']*\'\')*[^']*\'
+
+%x STRING1
+STR1            (([^"]*\"\")*[^"]*)
+%x STRING2
+STR2            (([^']*\'\')*[^']*)
 
 IDENT           [a-zA-Z][a-zA-Z0-9_]*
 
@@ -88,7 +99,7 @@ COMMENT2        "//"[^\n]*
 SD              ("select"{BLANK}"distict")
 
 %%
-"$"             { OS_UNUSED_ARG(yyunput); RETURN (DOLLAR); }
+"$"             { RETURN (DOLLAR); }
 "%"             { RETURN (PERCENT); }
 "("             { RETURN (LRPAR); }
 ")"             { RETURN (RRPAR); }
@@ -102,8 +113,8 @@ SD              ("select"{BLANK}"distict")
 "*"             { RETURN (MUL); }
 "."             { RETURN (DOT); }
 "->"            { RETURN (REF); }
-":"             { RETURN (COLON); } 
-"::"            { RETURN (DOUBLECOLON); } 
+":"             { RETURN (COLON); }
+"::"            { RETURN (DOUBLECOLON); }
 ","             { RETURN (COMMA); }
 define          { RETURN (DEFINE); }
 as              { RETURN (AS_KEYWORD); }
@@ -137,62 +148,103 @@ JOIN            { RETURN (JOIN); }
 BETWEEN         { RETURN (BETWEEN); }
 
 {BLANK}         {
-                    q_parser_column+=(int)strlen(yytext);
+                    context->column += (int)strlen(yytext);
                 }
 {COMMENT2}      {
-                    q_parser_column=0;
+                    context->column = 0;
                 }
 {NEWLINE}       {
-                    q_parser_line++;
-                    q_parser_column=0;
+                    context->line++;
+                    context->column = 0;
                 }
 {IDENT}         {
+                    context->column += (int)strlen(yytext);
                     /* variable length string values are allocated dynamically and
                        must be freed by the parser calling this scanner.
                     */
-                    yylval.String = (char*)malloc(strlen(yytext)+1);
-                    q_parser_column+=(int)strlen(yytext);
-                    os_strcpy(yylval.String,yytext);
+                    yylval->String = os_strdup(yytext);
                     return (identifier);
                 }
 {INTEGER}       {
-                    yylval.Integer = os_atoll(yytext);
-                    q_parser_column+=(int)strlen(yytext);
+                    context->column += (int)strlen(yytext);
+                    yylval->Integer = os_atoll(yytext);
                     return (longlongLiteral);
                 }
 {UINTEGER}      {
-                    yylval.UInteger = os_atoull(yytext);
-                    q_parser_column+=(int)strlen(yytext);
+                    context->column += (int)strlen(yytext);
+                    yylval->UInteger = os_atoull(yytext);
                     return (ulonglongLiteral);
                 }
 {FLOAT}         {
-                    yylval.Float = (double)atof(yytext);
-                    q_parser_column+=(int)strlen(yytext);
+                    context->column += (int)strlen(yytext);
+                    yylval->Float = (double)atof(yytext);
                     return (doubleLiteral);
                 }
-{CHAR}          { 
-                    yylval.Char = yytext[1];
-                    q_parser_column+=(int)strlen(yytext);
+{CHAR}          {
+                    context->column += (int)strlen(yytext);
+                    yylval->Char = yytext[1];
                     return (charLiteral);
                 }
-{STR}|{STR2}|{STR3}    {
-                    os_size_t length = strlen(yytext);
-                    q_parser_column+=length;
-                    /* variable length string values are allocated dynamically and
-                       must be freed by the parser calling this scanner.
-                    */
-                    yylval.String = (char*)malloc(length-1);
-                    os_strncpy(yylval.String, (char *)&yytext[1], length-2);
-                    yylval.String[length-2]=0;
-                    return (stringLiteral); 
+\"              {
+                    context->column++;
+                    BEGIN(STRING1);
+                }
+<STRING1>{STR1} {
+                    context->column += (int)strlen(yytext);
+                    yylval->String = removeDoubleQuotes(yytext, '\"');
+                    return (stringLiteral);
+                }
+<STRING1>\"     {
+                    context->column++;
+                    BEGIN(INITIAL);
+                }
+\'|\`           {
+                    context->column++;
+                    BEGIN(STRING2);
+                }
+<STRING2>{STR2} {
+                    context->column += (int)strlen(yytext);
+                    yylval->String = removeDoubleQuotes(yytext, '\'');
+                    return (stringLiteral);
+                }
+<STRING2>\'     {
+                    context->column++;
+                    BEGIN(INITIAL);
                 }
 {SD}            {   return (SELECT_DISTINCT); }
-.               {   q_parser_column+=(int)strlen(yytext); }
+.               {   context->column += (int)strlen(yytext); }
 
 "/*"                    BEGIN(COMMENT1);
 <COMMENT1>[^*\n]*
 <COMMENT1>"*"+[^*/\n]*
-<COMMENT1>\n            { ++q_parser_line; q_parser_column=0; }
+<COMMENT1>\n            { context->line++; context->column = 0; }
 <COMMENT1>"*"+"/"       BEGIN(INITIAL);
 
 %%
+
+
+static char *
+removeDoubleQuotes(
+    char *str,
+    char ch)
+{
+    os_size_t i, j;
+    os_size_t len;
+    char *s = NULL;
+
+    if (str) {
+        len = strlen(str);
+
+        s = os_malloc(len+1);
+
+        for (i = 0, j = 0; i < len; i++, j++) {
+            if ((str[i] == ch) && (str[i+1] == ch)) {
+                i++;
+            }
+            s[j] = str[i];
+        }
+        s[j] = '\0';
+    }
+
+    return s;
+}

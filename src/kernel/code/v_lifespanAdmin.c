@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,14 +21,8 @@
 #include "v__lifespanAdmin.h"
 #include "os_report.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
 #define CHECK_ADMIN(admin,sample)
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_lifespanAdmin
 v_lifespanAdminNew(
     v_kernel kernel)
@@ -41,9 +36,6 @@ v_lifespanAdminNew(
     return admin;
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 void
 v_lifespanAdminInsert(
     v_lifespanAdmin admin,
@@ -80,7 +72,7 @@ v_lifespanAdminInsert(
             admin->head->prev = sample;
             admin->head = c_keep(sample);
         } else {
-            if (placeHolder->next != NULL) {                
+            if (placeHolder->next != NULL) {
                 placeHolder->next->prev = sample;
             } else {
                 assert(placeHolder == admin->tail);
@@ -178,8 +170,8 @@ v_lifespanAdminTakeExpired(
                 proceed = TRUE;
             }
             if ((proceed) && (removed == admin->head)) {
-               /* The action routine might have already removed the sample, so 
-                * we check if the head of the list has not changed! 
+               /* The action routine might have already removed the sample, so
+                * we check if the head of the list has not changed!
                 */
                 admin->head = removed->next; /* transfer refcount */
                 removed->next = NULL;
@@ -210,7 +202,3 @@ v_lifespanAdminSampleCount(
 {
     return admin->sampleCount;
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/

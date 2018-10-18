@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,32 +34,46 @@ namespace topic
 
 
 static c_array
-copyInOctetSequence(
-    c_base base,
+copyInOctetSequenceToArray(
+    c_type dbType,
     const dds::core::ByteSeq& from)
 {
-    c_type type0 = c_type(c_metaResolve(c_metaObject(base), "c_octet"));
-    c_array result = c_arrayNew(type0, (c_ulong) from.size());
-    c_free(type0);
-
+    c_type subType = c_collectionTypeSubType(c_typeActualType(dbType));
+    c_array result = c_arrayNew(subType, (c_ulong) from.size());
     memcpy(result, &from.front(), from.size());
 
     return result;
 }
 
 static c_sequence
+copyInOctetSequenceToSequence(
+    c_type dbType,
+    const dds::core::ByteSeq& from)
+{
+    c_sequence result;
+    size_t metaDataSize = from.size();
+    c_type subType = c_collectionTypeSubType(c_typeActualType(dbType));
+    result = c_sequenceNew_s(subType, metaDataSize, metaDataSize);
+
+    if (result) {
+        memcpy(result, &from.front(), metaDataSize);
+    }
+
+    return result;
+}
+
+static c_sequence
 copyInStringSeq(
-    c_base base,
+    c_type dbType,
     const dds::core::StringSeq& from)
 {
     unsigned long size = from.size();
+    c_type subType = c_collectionTypeSubType(c_typeActualType(dbType));
 
-    c_type type0 = c_type(c_metaResolve(c_metaObject(base), "c_string"));
-    c_sequence result = c_sequenceNew(type0, size, size);
-    c_free(type0);
+    c_sequence result = c_sequenceNew(subType, size, size);
 
     for (unsigned int i = 0; i < size; i++) {
-         result[i] = c_stringNew(base, from[i].c_str());
+         result[i] = c_stringNew(c_getBase(dbType), from[i].c_str());
     }
 
     return result;
@@ -79,14 +94,14 @@ copyInTopicKey(
 
 u_bool
 __ParticipantBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::topic::ParticipantBuiltinTopicData *from,
     struct v_participantInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->user_data.value = copyInOctetSequence(base, from->user_data().value());
+    to->user_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 1)), from->user_data().value());
 
     return result;
 }
@@ -94,15 +109,15 @@ __ParticipantBuiltinTopicData__copyIn(
 
 u_bool
 __TopicBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::topic::TopicBuiltinTopicData *from,
     v_topicInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->delegate().key(), &to->key);
-    to->name = c_stringNew(base, from->name().c_str());
-    to->type_name = c_stringNew(base, from->type_name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
+    to->type_name = c_stringNew(c_getBase(dbType), from->type_name().c_str());
     to->durability = from->durability().delegate().v_policy();
     to->durabilityService = from->durability_service().delegate().v_policy();
     to->deadline = from->deadline().delegate().v_policy();
@@ -115,14 +130,14 @@ __TopicBuiltinTopicData__copyIn(
     to->history = from->history().delegate().v_policy();
     to->resource_limits = from->resource_limits().delegate().v_policy();
     to->ownership = from->ownership().delegate().v_policy();
-    to->topic_data.value = copyInOctetSequence(base, from->topic_data().value());
+    to->topic_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 15)), from->topic_data().value());
 
     return result;
 }
 
 u_bool
 __PublicationBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::topic::PublicationBuiltinTopicData *from,
     v_publicationInfo *to)
 {
@@ -130,21 +145,21 @@ __PublicationBuiltinTopicData__copyIn(
 
     copyInTopicKey(from->key(), &to->key);
     copyInTopicKey(from->participant_key(), &to->participant_key);
-    to->topic_name = c_stringNew(base, from->topic_name().c_str());
-    to->type_name = c_stringNew(base, from->type_name().c_str());
+    to->topic_name = c_stringNew(c_getBase(dbType), from->topic_name().c_str());
+    to->type_name = c_stringNew(c_getBase(dbType), from->type_name().c_str());
     to->durability = from->durability().delegate().v_policy();
     to->deadline = from->deadline().delegate().v_policy();
     to->latency_budget = from->latency_budget().delegate().v_policy();
     to->liveliness = from->liveliness().delegate().v_policy();
     to->reliability = from->reliability().delegate().v_policy();
     to->destination_order = from->destination_order().delegate().v_policy();
-    to->user_data.value = copyInOctetSequence(base, from->user_data().value());
+    to->user_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 10)), from->user_data().value());
     to->ownership = from->ownership().delegate().v_policy();
     to->ownership_strength = from->ownership_strength().delegate().v_policy();
     to->presentation = from->presentation().delegate().v_policy();
-    to->partition.name = copyInStringSeq(base, from->partition().name());
-    to->topic_data.value = copyInOctetSequence(base, from->topic_data().value());
-    to->group_data.value = copyInOctetSequence(base, from->group_data().value());
+    to->partition.name = copyInStringSeq(c_memberType(c_structureMember(dbType, 14)), from->partition().name());
+    to->topic_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 15)), from->topic_data().value());
+    to->group_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 16)), from->group_data().value());
 
     return result;
 }
@@ -152,7 +167,7 @@ __PublicationBuiltinTopicData__copyIn(
 
 u_bool
 __SubscriptionBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::topic::SubscriptionBuiltinTopicData *from,
     struct v_subscriptionInfo *to)
 {
@@ -160,35 +175,35 @@ __SubscriptionBuiltinTopicData__copyIn(
 
     copyInTopicKey(from->key(), &to->key);
     copyInTopicKey(from->participant_key(), &to->participant_key);
-    to->topic_name = c_stringNew(base, from->topic_name().c_str());
-    to->type_name = c_stringNew(base, from->type_name().c_str());
+    to->topic_name = c_stringNew(c_getBase(dbType), from->topic_name().c_str());
+    to->type_name = c_stringNew(c_getBase(dbType), from->type_name().c_str());
     to->durability = from->durability().delegate().v_policy();
     to->deadline = from->deadline().delegate().v_policy();
     to->latency_budget = from->latency_budget().delegate().v_policy();
     to->liveliness = from->liveliness().delegate().v_policy();
     to->reliability = from->reliability().delegate().v_policy();
     to->destination_order = from->destination_order().delegate().v_policy();
-    to->user_data.value = copyInOctetSequence(base, from->user_data().value());
+    to->user_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 10)), from->user_data().value());
     to->time_based_filter = from->time_based_filter().delegate().v_policy();
     to->ownership = from->ownership().delegate().v_policy();
     to->presentation = from->presentation().delegate().v_policy();
-    to->partition.name = copyInStringSeq(base, from->partition().name());
-    to->topic_data.value = copyInOctetSequence(base, from->topic_data().value());
-    to->group_data.value = copyInOctetSequence(base, from->group_data().value());
+    to->partition.name = copyInStringSeq(c_memberType(c_structureMember(dbType, 14)), from->partition().name());
+    to->topic_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 15)), from->topic_data().value());
+    to->group_data.value = copyInOctetSequenceToArray(c_memberType(c_structureMember(dbType, 16)), from->group_data().value());
 
     return result;
 }
 
 u_bool
 __CMParticipantBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const org::opensplice::topic::CMParticipantBuiltinTopicData *from,
     struct v_participantCMInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->product.value = c_stringNew(base, from->product().delegate().name().c_str());;
+    to->product.value = c_stringNew(c_getBase(dbType), from->product().delegate().name().c_str());;
 
     return result;
 }
@@ -196,54 +211,54 @@ __CMParticipantBuiltinTopicData__copyIn(
 
 u_bool
 __CMPublisherBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const  org::opensplice::topic::CMPublisherBuiltinTopicData *from,
     struct v_publisherCMInfo  *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->product.value = c_stringNew(base, from->product().name().c_str());;
+    to->product.value = c_stringNew(c_getBase(dbType), from->product().name().c_str());;
     copyInTopicKey(from->participant_key(), &to->participant_key);
-    to->name = c_stringNew(base, from->name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
     to->entity_factory = from->entity_factory().delegate().v_policy();
-    to->partition.name = copyInStringSeq(base, from->partition().name());
+    to->partition.name = copyInStringSeq(c_memberType(c_structureMember(dbType, 5)), from->partition().name());
 
     return result;
 }
 
 u_bool
 __CMSubscriberBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const org::opensplice::topic::CMSubscriberBuiltinTopicData *from,
     struct v_subscriberCMInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->product.value = c_stringNew(base, from->product().name().c_str());
+    to->product.value = c_stringNew(c_getBase(dbType), from->product().name().c_str());
     copyInTopicKey(from->participant_key(), &to->participant_key);
-    to->name = c_stringNew(base, from->name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
     to->entity_factory = from->entity_factory().delegate().v_policy();
     to->share.enable = from->share().enable();
-    to->share.name = c_stringNew(base, from->share().name().c_str());
-    to->partition.name = copyInStringSeq(base, from->partition().name());
+    to->share.name = c_stringNew(c_getBase(dbType), from->share().name().c_str());
+    to->partition.name = copyInStringSeq(c_memberType(c_structureMember(dbType, 7)), from->partition().name());
 
     return result;
 }
 
 u_bool
 __CMDataWriterBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const org::opensplice::topic::CMDataWriterBuiltinTopicData *from,
     struct v_dataWriterCMInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->product.value = c_stringNew(base, from->product().name().c_str());
+    to->product.value = c_stringNew(c_getBase(dbType), from->product().name().c_str());
     copyInTopicKey(from->publisher_key(), &to->publisher_key);
-    to->name = c_stringNew(base, from->name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
     to->history = from->history().delegate().v_policy();
     to->resource_limits = from->resource_limits().delegate().v_policy();
     to->writer_data_lifecycle = from->writer_data_lifecycle().delegate().v_policy();
@@ -253,64 +268,129 @@ __CMDataWriterBuiltinTopicData__copyIn(
 
 u_bool
 __CMDataReaderBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const org::opensplice::topic::CMDataReaderBuiltinTopicData *from,
     struct v_dataReaderCMInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
     copyInTopicKey(from->key(), &to->key);
-    to->product.value = c_stringNew(base, from->product().name().c_str());
+    to->product.value = c_stringNew(c_getBase(dbType), from->product().name().c_str());
     copyInTopicKey(from->subscriber_key(), &to->subscriber_key);
-    to->name = c_stringNew(base, from->name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
     to->history = from->history().delegate().v_policy();
     to->resource_limits = from->resource_limits().delegate().v_policy();
     to->reader_data_lifecycle = from->reader_data_lifecycle().delegate().v_policy();
     struct v_userKeyPolicy v = from->subscription_keys().delegate().v_policy();
     to->subscription_keys.enable = v.enable;
-    to->subscription_keys.expression = c_stringNew(base, v.expression);
+    to->subscription_keys.expression = c_stringNew(c_getBase(dbType), v.expression);
     os_free(v.expression);
     to->reader_lifespan = from->reader_lifespan().delegate().v_policy();
     to->share.enable = from->share().enable();
-    to->share.name = c_stringNew(base, from->share().name().c_str());
+    to->share.name = c_stringNew(c_getBase(dbType), from->share().name().c_str());
 
     return result;
 }
 
 u_bool
 __TypeBuiltinTopicData__copyIn(
-    c_base base,
+    c_type dbType,
     const org::opensplice::topic::TypeBuiltinTopicData *from,
     struct v_typeInfo *to)
 {
     u_bool result = OS_C_TRUE;
 
-    to->name = c_stringNew(base, from->name().c_str());
+    to->name = c_stringNew(c_getBase(dbType), from->name().c_str());
     to->data_representation_id = from->data_representation_id();
     TypeHash typeHash = from->type_hash();
     to->type_hash.msb = typeHash.msb();
     to->type_hash.lsb = typeHash.lsb();
-    size_t metaDataSize = from->meta_data().size();
-    to->meta_data = c_sequenceNew_s(c_octet_t(base), metaDataSize, metaDataSize);
-    memcpy(to->meta_data, &from->meta_data()[0], metaDataSize);
-    size_t extentionsSize = from->extentions().size();
-    to->extentions = c_sequenceNew_s(c_octet_t(base), extentionsSize, extentionsSize);
-    memcpy(to->extentions, &from->extentions()[0], extentionsSize);
+    to->meta_data  = copyInOctetSequenceToSequence(c_memberType(c_structureMember(dbType, 3)), from->meta_data() );
+    to->extentions = copyInOctetSequenceToSequence(c_memberType(c_structureMember(dbType, 4)), from->extentions());
+
+    if ((to->meta_data == NULL) || (to->extentions == NULL)) {
+        result = OS_C_FALSE;
+    }
 
     return result;
 }
 
+u_bool
+__Bytes__copyIn(
+    c_type dbType,
+    const dds::core::BytesTopicType *from,
+    struct _DDS_Bytes *to)
+{
+    u_bool result = OS_C_TRUE;
 
+    to->value = copyInOctetSequenceToSequence(c_memberType(c_structureMember(dbType, 0)), from->data());
+    if(to->value == NULL) {
+        result = OS_C_FALSE;
+    }
 
+    return result;
+}
 
+u_bool
+__String__copyIn(
+    c_type dbType,
+    const dds::core::StringTopicType *from,
+    struct _DDS_String *to)
+{
+    u_bool result = OS_C_TRUE;
 
+    to->value = c_stringNew_s(c_getBase(dbType), from->data().c_str());
+    if(to->value == NULL) {
+        result = OS_C_FALSE;
+    }
 
+    return result;
+}
 
+u_bool
+__KeyedBytes__copyIn(
+    c_type dbType,
+    const dds::core::KeyedBytesTopicType *from,
+    struct _DDS_KeyedBytes *to)
+{
+    u_bool result = OS_C_TRUE;
 
+    to->key = c_stringNew_s(c_getBase(dbType), from->key().c_str());
+    if(to->key == NULL) {
+        result = OS_C_FALSE;
+    }
 
+    to->value = copyInOctetSequenceToSequence(c_memberType(c_structureMember(dbType, 0)), from->value());
+    if(to->value == NULL) {
+        result = OS_C_FALSE;
+    }
+
+    return result;
+}
+
+u_bool
+__KeyedString__copyIn(
+    c_type dbType,
+    const dds::core::KeyedStringTopicType *from,
+    struct _DDS_KeyedString *to)
+{
+    u_bool result = OS_C_TRUE;
+
+    to->key = c_stringNew_s(c_getBase(dbType), from->key().c_str());
+    if(to->key == NULL) {
+        result = OS_C_FALSE;
+    }
+
+    to->value = c_stringNew_s(c_getBase(dbType), from->value().c_str());
+    if(to->value == NULL) {
+        result = OS_C_FALSE;
+    }
+
+    return result;
+}
 
 static const dds::core::ByteSeq
-copyOutOctetSequence(
+copyOutOctetSequenceFromSequence(
     const c_sequence from)
 {
     c_ulong size;
@@ -513,8 +593,54 @@ __TypeBuiltinTopicData__copyOut(
     to->delegate().name(from->name);
     to->delegate().data_representation_id(from->data_representation_id);
     to->delegate().type_hash(org::opensplice::topic::TypeHash(from->type_hash.msb, from->type_hash.lsb));
-    to->delegate().meta_data(copyOutOctetSequence(from->meta_data));
-    to->delegate().extentions(copyOutOctetSequence(from->extentions));
+    to->delegate().meta_data(copyOutOctetSequenceFromSequence(from->meta_data));
+    to->delegate().extentions(copyOutOctetSequenceFromSequence(from->extentions));
+}
+
+void
+__Bytes__copyOut(
+    const void *_from,
+    void *_to)
+{
+    const struct _DDS_Bytes *from = (const struct _DDS_Bytes *)_from;
+    dds::core::BytesTopicType *to = (dds::core::BytesTopicType *)_to;
+
+    to->delegate().value(copyOutOctetSequenceFromSequence(from->value));
+}
+
+void
+__String__copyOut(
+    const void *_from,
+    void *_to)
+{
+    const struct _DDS_String *from = (const struct _DDS_String *)_from;
+    dds::core::StringTopicType *to = (dds::core::StringTopicType *)_to;
+
+    to->delegate().value(from->value);
+}
+
+void
+__KeyedBytes__copyOut(
+    const void *_from,
+    void *_to)
+{
+    const struct _DDS_KeyedBytes *from = (const struct _DDS_KeyedBytes *)_from;
+    dds::core::KeyedBytesTopicType *to = (dds::core::KeyedBytesTopicType *)_to;
+
+    to->delegate().key(from->key);
+    to->delegate().value(copyOutOctetSequenceFromSequence(from->value));
+}
+
+void
+__KeyedString__copyOut(
+    const void *_from,
+    void *_to)
+{
+    const struct _DDS_KeyedString *from = (const struct _DDS_KeyedString *)_from;
+    dds::core::KeyedStringTopicType *to = (dds::core::KeyedStringTopicType *)_to;
+
+    to->delegate().key(from->key);
+    to->delegate().value(from->value);
 }
 
 }

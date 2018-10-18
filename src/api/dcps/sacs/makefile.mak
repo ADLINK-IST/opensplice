@@ -12,7 +12,7 @@ TARGET_ASSEMBLY = $(CSLIB_PREFIX)$(DDS_DCPSSACS)$(CSLIB_POSTFIX)
 # Input IDL files.
 IDL_DIR     := $(OSPL_HOME)/etc/idl
 vpath %.idl $(IDL_DIR)
-TOPIC_IDL   := dds_dcps_builtintopics.idl dds_builtinTopics.idl dds_namedQosTypes.idl
+TOPIC_IDL   := dds_dcps_builtintopics.idl dds_builtinTopics.idl dds_namedQosTypes.idl dds_IoTData.idl
 
 # idlpp compiler settings.
 IDLPP       = $(WINCMD) idlpp
@@ -30,8 +30,6 @@ ODL_FILES = $(OSPL_HOME)/src/kernel/code/v_kernel.odl
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-CSLIBS  += -r:System.dll
-
 all link: $(TARGET_ASSEMBLY)
 
 # Generate the C# interfaces from the IDL descriptions.
@@ -40,4 +38,4 @@ all link: $(TARGET_ASSEMBLY)
 
 # Generate the assembly as well.
 $(TARGET_ASSEMBLY): $(CS_FILES)
-	$(CSC) $(CSFLAGS) -out:$(TARGET_ASSEMBLY) $(CSTARGET_LIB) $(CSLIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET_ASSEMBLY) $(CSTARGET_LIB) $(CS_SYSLIB) $(CSLIBS) $(CS_FILES)

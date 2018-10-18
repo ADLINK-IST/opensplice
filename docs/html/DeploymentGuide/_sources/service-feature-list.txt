@@ -40,7 +40,7 @@ Vortex OpenSplice middleware and its services
 can be configured using easy-to-maintain XML files.
 
 Full details of how to use XML files to configure
-the elements and attributes of all OpenSplice DDS
+the elements and attributes of all Vortex OpenSplice
 services are given in the :ref:`Configuration <Configuration>` section.
 
 .. EoF

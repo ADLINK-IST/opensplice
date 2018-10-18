@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,7 +44,7 @@ v_deliveryGuardNew(
     C_STRUCT(v_deliveryGuard) template;
     c_type type;
     v_deliveryGuard _this;
-    v_result result;
+    v_result result = V_RESULT_UNDEFINED;
 
     assert(C_TYPECHECK(service,v_deliveryService));
     assert(C_TYPECHECK(writer,v_writer));
@@ -58,30 +59,31 @@ v_deliveryGuardNew(
             c_free(type);
 
             if (_this) {
-                c_mutexInit(c_getBase(_this), &(_this->mutex));
-                _this->writerGID = template.writerGID;
-                _this->owner = (c_voidp)service; /* backref used by the free */
-                _this->gidType = c_resolve(c_getBase(_this),"kernelModule::v_gid");
+                if (c_mutexInit(c_getBase(_this), &(_this->mutex)) == SYNC_RESULT_SUCCESS) {
+                    _this->writerGID = template.writerGID;
+                    _this->owner = (c_voidp)service; /* backref used by the free */
+                    _this->gidType = c_resolve(c_getBase(_this),"kernelModule::v_gid");
 
-                type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryWaitList");
-                /* The sequence number is the key, as this is unique within each writer */
-                _this->waitlists = c_tableNew(type,"sequenceNumber");
-                c_free(type);
+                    type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryWaitList");
+                    /* The sequence number is the key, as this is unique within each writer */
+                    _this->waitlists = c_tableNew(type,"sequenceNumber");
+                    c_free(type);
 
-                /* The following subscription set attribute contains the
-                 * subscriptions of nodes that have synchronous DataReaders
-                 * that communicate with this particular DataWriter.
-                 * This list will be maintained by the reception of builtin
-                 * topics. The list does not need to be initialized with
-                 * the correct data right now because the topic is transient
-                 * so the whole state will be delivered and delivery will
-                 * update the list.
-                 */
-                type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryPublisher");
-                _this->publications = c_tableNew(type,"readerGID.systemId,readerGID.localId,readerGID.serial");
-                c_free(type);
+                    /* The following subscription set attribute contains the
+                    * subscriptions of nodes that have synchronous DataReaders
+                    * that communicate with this particular DataWriter.
+                    * This list will be maintained by the reception of builtin
+                    * topics. The list does not need to be initialized with
+                    * the correct data right now because the topic is transient
+                    * so the whole state will be delivered and delivery will
+                    * update the list.
+                    */
+                    type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryPublisher");
+                    _this->publications = c_tableNew(type,"readerGID.systemId,readerGID.localId,readerGID.serial");
+                    c_free(type);
 
-                result = v_deliveryServiceAddGuard(service,_this);
+                    result = v_deliveryServiceAddGuard(service,_this);
+                }
                 if (result != V_RESULT_OK) {
                     c_free(_this);
                     _this = NULL;

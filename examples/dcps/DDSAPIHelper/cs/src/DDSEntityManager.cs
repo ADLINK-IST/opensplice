@@ -1,3 +1,23 @@
+/*
+ *                         Vortex OpenSplice
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
 using System;
 using System.Threading;
 
@@ -10,7 +30,7 @@ namespace DDSAPIHelper
 {
     /// <summary>
     /// The DDSEntityManager class is provided as a utility class for
-    /// the various OpenSplice DDS operations used in the examples demonstrating
+    /// the various Vortex OpenSplice operations used in the examples demonstrating
     /// various DDS concepts.
     /// </summary>
     public sealed class DDSEntityManager
@@ -121,7 +141,10 @@ namespace DDSAPIHelper
 
             switch (exampleName)
             {
+                case "QueryCondition":
                 case "ContentFilteredTopic":
+                    topicQos.DestinationOrder.Kind = DestinationOrderQosPolicyKind.BySourceTimestampDestinationorderQos;
+                    break;
                 case "Durability":
                 case "HelloWorld":
                 case "WaitSet":
@@ -131,8 +154,6 @@ namespace DDSAPIHelper
                     break;
                 case "Ownership":
                     topicQos.Ownership.Kind = OwnershipQosPolicyKind.ExclusiveOwnershipQos;
-                    break;
-                case "QueryCondition":
                     break;
                 case "Listener":
                     // DeadlineQoSPolicy : period used to trigger the listener
@@ -329,7 +350,6 @@ namespace DDSAPIHelper
 
             switch (exampleName)
             {
-                case "ContentFilteredTopic":
                 case "Listener":
                     RQosH.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
                     break;
@@ -340,10 +360,11 @@ namespace DDSAPIHelper
                         RQosH.Durability.Kind = DurabilityQosPolicyKind.PersistentDurabilityQos;
 
                     break;
+                case "QueryCondition":
+                case "ContentFilteredTopic":
                 case "HelloWorld":
                 case "Ownership":
                 case "WaitSet":
-                case "QueryCondition":
                 case "Lifecycle":
                     break;
                 default:

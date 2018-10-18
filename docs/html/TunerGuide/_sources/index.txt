@@ -9,13 +9,13 @@ The Vortex OpenSplice Tuner Guide
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    introduction
    using01
-      
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

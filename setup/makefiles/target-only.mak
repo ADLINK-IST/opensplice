@@ -113,6 +113,17 @@ $(TARGET): $(OBJECTS)
 	$(make_exec)
 endif
 
+#define cs system.dll lib path and set if for the correct .net version, for mono use the default system lib.
+CS_SYSLIB = -r:System.dll
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
+    ifeq ($(shell test $(VS_YEAR) -gt 2008; echo $$?),0)
+        CS_SYSLIB = "-r:${DOTNETPROGFILES}\Reference Assemblies\Microsoft\Framework\.NETFramework\v${DOTNET}\System.dll"
+    else
+# Visual studio 2008 uses .net 3.5 which uses the system.dll from .net 2.0.
+        CS_SYSLIB ="-r:$(WINDIR)\Microsoft.NET\Framework\v2.0.50727\System.dll"
+	endif
+endif
+
 # Define the libpath CS_LIBS variable that that creates private links to the referenced libs. 
 CS_MAKE_SEPARATOR = ,
 CS_LIB_SRCS = $(subst $(CS_MAKE_SEPARATOR), ,$(subst -r:,,$(CSLIBS)))
@@ -132,7 +143,7 @@ ifneq "$(CS_FILES)" ""
 # Remove old links first to make sure you always point to the most recent libraries.
 $(TARGET): $(CS_FILES)
 	@for FILE in $(CS_LIB_SRCS); do LFILE=`basename $${FILE}`; rm -f $${LFILE}; $(LN) $${FILE} $${LFILE}; done
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_LIB) $(CS_LIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_LIB) $(CS_SYSLIB) $(CS_LIBS) $(CS_FILES)
 endif
 endif
 
@@ -143,7 +154,7 @@ TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 ifneq "$(CS_FILES)" ""
 
 $(TARGET): $(CS_FILES)
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_MOD) $(CS_LIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_MOD) $(CS_SYSLIB) $(CS_LIBS) $(CS_FILES)
 endif
 endif
 
@@ -157,7 +168,7 @@ ifneq "$(CS_FILES)" ""
 # Remove old links first to make sure you always point to the most recent libraries.
 $(TARGET): $(CS_FILES)
 	@for FILE in $(CS_LIB_SRCS); do LFILE=`basename $${FILE}`; rm -f $${LFILE}; $(LN) $${FILE} $${LFILE}; done
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) -r:System.dll $(CS_LIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) $(CS_SYSLIB) $(CS_LIBS) $(CS_FILES)
 
 # Create additional local links to the referenced libraries in the directory of the executables. 
 CS_LIB_LINKS = $(addprefix $(TARGET_LINK_DIR)/, $(notdir $(CS_LIB_SRCS)))

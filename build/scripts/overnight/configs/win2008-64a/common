@@ -10,3 +10,4 @@ export PATH=/usr/local/bin:$PATH
 #as the native calls done via TAO ask for a temp directory and windows fallback to using
 #USERPROFILE which has spaces in and does not work, unsetting solves the problem
 unset USERPROFILE
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

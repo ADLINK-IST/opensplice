@@ -1,0 +1,607 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Quality of Service (QoS) &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="index.html" />
+    <link rel="next" title="7. Topic Generation and Discovery" href="topic.html" />
+    <link rel="prev" title="5. Node.js API for Vortex DDS" href="dds_entities.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topic.html" title="7. Topic Generation and Discovery"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Node.js API for Vortex DDS"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="quality-of-service-qos">
+<span id="qos-provider"></span><h1>6. Quality of Service (QoS)<a class="headerlink" href="#quality-of-service-qos" title="Permalink to this headline">¶</a></h1>
+<p>The following section explains how to set the Quality of Service (QoS) for a DDS entity.</p>
+<p>Users have two options available to set the QoS for an entity or entities.  They can define the QoS settings using an XML file, or they can use the Node.js DCPS APIs.  Both of these options are explained.</p>
+<p>If a QoS setting for an entity is not set using an xml file or the Node.js DCPS APIs, the defaults will be used. This allows a user the ability to override only those settings that require non-default values.</p>
+<p>The code snippets referenced are taken from the runnable examples.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The <a class="reference internal" href="examples.html#examples"><em>Examples</em></a> section provides the examples directory location, example descriptions and running instructions.</li>
+</ul>
+</div>
+<div class="section" id="setting-qos-using-qos-provider-xml-file">
+<h2>6.1. Setting QoS Using QoS Provider XML File<a class="headerlink" href="#setting-qos-using-qos-provider-xml-file" title="Permalink to this headline">¶</a></h2>
+<p>QoS for DDS entities can be set using XML files based on the XML schema file <a class="reference external" href="http://www.omg.org/spec/dds4ccm/20110201/DDS_QoSProfile.xsd">QoSProfile.xsd</a>.
+These XML files contain one or more QoS profiles for DDS entities. OSPL includes an XSD (XML schema), that is located in $OSPL_HOME/etc/DDS_QoSProfile.xml. This can be used with XML schema core editors to help create valid XML files.</p>
+<p>Sample QoS Profile XML files can be found in the examples directory. Typically you will place the qos files in a subdirectory of your Node.js application.</p>
+<div class="section" id="qos-profile">
+<span id="qosprofile"></span><h3>6.1.1. QoS Profile<a class="headerlink" href="#qos-profile" title="Permalink to this headline">¶</a></h3>
+<p>A QoS profile consists of a name and optionally a base_name attribute. The base_name attribute allows a
+QoS or a profile to inherit values from another QoS or profile in the same file. The file contains QoS
+elements for one or more DDS entities.</p>
+<p>A skeleton file without any QoS values is displayed below to show the structure of the file.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;dds</span> <span class="na">xmlns=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span>
+ <span class="na">xmlns:xsi=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+ <span class="na">xsi:schemaLocation=</span><span class="s">&quot;file:DDS_QoSProfile.xsd&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;qos_profile</span> <span class="na">name=</span><span class="s">&quot;DDS QoS Profile Name&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;datareader_qos&gt;&lt;/datareader_qos&gt;</span>
+        <span class="nt">&lt;datawriter_qos&gt;&lt;/datawriter_qos&gt;</span>
+        <span class="nt">&lt;domainparticipant_qos&gt;&lt;/domainparticipant_qos&gt;</span>
+        <span class="nt">&lt;subscriber_qos&gt;&lt;/subscriber_qos&gt;</span>
+        <span class="nt">&lt;publisher_qos&gt;&lt;/publisher_qos&gt;</span>
+        <span class="nt">&lt;topic_qos&gt;&lt;/topic_qos&gt;</span>
+    <span class="nt">&lt;/qos_profile&gt;</span>
+<span class="nt">&lt;/dds&gt;</span>
+</pre></div>
+</div>
+<p><strong>Example: Persistent QoS XML file</strong></p>
+<p>The example below specifies the persistent QoS XML file which is used by the QoSProvider.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="nt">&lt;dds</span> <span class="na">xmlns=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span>
+<span class="na">xmlns:xsi=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+<span class="na">xsi:schemaLocation=</span><span class="s">&quot;file:DDS_QoSProfile.xsd&quot;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;qos_profile</span> <span class="na">name=</span><span class="s">&quot;DDS PersistentQosProfile&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;domainparticipant_qos&gt;</span>
+          <span class="nt">&lt;user_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/user_data&gt;</span>
+          <span class="nt">&lt;entity_factory&gt;</span>
+               <span class="nt">&lt;autoenable_created_entities&gt;</span>true<span class="nt">&lt;/autoenable_created_entities&gt;</span>
+          <span class="nt">&lt;/entity_factory&gt;</span>
+     <span class="nt">&lt;/domainparticipant_qos&gt;</span>
+     <span class="nt">&lt;subscriber_qos</span> <span class="na">name=</span><span class="s">&quot;subscriber1&quot;</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;presentation&gt;</span>
+               <span class="nt">&lt;access_scope&gt;</span>INSTANCE_PRESENTATION_QOS<span class="nt">&lt;/access_scope&gt;</span>
+               <span class="nt">&lt;coherent_access&gt;</span>true<span class="nt">&lt;/coherent_access&gt;</span>
+               <span class="nt">&lt;ordered_access&gt;</span>true<span class="nt">&lt;/ordered_access&gt;</span>
+          <span class="nt">&lt;/presentation&gt;</span>
+          <span class="nt">&lt;partition&gt;</span>
+               <span class="nt">&lt;name&gt;</span>partition1<span class="nt">&lt;/name&gt;</span>
+          <span class="nt">&lt;/partition&gt;</span>
+          <span class="nt">&lt;group_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/group_data&gt;</span>
+          <span class="nt">&lt;entity_factory&gt;</span>
+               <span class="nt">&lt;autoenable_created_entities&gt;</span>true<span class="nt">&lt;/autoenable_created_entities&gt;</span>
+          <span class="nt">&lt;/entity_factory&gt;</span>
+     <span class="nt">&lt;/subscriber_qos&gt;</span>
+     <span class="nt">&lt;subscriber_qos</span> <span class="na">name=</span><span class="s">&quot;subscriber2&quot;</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;presentation&gt;</span>
+               <span class="nt">&lt;access_scope&gt;</span>INSTANCE_PRESENTATION_QOS<span class="nt">&lt;/access_scope&gt;</span>
+               <span class="nt">&lt;coherent_access&gt;</span>false<span class="nt">&lt;/coherent_access&gt;</span>
+               <span class="nt">&lt;ordered_access&gt;</span>false<span class="nt">&lt;/ordered_access&gt;</span>
+          <span class="nt">&lt;/presentation&gt;</span>
+          <span class="nt">&lt;partition&gt;</span>
+               <span class="nt">&lt;name&gt;&lt;/name&gt;</span>
+          <span class="nt">&lt;/partition&gt;</span>
+          <span class="nt">&lt;group_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/group_data&gt;</span>
+          <span class="nt">&lt;entity_factory&gt;</span>
+               <span class="nt">&lt;autoenable_created_entities&gt;</span>true<span class="nt">&lt;/autoenable_created_entities&gt;</span>
+          <span class="nt">&lt;/entity_factory&gt;</span>
+     <span class="nt">&lt;/subscriber_qos&gt;</span>
+     <span class="nt">&lt;publisher_qos&gt;</span>
+          <span class="nt">&lt;presentation&gt;</span>
+               <span class="nt">&lt;access_scope&gt;</span>INSTANCE_PRESENTATION_QOS<span class="nt">&lt;/access_scope&gt;</span>
+               <span class="nt">&lt;coherent_access&gt;</span>true<span class="nt">&lt;/coherent_access&gt;</span>
+               <span class="nt">&lt;ordered_access&gt;</span>true<span class="nt">&lt;/ordered_access&gt;</span>
+          <span class="nt">&lt;/presentation&gt;</span>
+          <span class="nt">&lt;partition&gt;</span>
+               <span class="nt">&lt;name&gt;</span>partition1<span class="nt">&lt;/name&gt;</span>
+          <span class="nt">&lt;/partition&gt;</span>
+          <span class="nt">&lt;group_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/group_data&gt;</span>
+          <span class="nt">&lt;entity_factory&gt;</span>
+               <span class="nt">&lt;autoenable_created_entities&gt;</span>true<span class="nt">&lt;/autoenable_created_entities&gt;</span>
+          <span class="nt">&lt;/entity_factory&gt;</span>
+     <span class="nt">&lt;/publisher_qos&gt;</span>
+     <span class="nt">&lt;datawriter_qos&gt;</span>
+          <span class="nt">&lt;durability&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>PERSISTENT_DURABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/durability&gt;</span>
+          <span class="nt">&lt;deadline&gt;</span>
+               <span class="nt">&lt;period&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/period&gt;</span>
+          <span class="nt">&lt;/deadline&gt;</span>
+          <span class="nt">&lt;latency_budget&gt;</span>
+               <span class="nt">&lt;duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>0<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/duration&gt;</span>
+          <span class="nt">&lt;/latency_budget&gt;</span>
+          <span class="nt">&lt;liveliness&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>AUTOMATIC_LIVELINESS_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;lease_duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/lease_duration&gt;</span>
+          <span class="nt">&lt;/liveliness&gt;</span>
+          <span class="nt">&lt;reliability&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>RELIABLE_RELIABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;max_blocking_time&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>100000000<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/max_blocking_time&gt;</span>
+         <span class="nt">&lt;/reliability&gt;</span>
+         <span class="nt">&lt;destination_order&gt;</span>
+              <span class="nt">&lt;kind&gt;</span>BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/destination_order&gt;</span>
+          <span class="nt">&lt;history&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>KEEP_LAST_HISTORY_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;depth&gt;</span>100<span class="nt">&lt;/depth&gt;</span>
+          <span class="nt">&lt;/history&gt;</span>
+          <span class="nt">&lt;resource_limits&gt;</span>
+               <span class="nt">&lt;max_samples&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples&gt;</span>
+               <span class="nt">&lt;max_instances&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_instances&gt;</span>
+               <span class="nt">&lt;max_samples_per_instance&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples_per_instance&gt;</span>
+          <span class="nt">&lt;/resource_limits&gt;</span>
+          <span class="nt">&lt;transport_priority&gt;</span>
+               <span class="nt">&lt;value&gt;</span>0<span class="nt">&lt;/value&gt;</span>
+          <span class="nt">&lt;/transport_priority&gt;</span>
+          <span class="nt">&lt;lifespan&gt;</span>
+               <span class="nt">&lt;duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/duration&gt;</span>
+          <span class="nt">&lt;/lifespan&gt;</span>
+          <span class="nt">&lt;user_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+         <span class="nt">&lt;/user_data&gt;</span>
+         <span class="nt">&lt;ownership&gt;</span>
+              <span class="nt">&lt;kind&gt;</span>SHARED_OWNERSHIP_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/ownership&gt;</span>
+          <span class="nt">&lt;ownership_strength&gt;</span>
+               <span class="nt">&lt;value&gt;</span>0<span class="nt">&lt;/value&gt;</span>
+          <span class="nt">&lt;/ownership_strength&gt;</span>
+          <span class="nt">&lt;writer_data_lifecycle&gt;</span>
+               <span class="nt">&lt;autodispose_unregistered_instances&gt;</span>true<span class="nt">&lt;/autodispose_unregistered_instances&gt;</span>
+          <span class="nt">&lt;/writer_data_lifecycle&gt;</span>
+     <span class="nt">&lt;/datawriter_qos&gt;</span>
+     <span class="nt">&lt;datareader_qos&gt;</span>
+          <span class="nt">&lt;durability&gt;</span>
+              <span class="nt">&lt;kind&gt;</span>PERSISTENT_DURABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/durability&gt;</span>
+          <span class="nt">&lt;deadline&gt;</span>
+               <span class="nt">&lt;period&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/period&gt;</span>
+          <span class="nt">&lt;/deadline&gt;</span>
+          <span class="nt">&lt;latency_budget&gt;</span>
+               <span class="nt">&lt;duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>0<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/duration&gt;</span>
+          <span class="nt">&lt;/latency_budget&gt;</span>
+          <span class="nt">&lt;liveliness&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>AUTOMATIC_LIVELINESS_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;lease_duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/lease_duration&gt;</span>
+          <span class="nt">&lt;/liveliness&gt;</span>
+          <span class="nt">&lt;reliability&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>BEST_EFFORT_RELIABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;max_blocking_time&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>100000000<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/max_blocking_time&gt;</span>
+          <span class="nt">&lt;/reliability&gt;</span>
+          <span class="nt">&lt;destination_order&gt;</span>
+                <span class="nt">&lt;kind&gt;</span>BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/destination_order&gt;</span>
+          <span class="nt">&lt;history&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>KEEP_ALL_HISTORY_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/history&gt;</span>
+          <span class="nt">&lt;resource_limits&gt;</span>
+               <span class="nt">&lt;max_samples&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples&gt;</span>
+               <span class="nt">&lt;max_instances&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_instances&gt;</span>
+               <span class="nt">&lt;max_samples_per_instance&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples_per_instance&gt;</span>
+          <span class="nt">&lt;/resource_limits&gt;</span>
+          <span class="nt">&lt;user_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/user_data&gt;</span>
+          <span class="nt">&lt;ownership&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>SHARED_OWNERSHIP_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/ownership&gt;</span>
+          <span class="nt">&lt;time_based_filter&gt;</span>
+               <span class="nt">&lt;minimum_separation&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>0<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/minimum_separation&gt;</span>
+          <span class="nt">&lt;/time_based_filter&gt;</span>
+          <span class="nt">&lt;reader_data_lifecycle&gt;</span>
+               <span class="nt">&lt;autopurge_nowriter_samples_delay&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/autopurge_nowriter_samples_delay&gt;</span>
+               <span class="nt">&lt;autopurge_disposed_samples_delay&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/autopurge_disposed_samples_delay&gt;</span>
+          <span class="nt">&lt;/reader_data_lifecycle&gt;</span>
+     <span class="nt">&lt;/datareader_qos&gt;</span>
+     <span class="nt">&lt;topic_qos&gt;</span>
+          <span class="nt">&lt;topic_data&gt;</span>
+               <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+          <span class="nt">&lt;/topic_data&gt;</span>
+          <span class="nt">&lt;durability&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>PERSISTENT_DURABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/durability&gt;</span>
+          <span class="nt">&lt;durability_service&gt;</span>
+               <span class="nt">&lt;service_cleanup_delay&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>3600<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>0<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/service_cleanup_delay&gt;</span>
+               <span class="nt">&lt;history_kind&gt;</span>KEEP_LAST_HISTORY_QOS<span class="nt">&lt;/history_kind&gt;</span>
+               <span class="nt">&lt;history_depth&gt;</span>100<span class="nt">&lt;/history_depth&gt;</span>
+               <span class="nt">&lt;max_samples&gt;</span>8192<span class="nt">&lt;/max_samples&gt;</span>
+               <span class="nt">&lt;max_instances&gt;</span>4196<span class="nt">&lt;/max_instances&gt;</span>
+               <span class="nt">&lt;max_samples_per_instance&gt;</span>8192<span class="nt">&lt;/max_samples_per_instance&gt;</span>
+          <span class="nt">&lt;/durability_service&gt;</span>
+          <span class="nt">&lt;deadline&gt;</span>
+               <span class="nt">&lt;period&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/period&gt;</span>
+          <span class="nt">&lt;/deadline&gt;</span>
+          <span class="nt">&lt;latency_budget&gt;</span>
+               <span class="nt">&lt;duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>0<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/duration&gt;</span>
+          <span class="nt">&lt;/latency_budget&gt;</span>
+          <span class="nt">&lt;liveliness&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>AUTOMATIC_LIVELINESS_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;lease_duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+               <span class="nt">&lt;/lease_duration&gt;</span>
+          <span class="nt">&lt;/liveliness&gt;</span>
+          <span class="nt">&lt;reliability&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>BEST_EFFORT_RELIABILITY_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;max_blocking_time&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>100000000<span class="nt">&lt;/nanosec&gt;</span>
+                    <span class="nt">&lt;/max_blocking_time&gt;</span>
+          <span class="nt">&lt;/reliability&gt;</span>
+          <span class="nt">&lt;destination_order&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/destination_order&gt;</span>
+          <span class="nt">&lt;history&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>KEEP_LAST_HISTORY_QOS<span class="nt">&lt;/kind&gt;</span>
+               <span class="nt">&lt;depth&gt;</span>1<span class="nt">&lt;/depth&gt;</span>
+          <span class="nt">&lt;/history&gt;</span>
+              <span class="nt">&lt;resource_limits&gt;</span>
+               <span class="nt">&lt;max_samples&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples&gt;</span>
+               <span class="nt">&lt;max_instances&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_instances&gt;</span>
+               <span class="nt">&lt;max_samples_per_instance&gt;</span>LENGTH_UNLIMITED<span class="nt">&lt;/max_samples_per_instance&gt;</span>
+          <span class="nt">&lt;/resource_limits&gt;</span>
+          <span class="nt">&lt;transport_priority&gt;</span>
+               <span class="nt">&lt;value&gt;</span>0<span class="nt">&lt;/value&gt;</span>
+          <span class="nt">&lt;/transport_priority&gt;</span>
+          <span class="nt">&lt;lifespan&gt;</span>
+               <span class="nt">&lt;duration&gt;</span>
+                    <span class="nt">&lt;sec&gt;</span>DURATION_INFINITE_SEC<span class="nt">&lt;/sec&gt;</span>
+                    <span class="nt">&lt;nanosec&gt;</span>DURATION_INFINITE_NSEC<span class="nt">&lt;/nanosec&gt;</span>
+              <span class="nt">&lt;/duration&gt;</span>
+          <span class="nt">&lt;/lifespan&gt;</span>
+          <span class="nt">&lt;ownership&gt;</span>
+               <span class="nt">&lt;kind&gt;</span>SHARED_OWNERSHIP_QOS<span class="nt">&lt;/kind&gt;</span>
+          <span class="nt">&lt;/ownership&gt;</span>
+     <span class="nt">&lt;/topic_qos&gt;</span>
+<span class="nt">&lt;/qos_profile&gt;</span>
+<span class="nt">&lt;/dds&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="applying-qos-profile">
+<h3>6.1.2. Applying QoS Profile<a class="headerlink" href="#applying-qos-profile" title="Permalink to this headline">¶</a></h3>
+<p>To set the QoS profile for a DDS entity using the Node.js DCPS API and an XML file, the user specifies the qos file URI or file path and the QoS profile name as parameters.</p>
+<p><strong>Example</strong></p>
+<p>Create a QoS provider and get the respective entity QoS. The example below uses the QoS XML file referred in <a class="reference internal" href="#qosprofile"><em>QoS Profile</em></a>. For a detailed example refer to &#8216;GetSetQoSExample.js&#8217; file referred in <em class="xref std std-ref">GetSetQoSExample</em> example.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">HelloWorldTopic</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./HelloWorldTopic.js&#39;</span><span class="p">);</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Path of the qos xml file</span>
+<span class="cm"> * The DDS_PersistentQoS.xml file is used for this example</span>
+<span class="cm"> * It is located in the same directory of this example</span>
+<span class="cm">* */</span>
+<span class="kr">const</span> <span class="nx">QOS_PATH</span> <span class="o">=</span> <span class="s1">&#39;DDS_PersistentQoS.xml&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">QOS_PROFILE</span> <span class="o">=</span> <span class="s1">&#39;DDS PersistentQosProfile&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">DOMAIN_ID</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DDS_DOMAIN_DEFAULT</span><span class="p">;</span>
+
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+  <span class="cm">/**</span>
+<span class="cm">   * Set QoS using QoS XML file</span>
+<span class="cm">   */</span>
+
+  <span class="c1">// create a qos provider using qos xml file</span>
+  <span class="kd">let</span> <span class="nx">qp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoSProvider</span><span class="p">(</span><span class="nx">QOS_PATH</span><span class="p">,</span> <span class="nx">QOS_PROFILE</span><span class="p">);</span>
+
+  <span class="c1">// get participant qos from qos provider and create a participant</span>
+  <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getParticipantQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">(</span><span class="nx">DOMAIN_ID</span><span class="p">,</span> <span class="nx">pqos</span><span class="p">);</span>
+
+  <span class="c1">// get publisher qos from qos provider and create a publisher</span>
+  <span class="kd">let</span> <span class="nx">pubqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getPublisherQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">publisher</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Publisher</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">pubqos</span><span class="p">);</span>
+
+  <span class="kd">let</span> <span class="nx">subqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getSubscriberQos</span><span class="p">(</span><span class="s1">&#39;subscriber1&#39;</span><span class="p">);</span>
+  <span class="kd">let</span> <span class="nx">subscriber</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Subscriber</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">subqos</span><span class="p">);</span>
+
+  <span class="c1">// get topic qos from qos provider and create a topic</span>
+  <span class="kd">let</span> <span class="nx">tqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getTopicQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">HelloWorldTopic</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">);</span>
+
+  <span class="c1">// get reader qos from qos provider and create a reader</span>
+  <span class="kd">let</span> <span class="nx">rqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getReaderQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Reader</span><span class="p">(</span><span class="nx">subscriber</span><span class="p">,</span> <span class="nx">topic</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">);</span>
+
+  <span class="c1">// get writer qos from qos provider and create a writer</span>
+  <span class="kd">let</span> <span class="nx">wqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getWriterQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">writer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Writer</span><span class="p">(</span><span class="nx">publisher</span><span class="p">,</span> <span class="nx">topic</span><span class="p">,</span> <span class="nx">wqos</span><span class="p">);</span>
+
+  <span class="c1">// delete the participant</span>
+  <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="setting-qos-using-node-js-dcps-api-classes">
+<h2>6.2. Setting QoS Using Node.js DCPS API Classes<a class="headerlink" href="#setting-qos-using-node-js-dcps-api-classes" title="Permalink to this headline">¶</a></h2>
+<p>QoS settings can also be set by using the Node.js classes alone.  (No XML files required.)</p>
+<p><strong>Example</strong></p>
+<p>Below is a code snippet similar to the &#8216;GetSetQoSExample/GetSetQoSExample.js&#8217; file. It demonstrates how to specify the QoS settings for a topic, writer and reader using the Node.js DCPS APIs.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">HelloWorldTopic</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./HelloWorldTopic.js&#39;</span><span class="p">);</span>
+
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+  <span class="c1">// get the default topic qos</span>
+  <span class="kd">let</span> <span class="nx">tqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">topicDefault</span><span class="p">();</span>
+
+  <span class="c1">// modify the topic qos policies</span>
+
+  <span class="c1">// All of the policy variables can be set</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">durabilityService</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">serviceCleanupDelay</span><span class="o">:</span> <span class="mi">5000</span><span class="p">,</span>
+    <span class="nx">historyKind</span><span class="o">:</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">HistoryKind</span><span class="p">.</span><span class="nx">KeepLast</span><span class="p">,</span>
+    <span class="nx">historyDepth</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="nx">maxSamples</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="nx">maxInstances</span><span class="o">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="nx">maxSamplesPerInstance</span><span class="o">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+  <span class="p">};</span>
+
+  <span class="c1">// Or a subset of the policy variables can be set</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">durabilityService</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">historyKind</span><span class="o">:</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">HistoryKind</span><span class="p">.</span><span class="nx">KeepLast</span><span class="p">,</span>
+  <span class="p">};</span>
+
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">reliability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReliabilityKind</span><span class="p">.</span><span class="nx">reliable</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">durability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DurabilityKind</span><span class="p">.</span><span class="nx">Volatile</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">topicdata</span> <span class="o">=</span> <span class="s1">&#39;Hello world topic&#39;</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">userdata</span> <span class="o">=</span> <span class="s1">&#39;connected to hello world&#39;</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">groupdata</span> <span class="o">=</span> <span class="s1">&#39;hello world group&#39;</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">history</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">kind</span><span class="o">:</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">HistoryKind</span><span class="p">.</span><span class="nx">KeepLast</span><span class="p">,</span>
+    <span class="nx">depth</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="p">};</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">resourceLimits</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">maxSamples</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="nx">maxInstances</span><span class="o">:</span> <span class="mi">5</span><span class="p">,</span>
+  <span class="p">};</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">lifespan</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">deadline</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">latencyBudget</span> <span class="o">=</span> <span class="mi">4000</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">ownership</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">OwnershipKind</span><span class="p">.</span><span class="nx">Exclusive</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">liveliness</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">kind</span><span class="o">:</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">LivelinessKind</span><span class="p">.</span><span class="nx">ManualByTopic</span><span class="p">,</span>
+    <span class="nx">leaseDuration</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="p">};</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">reliability</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">kind</span><span class="o">:</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReliabilityKind</span><span class="p">.</span><span class="nx">Reliable</span><span class="p">,</span>
+    <span class="nx">maxBlockingTime</span><span class="o">:</span> <span class="mi">100</span><span class="p">,</span>
+  <span class="p">};</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">transportPriority</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">destinationOrder</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DestinationOrderKind</span><span class="p">.</span><span class="nx">BySourceTimestamp</span><span class="p">;</span>
+
+  <span class="c1">// create topic with qos</span>
+  <span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">HelloWorldTopic</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">);</span>
+
+  <span class="c1">// get topic qos policies</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">,</span> <span class="s1">&#39;** Topic QoS **&#39;</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Reliability: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">reliability</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Durability: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">durability</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Topic data: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">topicdata</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;User data: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">userdata</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Group data: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">groupdata</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;History: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">history</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Resource Limits: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">resourceLimits</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Lifespan: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">lifespan</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Deadline: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">deadline</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Latency Budget: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">latencyBudget</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Ownership: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">ownership</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Liveliness: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">liveliness</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Transport Priority: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">transportPriority</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Destination Order: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">destinationOrder</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Durability Service: &#39;</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">.</span><span class="nx">durabilityService</span><span class="p">);</span>
+
+  <span class="c1">// get the default writer qos</span>
+  <span class="kd">let</span> <span class="nx">wqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">writerDefault</span><span class="p">();</span>
+
+  <span class="c1">// modify the writer qos policies</span>
+  <span class="nx">wqos</span><span class="p">.</span><span class="nx">writerDataLifecycle</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+  <span class="c1">// create a writer with qos</span>
+  <span class="kd">let</span> <span class="nx">writer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Writer</span><span class="p">(</span><span class="nx">publisher</span><span class="p">,</span> <span class="nx">topic</span><span class="p">,</span> <span class="nx">wqos</span><span class="p">);</span>
+
+  <span class="c1">// get writer qos policies</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">,</span> <span class="s1">&#39;** Writer QoS **&#39;</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Writer data lifecyle: &#39;</span><span class="p">,</span> <span class="nx">wqos</span><span class="p">.</span><span class="nx">writerDataLifecycle</span><span class="p">);</span>
+
+  <span class="c1">// get the default reader qos</span>
+  <span class="kd">let</span> <span class="nx">rqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">readerDefault</span><span class="p">();</span>
+
+  <span class="c1">// modify the reader qos policies</span>
+  <span class="nx">rqos</span><span class="p">.</span><span class="nx">partition</span> <span class="o">=</span> <span class="s1">&#39;partition1&#39;</span><span class="p">;</span>
+  <span class="nx">rqos</span><span class="p">.</span><span class="nx">timebasedFilter</span> <span class="o">=</span> <span class="mi">60000</span><span class="p">;</span>
+  <span class="nx">rqos</span><span class="p">.</span><span class="nx">readerDataLifecycle</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">autopurgeNoWriterSamples</span><span class="o">:</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="nx">autopurgeDisposedSamplesDelay</span><span class="o">:</span> <span class="mi">500</span><span class="p">,</span>
+  <span class="p">};</span>
+
+  <span class="c1">// create a reader with qos</span>
+  <span class="kd">let</span> <span class="nx">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Reader</span><span class="p">(</span><span class="nx">subscriber</span><span class="p">,</span> <span class="nx">topic</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">);</span>
+
+  <span class="c1">// get reader qos policies</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">,</span> <span class="s1">&#39;** Reader QoS **&#39;</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Partition: &#39;</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">.</span><span class="nx">partition</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Time based filter: &#39;</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">.</span><span class="nx">timebasedFilter</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Reader data lifecycle: &#39;</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">.</span><span class="nx">readerDataLifecycle</span><span class="p">);</span>
+
+  <span class="c1">// delete the participant</span>
+  <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+
+  <span class="c1">// NOTE: Actual reading and writing data  is not demonstrated in this example</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Quality of Service (QoS)</a><ul>
+<li><a class="reference internal" href="#setting-qos-using-qos-provider-xml-file">6.1. Setting QoS Using QoS Provider XML File</a><ul>
+<li><a class="reference internal" href="#qos-profile">6.1.1. QoS Profile</a></li>
+<li><a class="reference internal" href="#applying-qos-profile">6.1.2. Applying QoS Profile</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#setting-qos-using-node-js-dcps-api-classes">6.2. Setting QoS Using Node.js DCPS API Classes</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dds_entities.html"
+                        title="previous chapter">5. Node.js API for Vortex DDS</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topic.html"
+                        title="next chapter">7. Topic Generation and Discovery</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qos_provider.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topic.html" title="7. Topic Generation and Discovery"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Node.js API for Vortex DDS"
+             >previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

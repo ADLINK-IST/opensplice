@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Installation &mdash; The Vortex OpenSplice LabVIEW Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice LabVIEW Guide" href="index.html" />
+    <link rel="next" title="3. Vortex DDS Virtual Instruments (VIs)" href="dds_vis.html" />
+    <link rel="prev" title="1. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dds_vis.html" title="3. Vortex DDS Virtual Instruments (VIs)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>2. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the procedure to install the Vortex DDS LabVIEW Integration on a Linux or Windows platform.</p>
+<div class="section" id="system-requirements">
+<h2>2.1. System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Operating System: Windows or Linux</li>
+<li>LabVIEW 2017 installed</li>
+</ul>
+</div>
+<div class="section" id="opensplice-ospl-and-dds-labview-installation">
+<h2>2.2. OpenSplice (OSPL) and DDS LabVIEW Installation<a class="headerlink" href="#opensplice-ospl-and-dds-labview-installation" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic simple">
+<li>Install OSPL. The DDS LabVIEW Integration is included in this installer.</li>
+<li>Setup OSPL license. Copy the license.lic file into the appropriate license directory.</li>
+</ol>
+<blockquote>
+<div><em>/INSTALLDIR/ADLINK/Vortex_v2/license</em></div></blockquote>
+<ol class="arabic simple" start="3">
+<li>LabVIEW installation files are contained in a tools/labview folder.</li>
+</ol>
+<blockquote>
+<div>Example:
+<em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux/tools/labview</em></div></blockquote>
+</div>
+<div class="section" id="opensplice-ospl-configuration">
+<h2>2.3. OpenSplice (OSPL) Configuration<a class="headerlink" href="#opensplice-ospl-configuration" title="Permalink to this headline">¶</a></h2>
+<p>By default OSPL uses single process configuration.</p>
+</div>
+<div class="section" id="dds-labview-installation">
+<h2>2.4. DDS LabVIEW Installation<a class="headerlink" href="#dds-labview-installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="linux">
+<h3>2.4.1. Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Open a command shell and navigate to</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux/tools/labview</em></p>
+</li>
+<li><p class="first">Unzip the &#8220;adlink-dds-labview-linux-install.tar.gz&#8221;.</p>
+</li>
+<li><p class="first">Run the install_vortex_dds_ubuntu.sh script as a super user.</p>
+<p>sudo ./install_vortex_dds_ubuntu.sh</p>
+<p><em>NOTE:   The installer sets the default LabVIEW installation path to /usr/local/natinst/LabVIEW-2017-64.</em> <em>To override this installation directory, run the install script and pass the install directory as an argument:</em></p>
+<p><em>sudo ./install_vortex_dds_ubuntu.sh /path/to/your/LabVIEW/installation</em></p>
+</li>
+<li><p class="first">LabVIEW will open and allow the installation Virtual Instrument (VI) run to completion.</p>
+</li>
+<li><p class="first">After the installation is complete close LabVIEW. Installation takes effect the next time you start LabVIEW.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="windows">
+<h3>2.4.2. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">In a file browser, navigate to</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.windows/tools/labview</em></p>
+</li>
+<li><p class="first">Double click on the file “adlink_lib_vortexdds-1.0.0.1”. This will bring up the VI Package Manager installer dialog box. Select the LabVIEW version to install (32-bit or 64-bit). Select <strong>Install</strong>.</p>
+</li>
+</ol>
+<div class="figure">
+<img alt="DDS windows install" src="_images/windowsInstall1.png" />
+</div>
+<ol class="arabic simple" start="3">
+<li>After the installation is complete close LabVIEW. Installation takes effect the next time you start LabVIEW.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="running-labview">
+<h2>2.5. Running LabVIEW<a class="headerlink" href="#running-labview" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic">
+<li><p class="first">Open command shell and run script to setup environment variables.</p>
+<blockquote>
+<div><p><strong>Linux</strong></p>
+<ul>
+<li><p class="first">Open a Linux terminal.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.com file.</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux</em></p>
+</li>
+<li><p class="first">Run release.com. (Type in “. release.com” at command line.)</p>
+</li>
+</ul>
+<p><strong>Windows</strong></p>
+<ul>
+<li><p class="first">Open a command prompt.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.bat file.</p>
+<p><em>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.win64</em></p>
+</li>
+<li><p class="first">Run release.bat.   (Type in “release.bat” at command line.)</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Start LabVIEW using the <strong>SAME</strong> command shell used in Step 1.</p>
+<blockquote>
+<div><p><em>NOTE:   If LabVIEW is NOT started from a command shell with the correct OSPL environment variables set, errors will occur when attempting to use DDS LabVIEW virtual instruments.</em></p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Installation</a><ul>
+<li><a class="reference internal" href="#system-requirements">2.1. System Requirements</a></li>
+<li><a class="reference internal" href="#opensplice-ospl-and-dds-labview-installation">2.2. OpenSplice (OSPL) and DDS LabVIEW Installation</a></li>
+<li><a class="reference internal" href="#opensplice-ospl-configuration">2.3. OpenSplice (OSPL) Configuration</a></li>
+<li><a class="reference internal" href="#dds-labview-installation">2.4. DDS LabVIEW Installation</a><ul>
+<li><a class="reference internal" href="#linux">2.4.1. Linux</a></li>
+<li><a class="reference internal" href="#windows">2.4.2. Windows</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-labview">2.5. Running LabVIEW</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">1. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dds_vis.html"
+                        title="next chapter">3. Vortex DDS Virtual Instruments (VIs)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="dds_vis.html" title="3. Vortex DDS Virtual Instruments (VIs)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

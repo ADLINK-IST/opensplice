@@ -76,10 +76,10 @@ SET(OpenSplice_FOUND TRUE)
 ENDIF (OpenSplice_INCLUDE_DIRS AND OpenSplice_LIBRARIES)
 
 IF (OpenSplice_FOUND)
-MESSAGE(STATUS "Found OpenSplice DDS libraries: ${OpenSplice_LIBRARIES}")
+MESSAGE(STATUS "Found Vortex OpenSplice libraries: ${OpenSplice_LIBRARIES}")
 ELSE (OpenSplice_FOUND)
 IF (OpenSplice_FIND_REQUIRED)
-MESSAGE(FATAL_ERROR "Could not find OpenSplice DDS")
+MESSAGE(FATAL_ERROR "Could not find Vortex OpenSplice")
 ENDIF (OpenSplice_FIND_REQUIRED)
 ENDIF (OpenSplice_FOUND)
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -62,15 +63,28 @@ v_dataReaderEntryFlushTransactionNoLock(
     v_message message,
     c_voidp arg);
 
-v_typeRepresentation
-v__dataReaderEntryGetTypeRepresentation (
-    v_dataReaderEntry _this);
-
 v_writeResult
 v_dataReaderEntryDisposeAll (
     v_dataReaderEntry _this,
     v_message disposeMsg,
     c_bool (*condition)(c_object instance, c_voidp condition_arg),
     c_voidp condition_arg);
+
+/* This operation will add the given publication GID to the entry's ignore list.
+ * The entry will filter-out all messages that originate from this publication.
+ */
+void
+v_dataReaderEntryIgnorePublication(
+    v_dataReaderEntry _this,
+    const struct v_publicationInfo *info);
+
+/* This operation will wipe the given publicatiom GID from the entry's ignore list.
+ * This can only be performed when the publication no longer exists and no data
+ * from this writer is to be expected anymore.
+ */
+void
+v_dataReaderEntryDisposePublication(
+    v_dataReaderEntry _this,
+    const struct v_publicationInfo *info);
 
 #endif /* V__DATAREADERENTRY_H */

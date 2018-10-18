@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,7 +64,7 @@ public class DomainParticipantListenerImpl extends
         Listener<DomainParticipantListener> implements
         DDS.ExtDomainParticipantListener, Serializable {
     private static final long serialVersionUID = -3531755144455417494L;
-    private final DomainParticipantImpl participant;
+    private final transient DomainParticipantImpl participant;
     private final transient org.opensplice.dds.domain.DomainParticipantListener extListener;
 
     public DomainParticipantListenerImpl(OsplServiceEnvironment environment,

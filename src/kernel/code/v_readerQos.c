@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@
 
 
 #include "v__readerQos.h"
+#include "v__subscriberQos.h"
 #include "v_qos.h"
 #include "v_kernel.h"
 #include "v_policy.h"
@@ -38,9 +40,6 @@ static const v_qosChangeMask immutableMask =
     V_POLICY_BIT_OWNERSHIP   |
     V_POLICY_BIT_RESOURCE;
 
-/**************************************************************
- * private functions
- **************************************************************/
 static c_bool
 v_readerQosValidValues(
     v_readerQos qos)
@@ -104,9 +103,6 @@ v_readerQosConsistent(
     return result;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_readerQos
 v_readerQosNew(
     v_kernel kernel,
@@ -206,74 +202,85 @@ v_readerQosFree(
     c_free(q);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
+_Success_(return == V_RESULT_OK)
 v_result
 v_readerQosCompare(
-    v_readerQos q,
-    v_readerQos tmpl,
-    c_bool enabled,
-    v_qosChangeMask *changeMask)
+    _In_ v_readerQos q,
+    _In_ v_readerQos tmpl,
+    _In_ c_bool enabled,
+    _In_ c_bool groupCoherent,
+    _Out_ v_qosChangeMask *changeMask)
 {
-    v_qosChangeMask cm;
+    v_qosChangeMask cm, immutable;
     v_result result;
 
     cm = 0;
-    if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
-        if (v_readerQosValidValues(tmpl)) {
-            if (v_readerQosConsistent(tmpl)) {
-                /* built change mask */
+    immutable = immutableMask;
+    if(enabled && groupCoherent) {
+        /* A group-coherent reader cannot be changed at all after it has
+         * been enabled.
+         */
+        immutable |= V_POLICY_BIT_DURABILITY;
+        immutable |= V_POLICY_BIT_DEADLINE;
+        immutable |= V_POLICY_BIT_LATENCY;
+        immutable |= V_POLICY_BIT_LIVELINESS;
+        immutable |= V_POLICY_BIT_RELIABILITY;
+        immutable |= V_POLICY_BIT_ORDERBY;
+        immutable |= V_POLICY_BIT_HISTORY;
+        immutable |= V_POLICY_BIT_RESOURCE;
+        immutable |= V_POLICY_BIT_USERDATA;
+        immutable |= V_POLICY_BIT_OWNERSHIP;
+        immutable |= V_POLICY_BIT_PACING;
+        immutable |= V_POLICY_BIT_READERLIFECYCLE;
+        immutable |= V_POLICY_BIT_READERLIFESPAN;
+        immutable |= V_POLICY_BIT_SHARE;
+        immutable |= V_POLICY_BIT_USERKEY;
+    }
+
+    if (v_readerQosValidValues(tmpl)) {
+        if (v_readerQosConsistent(tmpl)) {
+            /* built change mask */
 #define _SETMASK_(type,qos,label) if (!v_##type##PolicyIEqual(q->qos, tmpl->qos)) { cm |= V_POLICY_BIT_##label; }
-                _SETMASK_(durability,durability,DURABILITY)
-                _SETMASK_(deadline,deadline,DEADLINE)
-                _SETMASK_(latency,latency,LATENCY)
-                _SETMASK_(liveliness,liveliness,LIVELINESS)
-                _SETMASK_(reliability,reliability,RELIABILITY)
-                _SETMASK_(orderby,orderby,ORDERBY)
-                _SETMASK_(history,history,HISTORY)
-                _SETMASK_(resource,resource,RESOURCE)
-                _SETMASK_(userData,userData,USERDATA)
-                _SETMASK_(ownership, ownership, OWNERSHIP);
-                _SETMASK_(pacing,pacing,PACING)
-                _SETMASK_(readerLifecycle,lifecycle,READERLIFECYCLE)
-                _SETMASK_(readerLifespan,lifespan,READERLIFESPAN)
-                _SETMASK_(share,share,SHARE)
-                _SETMASK_(userKey,userKey,USERKEY)
+            _SETMASK_(durability,durability,DURABILITY)
+            _SETMASK_(deadline,deadline,DEADLINE)
+            _SETMASK_(latency,latency,LATENCY)
+            _SETMASK_(liveliness,liveliness,LIVELINESS)
+            _SETMASK_(reliability,reliability,RELIABILITY)
+            _SETMASK_(orderby,orderby,ORDERBY)
+            _SETMASK_(history,history,HISTORY)
+            _SETMASK_(resource,resource,RESOURCE)
+            _SETMASK_(userData,userData,USERDATA)
+            _SETMASK_(ownership, ownership, OWNERSHIP);
+            _SETMASK_(pacing,pacing,PACING)
+            _SETMASK_(readerLifecycle,lifecycle,READERLIFECYCLE)
+            _SETMASK_(readerLifespan,lifespan,READERLIFESPAN)
+            _SETMASK_(share,share,SHARE)
+            _SETMASK_(userKey,userKey,USERKEY)
 #undef _SETMASK_
-                /* check whether immutable policies are changed */
-                if (((cm & immutableMask) != 0) && (enabled)) {
-                    v_policyReportImmutable(cm, immutableMask);
-                    result = V_RESULT_IMMUTABLE_POLICY;
-                    OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
-                              "Precondition not met: Immutable Qos policy violation");
-                } else {
-                    *changeMask = cm;
-                    result = V_RESULT_OK;
-                }
-            } else {
-                result = V_RESULT_INCONSISTENT_QOS;
+            /* check whether immutable policies are changed */
+            if (((cm & immutable) != 0) && (enabled)) {
+                v_policyReportImmutable(cm, immutable);
+                result = V_RESULT_IMMUTABLE_POLICY;
                 OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
-                          "Precondition not met: Detected Inconsistent Qos policy");
+                          "Precondition not met: Immutable Qos policy violation");
+            } else {
+                *changeMask = cm;
+                result = V_RESULT_OK;
             }
         } else {
-            result = V_RESULT_ILL_PARAM;
+            result = V_RESULT_INCONSISTENT_QOS;
             OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
-                      "Bad parameter: Detected Invalid Qos policy");
+                      "Precondition not met: Detected Inconsistent Qos policy");
         }
     } else {
         result = V_RESULT_ILL_PARAM;
         OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
-                    "Bad parameter: Qos1 = 0x%"PA_PRIxADDR", Qos2 = 0x%"PA_PRIxADDR", changeMask holder = 0x%"PA_PRIxADDR"",
-                    (os_address)q, (os_address)tmpl, (os_address)changeMask);
+                  "Bad parameter: Detected Invalid Qos policy");
     }
 
     return result;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 v_result
 v_readerQosCheck(
     v_readerQos _this)

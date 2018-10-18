@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,6 +39,7 @@ v_instanceInit(
     v_publicInit(v_public(_this));
     _this->state = L_EMPTY | L_NOWRITERS;
     _this->entity = (c_voidp)entity;
+    _this->userData = NULL;
 }
 
 void
@@ -48,5 +50,24 @@ v_instanceDeinit(
 
     _this->entity = NULL;
     v_publicDeinit(v_public(_this));
+}
+
+c_voidp
+v_instanceSetUserData(
+    v_instance _this,
+    c_voidp userData)
+{
+    c_voidp oldData;
+
+    oldData = _this->userData;
+    _this->userData = userData;
+    return oldData;
+}
+
+c_voidp
+v_instanceGetUserData(
+    v_instance _this)
+{
+    return _this->userData;
 }
 

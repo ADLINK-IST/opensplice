@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,10 +39,13 @@
 #include "idl_dependencies.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_dll.h"
+#include "idl_map.h"
+
 
 #include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
+
 
 /** indentation level */
 static c_long indent_level = 0;
@@ -50,7 +54,148 @@ static c_ulong enum_element = 0;
     /** enumeration enum name */
 static char *enum_enumName = NULL;
 
-/* @brief callback function called on opening the IDL input file.
+
+struct SACSUnionMetaDescription_s {
+    idl_map unionCaseMap;
+    char *unionSwitchType;
+    char *union1stCaseValue;
+    idl_typeSpec union1stCaseType;
+    char *union1stCaseIdent;
+    os_iter labelIter;
+    os_iter labelsUsedIter;
+    c_bool caseIsDefault;
+    c_ulong unionCaseOffset;
+};
+typedef struct SACSUnionMetaDescription_s SACSUnionMetaDescription;
+
+
+
+/** @brief function to find out whether the elements of an array
+ * require initialization.
+ *
+ * idl_arrayElementsNeedInitialization is a local support function to find out
+ * whether the specified array is of a type for which all elements need to be
+ * initialized individually. If the array is of a primitive type, this is never
+ * necessary, but if the array contains a reference type and no underlying
+ * sequences (which will be initialized to 0 elements) then for loops will
+ * need to be created to explicitly initialize all of these attributes.
+ *
+ * @param typeSpec Specifies the attribute type that needs to be investigated.
+ */
+static int
+idl_arrayElementsNeedInitialization(
+    idl_typeArray typeArray)
+{
+    int initRequired = FALSE;
+
+    /* Obtain the type of the array. */
+    idl_typeSpec typeSpec = idl_typeArrayType(typeArray);
+
+    /* Resolve potential typedefs. */
+    while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+        typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+    }
+
+    if (idl_typeSpecType(typeSpec) == idl_tarray) {
+        initRequired = idl_arrayElementsNeedInitialization(idl_typeArray(typeSpec));
+    } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
+               idl_typeSpecType(typeSpec) == idl_tunion  ||
+               idl_typeSpecType(typeSpec) == idl_tenum   ||
+               (idl_typeSpecType(typeSpec) == idl_tbasic &&
+                idl_typeBasicType(idl_typeBasic (typeSpec)) == idl_string)) {
+        initRequired = TRUE;
+    }
+
+    return initRequired;
+}
+
+/** @brief generate initialization of array elements.
+ *
+ * idl_arrayElementInit generates for-loops that initialize
+ * each attribute of an array explicitly.
+ *
+ * @param typeArray Specifies the type of the array
+ */
+static void
+idl_arrayElementInit(
+    idl_typeSpec typeSpec,
+    const char *elementName,
+    int dimCount,
+    int indent,
+    c_bool customPSM)
+{
+    c_char *tName;
+
+    while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+        typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+    }
+
+    if (idl_typeSpecType(typeSpec) == idl_tarray) {
+        idl_fileOutPrintf(
+            idl_fileCur(), "%*sfor(int i%d = 0; i%d < %d; i%d++) {\n",
+                indent, "", dimCount, dimCount, idl_typeArraySize(idl_typeArray(typeSpec)), dimCount);
+        idl_arrayElementInit(idl_typeArrayType(idl_typeArray(typeSpec)), elementName, dimCount + 1, indent + 4, customPSM);
+        idl_fileOutPrintf(idl_fileCur(), "%*s}\n", indent, "");
+    } else {
+        int j;
+
+        idl_fileOutPrintf(idl_fileCur(), "%*s_%s[", indent, "", elementName);
+        for (j = 1; j < dimCount; j++) {
+            if (j == 1) {
+                idl_fileOutPrintf(idl_fileCur(), "i%d", j);
+            } else {
+                idl_fileOutPrintf(idl_fileCur(), ",i%d", j);
+            }
+        }
+        if (idl_typeSpecType(typeSpec) == idl_tbasic && idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+            idl_fileOutPrintf(idl_fileCur(), "] = \"\";\n");
+        } else if (idl_typeSpecType(typeSpec) == idl_tunion || idl_typeSpecType(typeSpec) == idl_tstruct ) {
+            tName = idl_CsharpTypeFromTypeSpec(typeSpec, customPSM);
+            idl_fileOutPrintf(idl_fileCur(), "] = new %s();\n", tName);
+            os_free(tName);
+        } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
+            tName = idl_CsharpTypeFromTypeSpec(typeSpec, customPSM);
+            idl_fileOutPrintf(idl_fileCur(), "] = (%s)(0);\n", tName);
+            os_free(tName);
+        }
+    }
+}
+
+
+/** @brief generate initialization of array elements.
+ *
+ * idl_arrayInitializeElements is a local support function to initialize
+ * the elements of non-primitive array types, if appropriate.
+ *
+ * @param typeSpec Type of the attribute that might need to be initialized.
+ * @param elementName Name of the attribute that might need to be initialized.
+ */
+static void
+idl_arrayInitializeElements(
+    idl_typeSpec typeSpec,
+    const char *elementName,
+    c_bool customPSM)
+{
+    int dimCount = 1;
+    int indent = (indent_level + 1) * 4;
+
+    while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+        typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+    }
+
+    if ( idl_typeSpecType(typeSpec) == idl_tarray) {
+        if (idl_arrayElementsNeedInitialization(idl_typeArray(typeSpec))) {
+            idl_arrayElementInit(typeSpec, elementName, dimCount, indent, customPSM);
+        }
+    }
+}
+
+
+
+
+
+
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - inclusion of Splice type definition files
@@ -68,7 +213,7 @@ idl_fileOpen(
     OS_UNUSED_ARG(name);
     OS_UNUSED_ARG(userData);
 
-    /* Generate inclusion of standard OpenSplice DDS type definition files */
+    /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "using DDS;\n");
     idl_fileOutPrintf(idl_fileCur(), "using System.Runtime.InteropServices;\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -389,6 +534,131 @@ idl_structureMemberOpenClose (
     }
 }
 
+/** @brief Generate a string representaion the literal value of a label
+ * in metadata terms.
+ *
+ * @param labelVal Specifies the kind and the value of the label
+ * @return String representing the image of \b labelVal
+ */
+#define maxLabelNameSize 100
+
+static c_char *
+idl_valueFromLabelVal (
+    idl_labelVal labelVal,
+    SACSUnionMetaDescription *umd,
+    c_bool customPSM)
+{
+    c_char *labelName;
+
+    if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
+        labelName = idl_labelCsharpEnumVal(umd->unionSwitchType, idl_labelEnum(labelVal), customPSM);
+    } else {
+        labelName = os_malloc(maxLabelNameSize);
+        switch (idl_labelValueVal(idl_labelValue(labelVal)).kind) {
+        case V_CHAR:
+            snprintf(labelName, maxLabelNameSize, "%u",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
+        break;
+        case V_SHORT:
+            snprintf(labelName, maxLabelNameSize, "%d",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
+        break;
+        case V_USHORT:
+            snprintf(labelName, maxLabelNameSize, "%u",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
+        break;
+        case V_LONG:
+            snprintf(labelName, maxLabelNameSize, "%d",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
+        break;
+        case V_ULONG:
+            snprintf(labelName, maxLabelNameSize, "%u",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
+        break;
+        case V_LONGLONG:
+            snprintf(labelName, maxLabelNameSize, "%"PA_PRId64"",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.LongLong);
+        break;
+        case V_ULONGLONG:
+            snprintf(labelName, maxLabelNameSize, "%"PA_PRIu64"",
+                idl_labelValueVal(idl_labelValue(labelVal)).is.ULongLong);
+        break;
+        case V_BOOLEAN:
+            /* QAC EXPECT 3416; No side effect here */
+        if (idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == TRUE) {
+            snprintf(labelName, maxLabelNameSize, "true");
+        } else {
+            snprintf(labelName, maxLabelNameSize, "false");
+        }
+        break;
+        default:
+        break;
+        }
+    }
+    return labelName;
+}
+
+/** @brief Return a C# typename corresponging to a case field the IDL type specification
+ *
+ * @param typeSpec IDL type specification
+ * @param customPSM Use custom PSM or not
+ */
+static char *
+idl_unionCaseTypeFromTypeSpec(
+    idl_typeSpec typeSpec,
+    c_bool customPSM)
+{
+    char typeName[512];
+    char *tname;
+    c_bool isPredefined = FALSE;
+
+    tname = idl_CsharpTypeFromTypeSpec(typeSpec, customPSM);
+
+    /* Dereference possible typedefs first. */
+    while (idl_typeSpecType(typeSpec) == idl_ttypedef && !isPredefined) {
+        if (!idl_isPredefined(tname)) {
+            typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+            os_free (tname);
+            tname = idl_CsharpTypeFromTypeSpec(typeSpec, customPSM);
+        } else {
+            isPredefined = TRUE;
+        }
+    }
+
+    if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+        snprintf(typeName, sizeof(typeName), "%s", tname);
+    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
+        char *str_no_idx = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL);
+        assert (str_no_idx);
+        snprintf (typeName, sizeof(typeName), "%s%s", tname, str_no_idx);
+        os_free(str_no_idx);
+    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
+        char *str_no_idx = idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES);
+        assert (str_no_idx);
+        snprintf(typeName, sizeof(typeName), "%s%s", tname,  str_no_idx);
+        os_free(str_no_idx);
+    } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+        /* This state should only be reachable for predefined types. */
+        assert(isPredefined);
+        snprintf(typeName, sizeof(typeName), "%s", tname);
+    } else {
+        if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
+            (idl_typeSpecType (typeSpec) == idl_tunion) ||
+            (idl_typeSpecType (typeSpec) == idl_tenum)) {
+            snprintf(typeName, sizeof(typeName), "%s", tname);
+        } else {
+            printf ("idl_unionCaseTypeFromTypeSpec: Unexpected type %d\n",
+                idl_typeSpecType(typeSpec));
+        }
+    }
+
+    os_free(tname);
+
+    return os_strdup(typeName);
+}
+
+
+
 /** @brief callback function called on definition of a union in the IDL input file.
  *
  * Generate code for the following IDL construct:
@@ -418,6 +688,7 @@ idl_unionOpen(
 {
     char *unionTypeName, *discrTypeName;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd = NULL;
 
     if (idl_definitionExists("definition", idl_scopeStack (scope, ".", name))) {
         return idl_abort;
@@ -425,19 +696,23 @@ idl_unionOpen(
     idl_definitionAdd("definition", idl_scopeStack (scope, ".", name));
 
     unionTypeName = idl_CsharpId(name, csUserData->customPSM, FALSE);
-    discrTypeName = idl_CsharpTypeFromTypeSpec(
-            idl_typeUnionSwitchKind(unionSpec),
-            csUserData->customPSM);
+    discrTypeName = idl_CsharpTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec), csUserData->customPSM);
+
+    umd = os_malloc(sizeof(SACSUnionMetaDescription));
+    memset(umd, 0, sizeof(SACSUnionMetaDescription));
+    umd->unionCaseMap = idl_mapNew(NULL, 1, 1);
+    umd->unionCaseOffset = (idl_typeSpecDef(idl_typeUnionSwitchKind(unionSpec))->size > 4) ? 8 : 4;
+    umd->unionSwitchType =  os_strdup(discrTypeName);
+    umd->labelsUsedIter = os_iterNew(NULL);
+    csUserData->typeStack = c_iterInsert(csUserData->typeStack, umd);
 
     /* Generate the C# code that opens a sealed class. */
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "#region %s\n", unionTypeName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "[StructLayout(LayoutKind.Explicit)]\n");
+    idl_fileOutPrintf(idl_fileCur(), "[StructLayout(LayoutKind.Sequential)]\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "public sealed struct %s\n", unionTypeName);
+    idl_fileOutPrintf(idl_fileCur(), "public sealed class %s\n", unionTypeName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
 
@@ -446,23 +721,17 @@ idl_unionOpen(
 
     /* Generate the discriminator and its getter property. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"[FieldOffset(0)]\n");
+    idl_fileOutPrintf(idl_fileCur(), "private %s _d;\n", discrTypeName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "private %s _d;\n",
-        discrTypeName);
+    idl_fileOutPrintf(idl_fileCur(), "private _Fields _u;\n\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "public %s Discriminator\n",
-        discrTypeName);
+    idl_fileOutPrintf(idl_fileCur(), "public %s Discriminator\n", discrTypeName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(),"{\n");
     idl_printIndent(++indent_level);
     idl_fileOutPrintf(idl_fileCur(), "get { return _d; }\n");
     idl_printIndent(--indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"}\n");
+    idl_fileOutPrintf(idl_fileCur(),"}\n\n");
 
     os_free(discrTypeName);
     os_free(unionTypeName);
@@ -470,6 +739,7 @@ idl_unionOpen(
     /* return idl_explore to indicate that the rest of the union needs to be processed */
     return idl_explore;
 }
+
 
 /** @brief callback function called on closure of a union in the IDL input file.
  *
@@ -499,14 +769,103 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
-    OS_UNUSED_ARG(name);
-    OS_UNUSED_ARG(userData);
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd;
+    char *unionTypeName;
+    char *labelImage;
+    char *tName;
+    idl_mapIter mapIter;
+
+    unionTypeName = idl_CsharpId(name, csUserData->customPSM, FALSE);
+    umd = (SACSUnionMetaDescription *) c_iterTakeFirst(csUserData->typeStack);
+
+    assert(umd->union1stCaseType);
+    assert(umd->union1stCaseValue);
+    assert(umd->union1stCaseIdent);
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public %s () {\n", unionTypeName);
+
+    idl_printIndent(indent_level);
+    if (idl_typeSpecType(umd->union1stCaseType) == idl_tbasic) {
+        /* generate code for a standard empty ("") string.  */
+        if (idl_typeBasicType(idl_typeBasic (umd->union1stCaseType)) == idl_string) {
+            idl_fileOutPrintf(idl_fileCur(), "    _u.%s = \"\";\n", umd->union1stCaseIdent);
+        } else if (idl_typeBasicType(idl_typeBasic (umd->union1stCaseType)) == idl_boolean) {
+            idl_fileOutPrintf(idl_fileCur(), "    _u.%s = false;\n", umd->union1stCaseIdent);
+        } else if (idl_typeBasicType(idl_typeBasic (umd->union1stCaseType)) == idl_char) {
+            idl_fileOutPrintf(idl_fileCur(), "    _u.%s = '\\0';\n", umd->union1stCaseIdent);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "    _u.%s = 0;\n", umd->union1stCaseIdent);
+        }
+    } else if (idl_typeSpecType(umd->union1stCaseType) == idl_tseq ||
+            idl_typeSpecType(umd->union1stCaseType) == idl_tarray) {
+        char *str_idx = idl_arrayCsharpIndexString (umd->union1stCaseType, SACS_INCLUDE_INDEXES);
+        assert (str_idx);
+
+        tName = idl_CsharpTypeFromTypeSpec(umd->union1stCaseType, csUserData->customPSM);
+        idl_fileOutPrintf(idl_fileCur(), "    _u.%s = new %s%s", umd->union1stCaseIdent, tName, str_idx);
+        idl_fileOutPrintf(idl_fileCur(), ";\n");
+        idl_arrayInitializeElements(umd->union1stCaseType, umd->union1stCaseIdent, csUserData->customPSM);
+        os_free(tName);
+        os_free(str_idx);
+    } else if (idl_typeSpecType(umd->union1stCaseType) == idl_tstruct ||
+            idl_typeSpecType(umd->union1stCaseType) == idl_tunion) {
+        tName = idl_CsharpTypeFromTypeSpec(umd->union1stCaseType, csUserData->customPSM);
+        idl_fileOutPrintf(idl_fileCur(), "    _u.%s = new %s();\n", umd->union1stCaseIdent, tName);
+        os_free(tName);
+    } else if (idl_typeSpecType(umd->union1stCaseType) == idl_tenum) {
+        tName = idl_CsharpTypeFromTypeSpec(umd->union1stCaseType, csUserData->customPSM);
+        idl_fileOutPrintf(idl_fileCur(), "    _u.%s = (%s)0;\n", umd->union1stCaseIdent, tName);
+        os_free(tName);
+    }
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "    _d = (%s)%s;\n", umd->unionSwitchType, umd->union1stCaseValue);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "[StructLayout(LayoutKind.Sequential)]\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "struct _Fields\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+
+    mapIter = idl_mapFirst(umd->unionCaseMap);
+    while (idl_mapIterObject(mapIter)) {
+        char *tName = idl_mapIterObject(mapIter);
+        char *fName = idl_mapIterKey(mapIter);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "    public %s %s;\n", tName, fName);
+        idl_mapIterNext(mapIter);
+    }
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n");
+
+    idl_mapIterFree(mapIter);
+    idl_mapFree(umd->unionCaseMap);
 
     indent_level--;
-    idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "} _u;\n");
-    indent_level--;
-    idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "};\n\n");
+    idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "};\n");
+    idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "#endregion\n\n");
+
+    os_free(unionTypeName);
+    os_free(umd->union1stCaseValue);
+    os_free(umd->union1stCaseIdent);
+    if (umd->unionSwitchType) {
+        os_free(umd->unionSwitchType);
+    }
+
+    labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+    while (labelImage) {
+        os_free(labelImage);
+        labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+    }
+    os_iterFree(umd->labelsUsedIter);
+    os_free(umd);
 }
+
 
 /** @brief callback function called on definition of a union case in the IDL input file.
  *
@@ -535,11 +894,303 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd;
+    char *caseTypename;
+    char *caseField;
+    c_ulong nrElements, i;
+    char *labelImage;
+
     OS_UNUSED_ARG(scope);
-    OS_UNUSED_ARG(name);
-    OS_UNUSED_ARG(typeSpec);
-    OS_UNUSED_ARG(userData);
+
+    caseTypename = idl_unionCaseTypeFromTypeSpec(typeSpec, csUserData->customPSM);
+    caseField = idl_CsharpId(name, csUserData->customPSM, FALSE);
+
+    umd = (SACSUnionMetaDescription *) c_iterObject(csUserData->typeStack, 0);
+    idl_mapAdd(umd->unionCaseMap, os_strdup(caseField), os_strdup(caseTypename));
+
+    nrElements = os_iterLength(umd->labelIter);
+    labelImage = os_iterObject(umd->labelIter, 0);
+
+    if (!umd->union1stCaseType) {
+        umd->union1stCaseType = typeSpec;
+        umd->union1stCaseValue = os_strdup(os_iterObject(umd->labelIter, 0));
+        umd->union1stCaseIdent = os_strdup(caseField);
+    }
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public %s %s ()\n", caseTypename, caseField);
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    idl_printIndent(indent_level);
+    if (umd->caseIsDefault == FALSE) {
+        idl_fileOutPrintf(idl_fileCur(), "    if (_d != (%s)%s", umd->unionSwitchType, labelImage);
+        for (i = 1; i < nrElements; i++) {
+            labelImage = os_iterObject(umd->labelIter, i);
+            idl_fileOutPrintf(idl_fileCur(), " &&\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "        _d != (%s)%s", umd->unionSwitchType, labelImage);
+        }
+        idl_fileOutPrintf(idl_fileCur(), ") {\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "        throw new System.InvalidOperationException();\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
+    } else {
+        if(os_iterLength(umd->labelsUsedIter)) {
+            labelImage = os_iterObject(umd->labelsUsedIter, 0);
+            idl_fileOutPrintf(idl_fileCur(), "    if (_d == (%s)%s", umd->unionSwitchType, labelImage);
+                nrElements = os_iterLength(umd->labelsUsedIter);
+            for (i = 1; i < nrElements; i++) {
+                labelImage = os_iterObject(umd->labelsUsedIter, i);
+                idl_fileOutPrintf(idl_fileCur(), " ||\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "        _d == (%s)%s", umd->unionSwitchType, labelImage);
+            }
+            idl_fileOutPrintf(idl_fileCur(), ") {\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "        throw new System.InvalidOperationException();\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "    }\n");
+        }
+    }
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "    return _u.%s;\n", caseField);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public void %s (%s val)\n", caseField, caseTypename);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "    _u.%s = val;\n", caseField);
+    labelImage = os_iterObject(umd->labelIter, 0);
+    idl_printIndent(indent_level);
+    assert(labelImage);
+    idl_fileOutPrintf(idl_fileCur(), "    _d = (%s)%s;\n", umd->unionSwitchType, labelImage);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    if (nrElements > 1) {
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "public void %s (%s d, %s val)\n", caseField, umd->unionSwitchType, caseTypename);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "{\n");
+        idl_printIndent(indent_level);
+        if (umd->caseIsDefault == FALSE) {
+            labelImage = os_iterTakeFirst(umd->labelIter);
+            idl_fileOutPrintf(idl_fileCur(), "    if (d != (%s)%s", umd->unionSwitchType, labelImage);
+            os_free(labelImage);
+            labelImage = os_iterTakeFirst(umd->labelIter);
+            while (labelImage) {
+                idl_fileOutPrintf(idl_fileCur(), " &&\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "        d != (%s)%s", umd->unionSwitchType, labelImage);
+                os_free(labelImage);
+                labelImage = os_iterTakeFirst (umd->labelIter);
+            }
+            idl_fileOutPrintf(idl_fileCur(), ") {\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "        throw new System.InvalidOperationException();\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "    }\n");
+        } else {
+            if(os_iterLength(umd->labelsUsedIter)) {
+                labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+                idl_fileOutPrintf(idl_fileCur(), "    if (d == (%s)%s", umd->unionSwitchType, labelImage);
+                os_free(labelImage);
+                labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+                while (labelImage) {
+                    idl_fileOutPrintf(idl_fileCur(), " ||\n");
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(), "        d == (%s)%s", umd->unionSwitchType, labelImage);
+                    os_free(labelImage);
+                    labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+                }
+                idl_fileOutPrintf(idl_fileCur(), ") {\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "        throw new System.InvalidOperationException();\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "    }\n");
+            }
+        }
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "    _u.%s = val;\n", caseField);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "    _d = d;\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+    }
+
+    os_free(caseTypename);
+    os_free(caseField);
+
+    labelImage = os_iterTakeFirst(umd->labelIter);
+    while (labelImage) {
+        os_free(labelImage);
+        labelImage = os_iterTakeFirst(umd->labelIter);
+    }
+    os_iterFree(umd->labelIter);
+    umd->labelIter = NULL;
 }
+
+/** @brief callback function called on definition of the union case labels in the IDL input file.
+ *
+ * Generate code for the following IDL construct:
+ * @verbatim
+        union <union-name> switch(<switch-type>) {
+   =>       case label1.1; .. case label1.n;
+                <union-case-1>;
+   =>       case label2.1; .. case label2.n;
+                ...        ...
+   =>       case labeln.1; .. case labeln.n;
+                <union-case-n>;
+            default:
+                <union-case-m>;
+        };
+   @endverbatim
+ *
+ * @param scope Current scope (the union the labels are defined in)
+ * @param labelSpec Specifies the number of labels of the union case
+ */
+static void
+idl_unionLabelOpenClose(
+    idl_scope ownScope,
+    idl_labelVal labelVal,
+    void *userData)
+{
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd;
+
+    OS_UNUSED_ARG(ownScope);
+
+    umd = (SACSUnionMetaDescription *) c_iterObject(csUserData->typeStack, 0);
+    if (idl_labelValType(labelVal) != idl_ldefault) {
+        umd->caseIsDefault = FALSE;
+        umd->labelIter = os_iterAppend(umd->labelIter, idl_valueFromLabelVal(labelVal, umd, csUserData->customPSM));
+        umd->labelsUsedIter = os_iterAppend(umd->labelsUsedIter, idl_valueFromLabelVal(labelVal, umd, csUserData->customPSM));
+    } else {
+        umd->caseIsDefault = TRUE;
+        umd->labelIter = os_iterAppend(umd->labelIter,
+                idl_valueFromLabelVal(idl_labelDefaultAlternative(idl_labelDefault(labelVal)), umd, csUserData->customPSM));
+    }
+}
+
+/** @brief callback function called on definition of the union case labels in the IDL input file.
+ *
+ * Generate code for the following IDL construct:
+ * @verbatim
+        union <union-name> switch(<switch-type>) {
+   =>       case label1.1; .. case label1.n;
+                <union-case-1>;
+   =>       case label2.1; .. case label2.n;
+                ...        ...
+   =>       case labeln.1; .. case labeln.n;
+                <union-case-n>;
+            default:
+                <union-case-m>;
+        };
+   @endverbatim
+ *
+ * @param scope Current scope (the union the labels are defined in)
+ * @param labelSpec Specifies the number of labels of the union case
+ */
+static void
+idl_unionLabelsOpenClose(
+    idl_scope scope,
+    idl_labelSpec labelSpec,
+    void *userData)
+{
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd;
+
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(labelSpec);
+
+    umd = (SACSUnionMetaDescription *) c_iterObject(csUserData->typeStack, 0);
+    umd->labelIter = os_iterNew(NULL);
+}
+
+
+/** @brief callback function called when no default case is defined in an union
+ *   for which not all possible label values are specified
+ *
+ * Generate code for the following IDL construct:
+ * @verbatim
+        union <union-name> switch(<switch-type>) {
+            case label1.1; .. case label1.n;
+                <union-case-1>;
+            case label2.1; .. case label2.n;
+                ...        ...
+            case labeln.1; .. case labeln.n;
+                <union-case-n>;
+        };
+   @endverbatim
+ *
+ * @param scope Current scope (the union the union case is defined in)
+ * @param labelVal Default value for the label case (lowest possible not used index)
+ * @param typeSpec Specifies the type of the union switch
+ */
+static void
+idl_artificialDefaultLabelOpenClose(
+    idl_scope scope,
+    idl_labelVal labelVal,
+    idl_typeSpec typeSpec,
+    void *userData)
+{
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    SACSUnionMetaDescription *umd;
+    char *caseTypename;
+    char *labelImage;
+
+    OS_UNUSED_ARG(scope);
+
+    umd = (SACSUnionMetaDescription *) c_iterObject(csUserData->typeStack, 0);
+    caseTypename = idl_unionCaseTypeFromTypeSpec(typeSpec, csUserData->customPSM);
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public void Default ()\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "    _d = (%s)%s;\n", umd->unionSwitchType,
+            idl_valueFromLabelVal(labelVal, umd, csUserData->customPSM));
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public void Default (%s d)\n", caseTypename);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+
+    idl_printIndent(indent_level);
+    if(os_iterLength(umd->labelsUsedIter)) {
+        labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+        idl_fileOutPrintf(idl_fileCur(), "    if (d == (%s)%s", umd->unionSwitchType, labelImage);
+        labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+        while (labelImage) {
+            idl_fileOutPrintf(idl_fileCur(), " ||\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "        d == (%s)%s", umd->unionSwitchType, labelImage);
+            labelImage = os_iterTakeFirst(umd->labelsUsedIter);
+        }
+        idl_fileOutPrintf(idl_fileCur(), ") {\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "        throw new System.InvalidOperationException();\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
+    }
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "    _d = d;\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    os_free(caseTypename);
+}
+
+
 
 /** @brief callback function called on definition of an enumeration.
  *
@@ -682,21 +1333,26 @@ idl_constantOpenClose (
     void *userData)
 {
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    char *constName = idl_constSpecName(constantSpec);
     char *constTypeName = idl_CsharpTypeFromTypeSpec(
             idl_constSpecTypeGet(constantSpec),
             csUserData->customPSM);
-    OS_UNUSED_ARG(scope);
+    char *constSpecImage = idl_constSpecImage(constantSpec);
 
     OS_UNUSED_ARG(scope);
 
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
             idl_fileCur(),
-            "public struct %s { public static readonly %s value = %s; }\n\n",
-            idl_constSpecName(constantSpec),
+            "public struct %s { public static readonly %s value = (%s) %s; }\n\n",
+            constName,
             constTypeName,
-            idl_constSpecImage(constantSpec));
+            constTypeName,
+            constSpecImage);
+
+    os_free(constSpecImage);
     os_free(constTypeName);
+    os_free(constName);
 }
 
 /**
@@ -705,7 +1361,7 @@ idl_constantOpenClose (
  * type itself in contrast with inline.
 */
 static idl_programControl idl_genSACSLoadControl = {
-    idl_prior
+    idl_inline
 };
 
 /** @brief return the program control structure for the splice type generation functions.
@@ -743,13 +1399,13 @@ idl_genSACSTypeProgram(
     idl_genSACSType.unionOpen                       = idl_unionOpen;
     idl_genSACSType.unionClose                      = idl_unionClose;
     idl_genSACSType.unionCaseOpenClose              = idl_unionCaseOpenClose;
-    idl_genSACSType.unionLabelsOpenClose            = NULL;
-    idl_genSACSType.unionLabelOpenClose             = NULL;
+    idl_genSACSType.unionLabelsOpenClose            = idl_unionLabelsOpenClose;
+    idl_genSACSType.unionLabelOpenClose             = idl_unionLabelOpenClose;
     idl_genSACSType.typedefOpenClose                = NULL;
     idl_genSACSType.boundedStringOpenClose          = NULL;
     idl_genSACSType.sequenceOpenClose               = NULL;
     idl_genSACSType.constantOpenClose               = idl_constantOpenClose;
-    idl_genSACSType.artificialDefaultLabelOpenClose = NULL;
+    idl_genSACSType.artificialDefaultLabelOpenClose = idl_artificialDefaultLabelOpenClose;
     idl_genSACSType.userData                        = userData;
 
     return &idl_genSACSType;

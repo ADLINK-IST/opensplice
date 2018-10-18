@@ -8,3 +8,4 @@ export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
 #There is no TAO for VS2013
 unset TAO_ROOT
 export OVERRIDE_STRICT_CHECKS=no
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

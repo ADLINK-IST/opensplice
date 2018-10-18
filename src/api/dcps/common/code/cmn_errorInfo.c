@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,25 +30,25 @@ cmn_errorInfo_reportCodeToCode (
     os_int32 code;
 
     switch ((reportCode & OS_RETCODE_ID_MASK)) {
-        case OS_RETCODE_ID_OS_RESULT:
-            code = os_resultToReturnCode ((enum os_result) reportCode);
-            break;
-        case OS_RETCODE_ID_UT_RESULT:
-            code = ut_resultToReturnCode ((enum ut_result_e) reportCode);
-            break;
-        case OS_RETCODE_ID_V_RESULT:
-            code = v_resultToReturnCode ((v_result) reportCode);
-            break;
-        case OS_RETCODE_ID_V_WRITE_RESULT:
-            code = v_writeResultToReturnCode ((v_writeResult) reportCode);
-            break;
-        case OS_RETCODE_ID_V_DATAREADER_RESULT:
-            code = v_dataReaderResultToReturnCode ((v_dataReaderResult) reportCode);
-            break;
-        default:
-            assert (!(reportCode & OS_RETCODE_ID_MASK));
-            code = reportCode & ~OS_RETCODE_ID_MASK;
-            break;
+    case OS_RETCODE_ID_OS_RESULT:
+        code = os_resultToReturnCode ((enum os_result) reportCode);
+    break;
+    case OS_RETCODE_ID_UT_RESULT:
+        code = ut_resultToReturnCode ((enum ut_result_e) reportCode);
+    break;
+    case OS_RETCODE_ID_V_RESULT:
+        code = v_resultToReturnCode ((v_result) reportCode);
+    break;
+    case OS_RETCODE_ID_V_WRITE_RESULT:
+        code = v_writeResultToReturnCode ((v_writeResult) reportCode);
+    break;
+    case OS_RETCODE_ID_V_DATAREADER_RESULT:
+        code = v_dataReaderResultToReturnCode ((v_dataReaderResult) reportCode);
+    break;
+    default:
+        assert (!(reportCode & OS_RETCODE_ID_MASK));
+        code = reportCode & ~OS_RETCODE_ID_MASK;
+    break;
     }
 
     return code;

@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -68,8 +69,7 @@ void dds::core::Time::sec(int64_t s)
     if(s < 0 && s != -1) {
         ISOCPP_THROW_EXCEPTION(ISOCPP_ERROR, "dds::core::Time::sec out of bounds");
     } else {
-        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
-        @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue */
         sec_ =  s;
     }
 }

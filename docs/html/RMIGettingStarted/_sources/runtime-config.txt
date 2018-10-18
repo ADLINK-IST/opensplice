@@ -30,7 +30,7 @@ RMIServiceDiscoveryTimeout option
 
 This is a client-side option that specifies the maximum duration
 (in seconds) that a client application can wait to find services.
-It influences the execution time of the DDS_Service.getServerProxy 
+It influences the execution time of the DDS_Service.getServerProxy
 operation that is used to find a given service. The default value
 is set to 10 seconds. The need to set this value may come from some
 specific deployment environements with bad communication conditions.
@@ -41,7 +41,7 @@ RMIServerThreadingModel option
 
 ``--RMIServerThreadingModel=ST | MT | TPS [,<thread-pool-size>]``
 
-This is a server-side option that specifies the threading policy of 
+This is a server-side option that specifies the threading policy of
 the server runtime including the threading policy name and the thread pool size.
 
   **ST**  selects *Single Threaded* policy.
@@ -79,8 +79,8 @@ RMIDurability option
 .. [[!! DEVELOPMENT NOTE:
    Check status of this feature on each release !!
    !!]]
-  
-|cpp|  
+
+|cpp|
 
 ``--RMIDurability = yes | no``
 
@@ -90,16 +90,16 @@ underlying DDS middleware support the non-default durability Qos policies
 
 By default, this option value is ``yes``.
 
-RMI servers uses non-volatile topics for services advertising to allow 
-late-joining clients to discover them. This option is useful for adapting 
-services registration and discovery mechanisms when the durability support 
+RMI servers uses non-volatile topics for services advertising to allow
+late-joining clients to discover them. This option is useful for adapting
+services registration and discovery mechanisms when the durability support
 is missing in the underlying DDS middleware.
 
 |caution|
-  Note that this feature must be *either* enabled *or* disabled for *all* of 
-  the RMI applications in a given DDS domain. It means that durability-*en*abled 
-  (option value is ``yes``) RMI applications cannot be deployed with 
-  durability-*dis*abled (option value is ``no``) RMI applications in 
+  Note that this feature must be *either* enabled *or* disabled for *all* of
+  the RMI applications in a given DDS domain. It means that durability-*en*abled
+  (option value is ``yes``) RMI applications cannot be deployed with
+  durability-*dis*abled (option value is ``no``) RMI applications in
   the same DDS domain.
 
 
@@ -109,8 +109,8 @@ RMIClientSchedulingModel option
 |caution|
   **Note**: The ``RMIClientSchedulingModel`` option is
   currently *only* implemented for *Java*.
-  
-  
+
+
 .. [[!! DEVELOPMENT NOTE:
    Check status of this feature on each release !!
    !!]]
@@ -123,6 +123,30 @@ This is a client-side option that specifies the priority of all the threads crea
 by OpenSplice RMI at the client side, including the AsyncWaiter thread, which is the
 one that waits for asynchronous replies.
 
+
+*******************************
+RMILegacyTopicNames option
+*******************************
+|caution|
+  **Note**: The ``RMILegacyTopicNames`` option applies *only* to *C++*.
+
+|cpp|
+
+``--RMILegacyTopicNames = yes | no``
+
+This client- and server-side option allows to switch topic names between a legacy-mode
+and a Java-compatible mode.
+
+In legacy-mode, topics are named ``DDS_ServiceDefinition`` and
+``DDS_ServiceIdentification``. In this mode, a C++ RMI client or server is compatible
+with previous releases of C++ RMI. Since Java RMI uses different topic names, a C++
+RMI client cannot communicate with a Java RMI server (or vice-versa). This is the
+default behaviour.
+
+When legacy-mode is disabled, topics are named ``DDS_RMIDefinition`` and
+``DDS_RMIIdentification``. This enables compatibility with Java RMI which has always
+used these topic names, but unfortunately doesn't allow communication with older
+versions of C++ RMI that don't support this option.
 
 .. |caution| image:: ./images/icon-caution.*
             :height: 6mm
@@ -143,4 +167,4 @@ one that waits for asynchronous replies.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+

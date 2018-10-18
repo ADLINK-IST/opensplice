@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -104,29 +105,35 @@ idl_genInterface(
     c_char *tmplPath;
     c_char *orbPath;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
     os_char *redirects;
     char *scopedMetaTypeName;
     const char *internalTypeName;
     const char *keyList;
-
+    char *scopeStackJavaDot = idl_scopeStackJava(scope, ".", name);
+    char *scopeStackJavaSlash = idl_scopeStackJava(scope, "/", name);
+    char *typeSpecName = idl_typeSpecName(typeSpec);
+    char *javaId = idl_javaId(name);
+    int result = 0;
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
     if (tmplPath == NULL) {
         printf("OSPL_TMPL_PATH not defined\n");
-        return -1;
+        result = -1;
+        goto err_exit;
     }
     if (orbPath == NULL) {
         printf("OSPL_ORB_PATH not defined\n");
-        return -1;
+        result = -1;
+        goto err_exit;
     }
 
     idlpp_macroSet = idl_macroSetNew();
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type-name", idl_javaId(name)));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("actual-type-name", idl_typeSpecName(typeSpec)));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-type-name", idl_scopeStackJava(scope, ".", name)));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-class-name", idl_scopeStackJava(scope, "/", name)));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type-name", javaId));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("actual-type-name", typeSpecName));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-type-name", scopeStackJavaDot));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-class-name", scopeStackJavaSlash));
 
     redirects = idl_packageRedirects ();
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-package-redirects", redirects));
@@ -148,10 +155,11 @@ idl_genInterface(
 
     /* Generate only in standalone mode */
     if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-        snprintf(pname, sizeof (pname), "%s%s", idl_javaId(name), class_base);
+        snprintf(pname, sizeof (pname), "%s%s", javaId, class_base);
         idl_openJavaPackage(scope, pname);
         if (idl_fileCur() == NULL) {
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* Prepare Interface class */
         if (generateInterfaceClass) {
@@ -160,7 +168,8 @@ idl_genInterface(
             if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
                 (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
                 printf ("No template found or protection violation (%s)\n", tmplFileName);
-                return -1;
+                result = -1;
+                goto err_exit;
             }
             /* QAC EXPECT 5007; will not use wrapper */
             idlpp_template = os_malloc(tmplStat.stat_size+1);
@@ -175,13 +184,15 @@ idl_genInterface(
             idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
             idl_streamInFree(idlpp_inStream);
             idl_tmplExpFree(te);
+            os_free(idlpp_template);
         }
         idl_closeJavaPackage();
 
-        snprintf(pname, sizeof(pname), "%s%sHolder", idl_javaId(name), class_base);
+        snprintf(pname, sizeof(pname), "%s%sHolder", javaId, class_base);
         idl_openJavaPackage(scope, pname);
         if (idl_fileCur() == NULL) {
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* Prepare typeSupportHolder class */
         snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
@@ -189,7 +200,8 @@ idl_genInterface(
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
             printf ("No template found or protection violation (%s)\n", tmplFileName);
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* QAC EXPECT 5007; will not use wrapper */
         idlpp_template = os_malloc(tmplStat.stat_size+1);
@@ -199,6 +211,7 @@ idl_genInterface(
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+        os_free(idlpp_template);
 
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -206,10 +219,11 @@ idl_genInterface(
         idl_tmplExpFree(te);
         idl_closeJavaPackage();
 
-        snprintf(pname, sizeof(pname), "%s%sHelper", idl_javaId(name), class_base);
+        snprintf(pname, sizeof(pname), "%s%sHelper", javaId, class_base);
         idl_openJavaPackage(scope, pname);
         if (idl_fileCur() == NULL) {
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* Prepare typeSupportHelper class */
         snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
@@ -217,7 +231,8 @@ idl_genInterface(
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
             printf ("No template found or protection violation (%s)\n", tmplFileName);
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* QAC EXPECT 5007; will not use wrapper */
         idlpp_template = os_malloc(tmplStat.stat_size+1);
@@ -227,6 +242,7 @@ idl_genInterface(
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+        os_free(idlpp_template);
 
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -234,10 +250,11 @@ idl_genInterface(
         idl_tmplExpFree(te);
         idl_closeJavaPackage();
 
-        snprintf(pname, sizeof(pname), "%s%sOperations", idl_javaId(name), class_base);
+        snprintf(pname, sizeof(pname), "%s%sOperations", javaId, class_base);
         idl_openJavaPackage(scope, pname);
         if (idl_fileCur() == NULL) {
-            return (idl_abort);
+            result = idl_abort;
+            goto err_exit;
         }
         /* Prepare typeSupportOperations class */
         snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
@@ -245,7 +262,8 @@ idl_genInterface(
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
             printf ("No template found or protection violation (%s)\n", tmplFileName);
-            return -1;
+            result = -1;
+            goto err_exit;
         }
         /* QAC EXPECT 5007; will not use wrapper */
         idlpp_template = os_malloc(tmplStat.stat_size+1);
@@ -255,6 +273,7 @@ idl_genInterface(
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+        os_free(idlpp_template);
 
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -265,14 +284,15 @@ idl_genInterface(
 
     if (generateInterfaceClass) {
         /* Implementation with Impl extension */
-        snprintf(pname, sizeof(pname), "%s%sImpl", idl_javaId(name), class_base);
+        snprintf(pname, sizeof(pname), "%s%sImpl", javaId, class_base);
     } else {
         /* Implementation without Impl extension */
-        snprintf(pname, sizeof(pname), "%s%s", idl_javaId(name), class_base);
+        snprintf(pname, sizeof(pname), "%s%s", javaId, class_base);
     }
     idl_openJavaPackage(scope, pname);
     if (idl_fileCur() == NULL) {
-        return -1;
+        result = -1;
+        goto err_exit;
     }
     /* Prepare typeSupportStub class */
     snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sImpl.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
@@ -280,7 +300,8 @@ idl_genInterface(
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
-        return (idl_abort);
+        result = idl_abort;
+        goto err_exit;
     }
     /* QAC EXPECT 5007; will not use wrapper */
     idlpp_template = os_malloc(tmplStat.stat_size+1);
@@ -290,14 +311,20 @@ idl_genInterface(
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+    os_free(idlpp_template);
 
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
     idl_streamInFree(idlpp_inStream);
     idl_tmplExpFree(te);
     idl_closeJavaPackage();
+err_exit:    
+    os_free(javaId);
+    os_free(scopeStackJavaDot);
+    os_free(scopeStackJavaSlash);
+    
 
-    return 0;
+    return result;
 }
 
 static int
@@ -312,7 +339,7 @@ idl_genTypeSeqHolder(
     c_char *tmplPath;
     c_char *orbPath;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");

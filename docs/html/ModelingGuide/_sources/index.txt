@@ -9,7 +9,7 @@ Modeling Guide
 .. toctree::
    :maxdepth: 8
    :numbered:
-      
+
    preface
    introduction
    installation
@@ -19,12 +19,12 @@ Modeling Guide
    launchconfig
    compileandrun
    tutorial
-   
+
    appendixa
    appendixb
-  
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

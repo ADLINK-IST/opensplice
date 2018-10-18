@@ -1,5 +1,5 @@
 #ifndef _SHAPE_HPP
-#define	_SHAPE_HPP
+#define _SHAPE_HPP
 
 /** @file */
 /**

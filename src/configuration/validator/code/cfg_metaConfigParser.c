@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -364,7 +365,7 @@ cfg_parseMetaConfig(
     cfg_element *root,
     cfg_element *serviceMapping)
 {
-    C_STRUCT(MetaConfigParser) parser = {0};
+    C_STRUCT(MetaConfigParser) parser = {NULL, NULL, OS_FALSE, NULL,0};
     struct ut_xmlpCallbacks cb;
     struct ut_xmlpState *st;
     cfgprs_status status;

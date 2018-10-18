@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -74,7 +75,7 @@ matched_publications(const dds::sub::DataReader<T>& dr,
     DDS::ReturnCode_t result = ((dds::sub::DataReader<T>)dr)->get_raw_reader()->get_matched_publications(ddsSeq);
     org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_matched_publications"));
 
-    max_size = ddsSeq.length() < max_size ? ddsSeq.length() : max_size;
+    ddsSeq.length() < max_size ? max_size = ddsSeq.length() : max_size = max_size;
 
     for(uint32_t i = 0; i < max_size; i++)
     {

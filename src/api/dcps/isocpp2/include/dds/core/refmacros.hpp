@@ -35,10 +35,6 @@
 /*
  * This macro defines all the functions that Reference Types have to implement.
  */
-/*
- *
- *
- */
 ////////////////////////////////////////////////////////////////////////////////
 // Defines all the types, functions and attributes required for a Reference type
 // without default ctor.

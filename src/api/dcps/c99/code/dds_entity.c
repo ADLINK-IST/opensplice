@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -496,4 +497,96 @@ dds_instance_get_key (
     DDS_REPORT_FLUSH(e, result != DDS_RETCODE_OK);
 
     return DDS_ERRNO(result, DDS_MOD_KERNEL, DDS_ERR_Mx);
+}
+
+int
+dds_set_property(
+    dds_entity_t e,
+    const char * property,
+    const char * value)
+{
+    DDS_ReturnCode_t result = DDS_RETCODE_BAD_PARAMETER;
+    struct DDS_Property_s sacProperty;
+    DDS_EntityKind_t kind;
+
+    DDS_REPORT_STACK();
+
+    if (e == NULL) {
+        DDS_REPORT(result, "e is NULL.");
+    } else if (property == NULL) {
+        DDS_REPORT(result, "property is NULL.");
+    } else if (value == NULL) {
+        DDS_REPORT(result, "value is NULL.");
+    } else {
+        sacProperty.name = DDS_string_dup(property);
+        sacProperty.value = DDS_string_dup(value);
+
+        kind = DDS_Entity_get_kind(e);
+        switch (kind) {
+        case DDS_ENTITY_KIND_DOMAINPARTICIPANT:
+            result = DDS_DomainParticipant_set_property(e, &sacProperty);
+            break;
+        default:
+            result = DDS_RETCODE_UNSUPPORTED;
+            DDS_REPORT(result, "Unsupported for %s entities.", DDS_EntityKind_image(kind));
+            break;
+        }
+
+        DDS_free(sacProperty.name);
+        DDS_free(sacProperty.value);
+    }
+
+    DDS_REPORT_FLUSH(e, result != DDS_RETCODE_OK);
+
+    return DDS_ERRNO(result, DDS_MOD_KERNEL, DDS_ERR_Mx);
+}
+
+int
+dds_get_property(
+    dds_entity_t e,
+    const char * property,
+    char * value,
+    size_t size)
+{
+    int ret = 0;
+    DDS_ReturnCode_t result = DDS_RETCODE_BAD_PARAMETER;
+    struct DDS_Property_s sacProperty;
+    DDS_EntityKind_t kind;
+
+    DDS_REPORT_STACK();
+
+    if (e == NULL) {
+        DDS_REPORT(result, "e is NULL.");
+    } else if (property == NULL) {
+        DDS_REPORT(result, "property is NULL.");
+    } else if (value == NULL) {
+        DDS_REPORT(result, "value is NULL.");
+    } else if (size > INT_MAX) {
+        DDS_REPORT(result, "size is greater then INT_MAX.");
+    } else {
+        sacProperty.name = DDS_string_dup(property);
+        sacProperty.value = NULL;
+
+        kind = DDS_Entity_get_kind(e);
+        switch (kind) {
+        case DDS_ENTITY_KIND_DOMAINPARTICIPANT:
+            result = DDS_DomainParticipant_get_property(e, &sacProperty);
+            break;
+        default:
+            result = DDS_RETCODE_UNSUPPORTED;
+            DDS_REPORT(result, "Unsupported for %s entities.", DDS_EntityKind_image(kind));
+            break;
+        }
+
+        if (result == DDS_RETCODE_OK) {
+            assert(sacProperty.value);
+            ret = strlen(sacProperty.value);
+            strncpy(value, sacProperty.value, size);
+        }
+
+        DDS_free(sacProperty.name);
+        DDS_free(sacProperty.value);
+    }
+
+    return (result == DDS_RETCODE_OK) ? ret : DDS_ERRNO(result, DDS_MOD_KERNEL, DDS_ERR_Mx);
 }

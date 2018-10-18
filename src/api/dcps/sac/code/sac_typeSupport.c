@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -193,7 +194,8 @@ _TypeSupport_load_type(
     }
     if ( result == DDS_RETCODE_OK ) {
         /* If either of the copy routines is NULL,
-           the generic copy routines will be used for both */
+         * the generic copy routines will be used for both
+         */
         if( (ts->copy_in  == NULL) || (ts->copy_out == NULL))
         {
             c_metaObject md;
@@ -205,7 +207,7 @@ _TypeSupport_load_type(
             if (md != NULL)
             {
                 ts->copy_cache = DDS_copyCacheNew(md) ;
-    /* de volgende 9 regels verhuizen naar DDS_copyCacheNew() */
+                /* TODO: next 9 line should move to DDS_copyCacheNew() */
                 if ( ts->copy_cache != NULL ) {
                     if ( ts->alloc_size == 0 ) {
                         ts->alloc_size = DDS_copyCacheGetUserSize(ts->copy_cache);

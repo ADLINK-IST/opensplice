@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,9 +37,9 @@ C_STRUCT(idl_fileMap) {
 };
 
 /* "idl_file" registers all meta objects related to a file,
-   "fileName" specifies the file name,
-   "contains" stores all meta data object references.
-*/
+ * "fileName" specifies the file name,
+ * "contains" stores all meta data object references.
+ */
 C_STRUCT(idl_file) {
     c_char *fileName;
     c_iter contains;
@@ -46,8 +47,7 @@ C_STRUCT(idl_file) {
 
 C_CLASS(idl_map);
 
-/* "idl_map" contains a filename meta object association
-*/
+/* "idl_map" contains a filename meta object association */
 C_STRUCT(idl_map) {
     c_char *fileName;
     c_baseObject object;
@@ -100,8 +100,8 @@ idl_fileFree(
 }
 
 /* Check if the specified object list element is equal to the meta object specified
-   by object
-*/
+ * by object
+ */
 static c_equality
 idl_objectCompare(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
@@ -124,8 +124,8 @@ idl_objectCompare(
 }
 
 /* Check if the specified object list element is equal to the meta object specified
-   by the map
-*/
+ * by the map
+ */
 static c_equality
 idl_objectMap(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
@@ -251,10 +251,10 @@ idl_fileMapAssociation(
 }
 
 /* idl_searchObject will search in the specified "file"
-   association for the object specified in map->object.
-   If the object is found, it is returned and the associated
-   filename is stored in map->fileName.
-*/
+ * association for the object specified in map->object.
+ * If the object is found, it is returned and the associated
+ * filename is stored in map->fileName.
+ */
 static void
 idl_searchObject(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
@@ -288,8 +288,8 @@ idl_fileMapResolve(
         map->fileName = NULL;
         c_iterWalk(fileMap->files, (c_iterWalkAction)idl_searchObject, map);
 	/* map will contain the meta object reference and fileName reference
-	   after the c_iterWalk.
-	*/
+         * after the c_iterWalk.
+         */
         fileName = map->fileName;
         if (fileName == NULL) {
             /* file name is undefined for implicit defined types */
@@ -302,8 +302,8 @@ idl_fileMapResolve(
 }
 
 /* Check if the specified meta object is specified with associated with
-   the specified file in the specified file map
-*/
+ * the specified file in the specified file map
+ */
 c_bool
 idl_fileMapObject(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
@@ -342,7 +342,7 @@ void idl_fileMapFillList(
     case M_PARAMETER:
         break;
     default:
-        c_iterInsert(objects, object);
+        (void)c_iterInsert(objects, object);
         break;
     }
 }
@@ -414,7 +414,3 @@ c_bool idl_fileMapCheckFinalized(
     }
     return !count;
 }
-
-
-
-

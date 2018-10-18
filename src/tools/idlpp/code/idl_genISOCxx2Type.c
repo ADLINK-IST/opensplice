@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -56,7 +57,13 @@ static char *upperName = NULL;
  */
 static struct idl_program idl_genCxx2Type;
 
-/* @brief callback function called on opening the IDL input file.
+struct ISOCxx2ScopeStack_s {
+    c_type type;
+    c_bool unionHasArtificialDefault;
+};
+typedef struct ISOCxx2ScopeStack_s ISOCxx2ScopeStack;
+
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - inclusion of Splice type definition files
@@ -82,7 +89,7 @@ idl_fileOpen(
         upperName[i] = (os_char) toupper (name[i]);
     }
     upperName[i] = '\0';
-    /* Generate inclusion of standard OpenSplice DDS type definition files */
+    /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_H_\n", upperName);
     idl_fileOutPrintf(idl_fileCur(), "#define _%s_H_\n", upperName);
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -469,8 +476,13 @@ idl_structureOpen(
 {
     c_char *cxxName;
     CxxTypeUserData *cxxUserData = (CxxTypeUserData *)userData;
+    ISOCxx2ScopeStack *scopeStack;
 
     OS_UNUSED_ARG(scope);
+
+    scopeStack = os_malloc(sizeof(ISOCxx2ScopeStack));
+    scopeStack->type = idl_typeSpecDef(idl_typeSpec(structSpec));
+    scopeStack->unionHasArtificialDefault = FALSE;
 
     /* Generate the code that opens a sealed class. */
     cxxName = idl_ISOCxx2Id(name);
@@ -487,7 +499,7 @@ idl_structureOpen(
     /* Increase the indentation level. */
     indent_level++;
 
-    cxxUserData->typeStack = c_iterInsert(cxxUserData->typeStack, idl_typeSpecDef(idl_typeSpec(structSpec)));
+    cxxUserData->typeStack = c_iterInsert(cxxUserData->typeStack, scopeStack);
 
     os_free(cxxName);
 
@@ -524,7 +536,8 @@ idl_structureClose (
     c_ulong i;
 
     /* Get the meta-data of the members of this datatype from the database. */
-    smd.structType = c_type(c_iterTakeFirst(cxxUserData->typeStack));
+    ISOCxx2ScopeStack *scopeStack = c_iterTakeFirst(cxxUserData->typeStack);
+    smd.structType = scopeStack->type;
     smd.nrMembers = c_structureMemberCount((c_structure) smd.structType);
     smd.memberTypes = os_malloc(smd.nrMembers * sizeof(*smd.memberTypes));
     smd.memberTypeNames = os_malloc(smd.nrMembers * sizeof(*smd.memberTypeNames));
@@ -562,6 +575,7 @@ idl_structureClose (
     os_free(smd.memberInTypes);
     os_free(smd.memberTypeNames);
     os_free(smd.memberTypes);
+    os_free(scopeStack);
     os_free(cxxName);
 
     /* Decrease the indentation level back to its original size. */
@@ -589,6 +603,7 @@ typedef struct {
     c_char **branchNames;
     struct unionCaseLabels *branchLabels;
     c_value lowestDefaultValue;
+    c_bool hasArtificialDefault;
 } unionMetaDescriptions;
 
 static void
@@ -698,6 +713,15 @@ createUnionBranchAssignmentFunction(const c_char *name, const unionMetaDescripti
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "break;\n");
     }
+    if (umd->hasArtificialDefault) {
+        idl_printIndent(indent_level - 1);
+        idl_fileOutPrintf(idl_fileCur(), "default:\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "// empty branch: nothing to be copied...\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "break;\n");
+    }
+
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
@@ -745,6 +769,14 @@ createUnionBranchDestructor(const unionMetaDescriptions *umd)
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "delete _union.m_%s;\n", umd->branchNames[i]);
         }
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "break;\n");
+    }
+    if (umd->hasArtificialDefault) {
+        idl_printIndent(indent_level - 1);
+        idl_fileOutPrintf(idl_fileCur(), "default:\n");
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "// empty branch: nothing to be deleted...\n");
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "break;\n");
     }
@@ -904,23 +936,24 @@ createUnionConstructorsAndOperators(const c_char *name, const unionMetaDescripti
     idl_fileOutPrintf(idl_fileCur(), "if (m__d != _other.m__d) {\n");
     idl_printIndent(indent_level + 1);
     idl_fileOutPrintf(idl_fileCur(), "return false;\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "} else {\n");
+    indent_level++;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "switch (m__d) {\n");
+    indent_level++;
     for (i = 0; i < umd->nrBranches; i++) {
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "} else ");
         for (j = 0; j < umd->branchLabels[i].nrLabels; j++) {
             os_char *labelValue = idl_ISOCxx2ValueFromCValue(
                     umd->discrType, umd->branchLabels[i].labelValues[j]);
-            if (j == 0) {
-                idl_fileOutPrintf(idl_fileCur(), "if (m__d == %s", labelValue);
-            } else {
-                idl_fileOutPrintf(idl_fileCur(), " ||\n");
-                idl_printIndent(indent_level + 2);
-                idl_fileOutPrintf(idl_fileCur(), "m__d == %s", labelValue);
-            }
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "case %s:\n", labelValue);
             os_free(labelValue);
         }
-        if (umd->branchLabels[i].nrLabels > 0) idl_fileOutPrintf(idl_fileCur(), ") ");
-        idl_fileOutPrintf(idl_fileCur(), "{\n");
+        if (j == 0) {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "default: /* In case of explicit default branch. */\n");
+        }
         idl_printIndent(indent_level + 1);
         if (idl_ISOCxx2IsRefType(umd->branchTypes[i])) {
             idl_fileOutPrintf(idl_fileCur(), "return (*_union.m_%s == *_other._union.m_%s);\n",
@@ -929,13 +962,23 @@ createUnionConstructorsAndOperators(const c_char *name, const unionMetaDescripti
             idl_fileOutPrintf(idl_fileCur(), "return (_union.m_%s == _other._union.m_%s);\n",
                     umd->branchNames[i], umd->branchNames[i]);
         }
+        idl_printIndent(indent_level + 1);
+        idl_fileOutPrintf(idl_fileCur(), "break;\n");
     }
+    if (umd->hasArtificialDefault) {
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "default: /* In case of implicit default branch. */\n");
+        idl_printIndent(indent_level + 1);
+        idl_fileOutPrintf(idl_fileCur(), "return true; /* In case of implicit default branch. */\n");
+        idl_printIndent(indent_level + 1);
+        idl_fileOutPrintf(idl_fileCur(), "break;\n");
+    }
+    indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
-    if (j > 0) {
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "return true; /* In case of implicit default branch. */\n");
-    }
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n");
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "} else {\n");
@@ -1011,11 +1054,11 @@ createUnionDiscrGetterSetter(const unionMetaDescriptions *umd)
                             umd->discrType, umd->branchLabels[i].labelValues[j]);
                     if (j == 0) {
                         idl_printIndent(indent_level);
-                        idl_fileOutPrintf(idl_fileCur(), "        if ((m__d != %s)", labelValue);
+                        idl_fileOutPrintf(idl_fileCur(), "        if (m__d != %s", labelValue);
                     } else {
                         idl_fileOutPrintf(idl_fileCur(), " &&\n");
                         idl_printIndent(indent_level );
-                        idl_fileOutPrintf(idl_fileCur(), "              (m__d != %s)", labelValue);
+                        idl_fileOutPrintf(idl_fileCur(), "              m__d != %s", labelValue);
                     }
                     os_free(labelValue);
                 }
@@ -1049,12 +1092,12 @@ createUnionDiscrGetterSetter(const unionMetaDescriptions *umd)
                                 umd->discrType, umd->branchLabels[i].labelValues[j]);
                         if (n == 0) {
                             idl_printIndent(indent_level);
-                            idl_fileOutPrintf(idl_fileCur(), "        if ((m__d == %s)", labelValue);
+                            idl_fileOutPrintf(idl_fileCur(), "        if (m__d == %s", labelValue);
                             n = 1;
                         } else {
                             idl_fileOutPrintf(idl_fileCur(), " ||\n");
                             idl_printIndent(indent_level );
-                            idl_fileOutPrintf(idl_fileCur(), "              (m__d == %s)", labelValue);
+                            idl_fileOutPrintf(idl_fileCur(), "              m__d == %s", labelValue);
                         }
                         os_free(labelValue);
                     }
@@ -1285,8 +1328,17 @@ idl_unionOpen(
 {
     c_char *cxxName;
     CxxTypeUserData *cxxUserData = (CxxTypeUserData *)userData;
+    ISOCxx2ScopeStack *scopeStack;
 
     OS_UNUSED_ARG(scope);
+
+    /* Set expectation of implicit default branch to FALSE.
+     * idl_artificialDefaultLabelOpenClose will set it to TRUE when encountered.
+     */
+    scopeStack = os_malloc(sizeof(ISOCxx2ScopeStack));
+    scopeStack->type = idl_typeSpecDef(idl_typeSpec(unionSpec));
+    scopeStack->unionHasArtificialDefault = FALSE;
+
 
     /* Generate the code that opens a sealed class. */
     cxxName = idl_ISOCxx2Id(name);
@@ -1303,12 +1355,48 @@ idl_unionOpen(
 
     /* Increase the indentation level. */
     indent_level++;
-
-    cxxUserData->typeStack = c_iterInsert(cxxUserData->typeStack, idl_typeSpecDef(idl_typeSpec(unionSpec)));
-
+    cxxUserData->typeStack = c_iterInsert(cxxUserData->typeStack, scopeStack);
     os_free(cxxName);
 
     return idl_explore;
+}
+
+/** @brief callback function called when no default case is defined in an union
+ *   for which not all possible label values are specified
+ *
+ * Generate code for the following IDL construct:
+ * @verbatim
+        union <union-name> switch(<switch-type>) {
+            case label1.1; .. case label1.n;
+                <union-case-1>;
+            case label2.1; .. case label2.n;
+                ...        ...
+            case labeln.1; .. case labeln.n;
+                <union-case-n>;
+        };
+   @endverbatim
+ *
+ * @param scope Current scope (the union the union case is defined in)
+ * @param labelVal Default value for the label case (lowest possible not used index)
+ * @param typeSpec Specifies the type of the union switch
+ */
+static void
+idl_artificialDefaultLabelOpenClose(
+    idl_scope scope,
+    idl_labelVal labelVal,
+    idl_typeSpec typeSpec,
+    void *userData)
+{
+    CxxTypeUserData *cxxUserData;
+    ISOCxx2ScopeStack *scopeStack;
+
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(labelVal);
+    OS_UNUSED_ARG(typeSpec);
+
+    cxxUserData = (CxxTypeUserData *)userData;
+    scopeStack = (ISOCxx2ScopeStack *)  c_iterObject(cxxUserData->typeStack, 0);
+    scopeStack->unionHasArtificialDefault = TRUE;
 }
 
 /** @brief callback function called on closure of a union in the IDL input file.
@@ -1345,7 +1433,8 @@ idl_unionClose (
     c_ulong i, j, nrLabels;
 
     /* Get the meta-data of the members of this union from the database. */
-    umd.unionType = c_type(c_iterTakeFirst(cxxUserData->typeStack));
+    ISOCxx2ScopeStack *scopeStack = c_iterTakeFirst(cxxUserData->typeStack);
+    umd.unionType = scopeStack->type;
     umd.nrBranches = c_unionUnionCaseCount(umd.unionType);
     umd.discrType = c_unionUnionSwitchType(umd.unionType);
     umd.discrTypeName = idl_ISOCxx2TypeFromCType(umd.discrType);
@@ -1356,6 +1445,7 @@ idl_unionClose (
     umd.branchNames = os_malloc(umd.nrBranches * sizeof(*umd.branchNames));
     umd.branchLabels = os_malloc(umd.nrBranches * sizeof(*umd.branchLabels));
     umd.lowestDefaultValue = idl_ISOCxx2LowestUnionDefaultValue(umd.unionType);
+    umd.hasArtificialDefault = scopeStack->unionHasArtificialDefault;
     for (i = 0; i < umd.nrBranches; i++) {
         /* Get the meta-data of the branches from the database. */
         c_unionCase branch = c_unionUnionCase(umd.unionType, i);
@@ -1413,6 +1503,7 @@ idl_unionClose (
     os_free(umd.branchInTypes);
     os_free(umd.branchTypeNames);
     os_free(umd.branchTypes);
+    os_free(scopeStack);
     os_free(cxxName);
 
     indent_level--;
@@ -1641,7 +1732,7 @@ idl_genISOCxx2TypeProgram(
     idl_genCxx2Type.boundedStringOpenClose          = NULL;
     idl_genCxx2Type.sequenceOpenClose               = NULL;
     idl_genCxx2Type.constantOpenClose               = idl_constantOpenClose;
-    idl_genCxx2Type.artificialDefaultLabelOpenClose = NULL;
+    idl_genCxx2Type.artificialDefaultLabelOpenClose = idl_artificialDefaultLabelOpenClose;
     idl_genCxx2Type.userData                        = userData;
 
     return &idl_genCxx2Type;

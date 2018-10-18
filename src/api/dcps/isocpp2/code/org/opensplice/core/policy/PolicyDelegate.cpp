@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -2041,13 +2042,19 @@ bool ResourceLimitsDelegate::operator ==(const ResourceLimitsDelegate& other) co
 void ResourceLimitsDelegate::check() const
 {
     if ((max_samples_ <= 0) && (max_samples_ != dds::core::LENGTH_UNLIMITED)) {
-        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_samples (%ld) value.", max_samples_);
+        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_samples (%d) value.", max_samples_);
     }
     if ((max_instances_ <= 0) && (max_instances_ != dds::core::LENGTH_UNLIMITED)) {
-        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_instances (%ld) value.", max_instances_);
+        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_instances (%d) value.", max_instances_);
     }
     if ((max_samples_per_instance_ <= 0) && (max_samples_per_instance_ != dds::core::LENGTH_UNLIMITED)) {
-        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_samples_per_instance (%ld) value.", max_samples_per_instance_);
+        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR, "Invalid ResourceLimits::max_samples_per_instance (%d) value.", max_samples_per_instance_);
+    }
+    if ((max_samples_ != dds::core::LENGTH_UNLIMITED) &&
+        (max_samples_per_instance_ != dds::core::LENGTH_UNLIMITED) &&
+        (max_samples_ < max_samples_per_instance_)) {
+        ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR,
+            "ResourceLimits::max_samples (%d) < ResourceLimits::max_samples_per_instance (%d) is invalid.", max_samples_, max_samples_per_instance_);
     }
 }
 

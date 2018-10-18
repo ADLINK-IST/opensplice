@@ -17,16 +17,18 @@ echo "============================="
 echo " ===== Launching durability subscriber" 
 
 ./sacpp_durability_sub transient > subResult_3_1.txt &
-
+sub_pid=$!
 sleep 5
  
 echo " ===== Launching durability publisher" 
 
 ./sacpp_durability_pub transient true true > pubResult_3_1.txt &
+pub_pid=$!
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Wait to let the publisher complete "
-waitForProcessTermination sacpp_durability_pub 40
+waitForProcessTermination $sub_pid 20
+waitForProcessTermination $pub_pid 40
 
 echo "=== Scenario 3.1 done"
 
@@ -40,6 +42,7 @@ startOSPL
 
 echo === running a first Subscriber
 ./sacpp_durability_sub transient > subResult_3_2_1.txt &
+sub1_pid=$!
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.2)"
 
 sleep 5
@@ -47,16 +50,20 @@ sleep 5
 echo " ===== Launching durability publisher" 
 
 ./sacpp_durability_pub transient false true > pubResult_3_2.txt &
+pub_pid=$!
 
 sleep 5
 
 echo === running a second Subscriber
 ./sacpp_durability_sub transient > subResult_3_2_2.txt &
+sub2_pid=$!
 echo "=== End of second DurabilityDataSubscriber  (Scenario 3.2)"
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Wait to let the publisher complete "
-waitForProcessTermination sacpp_durability_pub 40
+waitForProcessTermination $sub1_pid 20
+waitForProcessTermination $sub2_pid 20
+waitForProcessTermination $pub_pid 40
 
 echo "============================="
 echo "==== Scenario 3.3      ======"
@@ -68,6 +75,7 @@ startOSPL
 
 echo === running a first Subscriber
 ./sacpp_durability_sub persistent > subResult_3_3_1.txt &
+sub_pid=$!
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
 sleep 5
@@ -75,10 +83,12 @@ sleep 5
 echo " ===== Launching durability publisher" 
 
 ./sacpp_durability_pub persistent false true > pubResult_3_3.txt &
+pub_pid=$!
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Wait to let the publisher complete "
-waitForProcessTermination sacpp_durability_pub 40
+waitForProcessTermination $sub_pid 20
+waitForProcessTermination $pub_pid 40
 
 stopOSPL
 
@@ -88,11 +98,13 @@ sleep 15
 
 echo === running a second Subscriber
 ./sacpp_durability_sub persistent > subResult_3_3_2.txt &
+sub_pid=$!
+cmd_pid=$!
+
 echo "=== End of second DurabilityDataSubscriber  (Scenario 3.3)"
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination sacpp_durability_pub 40
-waitForProcessTermination sacpp_durability_sub 40
+waitForProcessTermination $sub_pid 20
 
 durabilityCheckResult
 

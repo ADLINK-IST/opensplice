@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -39,10 +40,6 @@
 #include "os_report.h"
 
 static u_bool splicedStartedInThisProcess = FALSE;
-
-/**************************************************************
- * Private functions
- **************************************************************/
 
 static u_result
 u_splicedInit(
@@ -96,10 +93,6 @@ getKernelSplicedaemon(
     return spliced;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
 #define SPLICED_NAME "spliced"
 
 u_result
@@ -143,13 +136,6 @@ u_splicedNew(
 
 #undef SPLICED_NAME
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 u_result
 u_splicedKernelManager(
     const u_spliced spliced)
@@ -380,7 +366,8 @@ u_splicedCleanupProcessInfo(
      * controls the lifecycle of SHM. In case cleanup of resources of another
      * process causes a deadlock, spliced should still be able to stop its own
      * threads, so cleanup by proxy shouldn't be done using u_observableAction(...),
-     * because that modifies the protectCount for this process. */
+     * because that modifies the protectCount for this process.
+     */
     handle = u_observableHandle(u_observable(spliced));
     if((ures = u_handleClaim(handle, &entity)) == U_RESULT_OK){
         ures = (u_result)v_kernelDetach(v_objectKernel(entity), procId);

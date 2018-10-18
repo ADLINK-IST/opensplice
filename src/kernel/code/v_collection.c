@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,30 +24,20 @@
 #include "v__query.h"
 #include "v_public.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
 void
 v_collectionInit(
-    v_collection c,
-    const c_char *name,
-    c_bool enable)
+    _Inout_ v_collection c,
+    _In_opt_z_ const c_char *name)
 {
-    c_base base;
+    c_type type;
 
     assert(C_TYPECHECK(c,v_collection));
 
-    v_entityInit(v_entity(c), name, enable);
-    base =  c_getBase(c_object(c));
-    c->queries = c_setNew(c_resolve(base,"kernelModuleI::v_query"));
+    v_entityInit(v_entity(c), name);
+    type = c_resolve(c_getBase(c_object(c)),"kernelModuleI::v_query");
+    assert(type);
+    c->queries = c_setNew(type);
+    c_free(type);
 }
 
 void
@@ -86,7 +77,3 @@ v_collectionDeinit(
     c_free(c->queries);
     c->queries = NULL;
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/

@@ -4,7 +4,7 @@
       "PingPong":
       {
          "langs": ["c", "cpp", "java", "java5", "cs"],
-         "corba_langs": ["cpp", "java", "java5"],
+         "corba_langs": ["cpp", "java"],
          "corba_executables":
          {
              "cpp":
@@ -14,12 +14,6 @@
              },
 
              "java":
-             {
-                 "pubName": "pong",
-                 "subName": "ping"
-             },
-
-             "java5":
              {
                  "pubName": "pong",
                  "subName": "ping"
@@ -65,8 +59,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_pingpong_pong.jar",
-                 "subName": "saj5_pingpong_ping.jar"
+                 "pubName": "pong/java5_pong.jar",
+                 "subName": "ping/java5_ping.jar"
              }
          },
 
@@ -81,7 +75,7 @@
 
       "BuiltInTopics":
       {
-         "langs": ["c", "cpp", "cs", "isocpp","isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs", "isocpp2", "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -132,7 +126,7 @@
              "java5":
              {
                  "pubName": "",
-                 "subName": "saj5_builtintopics_sub.jar"
+                 "subName": "java5_BuiltInTopics.jar"
              }
          },
 
@@ -181,7 +175,7 @@
              }
          },
 
-         "timeout": "10",
+         "timeout": "20",
 
          "sp-uri": "",
 
@@ -192,7 +186,7 @@
 
       "ContentFilteredTopic":
       {
-         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs",  "isocpp2", "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -242,8 +236,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_contentfilteredtopic_pub.jar",
-                 "subName": "saj5_contentfilteredtopic_sub.jar"
+                 "pubName": "pub/java5_ContentFilteredTopic_pub.jar",
+                 "subName": "sub/java5_ContentFilteredTopic_sub.jar"
              }
          },
 
@@ -282,17 +276,17 @@
              "java":
              {
                  "sub_conds": "contentfilteredtopic_java_conditions.yaml",
-                 "pub_conds": "contentfilteredtopic_java_conditions.yaml"
+                 "pub_conds": "contentfilteredtopic_javapub_conditions.yaml"
              },
 
              "java5":
              {
                  "sub_conds": "contentfilteredtopic_java_conditions.yaml",
-                 "pub_conds": "contentfilteredtopic_java_conditions.yaml"
+                 "pub_conds": "contentfilteredtopic_javapub_conditions.yaml"
              }
          },
 
-         "timeout": "30",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -303,7 +297,7 @@
 
       "Durability":
       {
-         "langs": ["c", "cpp", "isocpp2", "isocpp", "java", "java5"],
+         "langs": ["c", "cpp", "isocpp2",  "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -357,8 +351,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_durability_pub.jar",
-                 "subName": "saj5_durability_sub.jar"
+                 "pubName": "pub/java5_Durability_pub.jar",
+                 "subName": "sub/java5_Durability_sub.jar"
              }
          },
 
@@ -407,7 +401,7 @@
              }
          },
 
-         "timeout": "50",
+         "timeout": "60",
 
          "sp-uri": "ospl_sp.xml",
 
@@ -418,7 +412,7 @@
 
       "HelloWorld":
       {
-         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs",  "isocpp2", "java", "java5"],
          "corba_langs": ["cpp", "java"],
 
          "corba_executables":
@@ -484,8 +478,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_helloworld_pub.jar",
-                 "subName": "saj5_helloworld_sub.jar"
+                 "pubName": "pub/java5_HelloWorld_pub.jar",
+                 "subName": "sub/java5_HelloWorld_sub.jar"
              }
          },
 
@@ -534,7 +528,7 @@
              }
          },
 
-         "timeout": "15",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -545,7 +539,7 @@
 
       "Lifecycle":
       {
-         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "langs": ["c", "cpp", "cs", "isocpp2",  "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -597,8 +591,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_lifecycle_pub.jar",
-                 "subName": "saj5_lifecycle_sub.jar"
+                 "pubName": "pub/java5_Lifecycle_pub.jar",
+                 "subName": "sub/java5_Lifecycle_sub.jar"
              }
          },
 
@@ -658,7 +652,7 @@
 
       "Listener":
       {
-         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "langs": ["c", "cpp", "cs", "isocpp2",  "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -708,8 +702,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_listener_pub.jar",
-                 "subName": "saj5_listener_sub.jar"
+                 "pubName": "pub/java5_Listener_pub.jar",
+                 "subName": "sub/java5_Listener_sub.jar"
              }
          },
 
@@ -758,7 +752,7 @@
              }
          },
 
-         "timeout": "30",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -769,7 +763,7 @@
 
       "Ownership":
       {
-         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs",  "isocpp2", "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -819,8 +813,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_ownership_pub.jar",
-                 "subName": "saj5_ownership_sub.jar"
+                 "pubName": "pub/java5_Ownership_pub.jar",
+                 "subName": "sub/java5_Ownership_sub.jar"
              }
          },
 
@@ -869,7 +863,7 @@
              }
          },
 
-         "timeout": "20",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -880,7 +874,7 @@
 
       "QueryCondition":
       {
-         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs",  "isocpp2", "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -930,8 +924,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_querycondition_pub.jar",
-                 "subName": "saj5_querycondition_sub.jar"
+                 "pubName": "pub/java5_QueryCondition_pub.jar",
+                 "subName": "sub/java5_QueryCondition_sub.jar"
              }
          },
 
@@ -980,7 +974,7 @@
              }
          },
 
-         "timeout": "10",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -991,7 +985,7 @@
 
       "RoundTrip":
       {
-         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5", "c99"],
+         "langs": ["c", "cpp",  "isocpp2", "java", "java5", "c99"],
          "corba_langs": "",
          "extra": [""],
 
@@ -1063,7 +1057,7 @@
 
       "Throughput":
       {
-         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5", "c99"],
+         "langs": ["c", "cpp",  "isocpp2", "java", "java5", "c99"],
          "corba_langs": "",
          "extra": [""],
 
@@ -1107,8 +1101,8 @@
 
              "java5":
              {
-                 "pubName": "Saj5_Throughput_Publisher.jar",
-                 "subName": "Saj5_Throughput_Subscriber.jar"
+                 "pubName": "pub/java5_Throughput_pub.jar",
+                 "subName": "sub/java5_Throughput_sub.jar"
              },
 
              "c99":
@@ -1163,7 +1157,7 @@
              }
          },
 
-         "timeout": "30",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -1174,7 +1168,7 @@
 
       "Tutorial":
       {
-         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "cs",  "isocpp2", "java", "java5"],
          "corba_langs": ["cpp", "java"],
 
          "corba_executables":
@@ -1250,9 +1244,9 @@
 
              "java5":
              {
-                 "msgBoardName": "saj5_tutorial_messageboard.jar",
-                 "userLoadName": "saj5_tutorial_userload.jar",
-                 "chatterName": "saj5_tutorial_chatter.jar"
+                 "msgBoardName": "messageboard/java5_Messageboard.jar",
+                 "userLoadName": "userload/java5_Userload.jar",
+                 "chatterName": "chatter/java5_Chatter.jar"
              }
          },
 
@@ -1312,7 +1306,7 @@
 
       "WaitSet":
       {
-         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "langs": ["c", "cpp", "cs", "isocpp2",  "java", "java5"],
          "corba_langs": "",
          "extra": ["standalone"],
 
@@ -1362,8 +1356,8 @@
 
              "java5":
              {
-                 "pubName": "saj5_waitset_pub.jar",
-                 "subName": "saj5_waitset_sub.jar"
+                 "pubName": "pub/java5_WaitSet_pub.jar",
+                 "subName": "sub/java5_WaitSet_sub.jar"
              }
          },
 
@@ -1406,7 +1400,7 @@
              }
          },
 
-         "timeout": "10",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -1567,7 +1561,7 @@
              }
          },
 
-         "timeout": "30",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -1609,7 +1603,7 @@
              }
          },
 
-         "timeout": "25",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -1643,8 +1637,8 @@
 
              "java":
              {
-                 "pubName": "face_helloworld_pub.jar",
-                 "subName": "face_helloworld_sub.jar"
+                 "pubName": "pub/face_HelloWorld_pub.jar",
+                 "subName": "sub/face_HelloWorld_sub.jar"
              }
          },
 
@@ -1697,8 +1691,8 @@
 
              "java5":
              {
-                 "pubName": "saj5-protobuf-publisher.jar",
-                 "subName": "saj5-protobuf-subscriber.jar"
+                 "pubName": "pub/java5_protobuf_pub.jar",
+                 "subName": "sub/java5_protobuf_sub.jar"
              }
          },
 
@@ -1741,7 +1735,7 @@
              "odbcChatter1_params": ["my_dsn", "SYSTEM", "SYSTEM", "1", "SqlToDdsOnly"],
              "odbcChatter2_params": ["my_dsn", "SYSTEM", "SYSTEM", "2", "SqlToDdsAndDbms"],
              "cppChatter1_params": ["1", "DdsToDdsOnly"],
-             "cppChatter2_params": ["1", "DdsToDdsAndDbms"],
+             "cppChatter2_params": ["2", "DdsToDdsAndDbms"],
              "odbcChatterQuit_params": ["my_dsn", "SYSTEM", "SYSTEM", "-1", "terminate"],
              "cppChatterQuit_params": ["-1"]
          },

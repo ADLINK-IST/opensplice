@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,9 +30,12 @@
 #include "v_dataReader.h"
 #include "v_dataReaderEntry.h"
 #include "v__dataView.h"
+#include "v__groupQueue.h"
 #include "v__reader.h"
+#include "v__deliveryService.h"
 #include "v_partition.h"
 #include "v__topic.h"
+#include "v__topicImpl.h"
 #include "v__topicAdapter.h"
 #include "v__topicQos.h"
 #include "v_query.h"
@@ -58,26 +62,20 @@
 #define _TRACE_EVENTS_(...)
 #endif
 
-v_result
+void
 v_entityInit(
-    v_entity e,
-    const c_char *name,
-    c_bool enable)
+    _Inout_ v_entity e,
+    _In_opt_z_ const c_char *name)
 {
     assert(C_TYPECHECK(e,v_entity));
 
-    if (name == NULL) {
-        e->name = NULL;
-    } else {
-        e->name = c_stringNew(c_getBase(e),name);
-    }
+    e->name = c_stringNew(c_getBase(e),name);
     e->status = v_statusNew(e);
     e->listener = NULL;
     e->listenerInterest = 0;
-    e->enabled = enable;
+    e->state = V_ENTITYSTATE_DISABLED;
     e->loan = NULL;
     v_observerInit(v_observer(e));
-    return V_RESULT_OK;
 }
 
 void
@@ -148,6 +146,20 @@ v_entityStatus(
     return c_keep(e->status);
 }
 
+v_state
+v_entityGetStatusFlags(
+    v_entity e)
+{
+    v_state state;
+    assert(e != NULL);
+    assert(C_TYPECHECK(e,v_entity));
+
+    OSPL_BLOCK_EVENTS(e);
+    state = e->status->state;
+    OSPL_UNBLOCK_EVENTS(e);
+    return state;
+}
+
 void
 v_entityStatusReset(
     v_entity e,
@@ -173,13 +185,9 @@ v_entityStatusGetMask(
 
 c_ulong
 v_entityGetTriggerValue(
-    v_entity _this)
+    _In_ v_entity _this)
 {
-    c_ulong triggerValue = 0;
-    if (_this != NULL) {
-        triggerValue = v_statusGetMask(_this->status);
-    }
-    return triggerValue;
+    return v_statusGetMask(_this->status);
 }
 
 v_entity
@@ -230,32 +238,16 @@ v_entityGetProcessId(
     return processId;
 }
 
-v_result
-v_entityEnable (
-    v_entity e)
+static v_result
+v__entityEnable (
+    _Inout_ v_entity e)
 {
     v_result result;
 
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entity));
-
-    v_observerLock(v_observer(e));
-    if (e->enabled) {
-        v_observerUnlock(v_observer(e));
-        result = V_RESULT_OK; /* Idempotent */
-    } else {
-        e->enabled = TRUE;
-        v_observerUnlock(v_observer(e));
-        switch (v_objectKind(e)) {
+    switch (v_objectKind(e)) {
         case K_TOPIC:
-            /* TODO: OSPL-12.
-             * Topics are currently always created in an enabled state, so it makes no sense
-             * to try and enable them here. What is needed is that, when disabled topics are
-             * supported, we check whether the v_topicEnable fails, and if it does we return
-             * this fail to the user layer, which then needs to reroute its handle to the
-             * topic's precursor.
-             */
-            result = V_RESULT_OK;
+        case K_TOPIC_ADAPTER:
+            result = v__topicEnable(v_topic(e));
         break;
         case K_WRITER:
             result = v_writerEnable(v_writer(e));
@@ -263,11 +255,14 @@ v_entityEnable (
         case K_DATAREADER:
             result = v_dataReaderEnable(v_dataReader(e));
         break;
+        case K_GROUPQUEUE:
+            result = v_groupQueueEnable(v_groupQueue(e));
+        break;
         case K_PUBLISHER:
             result = v_publisherEnable(v_publisher(e));
         break;
         case K_SUBSCRIBER:
-            result = v_subscriberEnable(v_subscriber(e));
+            result = v__subscriberEnable(v_subscriber(e));
         break;
         case K_PARTICIPANT:
         case K_SERVICE:
@@ -277,33 +272,122 @@ v_entityEnable (
         case K_NWBRIDGE:
         case K_CMSOAP:
         case K_RNR:
+        case K_DBMSCONNECT:
             result = v_participantEnable(v_participant(e));
             break;
+        case K_DELIVERYSERVICE:
+            result = v__deliveryServiceEnable(v_deliveryService(e));
+            break;
+        case K_SERVICEMANAGER:
         case K_NETWORKREADER:
-        case K_GROUPQUEUE:
         case K_DATAVIEW:
+        case K_DOMAIN:
             result = V_RESULT_OK;
-        break;
+            break;
+        case K_KERNEL:
+            v_kernelEnable(v_kernel(e));
+            result = V_RESULT_OK;
+            break;
         default:
             result = V_RESULT_CLASS_MISMATCH;
             OS_REPORT(OS_ERROR,
                         "v_entityEnable", result,
-                        "Supplied entity (%d) can not be enabled",
-                        v_objectKind(e));
-        break;
-        }
+                        "Supplied entity %s can not be enabled",
+                        v_objectKindImage(v_object(e)));
+            break;
     }
+    return result;
+}
+
+v_result
+v_entityEnable (
+    _Inout_ v_entity e)
+{
+    v_result result;
+
+    assert(e != NULL);
+    assert(C_TYPECHECK(e,v_entity));
+
+    do {
+        OSPL_LOCK(e);
+        _TRACE_EVENTS_("Enabling entity '%s' (%s(%d)) (%d) %p\n", v_entityName(e), v_objectKindImage(v_object(e)), v_objectKind(e), e->state, e);
+        switch (e->state) {
+            case V_ENTITYSTATE_ENABLED:
+                OSPL_UNLOCK(e);
+                result = V_RESULT_OK;
+            break;
+            case V_ENTITYSTATE_ENABLING:
+                OSPL_UNLOCK(e);
+                {
+                    /* TODO: Replace polling? */
+                    os_time poll = {0, 100000000};
+                    os_nanoSleep(poll);
+                }
+                result = V_RESULT_NOT_ENABLED;
+            break;
+            case V_ENTITYSTATE_DISABLED:
+                e->state = V_ENTITYSTATE_ENABLING;
+                OSPL_UNLOCK(e);
+                result = v__entityEnable(e);
+                OSPL_LOCK(e);
+                e->state = (result == V_RESULT_OK) ? V_ENTITYSTATE_ENABLED : V_ENTITYSTATE_DISABLED;
+                OSPL_UNLOCK(e);
+                break;
+            default:
+                result = V_RESULT_NOT_ENABLED;
+                break;
+        }
+    } while (result == V_RESULT_NOT_ENABLED);
+
+    _TRACE_EVENTS_("Enabling entity %s (%d) %p returned %s\n", v_objectKindImage(v_object(e)), e->state, e, v_resultImage(result));
+
     return result;
 }
 
 c_bool
 v_entityEnabled (
-    v_entity _this)
+    _In_ v_entity _this)
+{
+    c_bool enabled;
+
+    OSPL_LOCK(_this);
+    enabled = v__entityEnabled_nl(_this);
+    OSPL_UNLOCK(_this);
+
+    return enabled;
+}
+
+c_bool
+v__entityEnabled_nl (
+    _In_ v_entity _this)
 {
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_entity));
 
-    return _this->enabled;
+    return _this->state == V_ENTITYSTATE_ENABLED;
+}
+
+c_bool
+v_entityDisabled (
+    _In_ v_entity _this)
+{
+    c_bool disabled;
+
+    OSPL_LOCK(_this);
+    disabled = v__entityDisabled_nl(_this);
+    OSPL_UNLOCK(_this);
+
+    return disabled;
+}
+
+c_bool
+v__entityDisabled_nl (
+    _In_ v_entity _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_entity));
+
+    return _this->state == V_ENTITYSTATE_DISABLED;
 }
 
 c_voidp
@@ -355,23 +439,20 @@ v_entityWalkEntities(
 {
     c_bool r = TRUE;
 
+    OSPL_LOCK(e);
     switch(v_objectKind(e)){
     case K_DATAREADER:
-        v_observerLock(v_observer(e));
         r = c_setWalk(v_collection(e)->queries,(c_action)action,arg);
         if (r == TRUE) {
             struct entryActionArg a;
             a.action = (c_action)action;
             a.arg = arg;
-            v_readerWalkEntries(v_reader(e),entryAction,&a);
+            v_readerWalkEntries_nl(v_reader(e),entryAction,&a);
         }
-        v_observerUnlock(v_observer(e));
     break;
     case K_QUERY:
     case K_DATAREADERQUERY:
-        v_observerLock(v_observer(e));
         r = c_setWalk(v_collection(e)->queries,(c_action)action,arg);
-        v_observerUnlock(v_observer(e));
     break;
     case K_PARTICIPANT:
     case K_SERVICE:
@@ -381,33 +462,25 @@ v_entityWalkEntities(
     case K_NETWORKING:
     case K_CMSOAP:
     case K_RNR:
-        c_lockRead(&v_participant(e)->lock);
+    case K_DBMSCONNECT:
         r = c_setWalk(v_participant(e)->entities,(c_action)action,arg);
-        c_lockUnlock(&v_participant(e)->lock);
     break;
     case K_PUBLISHER:
-        c_lockRead(&v_publisher(e)->lock);
         r = c_setWalk(v_publisher(e)->writers,(c_action)action,arg);
         if (r == TRUE) {
             r = c_tableWalk(v_publisher(e)->partitions->partitions,(c_action)action,arg);
         }
-        c_lockUnlock(&v_publisher(e)->lock);
     break;
     case K_SUBSCRIBER:
-        v_subscriberLock(v_subscriber(e));
         r = c_setWalk(v_subscriber(e)->readers,(c_action)action,arg);
         if (r == TRUE) {
             r = c_tableWalk(v_subscriber(e)->partitions->partitions,(c_action)action,arg);
         }
-        v_subscriberUnlock(v_subscriber(e));
     break;
     case K_WRITER:
-        v_observerLock(v_observer(e));
         r = action(v_entity(v_writer(e)->topic),arg);
-        v_observerUnlock(v_observer(e));
     break;
     case K_KERNEL:
-        c_lockRead(&v_kernel(e)->lock);
         r = c_tableWalk(v_kernel(e)->topics,(c_action)action,arg);
         if (r == TRUE) {
             r = c_tableWalk(v_kernel(e)->partitions,(c_action)action,arg);
@@ -415,11 +488,11 @@ v_entityWalkEntities(
         if (r == TRUE) {
             r = c_setWalk(v_kernel(e)->participants,(c_action)action,arg);
         }
-        c_lockUnlock(&v_kernel(e)->lock);
     break;
     default:
     break;
     }
+    OSPL_UNLOCK(e);
     return r;
 }
 
@@ -518,12 +591,14 @@ v_entityWalkDependantEntities(
 
         while (entity != NULL) {
             if (r == TRUE) {
+                v_subscriber s;
                 (void) action(entity, arg);
 #ifdef DDS_269
-                entity2 = v_reader(entity)->subscriber;
-                v_subscriberLock(v_subscriber(entity2));
-                r = c_tableWalk(v_subscriber(entity2)->partitions->partitions,(c_action)action,arg);
-                v_subscriberUnlock(v_subscriber(entity2));
+                s = v_readerGetSubscriber(v_reader(entity));
+                OSPL_LOCK(s);
+                r = c_tableWalk(s->partitions->partitions,(c_action)action,arg);
+                OSPL_UNLOCK(s);
+                c_free(s);
 #endif
             }
             c_free(entity);
@@ -538,12 +613,14 @@ v_entityWalkDependantEntities(
 
             while(entity != NULL){
                if (r == TRUE) {
+                   v_publisher p;
                    (void) action(entity, arg);
 #ifdef DDS_269
-                   entity2 = v_writer(entity)->publisher;
-                   c_lockRead(&v_publisher(entity2)->lock);
-                   r = c_tableWalk(v_publisher(entity2)->partitions->partitions,(c_action)action,arg);
-                   c_lockUnlock(&v_publisher(entity2)->lock);
+                   p = v_writerGetPublisher(v_writer(entity));
+                   OSPL_LOCK(p);
+                   r = c_tableWalk(p->partitions->partitions,(c_action)action,arg);
+                   OSPL_UNLOCK(p);
+                   c_free(p);
 #endif
                }
                c_free(entity);
@@ -563,12 +640,8 @@ v_entityWalkDependantEntities(
                 r = action(entity, arg);
 #ifdef DDS_268
                 if(r == TRUE){
-                    c_lockRead(&v_publisher(entity)->lock);
-                    iter2 = ospl_c_select(v_publisher(entity)->writers, 0);
-                    c_lockUnlock(&v_publisher(entity)->lock);
-
+                    iter2 = v_publisherLookupWriters(v_publisher(entity), "*");
                     entity2 = v_entity(c_iterTakeFirst(iter2));
-
                     while (entity2 != NULL) {
                         topic = c_keep(v_topic(v_writer(entity2)->topic));
 
@@ -598,12 +671,8 @@ v_entityWalkDependantEntities(
                     r = action(entity, arg);
 #ifdef DDS_268
                     if(r == TRUE){
-                        v_subscriberLock(v_subscriber(entity));
-                        iter2 = ospl_c_select(v_subscriber(entity)->readers, 0);
-                        v_subscriberUnlock(v_subscriber(entity));
-
+                        iter2 = v_subscriberLookupReadersByTopic(v_subscriber(entity), "*");
                         entity2 = v_entity(c_iterTakeFirst(iter2));
-
                         while (entity2 != NULL) {
                             if (c_iterContains(iter3, entity2) == FALSE) {
                                 v_readerWalkEntries(v_reader(entity2),
@@ -657,12 +726,11 @@ v_entitySetListener(
     v_eventMask additional_interest;
     c_voidp userData;
 
-    /*C_STRUCT(v_event) event;*/
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_entity));
     assert(C_TYPECHECK(listener,v_listener));
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
 
     additional_interest = interest & ~_this->listenerInterest;
     obsolete_interest = _this->listenerInterest & ~interest & ~V_EVENT_OBJECT_DESTROYED;
@@ -688,7 +756,7 @@ v_entitySetListener(
     _this->listenerInterest = interest;
     _this->listenerData = listenerData;
 
-    v_observerUnlock(v_observer(_this));
+    OSPL_UNLOCK(_this);
 
     /* Now reset status flags for new interest so that the listener will be triggered.
      * Note that triggers are blocked once the flag is set.
@@ -798,7 +866,7 @@ v_entityNotifyListener(
         {
             _TRACE_EVENTS_("v_entityNotifyListener: -- Event(0x%x) matches %s(0x%x) interest(0x%x) so notify listener\n",
                            event->kind, v_objectKindImage(entity), entity, entity->listenerInterest);
-            /* workaround to reset the topic listener when set on a participant see OSPL-3899 */
+            /* workaround to reset the topic listener when set on a participant */
             if (_this != v_entity(event->source) && v_objectKind(v_object(v_entity(event->source))) == K_TOPIC) {
                 v_entityStatusReset(v_entity(event->source), event->kind);
             } else {
@@ -837,14 +905,14 @@ v_entityDisableCallbacks (
     c_bool triggered;
     C_STRUCT(v_event) event;
 
-    v_observerLock(v_observer(e));
+    OSPL_LOCK(e);
 
     event.kind = V_EVENT_OBJECT_DESTROYED;
     event.source = v_observable(e);
     event.data = NULL;
     e->listenerInterest |= V_EVENT_OBJECT_DESTROYED;
     triggered = v_entityNotifyListener(e, &event);
-    v_observerUnlock(v_observer(e));
+    OSPL_UNLOCK(e);
 
     return triggered;
 }
@@ -871,6 +939,7 @@ v_entityGetXMLQos(
     case K_NWBRIDGE:
     case K_CMSOAP:
     case K_RNR:
+    case K_DBMSCONNECT:
         qos = v_qos(c_keep(v_participant(e)->qos));
     break;
     case K_TOPIC:
@@ -969,6 +1038,7 @@ v_entitySetXMLQos(
     case K_NWBRIDGE:
     case K_CMSOAP:
     case K_RNR:
+    case K_DBMSCONNECT:
         type = c_resolve(base, "kernelModuleI::v_participantQos");
         qos = createQosFromXML(type, xml);
         if (qos) {
@@ -990,14 +1060,15 @@ v_entitySetXMLQos(
             result = v_writerSetQos(v_writer(e), (v_writerQos)qos);
         }
     break;
-    case K_DATAREADER:       /* intentionally no break */
-    case K_NETWORKREADER:    /* intentionally no break */
-    case K_GROUPQUEUE:
+    case K_DATAREADER:
         type = c_resolve(base, "kernelModuleI::v_readerQos");
         qos = createQosFromXML(type, xml);
         if (qos) {
-            result = v_readerSetQos(v_reader(e), (v_readerQos)qos);
+            result = v_dataReaderSetQos(v_dataReader(e), (v_readerQos)qos);
         }
+    break;
+    case K_NETWORKREADER:    /* intentionally no break */
+    case K_GROUPQUEUE:
     break;
     case K_PUBLISHER:
         type = c_resolve(base, "kernelModuleI::v_publisherQos");
@@ -1020,15 +1091,6 @@ v_entitySetXMLQos(
             result = v_dataViewSetQos(v_dataView(e), (v_dataViewQos)qos);
         }
     break;
-#if 0
-    case K_DOMAIN:
-        type = c_resolve(base, "kernelModuleI::v_partitionQos");
-        qos = createQosFromXML(type, xml);
-        if (qos) {
-            result = v_partitionSetQos(v_partition(e), (v_partitionQos)qos);
-        }
-    break;
-#endif
     default:
         result = V_RESULT_CLASS_MISMATCH;
         OS_REPORT(OS_ERROR,
@@ -1040,4 +1102,69 @@ v_entitySetXMLQos(
 
     return result;
 }
+v_result
+v_entityGetProperty(
+    const v_entity _this,
+    const os_char * property,
+    os_char ** value)
+{
+    v_result result = V_RESULT_UNSUPPORTED;
+    *value = NULL;
+    if (!os_strcasecmp(property, "isolatenode")) {
+        os_uint32 isolate;
+        result = V_RESULT_OK;
 
+        v_kernelGetIsolate(v_objectKernel(_this), &isolate);
+        switch (isolate) {
+            case V_ISOLATE_DEAF:
+                *value = os_strdup("deaf");
+                break;
+            case V_ISOLATE_MUTE:
+                *value = os_strdup("mute");
+                break;
+            case V_ISOLATE_ALL:
+                *value = os_strdup("true");
+                break;
+            case V_ISOLATE_NONE:
+                *value = os_strdup("false");
+                break;
+            default:
+                *value = NULL;
+                result = V_RESULT_INTERNAL_ERROR;
+                break;
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                    "v_entityGetProperty", result,
+                    "Supplied property %s is invalid", property);
+    }
+    return result;
+}
+
+v_result
+v_entitySetProperty(
+    const v_entity _this,
+    const os_char * property,
+    const os_char * value)
+{
+    v_result result = V_RESULT_UNSUPPORTED;
+    if (!os_strcasecmp(property, "isolatenode")) {
+        result = V_RESULT_OK;
+        if (!os_strcasecmp(value, "false")) {
+            v_kernelSetIsolate(v_objectKernel(_this), V_ISOLATE_NONE);
+        } else if (!os_strcasecmp(value, "true")) {
+            v_kernelSetIsolate(v_objectKernel(_this), V_ISOLATE_ALL);
+        } else if (!os_strcasecmp(value, "deaf")) {
+            v_kernelSetIsolate(v_objectKernel(_this), V_ISOLATE_DEAF);
+        } else if (!os_strcasecmp(value, "mute")) {
+            v_kernelSetIsolate(v_objectKernel(_this), V_ISOLATE_MUTE);
+        } else {
+            result = V_RESULT_ILL_PARAM;
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                    "v_entitySetProperty", result,
+                    "Supplied property %s is invalid", property);
+    }
+    return result;
+}

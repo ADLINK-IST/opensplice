@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Topic Generation and Discovery &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="index.html" />
+    <link rel="next" title="8. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="6. Quality of Service (QoS)" href="qos_provider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="8. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="topic-generation-and-discovery">
+<span id="id1"></span><h1>7. Topic Generation and Discovery<a class="headerlink" href="#topic-generation-and-discovery" title="Permalink to this headline">¶</a></h1>
+<p>A DDS Topic represents the unit for information that can be produced or consumed by a DDS application. Topics are defined by a name, a type, and a set of QoS policies.</p>
+<p>The Node.js DCPS API provides several ways of generating Node.js classes to represent DDS topics.</p>
+<blockquote>
+<div><ul class="simple">
+<li>over the wire discovery</li>
+<li>dynamic generation of Node.js classes using parameters IDL file and topic name</li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The <a class="reference internal" href="examples.html#examples"><em>Examples</em></a> section provides the examples directory location, example descriptions and running instructions.</li>
+</ul>
+</div>
+<div class="section" id="over-the-wire-discovery">
+<h2>7.1. Over the Wire Discovery<a class="headerlink" href="#over-the-wire-discovery" title="Permalink to this headline">¶</a></h2>
+<p>Node.js topic classes can be generated for existing DDS topics in the DDS system. These topics are &#8220;discovered over the wire&#8221;.</p>
+<p>The Node.js classes are generated when the topic is requested by name.</p>
+<p>A code snippet is provided from findTopicExample.js. This example finds a topic registered by another process, and writes a sample to that topic.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="p">...</span>
+<span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Connecting to DDS domain...&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Finding topic...&#39;</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">findTopic</span><span class="p">(</span><span class="s1">&#39;HelloWorldData_Msg&#39;</span><span class="p">);</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Creating writer and sample data to write...&#39;</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">writer</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createWriter</span><span class="p">(</span><span class="nx">topic</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">sample</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">userID</span><span class="o">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nx">message</span><span class="o">:</span> <span class="mi">7</span> <span class="p">};</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Writing sample data...&#39;</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">status</span> <span class="o">=</span> <span class="nx">writer</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">sample</span><span class="p">);</span>
+<span class="p">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dynamic-generation-of-node-js-topic-classes-using-idl-and-name">
+<h2>7.2. Dynamic Generation of Node.js Topic Classes Using IDL and Name<a class="headerlink" href="#dynamic-generation-of-node-js-topic-classes-using-idl-and-name" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js DCPS API supports generation of Node.js topic classes from IDL. This section describes the details of the IDL-Node.js binding.</p>
+<div class="section" id="dynamic-generation">
+<h3>7.2.1. Dynamic Generation<a class="headerlink" href="#dynamic-generation" title="Permalink to this headline">¶</a></h3>
+<p>The Node.js DCPS API provides an asynchronous function that returns a Map of <tt class="docutils literal"><span class="pre">TypeSupport</span></tt> objects.</p>
+<p>A <tt class="docutils literal"><span class="pre">TypeSupport</span></tt> object includes the topic typename, keys and descriptor.</p>
+<p>The structure type representation of a topic is created by the TypeSupport object. However, the usage
+of the structure type is internal to the Node.js DCPS API.</p>
+<p>In order to create a topic, a topic name and a <tt class="docutils literal"><span class="pre">TypeSupport</span></tt> are passed into the <tt class="docutils literal"><span class="pre">Participant</span></tt> createTopicFor function.  (qos and listener parameters are optional)</p>
+<p>The code snippet below is taken from the &#8216;IoTTopicHelper.js&#8217; file referred in <em class="xref std std-ref">IoTData</em> example.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">);</span>
+
+<span class="c1">//asynchronous function to create the topic</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">create</span> <span class="o">=</span> <span class="nx">async</span> <span class="kd">function</span><span class="p">(</span><span class="nx">participant</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kr">const</span> <span class="nx">topicName</span> <span class="o">=</span> <span class="s1">&#39;IoTData&#39;</span><span class="p">;</span>
+  <span class="kr">const</span> <span class="nx">idlName</span> <span class="o">=</span> <span class="s1">&#39;dds_IoTData.idl&#39;</span><span class="p">;</span>
+  <span class="kr">const</span> <span class="nx">idlPath</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">idlName</span><span class="p">);</span>
+
+  <span class="c1">//wait for dds.getTopicTypeSupportsForIDL to return a map of typeSupports</span>
+  <span class="kd">let</span> <span class="nx">typeSupports</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">getTopicTypeSupportsForIDL</span><span class="p">(</span><span class="nx">idlPath</span><span class="p">);</span>
+
+  <span class="c1">//idl contains 1 topic.</span>
+  <span class="kd">let</span> <span class="nx">typeSupport</span> <span class="o">=</span> <span class="nx">typeSupports</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;DDS::IoT::IoTData&#39;</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createTopicFor</span><span class="p">(</span><span class="nx">topicName</span><span class="p">,</span> <span class="nx">typeSupport</span><span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generated-artifacts">
+<h3>7.2.2. Generated Artifacts<a class="headerlink" href="#generated-artifacts" title="Permalink to this headline">¶</a></h3>
+<p>The following table defines the Node.js artifacts generated from IDL concepts:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL Concept</th>
+<th class="head">Node.js Concept</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>module</td>
+<td>N/A</td>
+</tr>
+<tr class="row-odd"><td>enum</td>
+<td>enum from npm &#8216;enum&#8217; package</td>
+</tr>
+<tr class="row-even"><td>enum value</td>
+<td>enum value</td>
+</tr>
+<tr class="row-odd"><td>struct</td>
+<td>object</td>
+</tr>
+<tr class="row-even"><td>field</td>
+<td>object property</td>
+</tr>
+<tr class="row-odd"><td>union</td>
+<td>object (IoTValue from dds_IoTData.idl
+is the only supported union)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Datatype mappings</strong></p>
+<p>The following table shows the Node.js equivalents to IDL primitive types:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL Type</th>
+<th class="head">Node.js Type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>boolean</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>char</td>
+<td>Number</td>
+</tr>
+<tr class="row-even"><td>octet</td>
+<td>Number</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>Number</td>
+</tr>
+<tr class="row-even"><td>ushort</td>
+<td>Number</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>Number</td>
+</tr>
+<tr class="row-even"><td>ulong</td>
+<td>Number</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>Number</td>
+</tr>
+<tr class="row-even"><td>ulong long</td>
+<td>Number</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>Number</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>Number</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>String</td>
+</tr>
+<tr class="row-even"><td>wchar</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-odd"><td>wstring</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-even"><td>any</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-odd"><td>long double</td>
+<td>Unsupported</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Implementing Arrays and Sequences in Node.js</strong></p>
+<p>Both IDL arrays and IDL sequences are mapped to JavaScript arrays.</p>
+</div>
+</div>
+<div class="section" id="limitations-of-node-js-support">
+<span id="limitations"></span><h2>7.3. Limitations of Node.js Support<a class="headerlink" href="#limitations-of-node-js-support" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js binding has the following limitations:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Listeners are not supported</li>
+<li>Only the IoTValue union from dds_IoTData.idl is supported in the beta</li>
+<li>JavaScript does not currently include standard support for 64-bit integer values.  64-bit integers with more than 53 bits of data are represented by String values to avoid loss of precision. If the value will fit inside a JavaScript Number without losing precision, a Number can be used, otherwise use a String.  (Refer to <em class="xref std std-ref">IoTData</em> example which demonstrates the usage and ranges for the unsigned and signed 64 bit integers within nodejs.)</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Topic Generation and Discovery</a><ul>
+<li><a class="reference internal" href="#over-the-wire-discovery">7.1. Over the Wire Discovery</a></li>
+<li><a class="reference internal" href="#dynamic-generation-of-node-js-topic-classes-using-idl-and-name">7.2. Dynamic Generation of Node.js Topic Classes Using IDL and Name</a><ul>
+<li><a class="reference internal" href="#dynamic-generation">7.2.1. Dynamic Generation</a></li>
+<li><a class="reference internal" href="#generated-artifacts">7.2.2. Generated Artifacts</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations-of-node-js-support">7.3. Limitations of Node.js Support</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="previous chapter">6. Quality of Service (QoS)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">8. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topic.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="8. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             >previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

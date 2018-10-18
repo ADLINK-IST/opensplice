@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@
 #include "v_kernel.h"
 #include "v_writerInstance.h"
 #include "v_state.h"
+#include "v__policy.h"
 #include "v__group.h"
 #include "v_groupInstance.h"
 
@@ -115,10 +117,13 @@ v_groupInstanceUnregister (
 v_writeResult
 v_groupInstanceInsert (
     v_groupInstance _this,
+    v_message message);
+
+v_writeResult
+v_groupInstanceFlushTransaction (
+    v_groupInstance _this,
     v_message message,
-    c_bool isTransactionFlush,
-    v_transaction transaction,
-    c_bool stream);
+    v_transaction transaction);
 
 void
 v_groupInstanceRemove (
@@ -194,5 +199,10 @@ v_groupInstanceClaimResource(
 void
 v_groupInstanceReleaseResource(
     v_groupInstance _this);
+
+v_ownershipResult
+v_groupInstanceTestOwnership(
+    v_groupInstance instance,
+    v_message message);
 
 #endif

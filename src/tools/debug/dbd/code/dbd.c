@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -50,6 +51,7 @@ static void scan_object(v_public public, c_voidp arg);
 static void resolve_type(v_public public, c_voidp arg);
 static void trace_object(v_public public, c_voidp arg);
 static void trace_type(v_public public, c_voidp arg);
+static void enable_statistics(v_public public, c_voidp arg);
 
 static void print_usage()
 {
@@ -79,6 +81,7 @@ static void print_usage()
     printf("dbd> R type                                          /* resolve type                             */\n");
     printf("dbd> trace <addr>                                    /* trace free/keep of object at <addr>      */\n");
     printf("dbd> tracetype <addr>                                /* set trace on new objects of type <addr>  */\n");
+    printf("dbd> stat <addr>                                     /* enable statistics on entity <addr>       */\n");
     printf("dbd> q <enter>                                       /* quit                                     */\n");
     printf("Example:\n");
     printf("dbd> 0x200a2df8 <enter>                              /* Print content of shm address             */\n");
@@ -472,6 +475,12 @@ OPENSPLICE_MAIN(ospl_dbd)
             tgt->act(tgt, toolAction, addr);
             c_iterTake(history, addr); /* remove if already exist */
             history = c_iterInsert(history, addr);
+        } else if (strcmp(ws[0].buf, "stat") == 0) {
+            if (gwaddr(&addr, ws[1])) {
+                tgt->act(tgt, enable_statistics, addr);
+            } else {
+                printf("usage: stat <address>\n");
+            }
         } else {
             print_usage();
         }
@@ -943,16 +952,14 @@ static void lookupWritersAction(v_public entity, c_voidp arg)
             list = NULL;
             switch (v_objectKind(o)) {
                 case K_GROUP:
-                    /*                v_groupWalkWriters(o, lookupWriter,
-                     * &list); */
+                    /* TODO : Implement lookup writer for group */
                     printf("Lookup writer for Group not yet implemented\n");
                     break;
                 case K_DOMAIN:
                     glist = v_groupSetLookup(kernel->groupSet, v_partitionName(o), "*");
                     g = c_iterTakeFirst(glist);
                     while (g != NULL) {
-                        /*                    v_groupWalkWriters(g,
-                         * lookupWriter, &list); */
+                        /* TODO : Implement lookup writer for partition */
                         printf("Lookup writer for Partition not yet implemented\n");
                         c_free(g);
                         g = c_iterTakeFirst(glist);
@@ -963,8 +970,7 @@ static void lookupWritersAction(v_public entity, c_voidp arg)
                     glist = v_groupSetLookup(kernel->groupSet, "*", v_topicName(o));
                     g = c_iterTakeFirst(glist);
                     while (g != NULL) {
-                        /*                    v_groupWalkWriters(g,
-                         * lookupWriter, &list); */
+                        /* TODO : Implement lookup writer for Topic*/
                         printf("Lookup writer for Topic not yet implemented\n");
                         c_free(g);
                         g = c_iterTakeFirst(glist);
@@ -1296,5 +1302,37 @@ static void trace_type(v_public public, c_voidp arg)
         os_free(n);
     } else {
         c_baseTraceObjectsOfType(o);
+    }
+}
+
+#include "v_dataReader.h"
+#include "v_dataReaderStatistics.h"
+#include "v_writer.h"
+#include "v_writerStatistics.h"
+#include "v_durability.h"
+#include "v_durabilityStatistics.h"
+
+static void enable_statistics(v_public public, c_voidp arg)
+{
+    v_entity entity = v_entity(public);
+    c_base base = c_getBase(entity);
+    c_object o = c_baseCheckPtr(base, arg);
+    if (o == NULL) {
+        printf("Given address 0x%" PA_PRIxADDR " is not a database object\n", (os_address)arg);
+    } else {
+        switch (v_objectKind(arg)) {
+        case K_DATAREADER:
+            v_dataReader(arg)->statistics = v_dataReaderStatisticsNew(v_objectKernel(arg));
+        break;
+        case K_WRITER:
+            v_writer(arg)->statistics = v_writerStatisticsNew(v_objectKernel(arg));
+        break;
+        case K_DURABILITY:
+            v_durability(arg)->statistics = v_durabilityStatisticsNew(v_objectKernel(arg));
+        break;
+        default:
+            printf("sorry; enabling statistics for this entity kind is usupported\n");
+        break;
+        }
     }
 }

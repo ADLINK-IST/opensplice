@@ -1,12 +1,12 @@
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home/
-export JACORB_HOME=/Users/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
-export GSOAPHOME=/Users/dds/INSTALLED_FOR_DDS/gsoap-2.8
+export M2_HOME=/Users/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+export MAVEN_UTILS=/Users/dds/INSTALLED_FOR_DDS/maven-utils
+#export JACORB_HOME=/Users/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_60.jdk/Contents/Home/
 export PROTOBUF_HOME=/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1-src
 export PROTOBUF_LIB_HOME=/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1/lib
+export GSOAPHOME=/Users/dds/INSTALLED_FOR_DDS/gsoap-2.8
 
-unset TAO_ROOT
+export PATH=$JAVA_HOME/bin:/usr/local/bin:$PATH:/opt/local/bin/:$PROTOBUF_LIB_HOME/../bin
 export OVERRIDE_STRICT_CHECKS=no
-export JAVA_VERSION_OVERRIDE=1.7
-PATH=/Applications/BitRock-15.10.1/bin:/Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home/bin:/usr/local/bin:$PATH:/opt/local/bin/:/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1/bin/:/usr/bin/
-
-
+export SQLITE_HOME=/Users/dds/INSTALLED_FOR_DDS/sqlite-amalgamation-3071602
+export LEVELDB_HOME=/Users/dds/INSTALLED_FOR_DDS/leveldb-1.9.0

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -577,8 +578,9 @@ c_qRangeListAnd(
         switch (eq) {
         case C_LT:
             /* in this case the range is such that no value could ever satisfy it
-               e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
-               so the result is <x>, i.e. a list which no variable can satisfy */
+             * e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
+             * so the result is <x>, i.e. a list which no variable can satisfy
+             */
             r = c_new(c_qRange_t(c__getBase(r1->startExpr)));
             c_setRange(r,r1->start,r1->startExpr,B_EXCLUDE,r1->start,r2->startExpr,B_EXCLUDE);
             result = c_iterAppend(result,r);
@@ -835,9 +837,9 @@ c_qVarCompare(
 }
 
 /* If the given type is an enumeration then the expression is examined.
-   If the expression is a string constant then it is the enum label and
-   will be transformed into the enum value.
-*/
+ * If the expression is a string constant then it is the enum label and
+ * will be transformed into the enum value.
+ */
 static c_qResult
 transformEnumLabelToValue(
     c_type type,

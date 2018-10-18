@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,7 +34,7 @@
 #include <org/opensplice/topic/TopicDescriptionDelegate.hpp>
 #include <org/opensplice/core/status/Status.hpp>
 
-
+#include <u_topicQos.h>
 namespace dds { namespace topic {
 template <typename DELEGATE>
 class TAnyTopic;
@@ -74,7 +75,7 @@ public:
 
     std::string reader_expression() const;
 
-    c_value *reader_parameters() const;
+    std::vector<c_value> reader_parameters() const;
 
     ::org::opensplice::core::status::AllDataDisposedTopicStatus all_data_disposed_topic_status() const;
 

@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -628,12 +629,6 @@ AnyDataReaderDelegate::take_next_instance_w_condition(
     cmn_samplesList_free(cmnSampleList);
 }
 
-
-
-
-
-
-
 void
 AnyDataReaderDelegate::get_key_value(
     const u_dataReader reader,
@@ -897,8 +892,6 @@ AnyDataReaderDelegate::remove_query(
 }
 
 
-
-
 void
 AnyDataReaderDelegate::copy_sample_info(
     cmn_sampleInfo from,
@@ -943,10 +936,9 @@ AnyDataReaderDelegate::flush_action(
 v_copyin_result
 AnyDataReaderDelegate::copy_key(c_type t, const void *data, void *to)
 {
-    c_base base = c_getBase(c_object(t));
     struct ReaderCopyInfo *info = (struct ReaderCopyInfo *)data;
 
-    return info->helper->getCopyIn()(base, info->key, to);
+    return info->helper->getCopyIn()(t, info->key, to);
 }
 
 dds::sub::TAnyDataReader<AnyDataReaderDelegate>

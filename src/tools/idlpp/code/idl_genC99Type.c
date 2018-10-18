@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -108,7 +109,7 @@ idl_memberDeclaration(
 }
 
 
-/* @brief callback function called on opening the IDL input file.
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - mutiple inclusion prevention
@@ -137,6 +138,11 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <stdint.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <stdbool.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
+
+    idl_fileOutPrintf(idl_fileCur(), "#if defined (__cplusplus)\n");
+    idl_fileOutPrintf(idl_fileCur(), "extern \"C\" {\n");
+    idl_fileOutPrintf(idl_fileCur(), "#endif\n");
+
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
         idl_fileOutPrintf(idl_fileCur(), "#include \"%sDcps.h\"\n", idl_depGet(idl_depDefGet(), i));
@@ -150,7 +156,7 @@ idl_fileOpen(
     return idl_explore;
 }
 
-/* @brief callback function called on closing the IDL input file.
+/** @brief callback function called on closing the IDL input file.
  *
  * Generate standard file footer consisting of:
  * - mutiple inclusion prevention closure
@@ -160,6 +166,11 @@ idl_fileClose (
     void *userData)
 {
     OS_UNUSED_ARG(userData);
+
+    idl_fileOutPrintf(idl_fileCur(), "#if defined (__cplusplus)\n");
+    idl_fileOutPrintf(idl_fileCur(), "}\n");
+    idl_fileOutPrintf(idl_fileCur(), "#endif\n\n");
+
     /* Generate closure of multiple inclusion prevention code */
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 }
@@ -408,6 +419,7 @@ idl_unionOpen(
     OS_UNUSED_ARG(userData);
 
     if (idl_definitionExists("definition", scopedName)) {
+        os_free(scopedName);
         return idl_abort;
     }
     idl_definitionAdd("definition", scopedName);
@@ -639,6 +651,7 @@ idl_enumerationOpen(
     OS_UNUSED_ARG(userData);
 
     if (idl_definitionExists("definition", scopedName)) {
+        os_free(scopedName);
         return idl_abort;
     }
     idl_definitionAdd("definition", scopedName);
@@ -923,10 +936,10 @@ idl_sequenceOpenClose(
     idl_typeSeq typeSeq,
     void *userData)
 {
-    c_bool genPrototypesOnly = FALSE;
-    char *scopedTypeIdent;
+    c_bool prototypeExists = FALSE;
     char *sequenceElementName;
     char *sequenceName;
+    char * sequenceScopedName;
 
     OS_UNUSED_ARG(userData);
 
@@ -934,35 +947,18 @@ idl_sequenceOpenClose(
     sequenceName = idl_c99SequenceIdent(typeSeq);
 
     if (idl_definitionExists("definition", sequenceName)) {
-        os_free(sequenceElementName);
-        os_free(sequenceName);
-        return;
-    }
-    idl_definitionAdd("definition", sequenceName);
+        prototypeExists = TRUE;
+    } else {
+        idl_definitionAdd("definition", sequenceName);
 
-    if (idl_scopeStackSize(scope) > 0) {
         if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) &&
              ((idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_octet) ||
               (idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_string))) {
-            genPrototypesOnly = TRUE;
-        } else
-            /* If the element type of the sequence has a related key, which means that readers and
-             * writers have been created, and which also means that type sequence support functions
-             * have already been created. In that case the prototypes for these functions should be
-             * generated. Otherwise add the scope name of the module where the sequence is defined
-             * in to the name of these functions.
-             */
-            if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
-                genPrototypesOnly = TRUE;
-            } else {
-                genPrototypesOnly = idl_c99SequenceSupportFunctionsExist(scope, typeSeq, sequenceElementName);
-            }
-    } else {
-        genPrototypesOnly = TRUE;
+            prototypeExists = TRUE;
+        }
     }
-
-    if (idl_typeSpecType(idl_typeSeqType(typeSeq)) != idl_ttypedef) {
-        scopedTypeIdent = idl_scopedC99TypeIdent(idl_typeSeqType(typeSeq));
+    if (!prototypeExists) {
+        char *scopedTypeIdent = idl_scopedC99TypeIdent(idl_typeSeqType(typeSeq));
         idl_fileOutPrintf(idl_fileCur(), "/* Definition for sequence of %s */\n",
                 scopedTypeIdent);
         idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_defined\n",
@@ -970,10 +966,11 @@ idl_sequenceOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "#define _%s_defined\n",
                 sequenceName);
         if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tstruct) {
-            /* In case struct is refered, it can be a sequence definition within	*/
-            /* within the structure with a reference to the struct itself. In that	*/
-            /* case the struct or union is not defined yet, and a forward 		*/
-            /* definition is required.						*/
+            /* In case struct is refered, it can be a sequence definition within
+             * within the structure with a reference to the struct itself. In that
+             * case the struct or union is not defined yet, and a forward
+             * definition is required.
+             */
             idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_defined\n",
                     scopedTypeIdent);
             idl_fileOutPrintf(idl_fileCur(), "#define _%s_defined\n",
@@ -985,10 +982,11 @@ idl_sequenceOpenClose(
             idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",
                     scopedTypeIdent);
         } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tunion) {
-            /* In case struct is refered, it can be a sequence definition within	*/
-            /* within the structure with a reference to the struct itself. In that	*/
-            /* case the struct or union is not defined yet, and a forward 		*/
-            /* definition is required.						*/
+            /* In case struct is refered, it can be a sequence definition within
+             * within the structure with a reference to the struct itself. In that
+             * case the struct or union is not defined yet, and a forward
+             * definition is required.
+             */
             idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_defined\n",
                     scopedTypeIdent);
             idl_fileOutPrintf(idl_fileCur(), "#define _%s_defined\n",
@@ -1007,42 +1005,29 @@ idl_sequenceOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "    bool _release;\n");
         idl_fileOutPrintf(idl_fileCur(), "} %s;\n", sequenceName);
 
-        os_free(scopedTypeIdent);
-
-        if (genPrototypesOnly) {
-            idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
-                    idl_dllGetMacro(),
-                    sequenceName,
-                    sequenceName);
-            idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (uint32_t len);\n",
-                    idl_dllGetMacro(),
-                    sequenceElementName,
-                    sequenceName);
-        } else {
-            char * sequenceScopedName = idl_c99SequenceIdentScoped(scope, typeSeq);
-
-            idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
-                    idl_dllGetMacro(),
-                    sequenceName,
-                    sequenceScopedName);
-            idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (uint32_t len);\n",
-                    idl_dllGetMacro(),
-                    sequenceElementName,
-                    sequenceScopedName);
-
-            idl_fileOutPrintf(idl_fileCur(), "#define %s__alloc %s__alloc\n",
-                    sequenceName,
-                    sequenceScopedName);
-            idl_fileOutPrintf(idl_fileCur(), "#define %s_allocbuf %s_allocbuf\n",
-                    sequenceName,
-                    sequenceScopedName);
-
-            os_free(sequenceScopedName);
-        }
-
+        idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
+                idl_dllGetMacro(),
+                sequenceName,
+                sequenceName);
+        idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (uint32_t len);\n",
+                idl_dllGetMacro(),
+                sequenceElementName,
+                sequenceName);
         idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n", sequenceName);
-        idl_fileOutPrintf(idl_fileCur(), "\n");
+
+        os_free(scopedTypeIdent);
     }
+
+    sequenceScopedName = idl_c99SequenceIdentScoped(scope, typeSeq);
+
+    idl_fileOutPrintf(idl_fileCur(), "#define %s__alloc %s__alloc\n",
+            sequenceScopedName,
+            sequenceName);
+    idl_fileOutPrintf(idl_fileCur(), "#define %s_allocbuf %s_allocbuf\n\n",
+            sequenceScopedName,
+            sequenceName);
+
+    os_free(sequenceScopedName);
     os_free(sequenceElementName);
     os_free(sequenceName);
 }

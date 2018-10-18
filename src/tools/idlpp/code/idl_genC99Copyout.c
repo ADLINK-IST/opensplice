@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -1260,6 +1261,51 @@ idl_seqIndex (
     return os_strdup(index);
 }
 
+static void
+insertCopyBodySequence(
+        idl_typeSpec typeSpec,
+        const char *to,
+        c_long loop_index,
+        c_long indent)
+{
+    c_char source[32];
+    idl_typeSpec nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
+    c_char *scopedTypeIdent = idl_scopedSplTypeIdent(nextType);
+    c_char *sequenceIndex = idl_seqIndex(loop_index);
+    c_char *sequenceIdent = idl_c99SequenceIdent (idl_typeSeq(typeSpec));
+
+    idl_printIndent (indent);
+    idl_fileOutPrintf (idl_fileCur(), "        c_ulong size%d;\n", loop_index);
+    idl_printIndent (indent);
+    idl_fileOutPrintf(idl_fileCur(), "        %s *src%d = (%s *)src%d%s;\n",
+            scopedTypeIdent, loop_index, scopedTypeIdent, loop_index - 1, sequenceIndex);
+    idl_printIndent (indent);
+    idl_fileOutPrintf (idl_fileCur(), "        %s *dst%d = (%s *)&dst%d->_buffer[i%d];\n",
+            sequenceIdent, loop_index, sequenceIdent, loop_index-1, loop_index-1);
+    idl_fileOutPrintf (idl_fileCur(), "\n");
+    idl_printIndent (indent);
+    idl_fileOutPrintf (idl_fileCur(), "        size%d = c_arraySize((c_sequence)(src%d));\n",
+            loop_index, loop_index);
+    if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
+        /* For unbounded sequence set maximum size */
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf ((_DDS_sequence) dst%d, (bufferAllocatorType)%s_allocbuf, size%d);\n",
+                loop_index, sequenceIdent, loop_index);
+    } else {
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "    DDS_sequence_replacebuf ((_DDS_sequence) dst%d, (bufferAllocatorType)%s_allocbuf, %d);\n",
+                loop_index, sequenceIdent, idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
+    }
+    idl_printIndent (indent);
+    idl_fileOutPrintf (idl_fileCur(), "        dst%d->_length = size%d;\n",
+            loop_index, loop_index);
+    snprintf (source, sizeof(source), "src%d", loop_index);
+    idl_seqLoopCopy (nextType, source, to, loop_index+1, indent+1);
+    os_free(scopedTypeIdent);
+    os_free(sequenceIndex);
+    os_free(sequenceIdent);
+}
+
 /** @brief Function that generates code for copying sequences.
  *
  * Generate code for copying sequence types.
@@ -1333,13 +1379,8 @@ idl_seqLoopCopy (
     c_long loop_index,
     c_long indent)
 {
-    c_char source[32];
-    idl_typeSpec nextType;
     c_char *scopedName;
     c_char *corbaTypeName;
-    c_char *scopedTypeIdent;
-    c_char *sequenceIdent;
-    c_char *sequenceIndex;
 
     if (idl_isContiguous(idl_typeSpecDef(typeSpec))) {
         idl_printIndent (indent);
@@ -1441,47 +1482,16 @@ idl_seqLoopCopy (
                     to, loop_index-1, loop_index-1, corbaTypeName, from, loop_index-1);
             os_free(corbaTypeName);
             break;
+        case idl_tseq:
+            insertCopyBodySequence(idl_typeDefActual(idl_typeDef(typeSpec)), to, loop_index, indent);
+            break;
         default:
             printf ("idl_arrayLoopCopyBody: Unexpected type\n");
             assert (0);
         }
         break;
     case idl_tseq:
-        nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
-        scopedTypeIdent = idl_scopedSplTypeIdent(nextType);
-        sequenceIndex = idl_seqIndex(loop_index);
-        sequenceIdent = idl_c99SequenceIdent (idl_typeSeq(typeSpec));
-
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        c_ulong size%d;\n", loop_index);
-        idl_printIndent (indent);
-        idl_fileOutPrintf(idl_fileCur(), "        %s *src%d = (%s *)src%d%s;\n",
-                scopedTypeIdent, loop_index, scopedTypeIdent, loop_index - 1, sequenceIndex);
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        %s *dst%d = (%s *)&dst%d->_buffer[i%d];\n",
-                sequenceIdent, loop_index, sequenceIdent, loop_index-1, loop_index-1);
-        idl_fileOutPrintf (idl_fileCur(), "\n");
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        size%d = c_arraySize((c_sequence)(src%d));\n",
-                loop_index, loop_index);
-        if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
-            /* For unbounded sequence set maximum size */
-            idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf ((_DDS_sequence) dst%d, (bufferAllocatorType)%s_allocbuf, size%d);\n",
-                    loop_index, sequenceIdent, loop_index);
-        } else {
-            idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "    DDS_sequence_replacebuf ((_DDS_sequence) dst%d, (bufferAllocatorType)%s_allocbuf, %d);\n",
-                    loop_index, sequenceIdent, idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
-        }
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        dst%d->_length = size%d;\n",
-                loop_index, loop_index);
-        snprintf (source, sizeof(source), "src%d", loop_index);
-        idl_seqLoopCopy (nextType, source, to, loop_index+1, indent+1);
-        os_free(scopedTypeIdent);
-        os_free(sequenceIndex);
-        os_free(sequenceIdent);
+        insertCopyBodySequence(typeSpec, to, loop_index, indent);
         break;
     default:
         assert (0);

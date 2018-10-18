@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -40,33 +41,6 @@
 #define VSERVICESTATE_NAME        "kernelModuleI::v_serviceState"
 #define VSERVICESTATE_NAME_LENGTH 14
 
-/**************************************************************
- * private functions
- **************************************************************/
-
-static void
-addAllGroups(
-    c_set newGroups,
-    v_groupSet groupSet)
-{
-    c_iter groups = NULL;
-    v_group g;
-
-    assert(C_TYPECHECK(groupSet, v_groupSet));
-
-    groups = v_groupSetSelectAll(groupSet);
-    g = v_group(c_iterTakeFirst(groups));
-    while (g != NULL) {
-        ospl_c_insert(newGroups, g);
-        c_free(g);
-        g = v_group(c_iterTakeFirst(groups));
-    }
-    c_iterFree(groups);
-}
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_service
 v_serviceNew(
     v_kernel kernel,
@@ -127,11 +101,16 @@ v_serviceInit(
     manager = v_getServiceManager(kernel);
 
     /* v_participantInit writes the DCPSParticipant and CMParticipant topics, but
-       it downcasts to v_service to extract serviceType, and hence needs it available. */
+     * it downcasts to v_service to extract serviceType, and hence needs it available.
+     */
     service->serviceType = serviceType;
-    v_participantInit(v_participant(service), name, qos, enable);
+    v_participantInit(v_participant(service), name, qos);
+    if(enable) {
+        (void)v_entityEnable(v_entity(service));
+    }
     service->state = v_serviceManagerRegister(manager, service, extStateName);
     service->lease = v_leaseMonotonicNew(kernel, lp);
+    service->newGroups = NULL;
     if(service->lease)
     {
         v_result result;
@@ -198,7 +177,7 @@ v_serviceInit(
             if (strcmp(name, V_SPLICED_NAME) != 0) {
                 v_serviceState splicedState;
                 splicedState = v_serviceManagerGetServiceState(manager, V_SPLICED_NAME);
-                (void)v_observableAddObserver(v_observable(splicedState), v_observer(service), NULL);
+                (void)OSPL_ADD_OBSERVER(splicedState, service, V_EVENT_SERVICESTATE_CHANGED, NULL);
             }
         } else {
             OS_REPORT(OS_ERROR, "v_service",
@@ -231,9 +210,6 @@ v_serviceDeinit(
     v_participantDeinit(v_participant(service));
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 void
 v_serviceNotify(
     v_service service,
@@ -242,21 +218,16 @@ v_serviceNotify(
 {
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
+    assert(event != NULL);
 
-    if (event != NULL) {
-        if (event->kind == V_EVENT_NEW_GROUP) {
-            if ((event->data) && (v_observer(service)->eventData)) {
-                ospl_c_insert((c_set)v_observer(service)->eventData, event->data);
-            }
+    if (event->kind == V_EVENT_NEW_GROUP) {
+        if (event->data && service->newGroups) {
+            ospl_c_insert(service->newGroups, event->data);
         }
-        v_observableNotify(v_observable(service), event);
     }
     v_participantNotify(v_participant(service), event, userData);
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 const c_char *
 v_serviceGetName(
     v_service service)
@@ -320,6 +291,17 @@ v_serviceChangeState(
     return result;
 }
 
+v_serviceStateKind
+v_serviceGetState(
+    v_service service)
+{
+    assert(service != NULL);
+    assert(C_TYPECHECK(service, v_service));
+    assert(service->state != NULL);
+
+    return v_serviceStateGetKind(service->state);
+}
+
 void
 v_serviceFillNewGroups(
     v_service service)
@@ -328,6 +310,7 @@ v_serviceFillNewGroups(
     C_STRUCT(v_event) ge;
     v_group g;
     v_kernel kernel;
+    c_iter groups = NULL;
 
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
@@ -336,19 +319,32 @@ v_serviceFillNewGroups(
     newGroups = (c_voidp)c_setNew(v_kernelType(kernel, K_GROUP));
 
     if (newGroups != NULL) {
-        v_observerLock(v_observer(service));
-        addAllGroups(newGroups, kernel->groupSet);
-        g = v_group(c_read(newGroups)); /* need a group for the event */
-        /* just for safety, when assertion are compiled out, free the prev set */
-        c_free((c_object)v_observer(service)->eventData);
-        v_observer(service)->eventData = (c_voidp)newGroups;
+        groups = v_groupSetSelectAll(kernel->groupSet);
 
-        ge.kind = V_EVENT_NEW_GROUP;
-        ge.source = v_observable(kernel);
-        ge.data = g;
-        v_observerNotify(v_observer(service), &ge, NULL);
-        v_observerUnlock(v_observer(service));
-        c_free(g);
+        /* Take the first group and at the end notify the service about this new group.
+         * But before push all other groups to the servive newGroup set so that only one trigger
+         * is required to notify all groups.
+         * The first group is automatically added to the newGroup set by the notification.
+         * TODO : get rid of this mechanism.
+         */
+        ge.data = v_group(c_iterTakeFirst(groups));
+        if (ge.data) {
+            ge.kind = V_EVENT_NEW_GROUP;
+            ge.source = v_observable(kernel);
+            ospl_c_insert(newGroups, ge.data);
+            while ((g = v_group(c_iterTakeFirst(groups))) != NULL) {
+                ospl_c_insert(newGroups, g);
+                c_free(g);
+            }
+
+            OSPL_BLOCK_EVENTS(service);
+            c_free(service->newGroups);
+            service->newGroups = (c_voidp)newGroups;
+            OSPL_UNBLOCK_EVENTS(service);
+
+            OSPL_TRIGGER_EVENT((service), &ge, NULL);
+        }
+        c_iterFree(groups);
     }
 }
 
@@ -365,8 +361,8 @@ v_serviceTakeNewGroups(
 
     result = c_iterNew(NULL);
 
-    v_observerLock(v_observer(service));
-    newGroups = (c_set)v_observer(service)->eventData;
+    OSPL_BLOCK_EVENTS(service);
+    newGroups = service->newGroups;
     if (newGroups != NULL) {
         group = v_group(c_take(newGroups));
         while (group != NULL) {
@@ -374,7 +370,7 @@ v_serviceTakeNewGroups(
             group = v_group(c_take(newGroups));
         }
     }
-    v_observerUnlock(v_observer(service));
+    OSPL_UNBLOCK_EVENTS(service);
 
     return result;
 }
@@ -387,7 +383,7 @@ v_serviceRenewLease(
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
 
-    v_observerLock(v_observer(service));
+    OSPL_LOCK(service);
     v_leaseRenew(service->lease, leasePeriod);
-    v_observerUnlock(v_observer(service));
+    OSPL_UNLOCK(service);
 }

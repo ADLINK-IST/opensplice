@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,18 +45,20 @@ extern "C" {
  */
 #define v_subscriberQos(_this) (C_CAST(_this,v_subscriberQos))
 
+_Check_return_
+_When_(template, _Ret_maybenull_)
 OS_API v_subscriberQos
 v_subscriberQosNew(
-    v_kernel kernel,
-    v_subscriberQos template);
-    
+    _In_ v_kernel kernel,
+    _In_opt_ v_subscriberQos template);
+
 OS_API void
 v_subscriberQosFree(
-    v_subscriberQos _this);
+    _In_opt_ _Post_invalid_ v_subscriberQos _this);
 
 OS_API v_result
 v_subscriberQosCheck(
-    v_subscriberQos _this);
+    _In_opt_ v_subscriberQos _this);
 
 #undef OS_API
 

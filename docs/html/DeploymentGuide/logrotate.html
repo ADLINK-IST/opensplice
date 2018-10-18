@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>14. Logrotate &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="15. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="13. Example Reference Systems" href="referencesystems.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="15. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="referencesystems.html" title="13. Example Reference Systems"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="logrotate">
+<span id="id1"></span><h1>14. Logrotate<a class="headerlink" href="#logrotate" title="Permalink to this headline">¶</a></h1>
+<p><em>The OpenSplice middleware can produce several trace and log files
+depending on the applied configuration settings. Log files and in
+particular trace files can become very large over time and run into
+resource limitations. It is advised to use the logrotate function
+to manage resource consumption of log and trace files. The logrotate
+function is standard available on linux distributions and for windows
+an opensource version is available on sourceforge (LogRotateWin).*</em></p>
+<div class="section" id="description">
+<span id="id2"></span><h2>14.1. Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>logrotate is designed to ease administration of systems that generate
+large numbers of log files. It allows automatic rotation, compression,
+removal, and mailing of log files. Each log file may be handled daily,
+weekly, monthly, or when it grows too large.
+Normally, logrotate is run as a daily cron job. It will not modify a
+log multiple times in one day unless the criterion for that log is
+based on the log&#8217;s size and logrotate is being run multiple times each
+day, or unless the -f or &#8211;forceoption is used. For example, logrotate
+can also be run by a supervisory process at any time to process log
+files specified in the config_file.
+For a more detailed description of logrotate see the linux man pages.</p>
+</div>
+<div class="section" id="configuration-file">
+<span id="id3"></span><h2>14.2. Configuration file<a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>logrotate reads everything about the log files it should be handling
+from the series of configuration files specified on the command line.
+Each configuration file can set global options (local definitions
+override global ones, and later definitions override earlier ones)
+and specify log files to rotate.</p>
+</div>
+<div class="section" id="example-configuration">
+<span id="id4"></span><h2>14.3. Example configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
+<p>For OpenSplice the following example config_file arguments are advised for logrotate:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c"># sample logrotate configuration file</span>
+
+<span class="c"># The copytruncate option specifies that logfiles are first copied and</span>
+<span class="c"># then truncate. This option is required for OpenSplice instead of using</span>
+<span class="c"># the create option to avoid closing the file descriptors used by</span>
+<span class="c"># OpenSplice.</span>
+<span class="c">#</span>
+copytruncate
+
+<span class="c"># The compress option is used to compress the logfile copies.</span>
+compress
+
+<span class="c"># The following options specify that the log files in the current directory</span>
+<span class="c"># will be rotates when the file size exceeds 100k and that at most the 5</span>
+<span class="c"># most recent rotated files are maintained.</span>
+<span class="s2">&quot;./\*.log&quot;</span> <span class="o">{</span>
+    rotate 5
+    size 100k
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">14. Logrotate</a><ul>
+<li><a class="reference internal" href="#description">14.1. Description</a></li>
+<li><a class="reference internal" href="#configuration-file">14.2. Configuration file</a></li>
+<li><a class="reference internal" href="#example-configuration">14.3. Example configuration</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="referencesystems.html"
+                        title="previous chapter">13. Example Reference Systems</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">15. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/logrotate.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="15. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="referencesystems.html" title="13. Example Reference Systems"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

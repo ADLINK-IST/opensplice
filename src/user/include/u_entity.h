@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -127,8 +128,7 @@ u_entityWalkEntities (
     u_bool (*action)(v_entity e, void *arg),
     void *arg);
 
-/*
- * Like u_entityWalkEntities, this function is also DEPRECATED. It is
+/* Like u_entityWalkEntities, this function is also DEPRECATED. It is
  * currently still used by the C&M API, but should be removed in the future.
  */
 OS_API u_result
@@ -174,6 +174,18 @@ u_entityReleaseLoan(
 OS_API u_bool
 u_entityDisableCallbacks (
     const u_entity _this);
+
+OS_API u_result
+u_entityGetProperty(
+    _In_ const u_entity _this,
+    _In_ const os_char * name,
+    _Out_ os_char ** value);
+
+OS_API u_result
+u_entitySetProperty(
+    _In_ const u_entity _this,
+    _In_ const os_char * name,
+    _In_ const os_char * value);
 
 #undef OS_API
 

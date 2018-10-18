@@ -2,10 +2,10 @@
 #define OSPL_DDS_BUILTINTYPES
 
 #include "dds_dcps.idl"
-/*
-This file was orginally in  ./src/services/spliced/code/.
-What is it for ? It shouldn't compile without an import like "dds_dcps.idl" should it ... ??
-*/
+/* This file was orginally in  ./src/services/spliced/code/.
+ * What is it for ? It shouldn't compile without an import
+ * like "dds_dcps.idl" should it ... ??
+ */
 
 module DDS {
 

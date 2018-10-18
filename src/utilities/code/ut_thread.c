@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -30,16 +31,18 @@
 #include "ut_thread.h"
 
 /* Things don't go wrong if CACHE_LINE_SIZE is defined incorrectly,
-   they just run slower because of false cache-line sharing. It can be
-   discovered at run-time, but in practice it's 64 for most CPUs and
-   128 for some. */
+ * they just run slower because of false cache-line sharing. It can be
+ * discovered at run-time, but in practice it's 64 for most CPUs and
+ * 128 for some.
+ */
 #define UT_CACHE_LINE_SIZE 64
 
 
 /* GCC has a nifty feature allowing the specification of the required
-   alignment: __attribute__ ((aligned (CACHE_LINE_SIZE))) in this
-   case. Many other compilers implement it as well, but it is by no
-   means a standard feature.  So we do it the old-fashioned way. */
+ * alignment: __attribute__ ((aligned (CACHE_LINE_SIZE))) in this
+ * case. Many other compilers implement it as well, but it is by no
+ * means a standard feature.  So we do it the old-fashioned way.
+ */
 
 enum ut_threadStateEnum {
     UT_THREAD_STATE_ZERO,
@@ -57,9 +60,8 @@ struct ut_threadLiveliness {
 };
 
 
-/*
- *  drowsyCnt even : thread awake
- *  drowsyCnt odd  : thread asleep
+/* drowsyCnt even : thread awake
+ * drowsyCnt odd  : thread asleep
  */
 #define UT_THREAD_BASE                          \
     volatile os_uint32 drowsyCnt;               \
@@ -69,6 +71,7 @@ struct ut_threadLiveliness {
     volatile enum ut_threadStateEnum state;     \
     void *threads;                              \
     char *name;                                 \
+    os_cond cond;                               \
     void * (*f) (void *arg);                    \
     void *f_arg /* note: no semicolon! */
 
@@ -91,7 +94,7 @@ OS_STRUCT(ut_threads) {
     os_mutex lock;
     os_threadId main;
     void *userdata;
-    os_uint32 size;
+    os_int32 size;
     os_duration interval;
     os_timeM lastCheck;
     OS_STRUCT(ut_thread) *pool;
@@ -104,24 +107,21 @@ __thread ut_thread ut_tsdThreadState;
 #endif
 
 
-/*
- * Sleep is managed in seconds. Non-null nanoseconds adds one second lag.
- */
+/* Sleep is managed in seconds. Non-null nanoseconds adds one second lag. */
 #define UT_SLEEPSEC_FROM_DURATION(d) ((os_uint32)(OS_DURATION_GET_SECONDS(d) + (OS_DURATION_GET_NANOSECONDS(d) != 0)))
 
-/*
- * snprintf can return negative values. Only update position with non-negative values.
- */
+/* snprintf can return negative values. Only update position with non-negative values. */
 #define UT_RET_POSITIVE(n) (((n) > 0) ? (unsigned)n : 0)
 
 static void*
 ut_mallocAligned(os_size_t size)
 {
     /* This wastes some space, but we use it only once and it isn't a
-       huge amount of memory, just a little over a cache line.
-       Alternatively, we good use valloc() and have it aligned to a
-       page boundary, but that one isn't part of the O/S abstraction
-       layer ... */
+     * huge amount of memory, just a little over a cache line.
+     * Alternatively, we good use valloc() and have it aligned to a
+     * page boundary, but that one isn't part of the O/S abstraction
+     * layer ...
+     */
     const os_address clm1 = UT_CACHE_LINE_SIZE - 1;
     os_address ptrA;
     void **pptr;
@@ -171,13 +171,17 @@ ut_threadWrapper (void *vself)
     ut_threadAsleep(self, UT_SLEEP_INDEFINITELY);
     pa_fence();
     self->state = UT_THREAD_STATE_REAP;
+    os_mutexLock(&(((ut_threads)(self->threads))->lock));
+    os_condBroadcast(&self->cond);
+    os_mutexUnlock (&(((ut_threads)(self->threads))->lock));
+
     return ret;
 }
 
 static ut_thread
 ut_threadFindFreeSlot(ut_threads threads, const char *name)
 {
-    os_uint32 i;
+    os_int32 i;
     assert(name);
     assert(threads);
     for (i = 0; i < threads->size; i++) {
@@ -231,14 +235,16 @@ ut_threadToString(ut_thread thr, os_boolean alive, const char *info, char *buf, 
     assert(buf);
     if (info != NULL) {
         ret = snprintf(buf, size,
-                       " \"%s\":%c:%s",
+                       " \"%s\"(0x%" PA_PRIxADDR "):%c:%s",
                        thr->name,
+                       (os_address)os_threadIdToInteger(thr->tid),
                        alive ? 'a' : 'd',
                        info);
     } else {
         ret = snprintf(buf, size,
-                       " \"%s\":%c",
+                       " \"%s\"(0x%" PA_PRIxADDR "):%c",
                        thr->name,
+                       (os_address)os_threadIdToInteger(thr->tid),
                        alive ? 'a' : 'd');
     }
     return (ret > 0) ? (os_uint32)ret : 0;
@@ -267,8 +273,10 @@ ut_threadCreate(ut_threads threads, ut_thread *thr, const char *name, const os_t
                 (*thr)->state = UT_THREAD_STATE_ALIVE;
             } else {
                 OS_REPORT(OS_ERROR, OS_FUNCTION, 0, "%s: failed to create thread: %s", name, os_resultImage(rc));
-                os_free((*thr));
+                os_free((*thr)->name);
                 (*thr)->name = NULL;
+                (*thr)->f = NULL;
+                (*thr)->f_arg = NULL;
                 (*thr) = NULL;
             }
         } else {
@@ -284,13 +292,42 @@ ut_threadCreate(ut_threads threads, ut_thread *thr, const char *name, const os_t
 os_result
 ut_threadWaitExit(ut_thread thr, void **result)
 {
-    os_result r = os_resultBusy;
+    os_result r;
+
     assert(thr);
-    if (thr->liveliness.alive) {
-        r = os_threadWaitExit(thr->tid, result);
+
+    r = os_threadWaitExit(thr->tid, result);
+    if (r == os_resultSuccess) {
+        ut_threadStateSet(thr, UT_THREAD_STATE_ZERO, OS_THREAD_ID_NONE, NULL);
     }
+
     return r;
 }
+
+os_result
+ut_threadTimedWaitExit(ut_thread thr, os_duration timeout, void **result)
+{
+    os_result r = os_resultSuccess;
+    ut_threads threads = (ut_threads)thr->threads;
+    ut_thread self;
+    assert(thr);
+
+    self = ut_threadLookupSelf(threads);
+    os_mutexLock(&threads->lock);
+    if (thr->state != UT_THREAD_STATE_REAP) {
+        r = ut_condTimedWait(self, &thr->cond, &threads->lock, timeout);
+    }
+    os_mutexUnlock(&threads->lock);
+    if (r == os_resultSuccess) {
+        r = os_threadWaitExit(thr->tid, result);
+    }
+    if (r == os_resultSuccess) {
+        ut_threadStateSet(thr, UT_THREAD_STATE_ZERO, OS_THREAD_ID_NONE, NULL);
+    }
+
+    return r;
+}
+
 
 os_result
 ut_sleep(ut_thread thr, os_duration delay)
@@ -299,7 +336,7 @@ ut_sleep(ut_thread thr, os_duration delay)
     assert(thr);
     assert(ut_drowsyAwake(thr->drowsyCnt));
     ut_threadAsleep(thr, UT_SLEEPSEC_FROM_DURATION(delay));
-    r = os_sleep(delay);
+    r = ospl_os_sleep(delay);
     ut_threadAwake(thr);
     return r;
 }
@@ -329,7 +366,7 @@ ut_condWait(ut_thread thr, os_cond *cv, os_mutex *mtx)
 ut_thread
 ut_threadLookupId(ut_threads threads, os_threadId tid)
 {
-    os_uint32 i;
+    os_int32 i;
     assert(threads);
     if (threads->pool) {
         for (i = 0; i < threads->size; i++) {
@@ -402,10 +439,10 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
     os_timeM tnow;
     os_duration tdelta;
     const char *caller = "<!ut_thread>";
-    os_boolean ok = FALSE;
+    os_boolean ok = OS_FALSE;
     os_uint32 changeCnt = 0;
-    os_uint32 aliveCnt = 0;
-    os_uint32 i;
+    os_int32 aliveCnt = 0;
+    os_int32 i;
 
     assert(threads);
     assert(threads->pool);
@@ -425,8 +462,7 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
         caller = self->name;
     }
 
-    /* Check whether all threads have made progress (or have declared themselves to be
-       asleep). */
+    /* Check whether all threads have made progress (or have declared themselves to be asleep). */
     for (i = 0; i < threads->size; i++) {
         ut_thread thr = &(threads->pool[i]);
         switch (thr->state) {
@@ -438,7 +474,8 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
                     os_boolean alive;
 
                     /* Bracket reading of sleepSec with reading drowsyCnt, so that we can
-                       detect races with the other thread. */
+                     * detect races with the other thread.
+                     */
                     dCnt0 = thr->drowsyCnt;
                     pa_fence_acq ();
                     sleepSec = thr->sleepSec;
@@ -449,12 +486,14 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
                         /* thread has declared itself awake */
                         if (dCnt != thr->liveliness.prevDrowsyCnt) {
                             /* drowsyCnt has changed, so thread has declared
-                             * itself awake within the interval: restart */
+                             * itself awake within the interval: restart
+                             */
                             thr->liveliness.awakeCum = 0;
-                            alive = TRUE;
+                            alive = OS_TRUE;
                         } else {
                             /* accumulate awake time and check if the interval
-                               hasn't passed yet */
+                             * hasn't passed yet
+                             */
                             thr->liveliness.awakeCum += tdelta;
                             alive = (thr->liveliness.awakeCum < threads->interval);
                         }
@@ -462,22 +501,25 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
                         /* thread has declared itself asleep */
                         if (dCnt == thr->liveliness.sleepCnt) {
                             /* accumulate sleep time and check it is
-                               within bounds + interval period */
+                             * within bounds + interval period
+                             */
                             thr->liveliness.sleepCum += tdelta;
                             alive = ((sleepSec == 0) || (thr->liveliness.sleepCum < (OS_DURATION_INIT(sleepSec, 0) + threads->interval)));
                         } else if (dCnt == dCnt0) {
                             /* sleepSec we read is consistent with drowsyCnt (since the drowsyCnt
-                               read before and after we read sleepSec are equal) */
+                             * read before and after we read sleepSec are equal)
+                             */
                             thr->liveliness.sleepCnt = dCnt;
                             thr->liveliness.sleepCum = 0;
-                            alive = TRUE;
+                            alive = OS_TRUE;
                         } else {
                             /* inconsistent sleep state which means the thread must have been
-                               awake at that point; we update sleepCnt to avoid (with
-                               certainty) a race with the other thread where we eventually
-                               erroneously conclude that its drowsyCnt equals our sleepCnt */
+                             * awake at that point; we update sleepCnt to avoid (with
+                             * certainty) a race with the other thread where we eventually
+                             * erroneously conclude that its drowsyCnt equals our sleepCnt
+                             */
                             thr->liveliness.sleepCnt = dCnt - 2;
-                            alive = TRUE;
+                            alive = OS_TRUE;
                         }
                     }
 
@@ -506,7 +548,6 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
                 }
                 break;
             case UT_THREAD_STATE_REAP:
-                ut_threadStateSet(thr, UT_THREAD_STATE_ZERO, thr->tid, NULL);
                 /* FALLSTHROUGH */
             case UT_THREAD_STATE_ZERO:
                 /* Simulate alive. */
@@ -536,36 +577,53 @@ ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportDa
 
 
 ut_threads
-ut_threadsNew(const char *selfname, os_duration interval, os_uint32 maxthreads, void *userdata)
+ut_threadsNew(const char *selfname, os_duration interval, os_int32 maxthreads, void *userdata)
 {
     ut_threads threads = os_malloc(OS_SIZEOF(ut_threads));
+    os_result osr;
+
     assert(selfname);
     assert(maxthreads > 0);
     if (threads) {
-        os_uint32 i;
+        os_int32 i;
         memset(threads, 0, OS_SIZEOF(ut_threads));
-        if (os_mutexInit(&(threads->lock), NULL) != os_resultSuccess) {
-            OS_REPORT (OS_ERROR, OS_FUNCTION, 0, "failed to initialize mutex");
+        osr = os_mutexInit(&(threads->lock), NULL);
+        if (osr != os_resultSuccess) {
+            OS_REPORT (OS_ERROR, OS_FUNCTION, 0, "failed to initialize mutex '%s'", os_resultImage(osr));
             os_free(threads);
             return NULL;
         }
-        threads->pool = ut_mallocAligned(maxthreads * OS_SIZEOF(ut_thread));
+        threads->pool = ut_mallocAligned((os_size_t)maxthreads * OS_SIZEOF(ut_thread));
         if (threads->pool == NULL) {
             os_mutexDestroy(&(threads->lock));
             OS_REPORT(OS_ERROR, OS_FUNCTION, 0, "failed to initialize threads table");
             os_free(threads);
             return NULL;
         }
-        memset(threads->pool, 0, maxthreads * OS_SIZEOF(ut_thread));
-        for (i = 0; i < maxthreads; i++)
+        memset(threads->pool, 0, (os_size_t)maxthreads * OS_SIZEOF(ut_thread));
+        for (i = 0; i < maxthreads && osr == os_resultSuccess; i++)
         {
             ut_thread thr = &(threads->pool[i]);
             thr->state = UT_THREAD_STATE_ZERO;
             thr->drowsyCnt = 1;
             thr->name  = NULL;
             thr->threads = (void*)threads;
-            thr->liveliness.alive = TRUE;
+            thr->liveliness.alive = OS_TRUE;
+            osr = os_condInit(&thr->cond, &threads->lock, NULL);
         }
+        if (osr != os_resultSuccess) {
+            os_int32 j;
+            OS_REPORT (OS_ERROR, OS_FUNCTION, 0, "failed to initialize cond[%d] '%s'", i, os_resultImage(osr));
+            for (j = i; j >= i; j--) {
+                ut_thread thr = &(threads->pool[i]);
+                os_condDestroy(&thr->cond);
+            }
+            ut_freeAligned(threads->pool);
+            os_mutexDestroy(&(threads->lock));
+            os_free(threads);
+            return NULL;
+        }
+
         threads->size = maxthreads;
         threads->userdata = userdata;
         threads->interval = interval;
@@ -585,7 +643,7 @@ ut_threadsNew(const char *selfname, os_duration interval, os_uint32 maxthreads, 
 void
 ut_threadsFree(ut_threads threads)
 {
-    os_uint32 i;
+    os_int32 i;
 
     if (threads) {
         assert(threads->pool);
@@ -595,17 +653,19 @@ ut_threadsFree(ut_threads threads)
             ut_thread thr = ut_threadLookupSelf(threads);
             assert(thr == ut_threadLookupId(threads, threads->main));
             ut_threadAsleep(thr, UT_SLEEP_INDEFINITELY);
-            ut_threadStateSet(thr, UT_THREAD_STATE_REAP, OS_THREAD_ID_NONE, NULL);
+            ut_threadStateSet(thr, UT_THREAD_STATE_ZERO, OS_THREAD_ID_NONE, NULL);
         }
 
         for (i = 0; i < threads->size; i++) {
             ut_thread thr = &(threads->pool[i]);
             /* Just a sanity check. */
             assert(thr->state != UT_THREAD_STATE_ALIVE);
+            assert(thr->state != UT_THREAD_STATE_REAP);
             if (thr->name != NULL) {
                 os_free(thr->name);
                 thr->name = NULL;
             }
+            os_condDestroy(&thr->cond);
         }
 
         /* Now, cleanup the threads object. */

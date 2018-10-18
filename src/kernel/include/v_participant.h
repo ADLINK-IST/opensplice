@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -88,10 +89,9 @@ v_participantNew(
  */
 OS_API void
 v_participantInit(
-    v_participant _this,
-    const c_char *name,
-    v_participantQos qos,
-    c_bool enable);
+    _Inout_ v_participant _this,
+    _In_opt_z_ const c_char *name,
+    _In_ v_participantQos qos);
 
 /** \fn void v_participantFree (v_participant _this)
  *  \brief This function will free all resources claimed by the participant or any
@@ -116,7 +116,7 @@ v_participantDeinit(
 
 OS_API v_result
 v_participantEnable (
-    v_participant p);
+    _In_ v_participant p);
 
 OS_API v_participantQos
 v_participantGetQos(
@@ -158,17 +158,6 @@ v_participantNotify(
     v_event e,
     c_voidp userData);
 
-/** \fn void v_participantConnectNewGroup( v_participant _this, v_event event);
- *  \brief This function will connect all DataWriters and DataReaders of
- *         intrest to the new group (indecated by the 'new group' event.
- *  Note that for now the event is passed but eventually the group should be
- *  passed.
- */
-OS_API void
-v_participantConnectNewGroup (
-    v_participant _this,
-    v_event event);
-
 OS_API void
 v_participantAssertLiveliness(
     v_participant _this);
@@ -195,10 +184,29 @@ OS_API void
 v_participantResendManagerQuit(
     v_participant _this);
 
-OS_API v_typeRepresentation
-v_participantLookupTypeRepresentation (
-    v_participant p,
-    const os_char *typeName);
+OS_API void
+v_participantTransactionsPurge (
+    v_participant _this);
+
+OS_API v_result
+v_participantIgnoreParticipant (
+    v_participant _this,
+    v_gid gid);
+
+OS_API v_result
+v_participantIgnoreTopic (
+    v_participant _this,
+    v_gid gid);
+
+OS_API v_result
+v_participantIgnorePublication (
+    v_participant _this,
+    v_gid gid);
+
+OS_API v_result
+v_participantIgnoreSubscription (
+    v_participant _this,
+    v_gid gid);
 
 #undef OS_API
 

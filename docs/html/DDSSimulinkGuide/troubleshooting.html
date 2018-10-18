@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>14. Troubleshooting &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="15. Appendix A" href="bus_to_dds_mapping.html" />
+    <link rel="prev" title="13. Generating C code with Simulink Coder" href="simulink_coder.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="bus_to_dds_mapping.html" title="15. Appendix A"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simulink_coder.html" title="13. Generating C code with Simulink Coder"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="troubleshooting">
+<span id="id1"></span><h1>14. Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h1>
+<p><strong>When double clicking on a DDS block to view the block parameters, an error dialog is shown with the message: Error evaluating &#8216;MaskDialog&#8217; callback of SubSystem block (mask).</strong></p>
+<p><em>Cause:    The OSPL environment variables have not been setup correctly.</em></p>
+<p><em>Solution: Open a command shell and run the script to setup OSPL environment variables.</em></p>
+<blockquote>
+<div><p>Linux</p>
+<ul>
+<li><p class="first">Open a Linux terminal.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.com file.</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.linux</em></p>
+</li>
+<li><p class="first">Run release.com.   (Type in “. release.com” at command line.)</p>
+</li>
+</ul>
+<p>Windows</p>
+<ul>
+<li><p class="first">Open a command prompt.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.bat file.</p>
+<p><em>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.win64</em></p>
+</li>
+<li><p class="first">Run release.bat.   (Type in “release.bat” at command line.)</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="simulink_coder.html"
+                        title="previous chapter">13. Generating C code with Simulink Coder</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bus_to_dds_mapping.html"
+                        title="next chapter">15. Appendix A</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/troubleshooting.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="bus_to_dds_mapping.html" title="15. Appendix A"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simulink_coder.html" title="13. Generating C code with Simulink Coder"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

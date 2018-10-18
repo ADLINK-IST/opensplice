@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@ public abstract class TopicBase extends EntityImpl {
         return super.deinit();
     }
 
-    public class TopicBaseImpl extends DDS._TopicLocalBase {
+    public static class TopicBaseImpl extends DDS._TopicLocalBase {
         private static final long serialVersionUID = -2209751554333737867L;
 
         /* topic operations */

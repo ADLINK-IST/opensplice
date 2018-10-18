@@ -1,10 +1,10 @@
-.. _`OpenSplice Architectural Modes`:
+.. _`Vortex OpenSplice Architectural Modes`:
 
-##############################
-OpenSplice Architectural Modes
-##############################
+#####################################
+Vortex OpenSplice Architectural Modes
+#####################################
 
-OpenSplice Enterprise provides two main architectural modes. These 
+Vortex OpenSplice provides two main architectural modes. These 
 are the **Single Process** deployment mode, which provides a **Standalone** 
 architecture, and, unique to OpenSplice, the **Shared Memory** deployment 
 mode which provides a **Federated** architecture. 
@@ -21,7 +21,7 @@ Features of this mode are:
 
 + Uses in-process heap memory for the DDS database.
 
-+ OpenSplice Enterprise services run as threads within the 
++ Vortex OpenSplice services run as threads within the 
   application process.
 
 + When there are multiple DDS application processes on a single 
@@ -60,7 +60,7 @@ Features of this mode are:
   more efficient than having to actually move the data *via* a 
   networking service, allowing for improved performance and scalability.
 
-+ OpenSplice Enterprise services are able to arbitrate over all of the 
++ Vortex OpenSplice services are able to arbitrate over all of the 
   DDS data on the node, and so can make smart decisions with respect 
   to data delivery so that priority QoS values (for example) are 
   respected; this is not possible when there are multiple standalone 
@@ -116,7 +116,7 @@ attribute but does contain a '<Database>' attribute.**
 |caution|
 Note that by default the ``OSPL_URI`` environment variable refers to a 
 *Single Process* configuration, so to see the extra performance and 
-scalability benefits of OpenSplice DDS's Shared Memory 
+scalability benefits of Vortex OpenSplice's Shared Memory 
 architecture it is necessary to switch from the default. 
 
 

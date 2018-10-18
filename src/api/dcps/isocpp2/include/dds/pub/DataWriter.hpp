@@ -22,7 +22,6 @@
 #include <dds/core/InstanceHandle.hpp>
 #include <dds/topic/Topic.hpp>
 #include <dds/topic/TopicInstance.hpp>
-//#include <dds/topic/BuiltinTopic.hpp>
 #include <dds/pub/Publisher.hpp>
 #include <dds/pub/AnyDataWriter.hpp>
 
@@ -109,7 +108,14 @@ public:
      * pub.default_datawriter_qos(qos) @endlink or, if the call was never made, the
      * @ref anchor_dds_pub_datawriter_qos_defaults "default" values.
      *
+     * <i>Implicit Publisher</i><br>
+     * It is expected to provide a Publisher when creating a DataWriter. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * Publisher is created with a default QoS and the DomainParticipant from the provided
+     * Topic.
+     *
      * @param pub the Publisher that will contain this DataWriter
+     *            (or dds::core::null for an implicit publisher)
      * @param topic the Topic associated with this DataWriter
      * @throws dds::core::Error
      *                  An internal error has occurred.
@@ -141,6 +147,21 @@ public:
      * dds::pub::DataWriter<Foo::Bar> writer(publisher, topic, writerQos);
      * @endcode
      *
+     * <i>Restictions on QoS policies<i>
+     * For a coherent writer there exists a constraint on the setting of the History QoS policy.
+     * When a writer is created with publisher that has a presentation QosPolicy with
+     * coherent_access enabled and where the access_scope is either TOPIC or GROUP
+     * then the History QoS policy of the coherent writer should be set to KEEP_ALL.
+     * Applying this constraint is necessary because in case of a keep-last writer the
+     * samples in the writers history could be pushed out by a new sample which causes that
+     * the transaction would not become complete.
+     *
+     * <i>Implicit Publisher</i><br>
+     * It is expected to provide a Publisher when creating a DataWriter. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * Publisher is created with a default QoS and the DomainParticipant from the provided
+     * Topic.
+     *
      * <i>Listener</i><br>
      * The following statuses are applicable to the DataWriterListener:
      *  - dds::core::status::StatusMask::offered_deadline_missed()
@@ -154,6 +175,7 @@ public:
      * for more information.
      *
      * @param pub the Publisher that will contain this DataWriter
+     *            (or dds::core::null for an implicit publisher)
      * @param topic the Topic associated with this DataWriter
      * @param qos the DataWriter qos.
      * @param listener the DataWriter listener.
@@ -165,6 +187,8 @@ public:
      *                  complete this operation.
      * @throws dds::core::InconsistentPolicyError
      *                  The parameter qos contains conflicting QosPolicy settings.
+     * @throws dds::core::PreconditionNotMetError
+     *                  The History QosPolicy is not KEEP_ALL when applied to a coherent writer.
      */
     DataWriter(const dds::pub::Publisher& pub,
                const ::dds::topic::Topic<T>& topic,

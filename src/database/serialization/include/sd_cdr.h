@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,6 +28,11 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define SD_CDR_OK 0
@@ -143,5 +149,9 @@ OS_API void sd_cdrSerdataFree (struct sd_cdrSerdata *serdata) __nonnull_all__;
 OS_API os_uint32 sd_cdrSerdataBlob (const void **blob, struct sd_cdrSerdata *serdata) __nonnull_all__ __attribute_warn_unused_result__;
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* SD_CDR_H */

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>4. OpenSplice Architectural Modes &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    <title>4. Vortex OpenSplice Architectural Modes &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
     
     <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -24,8 +24,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
-    <link rel="next" title="5. OpenSplice Networking Options" href="networking.html" />
-    <link rel="prev" title="3. OpenSplice Enterprise Basics" href="basics.html" /> 
+    <link rel="next" title="5. Vortex OpenSplice Networking Options" href="networking.html" />
+    <link rel="prev" title="3. Vortex OpenSplice Basics" href="basics.html" /> 
   </head>
   <body>
     <div class="related">
@@ -35,10 +35,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="networking.html" title="5. OpenSplice Networking Options"
+          <a href="networking.html" title="5. Vortex OpenSplice Networking Options"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="basics.html" title="3. OpenSplice Enterprise Basics"
+          <a href="basics.html" title="3. Vortex OpenSplice Basics"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
       </ul>
@@ -49,9 +49,9 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="opensplice-architectural-modes">
-<span id="id1"></span><h1>4. OpenSplice Architectural Modes<a class="headerlink" href="#opensplice-architectural-modes" title="Permalink to this headline">¶</a></h1>
-<p>OpenSplice Enterprise provides two main architectural modes. These
+  <div class="section" id="vortex-opensplice-architectural-modes">
+<span id="id1"></span><h1>4. Vortex OpenSplice Architectural Modes<a class="headerlink" href="#vortex-opensplice-architectural-modes" title="Permalink to this headline">¶</a></h1>
+<p>Vortex OpenSplice provides two main architectural modes. These
 are the <strong>Single Process</strong> deployment mode, which provides a <strong>Standalone</strong>
 architecture, and, unique to OpenSplice, the <strong>Shared Memory</strong> deployment
 mode which provides a <strong>Federated</strong> architecture.</p>
@@ -62,7 +62,7 @@ mode which provides a <strong>Federated</strong> architecture.</p>
 <li>Simplest to run and get started with.</li>
 <li>Each DDS application process contains the entire DDS infrastructure.</li>
 <li>Uses in-process heap memory for the DDS database.</li>
-<li>OpenSplice Enterprise services run as threads within the
+<li>Vortex OpenSplice services run as threads within the
 application process.</li>
 <li>When there are multiple DDS application processes on a single
 machine, the communication between them must be done <em>via</em> a
@@ -86,7 +86,7 @@ memory rather than creating the DDS infrastructure itself.</li>
 <li>Reading and writing directly to locally-mapped memory is far
 more efficient than having to actually move the data <em>via</em> a
 networking service, allowing for improved performance and scalability.</li>
-<li>OpenSplice Enterprise services are able to arbitrate over all of the
+<li>Vortex OpenSplice services are able to arbitrate over all of the
 DDS data on the node, and so can make smart decisions with respect
 to data delivery so that priority QoS values (for example) are
 respected; this is not possible when there are multiple standalone
@@ -129,7 +129,7 @@ attribute but does contain a &#8216;&lt;Database&gt;&#8217; attribute.</strong><
 <p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
 Note that by default the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable refers to a
 <em>Single Process</em> configuration, so to see the extra performance and
-scalability benefits of OpenSplice DDS&#8217;s Shared Memory
+scalability benefits of Vortex OpenSplice&#8217;s Shared Memory
 architecture it is necessary to switch from the default.</p>
 </div>
 </div>
@@ -145,7 +145,7 @@ architecture it is necessary to switch from the default.</p>
             </a></p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">4. OpenSplice Architectural Modes</a><ul>
+<li><a class="reference internal" href="#">4. Vortex OpenSplice Architectural Modes</a><ul>
 <li><a class="reference internal" href="#the-single-process-or-standalone-deployment">4.1. The Single Process or Standalone deployment</a></li>
 <li><a class="reference internal" href="#the-shared-memory-or-federated-deployment">4.2. The Shared Memory or Federated deployment</a></li>
 <li><a class="reference internal" href="#how-to-select-the-architectural-mode">4.3. How to select the Architectural Mode</a></li>
@@ -155,10 +155,10 @@ architecture it is necessary to switch from the default.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="basics.html"
-                        title="previous chapter">3. OpenSplice Enterprise Basics</a></p>
+                        title="previous chapter">3. Vortex OpenSplice Basics</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="networking.html"
-                        title="next chapter">5. OpenSplice Networking Options</a></p>
+                        title="next chapter">5. Vortex OpenSplice Networking Options</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/architectural.txt"
@@ -188,16 +188,16 @@ architecture it is necessary to switch from the default.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="networking.html" title="5. OpenSplice Networking Options"
+          <a href="networking.html" title="5. Vortex OpenSplice Networking Options"
              >next</a> |</li>
         <li class="right" >
-          <a href="basics.html" title="3. OpenSplice Enterprise Basics"
+          <a href="basics.html" title="3. Vortex OpenSplice Basics"
              >previous</a> |</li>
         <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

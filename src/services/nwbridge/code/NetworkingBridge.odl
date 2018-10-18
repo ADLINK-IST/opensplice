@@ -1,0 +1,20 @@
+module NetworkingBridge {
+    /************************ ENUMERATIONS ************************/
+
+    /* ServiceState contains the possible states of an R&R service */
+    enum ServiceState {
+        SERVICE_INITIALISING,    /* Service is starting */
+        SERVICE_OPERATIONAL,     /* Builtin-scenario is started, service is able to receive commands */
+        SERVICE_TERMINATING,     /* Service is stopping all scenarios and shutting down */
+        SERVICE_TERMINATED       /* Service is terminated */
+    };
+
+    /************************ TYPES ************************/
+
+    /* Topic used to monitor the status of a NetworkingBridge service */
+    struct ServiceStatus {
+        string serviceId;           /* Name identifying the service */
+        ServiceState state;         /* Current state of the service */
+    };
+#pragma keylist ServiceStatus serviceId
+};

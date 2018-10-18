@@ -23,6 +23,7 @@ endif
 
 ifeq ($(INCLUDE_TOOLS_DEBUG),yes)
 SUBSYSTEMS	+= debug
+SUBSYSTEMS	+= topmon
 endif
 
 ifneq (,$(findstring devdat,$(SPLICE_TARGET)))

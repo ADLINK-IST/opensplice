@@ -1,5 +1,5 @@
 #ifndef _TRIANGLE_HPP
-#define	_TRIANGLE_HPP
+#define _TRIANGLE_HPP
 /** @file */
 
 #include <Shape.hpp>

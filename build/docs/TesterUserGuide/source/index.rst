@@ -9,7 +9,7 @@ The Vortex OpenSplice Tester User Guide
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    introduction
    getstarted
@@ -19,11 +19,11 @@ The Vortex OpenSplice Tester User Guide
    messageinterfaces
    gpbuffers
    pythonscripting
-   
+
    appendixa
-   
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,6 +46,7 @@
 #include <process.h>
 #include "os_atomics.h"
 #include "os_uniqueNodeId.h"
+#include "os_signalHandler.h"
 
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0502
 /* Minimum Windows Server 2003 SP1, Windows XP SP2 == _WIN32_WINNT_WS03 (0x0502) */
@@ -126,6 +128,7 @@ os_osExit(
     }
     return;
 }
+
 
 #include "../common/code/os_service.c"
 #include "os_win32incs.h"

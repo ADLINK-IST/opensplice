@@ -1,0 +1,13 @@
+# "Standard" features we don't build for this platform.
+set_var INCLUDE_CS no
+set_var INCLUDE_DBT_API_DCPS_SACS no
+set_var INCLUDE_API_DCPS_SACS no
+set_var INCLUDE_ORB no
+set_var INCLUDE_TOOLS_DCG no
+set_var INCLUDE_API_DCPS_CCPP no
+set_var INCLUDE_DBT_API_DCPS_CCPP no
+set_var INCLUDE_API_STREAMS_CCPP no
+set_var INCLUDE_SERVICES_DBMS no
+
+set_undefined_var INCLUDE_API_DCPS_ISOCPP yes
+set_undefined_var INCLUDE_API_DCPS_ISOCPP2 yes

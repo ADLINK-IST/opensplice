@@ -37,5 +37,9 @@ ifeq ($(INCLUDE_API_DCPS_SACS),yes)
 SUBSYSTEMS      += sacs
 endif # INCLUDE_API_DCPS_SACS
 endif # INCLUDE_CS
+SUBSYSTEMS	+= python
+ifeq ($(INCLUDE_API_DCPS_NODEJS),yes)
+SUBSYSTEMS      += nodejs
+endif # INCLUDE_API_DCPS_NODEJS
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

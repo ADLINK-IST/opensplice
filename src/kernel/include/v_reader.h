@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -104,7 +105,8 @@ v_readerGetSubscriptionMatchedStatus(
 OS_API v_result
 v_readerWaitForHistoricalData(
     v_reader _this,
-    os_duration timeout);
+    os_duration timeout,
+    c_bool enable);
 
 OS_API v_result
 v_readerWaitForHistoricalDataWithCondition(
@@ -117,12 +119,19 @@ v_readerWaitForHistoricalDataWithCondition(
     c_long max_samples,
     c_long max_instances,
     c_long max_samples_per_instance,
-    os_duration timeout);
+    os_duration timeout,
+    c_bool enable);
 
 OS_API void
 v_readerNotifyStateChange(
     v_reader _this,
     c_bool complete);
+
+OS_API c_bool
+v_readerWalkEntries_nl(
+    v_reader _this,
+    c_action action,
+    c_voidp arg);
 
 OS_API c_bool
 v_readerWalkEntries(

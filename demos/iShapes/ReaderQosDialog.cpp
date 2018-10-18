@@ -36,7 +36,13 @@ ReaderQosDialog::get_qos()
     qos_ << dds::core::policy::LatencyBudget(dds::core::Duration::infinite());
 
     if (qosForm_.reliableRButt->isChecked())
+    {
         qos_ << dds::core::policy::Reliability::Reliable();
+    }
+    else
+    {
+        qos_ << dds::core::policy::Reliability::BestEffort();
+    }
 
     switch (qosForm_.durabilityComboBox->currentIndex())
     {
@@ -55,7 +61,14 @@ ReaderQosDialog::get_qos()
     };
 
     if (qosForm_.exclusiveRButt->isChecked())
+    {
         qos_ << dds::core::policy::Ownership::Exclusive();
+    }
+    else
+    {
+        qos_ << dds::core::policy::Ownership::Shared();
+    }
+
     if (qosForm_.keepLastRButton->isChecked())
     {
         qos_ << dds::core::policy::History::KeepLast(qosForm_.depthSpinBox->value());
@@ -66,11 +79,12 @@ ReaderQosDialog::get_qos()
         h.depth(-1);
         qos_ << h;
     }
+
     if (qosForm_.timeBasedFilterActive->isChecked()) {
         int64_t period = qosForm_.timeBasedFilterValue->text().toInt();
         dds::core::Duration d;
         qos_ << dds::core::policy::TimeBasedFilter(d.from_millisecs(period));
-  }
+    }
 
     return qos_;
 }

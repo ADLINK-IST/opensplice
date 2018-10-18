@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,6 +35,7 @@
 #include "v_reader.h"
 #include "v_readerQos.h"
 #include "v_dataReaderSample.h"
+#include "v_builtin.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -71,12 +73,12 @@ v_dataReaderWalkInstances (
 
 OS_API v_dataReader
 v_dataReaderNew(
-    v_subscriber subscriber,
-    const c_char *name,
-    q_expr OQLexpr,
+    _In_ v_subscriber subscriber,
+    _In_opt_z_ const c_char *name,
+    _In_opt_ q_expr OQLexpr,
     const c_value params[],
-    v_readerQos qos,
-    c_bool enable);
+    os_uint32 nrOfParams,
+    _In_opt_ v_readerQos qos);
 
 OS_API v_dataReader
 v_dataReaderNewBySQL (
@@ -84,8 +86,8 @@ v_dataReaderNewBySQL (
     const os_char *name,
     const os_char *expr,
     const c_value params[],
-    v_readerQos qos, 
-    c_bool enable);
+    os_uint32 nrOfParams,
+    v_readerQos qos);
 
 OS_API void
 v_dataReaderFree(
@@ -93,7 +95,7 @@ v_dataReaderFree(
 
 OS_API v_result
 v_dataReaderEnable(
-    v_dataReader _this);
+    _Inout_ v_dataReader _this);
 
 OS_API c_type
 v_dataReaderInstanceType(
@@ -176,6 +178,36 @@ v_dataReaderNotReadCount(
 OS_API c_ulong
 v_dataReaderGetNumberOpenTransactions(
     v_dataReader _this);
+
+OS_API v_result
+v_dataReaderSetQos(
+    v_dataReader _this,
+    v_readerQos qos);
+
+/* This operation will visit all discovered matching publications for this dataReader.
+ * The given action routine will be invoked on each publication info message.
+ * The signature of the action routine : v_result (*action)(const v_publicationInfo *info, void *arg)
+ * Issue: don't like operating on info as being an attribute of a message,
+ *        better visit the whole message then it can also be returned as kept ref.
+ */
+OS_API v_result
+v_dataReaderReadMatchedPublications(
+    v_dataReader _this,
+    v_publicationInfo_action action,
+    c_voidp arg);
+
+/* This operation will visit the discovered matching publication for this dataReader identified by the given GID.
+ * The given action routine will be invoked on the GID associated publication info message.
+ * The signature of the action routine : v_result (*action)(const v_publicationInfo *info, void *arg)
+ * Issue: don't like operating on info as being an attribute of a message,
+ *        better visit the whole message then it can also be returned as kept ref.
+ */
+OS_API v_result
+v_dataReaderReadMatchedPublicationData(
+    v_dataReader _this,
+    v_gid publication,
+    v_publicationInfo_action action,
+    c_voidp arg);
 
 #undef OS_API
 

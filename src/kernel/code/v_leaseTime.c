@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -123,19 +124,20 @@ v_leaseTimeDiff(
 
     return delta;
 }
-
 v_leaseTime
 v_leaseTimeAdd(
     v_leaseTime t,
     os_duration duration)
 {
-    assert(t._d == V_LEASE_KIND_MONOTONIC || t._d == V_LEASE_KIND_ELAPSED);
+    v_leaseTime t1;
 
+    assert(t._d == V_LEASE_KIND_MONOTONIC || t._d == V_LEASE_KIND_ELAPSED);
+    t1._d = t._d;
     if (t._d == V_LEASE_KIND_MONOTONIC) {
-        os_timeMAdd(t._u.tm, duration);
+        t1._u.tm = os_timeMAdd(t._u.tm, duration);
     } else {
-        os_timeEAdd(t._u.te, duration);
+        t1._u.te = os_timeEAdd(t._u.te, duration);
     }
 
-    return t;
+    return t1;
 }

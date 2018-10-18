@@ -183,7 +183,7 @@ int main (int argc, char **argv)
         status = dds_write (writer, &sample);
         if (dds_err_no (status) == DDS_RETCODE_TIMEOUT)
         {
-          timedOut = true;
+            timedOut = !done;
         }
         else
         {

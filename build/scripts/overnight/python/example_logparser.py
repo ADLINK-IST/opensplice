@@ -133,7 +133,7 @@ def process_block( cond, loglines, logname ):
 
     err_return =''
     diffcount = 0
-    pluscount = 0    
+    pluscount = 0
     firstlinedetected = False
     maxplusinst = 0
     instcount = 0
@@ -194,7 +194,7 @@ def process_block( cond, loglines, logname ):
                 pluscount = 0
                 contigcount = 0
                 # single plusline at present
-            
+
         if not ignored and firstlinedetected:
             blockline = "{}\n{}".format(blockline, logline)
 
@@ -210,9 +210,9 @@ def process_block( cond, loglines, logname ):
                     if logline == plusline["line"]:
                         pluscount += 1
 
-        
+
         if not ignored and contains(lastline, logline) and firstlinedetected:
- 
+
             firstlinedetected = False
             lline = diffcount
 
@@ -322,12 +322,17 @@ def process_line( cond, loglines, logname ):
             logline = line.strip()
             if contains(condline, logline):
                 instcount += 1
+            if contains("A debugging session is active", logline):
+                err_return += 'Debug trace found in ' + logname + ' process did not terminate properly; '
 
         if maxinst != 'All':
             if instcount < int(maxinst):
                 err_return += 'Too few instances in ' + logname + ': ' + condname + ' ' + str(instcount) + '; '
             elif instcount > int(maxinst):
                 err_return += 'Too many instances in ' + logname + ': ' + condname + ' ' + str(instcount) + '; '
+
+        if instcount == 0:
+            err_return += 'No instances in ' + logname + ': ' + condname + '; '
 
     else:
         # condition not allowed in log file

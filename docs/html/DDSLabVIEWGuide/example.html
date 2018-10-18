@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Demo iShapes Example &mdash; The Vortex OpenSplice LabVIEW Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice LabVIEW Guide" href="index.html" />
+    <link rel="next" title="7. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="5. QoS Provider" href="qos_provider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="7. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="demo-ishapes-example">
+<span id="id1"></span><h1>6. Demo iShapes Example<a class="headerlink" href="#demo-ishapes-example" title="Permalink to this headline">¶</a></h1>
+<p>A simple demo iShapes example is provided to demonstrates the basic capabilities of the LabVIEW DDS integration. It displays DDS communication between LabVIEW and pure DDS applications.</p>
+<p>The demo_ishapes.vi example (LabVIEW application) can be found using the <strong>NI Example Finder</strong> in LabVIEW:</p>
+<div class="figure">
+<img alt="NI Example Finder" src="_images/example_finder.png" />
+</div>
+<p>The demo_ishapes.exe (DDS application) can be found in the following directory.</p>
+<blockquote>
+<div><cite>OSPL_HOME</cite>/bin/demo_ishapes.exe</div></blockquote>
+<div class="section" id="example-files">
+<h2>6.1. Example Files<a class="headerlink" href="#example-files" title="Permalink to this headline">¶</a></h2>
+<p>An explanation of what each example file does is provided below.</p>
+<div class="figure">
+<img alt="Demo ishapes files" src="_images/demo_ishapes_files.png" />
+</div>
+<p><strong>DDS_Data Folder</strong></p>
+<p>This folder contains the idl file and artifacts generated from idlpp process.</p>
+<p><strong>ishape.idl</strong></p>
+<ul class="simple">
+<li>Defines the ShapeType in idl</li>
+<li>Used to generate the LabVIEW DDS VIs via idlpp</li>
+</ul>
+<p><strong>ishape.idl.xml</strong></p>
+<ul class="simple">
+<li>Defines the topic descriptor from idl file</li>
+</ul>
+<p><strong>ShapeType_CicoTable.vi</strong></p>
+<ul class="simple">
+<li>Defines the copy-in, copy-out table information for mapping IDL to LabVIEW types</li>
+</ul>
+<p><strong>ShapeType.ctl</strong></p>
+<ul class="simple">
+<li>Defines a ShapeType cluster in LabVIEW; generated from idlpp</li>
+<li>The ShapeType represents a DDS topic type</li>
+<li>ShapeType specifies 4 properties:  color, x, y, shapesize</li>
+</ul>
+<p><strong>ShapeType_Read.vi</strong></p>
+<ul class="simple">
+<li>DDS Read ShapeType samples</li>
+</ul>
+<p><strong>ShapeType_Write.vi</strong></p>
+<ul class="simple">
+<li>DDS Write ShapeType samples</li>
+</ul>
+<p><strong>ShapeType_Topic.vi</strong></p>
+<ul class="simple">
+<li>DDS Register ShapeType topic</li>
+</ul>
+<p><strong>DDS_PersistentQoS_All.xml</strong></p>
+<ul class="simple">
+<li>XML file that specifies the DDS QoS (quality of service) settings for RegisterTopic</li>
+</ul>
+<p><strong>DDS_VolatileQoS_All.xml</strong></p>
+<ul class="simple">
+<li>XML file that specifies the DDS QoS (quality of service) settings for Reader and Writer entities</li>
+</ul>
+<p><strong>demo_ishapes.vi</strong></p>
+<ul class="simple">
+<li>Creates a participant on the default DDS domain</li>
+<li>Registers a ShapeType Topic to Read and to Write to one of the three topics: Circle, Square or Triangle</li>
+<li>Subscribes to the shape and color from demo_ishapes.exe DDS application</li>
+<li>As soon as they match, demo_ishapes.vi publishes to the DDS application and follows the subscribed shape</li>
+</ul>
+</div>
+<div class="section" id="steps-to-run-example">
+<h2>6.2. Steps to run example<a class="headerlink" href="#steps-to-run-example" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic">
+<li><p class="first">Open command shell and run script to setup environment variables.</p>
+<blockquote>
+<div><p><strong>Linux</strong></p>
+<ul>
+<li><p class="first">Open a Linux terminal.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.com file.</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux</em></p>
+</li>
+<li><p class="first">Run release.com. (Type in “. release.com” at command line.)</p>
+</li>
+</ul>
+<p><strong>Windows</strong></p>
+<ul>
+<li><p class="first">Open a command prompt.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.bat file.</p>
+<p><em>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.win64</em></p>
+</li>
+<li><p class="first">Run release.bat.   (Type in “release.bat” at command line.)</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Navigate to the directory that contains demo_ishapes.exe DDS application and run the application using the command shell used in Step 1.</p>
+<blockquote>
+<div><p><strong>Linux</strong></p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux/bin</em></p>
+<ul class="simple">
+<li>Run demo_ishapes.exe (Type in “./demo_ishapes.exe &amp;” at command line)</li>
+</ul>
+<p><strong>Windows</strong></p>
+<p><em>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.win64/bin</em></p>
+<ul class="simple">
+<li>Run demo_ishapes.exe (Type in “demo_ishapes.exe &amp;” at command line)</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Start LabVIEW using the <strong>SAME</strong> command shell used in Step 1. Open the demo_ishapes.vi using the <strong>NI Example Finder</strong> in LabVIEW.</p>
+<p><em>NOTE:   If LabVIEW and the demo_ishapes.exe application are NOT started from a command shell with the correct OSPL environment variables set, the example will not work.</em></p>
+</li>
+</ol>
+<ol class="arabic" start="4">
+<li><p class="first">In the LabVIEW demo_ishapes.vi application make the following selections:</p>
+<p>Read Shape: Circle
+Track color: GREEN</p>
+<p>Write Shape: Triangle
+Write color: MAGENTA</p>
+<div class="figure">
+<img alt="Demo ishapes LabVIEW selection" src="_images/labview_example_selection.png" />
+</div>
+</li>
+</ol>
+<ol class="arabic" start="5">
+<li><p class="first">In the demo_ishapes.exe DDS application make the following selections:</p>
+<p>Shape: Circle
+Color: Green
+Click <strong>Publish</strong></p>
+<p>Shape: Triangle
+Click <strong>Subscribe</strong></p>
+<div class="figure">
+<img alt="Demo ishapes DDS application selection" src="_images/dds_example_selection.png" />
+</div>
+</li>
+<li><p class="first">Run the LabVIEW demo_ishapes.vi application</p>
+</li>
+<li><p class="first">To stop the LabVIEW application, click on <strong>STOP</strong> on the front panel of the demo_ishapes.vi.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="output">
+<h2>6.3. Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<p>LabVIEW application publishes samples to the DDS application. In the demo_ishapes.exe application, the Triangle follows the Circle.</p>
+<div class="figure">
+<img alt="Example outputss" src="_images/example_output.png" />
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Demo iShapes Example</a><ul>
+<li><a class="reference internal" href="#example-files">6.1. Example Files</a></li>
+<li><a class="reference internal" href="#steps-to-run-example">6.2. Steps to run example</a></li>
+<li><a class="reference internal" href="#output">6.3. Output</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="previous chapter">5. QoS Provider</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">7. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/example.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="7. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

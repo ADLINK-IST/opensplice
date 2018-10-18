@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,13 +25,6 @@
 
 #include "os_report.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_cfAttribute
 v_cfAttributeNew (
     v_configuration config,
@@ -75,7 +69,7 @@ v_cfAttributeInit (
     case V_SHORT:   case V_LONG:   case V_LONGLONG:
     case V_USHORT:  case V_ULONG:  case V_ULONGLONG:
     case V_FLOAT:   case V_DOUBLE:
-    case V_CHAR:    
+    case V_CHAR:
     case V_WCHAR:   case V_WSTRING:
     case V_FIXED:   case V_OBJECT:
     default:
@@ -89,13 +83,6 @@ v_cfAttributeInit (
     }
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 c_value
 v_cfAttributeValue(
     v_cfAttribute attribute)

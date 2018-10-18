@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -67,6 +68,7 @@
 #include "c_metabase.h"
 #include "c_mmbase.h"
 #include "os_if.h"
+#include "os_defs.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT

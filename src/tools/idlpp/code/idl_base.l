@@ -368,6 +368,7 @@ preprocessor_directive(char *str)
                         }
                         idl_checkKeyListFieldName(mo, fieldName, yyerror);
                         strcat(valueString, fieldName);
+                        os_free(fieldName);
                         if (c_iterLength(pragmaItems)) {
                             strcat(valueString, ",");
                         }
@@ -395,6 +396,7 @@ preprocessor_directive(char *str)
                         }
                         idl_checkSimpleFieldName(mo, fieldName, yyerror);
                         strcat(valueString, fieldName);
+                        os_free(fieldName);
                         if (c_iterLength(pragmaItems)) {
                             strcat(valueString, ",");
                         }
@@ -424,12 +426,9 @@ preprocessor_directive(char *str)
                         }
                         idl_checkSimpleFieldName(mo, fieldName, yyerror);
                         strcat(valueString, fieldName);
+                        os_free(fieldName);
                         if (c_iterLength(pragmaItems)) {
                             strcat(valueString, ",");
-                        }
-                        if(newFieldName){
-                            os_free(newFieldName);
-                            newFieldName = NULL;
                         }
                     }
                 }

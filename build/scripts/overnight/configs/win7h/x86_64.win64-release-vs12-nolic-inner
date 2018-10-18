@@ -1,0 +1,4 @@
+. configs/common-inner
+unset RLM_HOME
+unset RLM_TARGET
+unset RLM_VERSION

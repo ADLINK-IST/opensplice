@@ -1,4 +1,4 @@
-export JAVA_HOME=/usr/local/jdk1.6.0
+export JAVA6_HOME=/usr/local/jdk1.6.0
 export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-RedHat-ES4-gcc346-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
 export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/GSOAP
@@ -6,3 +6,5 @@ export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 unset QTDIR
+export JAVA_HOME=/usr/local/jdk1.7.0
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

@@ -14,6 +14,9 @@ feature(isocpp2_cxx11) {
   specific (make) {
     extracppflags += -std=c++0x
   }
+  specific (prop:windows) {
+     macros += OSPL_USE_CXX11
+  }
 }
 
 feature(!src_co) {

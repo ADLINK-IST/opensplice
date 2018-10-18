@@ -7,18 +7,12 @@ parseconditions:
 
     product: Vortex OpenSplice
 
-    conditions: 
+    conditions:
         - name: tp_results
           type: line
           inst: All
           required: yes
           line: "payloadSize: 1 | flushMaxSamples: 10 | flushTimeOut: 0 | programTimeOut: 15 | partitionName: Streams Throughput example"
-
-        - name: tp_write
-          type: line
-          inst: All
-          required: yes
-          line: "Writing samples ....."
 
         - name: tp_samples_written
           type: line

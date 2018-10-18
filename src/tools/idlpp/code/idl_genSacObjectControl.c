@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -135,7 +136,7 @@ idl_inlineBoundedString(
     return maxlen > 0;
 }
 
-/* @brief callback function called on opening the IDL input file.
+/** @brief callback function called on opening the IDL input file.
  *
  * @param scope Current scope (not used)
  * @param name Name of the IDL input file
@@ -1007,8 +1008,7 @@ idl_sequenceOpenClose(
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
-    /*
-     * The purpose of this function is to create type sequence support functions.
+    /* The purpose of this function is to create type sequence support functions.
      *
      * The type, however, can be in a different file than this sequence. Let's
      * call that context. The context can be checked by getting the base of a
@@ -1032,7 +1032,8 @@ idl_sequenceOpenClose(
      */
 
     /* Check if current sequence support functions are already defined within
-     * the current working context. */
+     * the current working context.
+     */
     if (idl_definitionExists("objManagImpl", sequenceName)) {
         createFunctions = FALSE;
     } else {
@@ -1099,7 +1100,9 @@ idl_sequenceOpenClose(
             idl_fileOutPrintf(idl_fileCur(), "    %s *b = (%s *)buffer;\n",
                     sequenceElementName, sequenceElementName);
             idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
-            if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) {
+            if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq ||
+                    ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
+                    (idl_typeSpecType(idl_typeDefResolveFully(idl_typeSeqType(typeSeq))) == idl_tseq))) {
                 idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
                 idl_fileOutPrintf(idl_fileCur(), "        DDS_sequence_free ((_DDS_sequence)&b[i]);\n");
                 idl_fileOutPrintf(idl_fileCur(), "    }\n");
@@ -1138,7 +1141,7 @@ idl_sequenceOpenClose(
  * Standard control structure to specify that inline
  * type definitions are to be processed prior to the
  * type itself in contrast with inline.
-*/
+ */
 static idl_programControl idl_genSacLoadControl = {
     idl_prior
 };

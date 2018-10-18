@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,15 +29,16 @@
 #include "v__reader.h"        /* for v_reader()        */
 #include "v__writer.h"        /* for v_writer()        */
 #include "v_writerSample.h"
-#include "v_group.h"         /* for v_group()         */
-#include "v_message.h"       /* for v_message()       */
-#include "v_entity.h"        /* for v_entity()        */
+#include "v_group.h"          /* for v_group()         */
+#include "v_message.h"        /* for v_message()       */
+#include "v_entity.h"         /* for v_entity()        */
 #include "v_handle.h"
 #include "v__networkReader.h" /* Friend class */
 #include "v_public.h"
 #include "v_topic.h"
 #include "v_partition.h"
 #include "v_writerInstance.h"
+#include "v_networkHashValue.h"
 
 #ifdef __VERBOSE__
 #include "os_time.h"
@@ -64,48 +66,15 @@
 #define __PRINT_3__(msg, a1, a2, a3)
 #endif /* __VERBOSE__ */
 
-
-
 /* ----------------------------- v_networkReaderEntry ----------------------- */
-
-
-#define NW_ROT_CHAR(val, rot) ((c_octet) (((val) << (rot)) + ((val) >> (8-(rot)))))
 
 static v_networkHashValue
 v_networkReaderEntryCalculateHashValue(
     v_networkReaderEntry entry)
 {
-    v_networkHashValue result = {0xa0, 0x22, 0x8d, 0x07};
-
-    const char *partitionName;
-    const char *topicName;
-    const char *currentPtr;
-
-    partitionName = v_partitionName(v_groupPartition(entry->group));
-    topicName = v_topicName(v_groupTopic(entry->group));
-    currentPtr = partitionName;
-
-    while (*currentPtr != '\0') {
-        /* gcc2.96 gave internal compile errrors (with optimisation enabled)
-         * when compiling the NW_ROT_CHAR macro twice in same command :
-         * these assignments are deliberatly split over 2 lines as workaround.
-         */
-        result.h1 = (c_octet) (NW_ROT_CHAR(result.h1, 1) + NW_ROT_CHAR(*currentPtr, 4));
-        result.h2 = (c_octet) (NW_ROT_CHAR(result.h2, 2) + NW_ROT_CHAR(*currentPtr, 7));
-        result.h3 = (c_octet) (NW_ROT_CHAR(result.h3, 3) + NW_ROT_CHAR(*currentPtr, 1));
-        result.h4 = (c_octet) (NW_ROT_CHAR(result.h4, 4) + NW_ROT_CHAR(*currentPtr, 5));
-        currentPtr++;
-    }
-
-    currentPtr = topicName;
-    while (*currentPtr != '\0') {
-        result.h1 = (c_octet) (NW_ROT_CHAR(result.h1, 4) + NW_ROT_CHAR(*currentPtr, 7));
-        result.h2 = (c_octet) (NW_ROT_CHAR(result.h2, 3) + NW_ROT_CHAR(*currentPtr, 1));
-        result.h3 = (c_octet) (NW_ROT_CHAR(result.h3, 2) + NW_ROT_CHAR(*currentPtr, 5));
-        result.h4 = (c_octet) (NW_ROT_CHAR(result.h4, 1) + NW_ROT_CHAR(*currentPtr, 4));
-        currentPtr++;
-    }
-    return result;
+    return v_networkHashValueCalculate(
+        v_partitionName(v_groupPartition(entry->group)),
+        v_topicName(v_groupTopic(entry->group)));
 }
 
 
@@ -119,21 +88,17 @@ v_networkReaderEntryInit(
     v_networkPartitionId networkPartitionId,
     v_networkRoutingMode routing)
 {
-    v_networkReaderEntry found;
-
     v_entryInit(v_entry(entry),v_reader(reader));
 
     entry->group = c_keep(group);
     entry->networkId = networkId;
     entry->channelCountdown = channelsToConnect;
-    c_mutexInit(c_getBase(entry), &entry->channelCountdownMutex);
+    (void)c_mutexInit(c_getBase(entry), &entry->channelCountdownMutex);
     entry->networkPartitionId = networkPartitionId;
     entry->hashValue = v_networkReaderEntryCalculateHashValue(entry);
     entry->routing = routing;
 
-    found = v_networkReaderEntry(v_readerAddEntry(v_reader(reader), v_entry(entry)));
-    assert(found == entry);
-    c_free(found);
+    v_readerAddEntry(v_reader(reader), v_entry(entry));
 }
 
 /* Protected constructor */
@@ -178,8 +143,10 @@ v_networkReaderEntryNotifyConnected(
     c_mutexUnlock(&entry->channelCountdownMutex);
 
     if (allChannelsConnected) {
-        v_groupAddEntry(v_group(entry->group), v_entry(entry));
-        v_groupNotifyAwareness(v_group(entry->group),serviceName,TRUE);
+        if (v_groupAddEntry(v_group(entry->group), v_entry(entry))) {
+            v_entryAddGroup(v_entry(entry), v_group(entry->group));
+            v_groupNotifyAwareness(v_group(entry->group),serviceName,TRUE);
+        }
     }
 }
 

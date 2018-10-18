@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,8 +34,7 @@
  */
 #define C_CLONE_TRACE(p)
 
-/*
- * parameter t the type of object o
+/* parameter t the type of object o
  * parameter o the object of which must be determined whether it's a type
  * Returns TRUE if o is a type. The type of o is needed, because o could be
  * an inline object, and then c_getType will not work.
@@ -42,8 +42,7 @@
 #define isType(t, o) (c_isBaseObjectType(t) && c_objectIsType(o))
 #define isModule(t, o) (c_isBaseObjectType(t) && c_baseObjectKind(o) == M_MODULE) /*todo: finish this */
 
-/*
- * This object contains a reference to the destination database and a collection
+/* This object contains a reference to the destination database and a collection
  * of processed objects for resolving. This collection contains all 'source
  * object'-'destination object' pointer pairs, so for each processed object in
  * the source database, there is a matching object in the destination database.
@@ -59,14 +58,12 @@ struct c_clone_s {
     c_type type_c_type;
 };
 
-/*
- * This value is used for indentation during debugging tracing. This is not
+/* This value is used for indentation during debugging tracing. This is not
  * thread safe, as it's a shared static variable for the entire process.
  */
 C_CLONE_TRACE(static c_long indent = 0;)
 
-/*
- * This function does the actual cloning. A more detailed explanation is given
+/* This function does the actual cloning. A more detailed explanation is given
  * at the implementation.
  */
 c_object
@@ -76,9 +73,7 @@ _c_cloneAction(
     c_object srcObj,
     c_object dstObj);
 
-/*
- * Returns the string representation of a c_metaKind as a hardcoded string.
- */
+/* Returns the string representation of a c_metaKind as a hardcoded string. */
 static const c_char *
 metaKindImage (
     c_metaKind kind)
@@ -115,8 +110,7 @@ metaKindImage (
 }
 
 
-/*
- * Compares two pointers.
+/* Compares two pointers.
  * Returns:
  *  - OS_EQ when pointers are equal
  *  - OS_GT when o1 is bigger than o2
@@ -142,8 +136,7 @@ c_cloneComparePointers(
     return result;
 }
 
-/*
- * This method is used by c_clone to free the c_objects
+/* This method is used by c_clone to free the c_objects
  * when the c_clone->processed_objects collection is freed.
  */
 static void
@@ -156,8 +149,7 @@ c_clonePointerFree(
     c_free(o);
 }
 
-/*
- * The method c_clone uses this method to check whether
+/* The method c_clone uses this method to check whether
  * certain objects have already been cloned or are already being cloned.
  * It's also a faster way to resolve types (faster than c_metaResolveType),
  * when the to be resolved type is already cloned or is already being cloned.
@@ -184,8 +176,7 @@ c_cloneResolve(
 
     *dstObj = ut_get(ut_collection(_this->processed_objects), srcObj);
 
-    /*
-     * If the object has not been resolved, we check whether it's a type
+    /* If the object has not been resolved, we check whether it's a type
      * or a module, because then we can try to resolve it using
      * c_metaResolve.
      */
@@ -224,8 +215,7 @@ c_cloneResolve(
     return result;
 }
 
-/*
- * This method recursively clones all (parent) modules of the
+/* This method recursively clones all (parent) modules of the
  * module given. It returns the cloned (and c_keep'ed) module of the module given.
  * This is done separately from the rest of the clone process, as cloning a module
  * is the only exception to not cloning all of it's children.
@@ -272,8 +262,7 @@ c_cloneModules(
     return dstModule;
 }
 
-/*
- * This struct is used by c_cloneCloneCollection, which is a helper function
+/* This struct is used by c_cloneCloneCollection, which is a helper function
  * for cloning collections. The dstCollection pointer contains a reference
  * to the collection to be cloned, the c parameter contains a reference to the
  * c_clone object.
@@ -284,13 +273,13 @@ typedef struct c_cloneCloneCollectionArg_s {
 } * c_cloneCloneCollectionArg;
 
 /*
-* Used by _c_cloneAction in a collection walk to clone the objects in a collection.
-* First the c_clone->processed_objects is checked whether it contains the object
-* (which would mean the object has already been cloned, or is being cloned).
-* If the object has not been found, then the type of the object will be resolved,
-* after which the object is cloned and inserted into the collection contained by the
-* arg parameter.
-*/
+ * Used by _c_cloneAction in a collection walk to clone the objects in a collection.
+ * First the c_clone->processed_objects is checked whether it contains the object
+ * (which would mean the object has already been cloned, or is being cloned).
+ * If the object has not been found, then the type of the object will be resolved,
+ * after which the object is cloned and inserted into the collection contained by the
+ * arg parameter.
+ */
 static c_bool
 c_cloneCloneCollection (
         c_object o,
@@ -302,21 +291,16 @@ c_cloneCloneCollection (
 
    c = arg->c;
 
-   /*
-    * First try to resolve the object.
-    */
+   /* First try to resolve the object. */
    if(c_cloneResolve(c, o, &clonedObj))
    {
        if(!clonedObj){
            c_type oType = c_getType(o);
            c_type clonedObjType = NULL;
-           /*
-            * Try to resolve the type of the object.
-            */
+           /* Try to resolve the type of the object. */
            if(c_cloneResolve(c, oType, (void*)&clonedObjType))
            {
-               /*
-                * If the type of the to-be cloned object is not resolved, the type
+               /* If the type of the to-be cloned object is not resolved, the type
                 * must be cloned too.
                 */
                if(!clonedObjType)
@@ -324,9 +308,7 @@ c_cloneCloneCollection (
                    clonedObjType = _c_cloneAction(c, c_getBase(arg->dstCollection)->metaType[c_baseObjectKind(oType)], oType, NULL);
                }
 
-               /*
-                * Now we have all we need to clone the object.
-                */
+               /* Now we have all we need to clone the object. */
                assert(clonedObjType);
                clonedObj = _c_cloneAction(c, clonedObjType, o, NULL);
                c_free(clonedObjType);
@@ -359,9 +341,7 @@ c_cloneCloneCollection (
    return TRUE;
 }
 
-/*
- * Used by _c_clone in a c_scopeWalk to clone the objects in a c_scope.
- */
+/* Used by _c_clone in a c_scopeWalk to clone the objects in a c_scope. */
 static void
 c_cloneCloneScopeObject (
         c_metaObject o,
@@ -371,8 +351,7 @@ c_cloneCloneScopeObject (
 }
 
 
-/*
- * Creates a new c_clone object which contains a reference to the destination
+/* Creates a new c_clone object which contains a reference to the destination
  * database and holds the administration of processed objects.
  */
 c_clone
@@ -392,9 +371,7 @@ c_cloneNew(c_base destination)
     return _this;
 }
 
-/*
- * Cleans up the c_clone object.
- */
+/* Cleans up the c_clone object. */
 void
 c_cloneFree(c_clone _this)
 {
@@ -409,8 +386,7 @@ c_cloneFree(c_clone _this)
     os_free(_this);
 }
 
-/*
- * This function is for cloning objects. The c_clone object _this contains the reference to
+/* This function is for cloning objects. The c_clone object _this contains the reference to
  * the destination database where obj should be cloned into. This is a deep-copy, so
  * all references are cloned too.
  *
@@ -426,8 +402,7 @@ c_cloneCloneObject(
     c_object o;
     c_type type = NULL;
 
-    /*
-     * Before each action a clean administration of the processed objects is created,
+    /* Before each action a clean administration of the processed objects is created,
      * and after the clone, destroyed.
      * This is done, because of various problems if we don't do this:
      *  - cloning from different databases
@@ -484,8 +459,7 @@ c_cloneCloneObject(
     return o;
 }
 
-/*
- * This method does the actual cloning. The c_clone _this object contains the reference
+/* This method does the actual cloning. The c_clone _this object contains the reference
  * to the c_clone object containing the administration of processed objects (to be
  * able to handle cyclic references, and so objects are not cloned multiple times),
  * and a reference to the destination database. The c_type type is the type of
@@ -531,8 +505,7 @@ _c_cloneAction(
         }
     )
 
-    /*
-     * Check whether dstObj is NULL or not. If it isn't, it's an inline object
+    /* Check whether dstObj is NULL or not. If it isn't, it's an inline object
      * to which the srcObj data must be cloned. If dstObj is NULL, we need
      * to see if it already exists (and return it if true), or
      * allocate memory depending on what kind of object it is.
@@ -605,8 +578,7 @@ _c_cloneAction(
             c_object *dstRef;
             c_object srcRef;
             c_class cls = c_class(type);
-            /*
-             * we are going to handle cls and each type it extends. This is done as
+            /* we are going to handle cls and each type it extends. This is done as
              * follows:
              * while(cls){
              *      ... do what is necessary ...
@@ -691,8 +663,7 @@ _c_cloneAction(
                         }
                     )
 
-                    /*
-                     * Modules are handled as a special case, because we don't want
+                    /* Modules are handled as a special case, because we don't want
                      * every object and type in a module cloned. This is done, because
                      * e.g. when we clones some struct in module M in the source database,
                      * the result should be a struct in module M in the destination database.
@@ -715,8 +686,7 @@ _c_cloneAction(
                     }
                     else
                     {
-                        /*
-                         * This object is not definedIn a module, but some other
+                        /* This object is not definedIn a module, but some other
                          * metaObject. First see if the definedIn metaObject is
                          * in the destination database.
                          */
@@ -746,8 +716,7 @@ _c_cloneAction(
                                 return NULL; /* error */
                             }
 
-                            /*
-                             * If the type of the definedIn metaObject cannot be
+                            /* If the type of the definedIn metaObject cannot be
                              * resolved, clone it.
                              */
                             if(!definedInType)
@@ -758,8 +727,7 @@ _c_cloneAction(
                                         NULL);
                             }
 
-                            /*
-                             * Clone the definedIn metaObject to the destination
+                            /* Clone the definedIn metaObject to the destination
                              * database.
                              */
                             c_metaObject(dstObj)->definedIn = _c_cloneAction(_this,
@@ -838,8 +806,7 @@ _c_cloneAction(
                     {
                         size = c_arraySize(srcObj);
                     }
-                    /*
-                     * c_typeHasRef returns true when c_typeIsRef or c_typeHasRef is true for
+                    /* c_typeHasRef returns true when c_typeIsRef or c_typeHasRef is true for
                      * any object it contains. I.e. if an array with inline structs (no ref)
                      * contains a pointer (ref), c_typeHasRef also returns TRUE.
                      *

@@ -7,12 +7,12 @@
         <Service name="ddsi2">
             <Command>ddsi2</Command>
         </Service>
+        <Service name="durability">
+            <Command>durability</Command>
+        </Service>
         <Service enabled="false" name="cmsoap">
             <Command>cmsoap</Command>
         </Service>
-        <DurablePolicies>
-            <Policy obtain="*.*"/>
-        </DurablePolicies>
     </Domain>
     <DDSI2Service name="ddsi2">
         <General>
@@ -28,6 +28,26 @@
             <!-- <ExplicitlyPublishQosSetToDefault>true</ExplicitlyPublishQosSetToDefault> -->
         </Compatibility>
     </DDSI2Service>
+    <DurabilityService name="durability">
+        <Network>
+            <Alignment>
+                <TimeAlignment>false</TimeAlignment>
+                <RequestCombinePeriod>
+                    <Initial>2.5</Initial>
+                    <Operational>0.1</Operational>
+                </RequestCombinePeriod>
+            </Alignment>
+            <WaitForAttachment maxWaitCount="100">
+                <ServiceName>ddsi2</ServiceName>
+            </WaitForAttachment>
+        </Network>
+        <NameSpaces>
+            <NameSpace name="defaultNamespace">
+                <Partition>*</Partition>
+            </NameSpace>
+            <Policy alignee="Initial" aligner="true" durability="Durable" nameSpace="defaultNamespace"/>
+        </NameSpaces>
+    </DurabilityService>
     <TunerService name="cmsoap">
         <Server>
             <PortNr>Auto</PortNr>

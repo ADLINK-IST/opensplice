@@ -1,5 +1,7 @@
 public class $(type-name)TypeSupportImpl extends org.opensplice.dds.dcps.TypeSupportImpl
 {
+    private static final long serialVersionUID = 1L;
+
     private static java.lang.String idl_type_name = "$(scoped-meta-type-name)";
     private static java.lang.String idl_key_list = "$(key-list)";
     private static java.lang.String type_description = "$(type-description)";

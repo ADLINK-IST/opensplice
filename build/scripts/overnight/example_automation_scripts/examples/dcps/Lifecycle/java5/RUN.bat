@@ -11,11 +11,11 @@ call %FUNCTIONS% :startOSPL
 
 echo "=== Launching Lifecycle "
 echo "=== (step 1)"
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataSubscriber > subResult_1.txt 
+start "" /B java -jar sub/java5_Lifecycle_sub.jar > subResult_1.txt
 
 %SLEEP2% > NUL
 
-java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataPublisher false dispose > pubResult_1.txt
+java -jar pub/java5_Lifecycle_pub.jar false dispose > pubResult_1.txt
 
 %SLEEP5% > NUL
 
@@ -27,11 +27,11 @@ rem ==                    step_2                         ==
 rem =======================================================
 call %FUNCTIONS% :startOSPL
 
-echo "=== (step 2)" 
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataSubscriber > subResult_2.txt
+echo "=== (step 2)"
+start "" /B java -jar sub/java5_Lifecycle_sub.jar > subResult_2.txt
 %SLEEP2% >NUL
 
-java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataPublisher false unregister > pubResult_2.txt
+java -jar pub/java5_Lifecycle_pub.jar false unregister > pubResult_2.txt
 
 
 %SLEEP5% > NUL
@@ -42,13 +42,13 @@ rem ==                    step_3                         ==
 rem =======================================================
 call %FUNCTIONS% :startOSPL
 
-echo "=== (step 3)" 
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataSubscriber > subResult_3.txt
+echo "=== (step 3)"
+start "" /B java -jar sub/java5_Lifecycle_sub.jar > subResult_3.txt
 %SLEEP2% > NUL
 
-java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataPublisher false unregister > pubResult_3.txt
+java -jar pub/java5_Lifecycle_pub.jar false unregister > pubResult_3.txt
 
-%SLEEP5% > NUL 
+%SLEEP5% > NUL
 
 
 call %FUNCTIONS% :lifecycleCheckResults >> run.log

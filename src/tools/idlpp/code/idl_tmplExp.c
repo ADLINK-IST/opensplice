@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -400,6 +401,42 @@ idl_streamOutPut (
     return str->curpos;
 }
 
+void
+idl_streamOutPrintf (
+    /* QAC EXPECT 3673; Can not be solved here */
+    const idl_streamOut stream,
+    const c_char *format,
+    ...)
+{
+    va_list args;
+
+    if(stream)
+    {
+        size_t bufSize = 0;
+        c_char *buffer;
+        c_char *p;
+
+        /* figure out how much buffer to allocate */
+		va_start (args, format);
+		bufSize = (size_t)os_vsnprintf (NULL, 0, format, args);
+		va_end (args);
+
+		buffer = os_malloc(bufSize + 1);
+
+		/* do the actual printf */
+		va_start (args, format);
+		(void)os_vsnprintf (buffer, bufSize + 1, format, args);
+		va_end (args);
+
+		for(p = buffer; *p; p++) {
+			idl_streamOutPut(stream, *p);
+		}
+
+		os_free(buffer);
+    }
+}
+
+
 /****************************************************************
  * File Output Stream Class Implementation                      *
  ****************************************************************/
@@ -433,12 +470,12 @@ idl_dirOutNew(
     c_bool result;
     os_result status;
     char dirName[OS_PATH_MAX];
-    struct os_stat statBuf;
+    struct os_stat_s statBuf;
     unsigned int i;
 
     memset(dirName, 0, OS_PATH_MAX);
 
-    if (name) {
+    if ((name) && (strlen(name))) {
         result = TRUE;
 
         for (i=0; i<strlen(name) && result; i++) {
@@ -487,17 +524,14 @@ idl_dirOutNew(
                         if (status == os_resultFail) {
                             printf("'%s' is not available", dirName);
                             result = FALSE;
-                            idl_outputdir = NULL;
                         }
                     } else {
                         printf("'%s' is not a directory.\n", idl_outputdir);
                         result = FALSE;
-                        idl_outputdir = NULL;
                     }
 #else
                     printf ("'%s' is not a directory\n", dirName);
                     result = FALSE;
-                    idl_outputdir = NULL;
 #endif
                 }
             } else {
@@ -508,7 +542,6 @@ idl_dirOutNew(
         }
     } else {
         result = FALSE;
-        idl_outputdir = NULL;
     }
 
     if (result) {
@@ -524,20 +557,22 @@ idl_dirOutNew(
                 if (status == os_resultFail) {
                     printf("'%s' cannot be found", dirName);
                     result = FALSE;
-                    idl_outputdir = NULL;
                 }
             } else {
                 printf("Specified output directory '%s' is not writable.\n", idl_outputdir);
                 result = FALSE;
-                idl_outputdir = NULL;
             }
 #else
             printf("Specified output directory '%s' is not writable.\n", idl_outputdir);
             result = FALSE;
-            idl_outputdir = NULL;
 #endif
         }
     }
+    if (!result) {
+        os_free(idl_outputdir);
+        idl_outputdir = NULL;
+    }
+
 
     return result;
 }

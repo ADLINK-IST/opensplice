@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,8 +18,8 @@
  *   limitations under the License.
  *
  */
-#include "v_dataViewInstance.h"
-#include "v_dataViewSample.h"
+#include "v__dataViewInstance.h"
+#include "v__dataViewSample.h"
 #include "v__dataReaderSample.h"
 #include "v__dataView.h"
 #include "v_state.h"
@@ -106,38 +107,28 @@ checkInstance(
 v_dataViewInstance
 v_dataViewInstanceNew(
     v_dataView dataView,
-    v_readerSample sample)
+    v_dataViewSample viewSample)
 {
     v_dataViewInstance instance;
-    v_dataViewSample viewSample;
 
     assert(dataView);
-    assert(sample);
+    assert(viewSample);
     assert(C_TYPECHECK(dataView,v_dataView));
-    assert(C_TYPECHECK(sample,v_readerSample));
+    assert(C_TYPECHECK(viewSample,v_dataViewSample));
 
     instance = v_dataViewInstance(c_new(dataView->instanceType));
     if (instance) {
         v_object(instance)->kernel = v_objectKernel(dataView);
         v_objectKind(instance) = K_DATAVIEWINSTANCE;
         v_instanceInit(v_instance(instance), v_entity(dataView));
-        viewSample = v_dataViewSampleNew(instance,sample);
-        if (viewSample) {
-            viewSample->next = viewSample;
-            viewSample->prev = NULL;
-            v_dataViewInstanceTemplate(instance)->sample = viewSample;
-            v_dataReaderSampleAddViewSample(sample,viewSample);
-            instance->sampleCount = 1;
+        viewSample->next = viewSample;
+        v_dataViewInstanceTemplate(instance)->sample = viewSample;
+        instance->sampleCount = 1;
 
-            v_stateSet(v_instanceState(instance),L_NEW);
-            v_stateClear(v_readerSample(viewSample)->sampleState,L_READ);
+        v_stateSet(v_instanceState(instance),L_NEW);
+        v_stateClear(v_readerSample(viewSample)->sampleState,L_READ);
 
-            assert(C_TYPECHECK(instance,v_dataViewInstance));
-            v_dataViewNotifyDataAvailable(dataView, viewSample);
-        } else {
-            v_publicFree(v_public(instance));
-            c_free(instance);
-        }
+        assert(C_TYPECHECK(instance,v_dataViewInstance));
         CHECK_INSTANCE(instance);
     } else {
         OS_REPORT(OS_FATAL, OS_FUNCTION, V_RESULT_INTERNAL_ERROR,
@@ -189,8 +180,8 @@ v_dataViewInstanceWipe(
     CHECK_ZERO_INSTANCE(instance);
 }
 
-v_dataViewSample
-v__dataViewInstanceWrite(
+void
+v_dataViewInstanceWrite(
     v_dataViewInstance instance,
     v_dataViewSample sample,
     v_dataViewSample position)
@@ -205,7 +196,8 @@ v__dataViewInstanceWrite(
 
     head = v_dataViewInstanceTemplate(instance)->sample;
     /* Keep alive view sample must be discarded, but only after the new
-       view sample is inserted. */
+     * view sample is inserted.
+     */
     if (instance->sampleCount == 0) {
         assert (position == NULL);
         assert(head == NULL);
@@ -215,7 +207,7 @@ v__dataViewInstanceWrite(
         (*sampleptr) = sample;
 
     } else if (position == NULL) {
-    	assert(head);
+        assert(head);
         /* "normal" use case, append sample to list */
         sampleptr = (v_dataViewSample *)&head->next;
         sample->next = (*sampleptr);
@@ -225,7 +217,7 @@ v__dataViewInstanceWrite(
 
     } else {
         assert (position->next != NULL);
-    	assert(head);
+        assert(head);
         sample->next = position->next;
         if (position == head) {
             sampleptr = &v_dataViewInstanceTemplate(instance)->sample;
@@ -239,35 +231,7 @@ v__dataViewInstanceWrite(
         sample->prev = position;
         (*sampleptr) = sample;
     }
-
     instance->sampleCount++;
-
-    return sample;
-}
-
-
-
-v_writeResult
-v_dataViewInstanceWrite (
-    v_dataViewInstance instance,
-    v_readerSample sample)
-{
-    v_dataViewSample viewSample;
-
-    assert(C_TYPECHECK(instance,v_dataViewInstance));
-    assert(C_TYPECHECK(sample,v_readerSample));
-
-    CHECK_INSTANCE(instance);
-
-    viewSample = v_dataViewSampleNew(instance,sample);
-    if (viewSample) {
-        v__dataViewInstanceWrite (instance, viewSample, NULL);
-        v_dataReaderSampleAddViewSample(sample,viewSample);
-        assert(c_refCount(viewSample) == 1);
-        v_dataViewNotifyDataAvailable(v_dataView(v_instanceEntity(instance)), viewSample);
-    }
-    CHECK_INSTANCE(instance);
-    return V_WRITE_SUCCESS;
 }
 
 void
@@ -378,8 +342,8 @@ v_dataViewInstanceReadSamples(
         if (v_sampleMaskPass(sampleMask, sample)) {
             if (query != NULL) {
                 /* The history samples are swapped with the first sample to make
-                   sample-evaluation on instance level work.
-                */
+                 * sample-evaluation on instance level work.
+                 */
                 if (sample != firstSample) {
                     v_dataViewInstanceTemplate(instance)->sample = sample;
                 }
@@ -398,33 +362,6 @@ v_dataViewInstanceReadSamples(
     }
     CHECK_INSTANCE(instance);
     return v_actionResultTest(result, V_PROCEED);
-}
-
-void
-v_dataViewInstanceWalkSamples(
-    v_dataViewInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg)
-{
-    v_dataViewSample sample;
-    v_actionResult result = V_PROCEED;
-
-    assert(C_TYPECHECK(instance,v_dataViewInstance));
-    CHECK_INSTANCE(instance);
-
-    if (instance == NULL) {
-        return;
-    }
-    if (instance->sampleCount == 0) {
-        return;
-    }
-    sample = v_dataViewInstanceTemplate(instance)->sample;
-    assert (sample != NULL);
-    while (sample != NULL && v_actionResultTest(result, V_PROCEED)) {
-        result = action(v_readerSample(sample),arg);
-        sample = sample->prev;
-    }
-    CHECK_INSTANCE(instance);
 }
 
 typedef c_bool (*v_sampleCondition)(v_dataViewSample sample, c_voidp arg);
@@ -494,7 +431,8 @@ evalInstanceQuery(
 
     assert(query != NULL);
     /* The history samples are swapped with the first sample to make
-       sample-evaluation on instance level work. */
+     * sample-evaluation on instance level work.
+     */
     firstSample = v_dataViewInstanceTemplate(instance)->sample;
     if (sample != firstSample) {
         v_dataViewInstanceTemplate(instance)->sample = sample;
@@ -519,8 +457,6 @@ v_dataViewInstanceTakeSamples(
     struct v_instanceQueryArg_s instanceQueryArg_s;
 
     assert(C_TYPECHECK(instance,v_dataViewInstance));
-    /* No check, already done in TakeWithCondition */
-    /* CHECK_INSTANCE(instance); */
 
     if (query != NULL) {
         instanceQueryArg_s.query = query;
@@ -531,8 +467,6 @@ v_dataViewInstanceTakeSamples(
         proceed = v_dataViewInstanceTakeWithCondition(instance,NULL,NULL,sampleMask,action,arg);
     }
 
-    /* No check, already done in TakeWithCondition */
-    /* CHECK_INSTANCE(instance); */
     return proceed;
 }
 

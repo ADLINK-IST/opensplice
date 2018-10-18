@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -203,18 +204,11 @@ public abstract class EntityImpl extends EntityBase implements DDS.Entity {
         return handle;
     }
 
-    @Override
-    public int set_property(Property a_property) {
+    protected int checkProperty(Property a_property) {
         int result = DDS.RETCODE_OK.value;
-        long uEntity;
-
         ReportStack.start();
 
-        uEntity = this.get_user_object();
-
-        if (uEntity == 0) {
-            result = DDS.RETCODE_ALREADY_DELETED.value;
-        } else if ((result == DDS.RETCODE_OK.value) && (a_property == null)) {
+        if ((result == DDS.RETCODE_OK.value) && (a_property == null)) {
             result = DDS.RETCODE_BAD_PARAMETER.value;
             ReportStack.report(result, "Supplied Property is null.");
         }
@@ -226,6 +220,24 @@ public abstract class EntityImpl extends EntityBase implements DDS.Entity {
             result = DDS.RETCODE_BAD_PARAMETER.value;
             ReportStack.report(result, "Supplied Property.value is null.");
         }
+        ReportStack.flush(this, result != DDS.RETCODE_OK.value);
+        return result;
+
+    }
+
+    @Override
+    public int set_property(Property a_property) {
+        int result = DDS.RETCODE_OK.value;
+        long uEntity;
+
+        ReportStack.start();
+
+        uEntity = this.get_user_object();
+
+        if (uEntity == 0) {
+            result = DDS.RETCODE_ALREADY_DELETED.value;
+        }
+        result = checkProperty(a_property);
         if (result == DDS.RETCODE_OK.value) {
             result = DDS.RETCODE_UNSUPPORTED.value;
             ReportStack.report(result, "Method not implemented yet.");
@@ -233,6 +245,27 @@ public abstract class EntityImpl extends EntityBase implements DDS.Entity {
         ReportStack.flush(this, result != DDS.RETCODE_OK.value);
 
         return result;
+    }
+
+    protected int checkPropertyHolder(PropertyHolder a_property) {
+        int result = DDS.RETCODE_OK.value;
+        ReportStack.start();
+
+        if ((result == DDS.RETCODE_OK.value) && (a_property == null)) {
+            result = DDS.RETCODE_BAD_PARAMETER.value;
+            ReportStack.report(result, "Supplied PropertyHolder is null.");
+        }
+        if ((result == DDS.RETCODE_OK.value) && (a_property.value == null)) {
+            result = DDS.RETCODE_BAD_PARAMETER.value;
+            ReportStack.report(result, "Supplied PropertyHolder.value is null.");
+        }
+        if ((result == DDS.RETCODE_OK.value) && (a_property.value.name == null)) {
+            result = DDS.RETCODE_BAD_PARAMETER.value;
+            ReportStack.report(result,"Supplied PropertyHolder.value.name is null.");
+        }
+        ReportStack.flush(this, result != DDS.RETCODE_OK.value);
+        return result;
+
     }
 
     @Override
@@ -247,20 +280,7 @@ public abstract class EntityImpl extends EntityBase implements DDS.Entity {
         if (uEntity == 0) {
             result = DDS.RETCODE_ALREADY_DELETED.value;
         }
-        if ((result == DDS.RETCODE_OK.value) && (a_property == null)) {
-            result = DDS.RETCODE_BAD_PARAMETER.value;
-            ReportStack.report(result, "Supplied PropertyHolder is null.");
-        }
-        if ((result == DDS.RETCODE_OK.value) && (a_property.value == null)) {
-            result = DDS.RETCODE_BAD_PARAMETER.value;
-            ReportStack
-                    .report(result, "Supplied PropertyHolder.value is null.");
-        }
-        if ((result == DDS.RETCODE_OK.value) && (a_property.value.name == null)) {
-            result = DDS.RETCODE_BAD_PARAMETER.value;
-            ReportStack.report(result,
-                    "Supplied PropertyHolder.value.name is null.");
-        }
+        result = checkPropertyHolder(a_property);
         if (result == DDS.RETCODE_OK.value){
             result = DDS.RETCODE_UNSUPPORTED.value;
             ReportStack.report(result, "Method not implemented yet.");

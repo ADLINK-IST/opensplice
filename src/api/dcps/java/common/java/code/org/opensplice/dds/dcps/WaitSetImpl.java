@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -114,7 +115,9 @@ public class WaitSetImpl extends WaitSetBase implements DDS.WaitSetInterface {
             while (result == DDS.RETCODE_OK.value && nrTriggeredConditions == 0)
             {
                 synchronized (guards) {
-                    maxConditions = conditions.size() + guards.size() +1;
+                    synchronized (conditions) {
+                        maxConditions = conditions.size() + guards.size() +1;
+                    }
                     attachedGuards = guards.toArray();
                     if (active_conditions.value == null) {
                         active_conditions.value = new Condition[maxConditions];
@@ -332,11 +335,12 @@ public class WaitSetImpl extends WaitSetBase implements DDS.WaitSetInterface {
     }
 
     @Override
-    protected void finalize(){
+    protected void finalize() throws Throwable {
         long uWaitset = this.get_user_object();
         if (uWaitset != 0) {
             jniWaitSetFree(uWaitset);
         }
+        super.finalize();
     }
 
     @Override

@@ -1,5 +1,7 @@
 public class $(type-name)DataReaderViewImpl extends org.opensplice.dds.dcps.FooDataReaderViewImpl implements $(type-name)DataReaderView
 {
+    private static final long serialVersionUID = 1L;
+
     private long copyCache;
     private $(type-name)TypeSupport typeSupport;
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -248,7 +249,7 @@ public class DataConfiguration {
                             createDomainServiceForSerivce(de, de.getMetadata(), serviceName);
                         }
                     }
-                    /* remove commerial items from xml tree in community mode */
+                    /* remove commercial items from xml tree in community mode */
                     for (MetaNode m : comServices) {
                         if (m.getVersion().equals(ConfigModeIntializer.COMMERCIAL)
                                 && (currentMode == ConfigModeIntializer.COMMUNITY_MODE || currentMode == ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN)) {
@@ -878,7 +879,6 @@ public class DataConfiguration {
 
         this.rootElement = new DataElement(metaElement, domElement);
         this.rootElement.setOwner(this);
-        //this.initDataElement(this.rootElement);
 
         for(MetaElement me: this.metadata.getServices()){
             while(occurrences < me.getMinOccurrences()){

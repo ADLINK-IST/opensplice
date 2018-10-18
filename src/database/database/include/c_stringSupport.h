@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,6 +45,7 @@ OS_API c_char     *c_skipIdentifier (const c_char *str, const c_char *punctuatio
 OS_API c_char     *c_skipUntil      (const c_char *str, const c_char *symbolList);
 OS_API c_iter      c_splitString    (const c_char *str, const c_char *delimiters);
 OS_API c_equality  c_compareString  (const c_char *s1, const c_char *s2);
+
 /** \brief string trimmer
 *
 * Returns a newly allocated string with the same contents as the original string

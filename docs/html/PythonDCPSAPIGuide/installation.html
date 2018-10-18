@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Installation &mdash; Python DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Python DCPS API Guide" href="index.html" />
+    <link rel="next" title="4. Examples" href="examples.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>3. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the procedure to install the Python DCPS API on a Linux or Windows platform.</p>
+<div class="section" id="system-requirements">
+<h2>3.1. System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
+<p>Operating System: Linux or Windows</p>
+</div>
+<div class="section" id="dependencies">
+<h2>3.2. Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>Linux</strong></dt>
+<dd><ul class="first last simple">
+<li>Python3 version 3.4.0 or later</li>
+<li>pip3 (package &#8220;python3-pip&#8221; on most linux package managers)</li>
+<li>GCC 4.8 or later</li>
+</ul>
+</dd>
+<dt><strong>Windows</strong></dt>
+<dd><ul class="first last simple">
+<li>Python version 3.5.0</li>
+<li>pip (usually already included in Python for Windows)</li>
+<li>Visual Studio 14 (2015) C compiler or later</li>
+</ul>
+</dd>
+<dt><strong>Python modules</strong></dt>
+<dd><ul class="first last simple">
+<li>Cython version 0.27 or later (install using &#8220;pip3 install Cython&#8221;)</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="opensplice-ospl-and-python-dcps-api-installation">
+<h2>3.3. OpenSplice (OSPL) and Python DCPS API Installation<a class="headerlink" href="#opensplice-ospl-and-python-dcps-api-installation" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic simple">
+<li>Install OSPL.  The Python DCPS API is included in this installer.</li>
+<li>Setup OSPL license.  Copy the license.lic file into the appropriate license directory.</li>
+</ol>
+<blockquote>
+<div><em>/INSTALLDIR/Vortex_v2/license</em></div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Python DCPS API files are contained in a tools/python folder</li>
+</ol>
+<blockquote>
+<div>Example:
+<em>$OSPL_HOME/tools/python</em></div></blockquote>
+<div class="figure">
+<img alt="Python Directory" src="_images/pythonDir.png" />
+</div>
+</div>
+<div class="section" id="python-dcps-api-setup">
+<span id="pythondcpsapi"></span><h2>3.4. Python DCPS API Setup<a class="headerlink" href="#python-dcps-api-setup" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="install-python-dcps-api-package-from-python-wheel">
+<h3>3.4.1. Install Python DCPS API package from python wheel<a class="headerlink" href="#install-python-dcps-api-package-from-python-wheel" title="Permalink to this headline">¶</a></h3>
+<p>In certain Vortex OpenSplice installs, the python api is bundled as a python wheel file in
+the $OSPL_HOME/tools/python directory. This way it avoids needing a native compiler and Cython
+prerequisites before installation.</p>
+<p>Simply install using pip. For example, executing the command will install the wheel package,
+which is targeted for python 3.4 64-bit Linux:</p>
+<blockquote>
+<div>$pip3 install dds-6.9.0-cp34-cp34m-linux_x86_64.whl</div></blockquote>
+<p>Or similarly, for python 3.5 64-bit Windows:</p>
+<blockquote>
+<div>&gt;pip install dds-6.9.0-cp35-cp35m-win_amd64.whl</div></blockquote>
+<p>If the binary wheel package is not present or is not compatible with your python version,
+then it is preferable to install the api from source.</p>
+</div>
+<div class="section" id="install-python-dcps-api-package-from-source">
+<h3>3.4.2. Install Python DCPS API package from source<a class="headerlink" href="#install-python-dcps-api-package-from-source" title="Permalink to this headline">¶</a></h3>
+<p>If the dependencies are satisfied, and the Vortex OpenSplice environment is set
+(OSPL_HOME and associated environment variables), then installation is just one command
+to execute in the $OSPL_HOME/python/src directory:</p>
+<blockquote>
+<div>$python3 setup.py install</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last">
+<li><p class="first">In either case, installing from wheel or from source may require administrator or superuser privileges if python was installed for all users.</p>
+</li>
+<li><p class="first">To check modules are installed correctly try importing the installed modules.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">dds</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ddsutil</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="examples-and-documentation">
+<h2>3.5. Examples and Documentation<a class="headerlink" href="#examples-and-documentation" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Examples</p>
+<blockquote>
+<div><p>The examples can be found in the following directory:</p>
+<blockquote>
+<div><ul class="simple">
+<li><em>$OSPL_HOME/tools/python/examples</em></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</li>
+<li><p class="first">Python DCPS API Documentation</p>
+<blockquote>
+<div><p>The Python DCPS API can be found in the following directory:</p>
+<blockquote>
+<div><ul class="simple">
+<li><em>$OSPL_HOME/tools/python/docs/html</em></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</li>
+<li><p class="first">Python DCPS User Guide (HTML and PDF)</p>
+<blockquote>
+<div><p>The user guide can be found in the following directories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><em>$OSPL_HOME/docs/html</em></li>
+<li><em>$OSPL_HOME/docs/pdf</em></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Installation</a><ul>
+<li><a class="reference internal" href="#system-requirements">3.1. System Requirements</a></li>
+<li><a class="reference internal" href="#dependencies">3.2. Dependencies</a></li>
+<li><a class="reference internal" href="#opensplice-ospl-and-python-dcps-api-installation">3.3. OpenSplice (OSPL) and Python DCPS API Installation</a></li>
+<li><a class="reference internal" href="#python-dcps-api-setup">3.4. Python DCPS API Setup</a><ul>
+<li><a class="reference internal" href="#install-python-dcps-api-package-from-python-wheel">3.4.1. Install Python DCPS API package from python wheel</a></li>
+<li><a class="reference internal" href="#install-python-dcps-api-package-from-source">3.4.2. Install Python DCPS API package from source</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-and-documentation">3.5. Examples and Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="next chapter">4. Examples</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

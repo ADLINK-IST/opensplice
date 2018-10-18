@@ -13,7 +13,6 @@
 #include "c__field.h"
 #include "c__metabase.h"
 #include "c__refcheck.h"
-#include "q__parser.h"
 #include "c_module.h"
 
 struct mlnode {

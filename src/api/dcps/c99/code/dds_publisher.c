@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,6 +28,8 @@
 struct PublisherInfo {
     struct DDS_EntityUserData_s _parent;
     dds_publisherlistener_t *listener;
+
+    bool ownParticipant;
 };
 
 static void
@@ -140,6 +143,7 @@ dds_publisher_info_new(
     info = os_malloc(sizeof(*info));
     DDS_Entity_user_data_init((DDS_EntityUserData)info, dds_publisher_info_free);
     info->listener = NULL;
+    info->ownParticipant = false;
 
     return info;
 }
@@ -165,19 +169,44 @@ dds_publisher_create(
     const dds_qos_t * qos,
     const dds_publisherlistener_t * listener)
 {
-    DDS_ReturnCode_t result;
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
     struct PublisherInfo *info;
     struct DDS_PublisherListener dpl;
     struct DDS_PublisherListener *lp = NULL;
-    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : 0;
+    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : DDS_STATUS_MASK_NONE;
     DDS_PublisherQos *pQos;
+    bool ownParticipant = false;
 
     DDS_REPORT_STACK();
 
-    if (pp && publisher) {
-        *publisher = NULL;
-
+    if (!publisher) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        DDS_REPORT(result, "Given publisher parameter is NULL.");
+    }
+    if (result == DDS_RETCODE_OK) {
+        if (!pp) {
+            pp = dds_participant_lookup (DDS_DOMAIN_ID_DEFAULT);
+            if (!pp) {
+                result = dds_participant_create(&pp, DDS_DOMAIN_ID_DEFAULT, qos, NULL);
+                if (result != DDS_RETCODE_OK){
+                    DDS_REPORT(result, "Failed to create an implicit DomainParticipant.");
+                } else {
+                  ownParticipant = true;
+                }
+            }
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
         info = dds_publisher_info_new();
+        if (!info) {
+            result = DDS_RETCODE_ERROR;
+            DDS_REPORT(result, "Failed to create publisher info.");
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
+
+        *publisher = NULL;
+        info->ownParticipant = ownParticipant;
 
         if (listener) {
             info->listener = os_malloc(sizeof(dds_publisherlistener_t));
@@ -203,9 +232,6 @@ dds_publisher_create(
             result = dds_report_get_error_code();
         }
         DDS_Entity_release_user_data((DDS_EntityUserData)info);
-    } else {
-        result = DDS_RETCODE_BAD_PARAMETER;
-        DDS_REPORT(result, "DomainParticipant or publisher parameter is NULL.");
     }
 
     DDS_REPORT_FLUSH(pp, result != DDS_RETCODE_OK);
@@ -248,7 +274,7 @@ dds_publisher_set_listener(
 {
     DDS_ReturnCode_t result              = DDS_RETCODE_ERROR;
     struct PublisherInfo *info           = NULL;
-    struct DDS_PublisherListener dpl     = {0};
+    struct DDS_PublisherListener dpl     = {NULL, NULL, NULL, NULL, NULL};
     dds_publisherlistener_t *newListener = NULL;
     dds_publisherlistener_t *oldListener = NULL;
     DDS_StatusMask mask                  = 0;
@@ -284,11 +310,18 @@ dds_publisher_delete(
 {
     int result;
     DDS_DomainParticipant participant;
+    struct PublisherInfo *info = NULL;
 
     result = DDS_Publisher_delete_contained_entities(e);
     if (result == DDS_RETCODE_OK) {
         participant = DDS_Publisher_get_participant(e);
         if (participant) {
+            if (DDS_Entity_claim_user_data(e, (DDS_EntityUserData *)&info) == DDS_RETCODE_OK) {
+                if (info->ownParticipant) {
+                    dds_entity_delete(participant);
+                }
+                DDS_Entity_release_user_data((DDS_EntityUserData)info);
+            }
             result = DDS_DomainParticipant_delete_publisher(participant, e);
         } else {
             result = DDS_RETCODE_ALREADY_DELETED;

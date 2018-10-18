@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -160,6 +161,18 @@ namespace DDS.OpenSplice.User
         [DllImport("ddskernel", EntryPoint = "u_entityDisableCallbacks", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte DisableCallbacks(
             IntPtr _this);
+
+       [DllImport("ddskernel", EntryPoint = "u_entityGetProperty", CallingConvention = CallingConvention.Cdecl)]
+       public static extern V_RESULT GetProperty(
+            IntPtr _this,
+            string name,
+            ref IntPtr value);
+
+       [DllImport("ddskernel", EntryPoint = "u_entitySetProperty", CallingConvention = CallingConvention.Cdecl)]
+       public static extern V_RESULT SetProperty(
+            IntPtr _this,
+            string name,
+            string value);
 
     }
 }

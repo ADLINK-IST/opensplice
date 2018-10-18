@@ -168,9 +168,15 @@ feature (ospl_os_linux, ospl_arch_PPCe5500) {
     }
 }
 
-feature (ospl_os_linux, ospl_arch_armhf) {
+feature (ospl_os_linux, ospl_arch_armhf, ospl_gcc_5) {
     specific (make) {
         compilers = arm-linux-gnueabihf-gcc-5
+    }
+}
+
+feature (ospl_os_linux, ospl_arch_armhf, ospl_gcc_6) {
+    specific (make) {
+        compilers = arm-linux-gnueabihf-gcc-6
     }
 }
 
@@ -603,9 +609,21 @@ feature(armv7a_vfp_neon_linux) {
     }
 }
 
+feature(armv7a_lafp_neon_linux) {
+    specific (make) {
+        compilers = arm-lafp-linux-gnueabi-gcc
+    }
+}
+
 feature(armv7at2_vfp_neon_WRlinux7_gcc) {
     specific (make) {
         compilers = armv7at2-vfp-neon-WRlinux7-gcc
+    }
+}
+
+feature(aarch64_zynqmp_linux, cross_compile) {
+    specific (make) {
+        compilers = aarch64-linux-gnu-gcc
     }
 }
 

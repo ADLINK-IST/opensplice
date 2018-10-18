@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -435,7 +436,7 @@ cmx_participantInitDetach(
     k = v_objectKernel(entity);
     m = v_getServiceManager(k);
     splicedState = v_serviceManagerGetServiceState(m, V_SPLICED_NAME);
-    v_observableAddObserver(v_observable(splicedState), v_observer(entity), NULL);
+    v_observableAddObserver(v_observable(splicedState), v_observer(entity), V_EVENTMASK_ALL, NULL);
 }
 
 static c_ulong
@@ -474,7 +475,6 @@ cmx_participantAutoDetach(
     const c_char* participant,
     c_bool enable)
 {
-    c_ulong mask;
     u_participant up;
     u_result result;
     cmx_entity ce;
@@ -485,44 +485,31 @@ cmx_participantAutoDetach(
         goto errorGetEntity;
     }
     up = u_participant(ce->uentity);
-    result = u_observableGetListenerMask(u_observable(up), &mask);
-
-    if (result != U_RESULT_OK) {
-        goto errorGetMask;
-    }
     if (enable == FALSE) {
-        mask &= ~V_EVENT_SERVICESTATE_CHANGED;
         result = u_observableRemoveListener(u_observable(up), cmx_participantDetach);
         if (result != U_RESULT_OK) {
             goto errorRemoveListener;
         }
     } else {
-        mask |= V_EVENT_SERVICESTATE_CHANGED;
         result = u_observableAction(u_observable(up), cmx_participantInitDetach, NULL);
         if (result != U_RESULT_OK) {
             goto errorEntityAction;
         }
         result = u_observableAddListener(u_observable(up),
+                                         V_EVENT_SERVICESTATE_CHANGED,
                                          cmx_participantDetach,
                                          u_serviceManagerNew(up));
         if (result != U_RESULT_OK) {
             goto errorInsertListener;
         }
     }
-    result = u_observableSetListenerMask(u_observable(up), mask);
-    if ( result != U_RESULT_OK) {
-        goto errorSetListenerMark;
-    }
-    
     cmx_entityRelease(ce);
 
     return CMX_RESULT_OK;
     
-errorSetListenerMark:
 errorInsertListener:
 errorEntityAction:
 errorRemoveListener:
-errorGetMask:
 errorGetEntity:
     return CMX_RESULT_FAILED;
 }
@@ -550,6 +537,7 @@ cmx_participantDomainId(
     result = os_malloc(sizeof(char) * 10 + 1);
     written = os_sprintf(result, "%d", did);
     assert(written > 0 && written <= 11);
+    OS_UNUSED_ARG(written);
 
     return result;
 }

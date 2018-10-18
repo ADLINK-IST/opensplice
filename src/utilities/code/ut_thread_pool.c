@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -109,10 +110,8 @@ static os_result ut_thread_pool_new_thread (ut_thread_pool pool)
 
   if (res == os_resultSuccess)
   {
-    os_mutexLock (&pool->m_mutex);
     pool->m_threads++;
     pool->m_waiting++;
-    os_mutexUnlock (&pool->m_mutex);
   }
 
   return res;
@@ -148,6 +147,7 @@ ut_thread_pool ut_thread_pool_new
   os_sem_init (&pool->m_sem, 0);
   os_threadAttrInit (&pool->m_attr);
   os_mutexInit (&pool->m_mutex, NULL);
+  os_mutexLock (&pool->m_mutex);
 
   if (attr)
   {
@@ -160,15 +160,18 @@ ut_thread_pool ut_thread_pool_new
   {
     if (ut_thread_pool_new_thread (pool) != os_resultSuccess)
     {
+      os_mutexUnlock (&pool->m_mutex);
       ut_thread_pool_free (pool);
       pool = NULL;
-      break;
+      goto err_resource_claim;
     }
     job = os_malloc (sizeof (*job));
     job->m_next_job = pool->m_free;
     pool->m_free = job;
   }
+  os_mutexUnlock (&pool->m_mutex);
 
+err_resource_claim:
   return pool;
 }
 
@@ -219,7 +222,7 @@ void ut_thread_pool_free (ut_thread_pool pool)
     {
       break;
     }
-    os_sleep (delay);
+    ospl_os_sleep (delay);
   }
 
   /* Delete all free jobs from queue */

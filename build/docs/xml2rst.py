@@ -205,7 +205,10 @@ def output_elements(element, depth):
             if get_dimension(element) is not None:
                 file.write("- Dimension: " + get_dimension(element) + "\n")
             if get_default_value(element):
-                file.write("- Default value: " + get_default_value(element) + "\n")
+                defstring = get_default_value(element)
+                if defstring == "__BUILT-IN PARTITION__":
+                    defstring = "__BUILT-IN PARTITION\__"
+                file.write("- Default value: " + defstring + "\n")
             if get_valid_values(element) is not None:
                 file.write("- Valid values: " + get_valid_values(element) + "\n")
             if get_occurrences(element) is not None:

@@ -1,0 +1,66 @@
+module basic{
+	module module_TestIDL {
+	    typedef sequence<long> longSeq;
+	    typedef sequence<longSeq> longLongSeq;
+	    typedef sequence<longLongSeq> longLongLongSeq;
+	    typedef long arr[3];
+	    typedef longSeq arrayseq[3];
+	    
+	    struct InnerInnerStruct {
+	    	long num;
+	    	long array[2];
+	    	long arr2D[2][2];
+	    };
+	    
+	    struct InnerCollectionStruct {
+	    	long num;
+			long size;
+	        long array[2];
+	        sequence<long> seqnce;
+	        long arr2D[2][2];
+	        sequence<longSeq> seq2D;
+	        InnerInnerStruct innerInnerStruct;
+	    };
+	    
+	    struct MultiCollectionType {
+	        long key;
+	        long num;
+	        char ch;
+	        long array[2];
+	        sequence<long> seqnce;
+	        long arr2D[2][3];
+	        sequence<arr> seqarr;
+	        arrayseq arrseq;
+	        
+	        sequence<longSeq> seq2D;
+	        sequence<longLongLongSeq> seq4D;
+	        InnerCollectionStruct innerStruct;
+	        InnerCollectionStruct innerStructArray[2];
+	        sequence<InnerCollectionStruct> innerStructSeq;
+	    };
+	    #pragma keylist MultiCollectionType key
+	    
+	    struct SeqseqType {
+	        long key;
+	        sequence<longSeq> seq2D;
+	        sequence<longLongLongSeq> seq4D;
+	    };
+	    #pragma keylist SeqseqType key
+	    
+	    typedef sequence<InnerCollectionStruct> structSeq;
+	    
+	    struct StructSeqseqType {
+	        long key;
+	        sequence<structSeq> structSeq2D;
+	    };
+	    #pragma keylist StructSeqseqType key
+	    
+	    struct StructCharCollectionType {
+	        char key;
+	        sequence<char> charseq;
+	        sequence<char, 6> charbseq;
+	        char chararr[6];
+	    };
+	    #pragma keylist StructCharCollectionType key
+	};
+};

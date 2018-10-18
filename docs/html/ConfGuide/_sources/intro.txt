@@ -1,8 +1,5 @@
-.. _`Configuration`:
-
-#############
 Introduction
-#############
+############
 
 This guide describes the various configuration elements and attributes available for
 Vortex OpenSplice. The configuration items should be added to an XML file
@@ -55,7 +52,7 @@ The ospl.xml file supplied with Vortex OpenSplice contains the following:
                     <Operational>0.1</Operational>
                 </RequestCombinePeriod>
             </Alignment>
-            <WaitForAttachment maxWaitCount="100">
+            <WaitForAttachment maxWaitCount="10">
                 <ServiceName>ddsi2</ServiceName>
             </WaitForAttachment>
         </Network>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,8 +23,6 @@
 
 
 #define UT_TRACE_ENABLED (0) /* to enable basic backtraceing set this to 1 */
-
-/* removed UT_TRACE_EXTENSION See OSPL-5656 and OSPL-987 */
 
 #if UT_TRACE_ENABLED
 

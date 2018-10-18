@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,7 +37,6 @@ namespace DDS.OpenSplice
         public const ViewStateKind VIEW_STATE_FLAGS = (ViewStateKind.NotNew | ViewStateKind.New);
         public const InstanceStateKind INSTANCE_STATE_FLAGS = (InstanceStateKind.Alive | InstanceStateKind.NotAlive);
 
-//        private DataReaderListenerHelper listenerHelper;
         private Subscriber subscriber;
         private ITopicDescriptionImpl topic;
         private List<ReadCondition> conditionList = new List<ReadCondition>();
@@ -59,7 +59,8 @@ namespace DDS.OpenSplice
                 {
                     using (SequenceStringToCValueArrMarshaler paramsMarshaler = new SequenceStringToCValueArrMarshaler())
                     {
-                        result = paramsMarshaler.CopyIn(aTopic.rlReq_TopicExpressionParameters);
+                        string[] _params = aTopic.rlReq_TopicExpressionParameters;
+                        result = paramsMarshaler.CopyIn(_params);
                         if (result == ReturnCode.Ok)
                         {
                             IntPtr uReader = User.DataReader.NewBySQL(
@@ -67,8 +68,8 @@ namespace DDS.OpenSplice
                                     drName,
                                     aTopic.rlReq_TopicExpression,
                                     paramsMarshaler.UserPtr,
-                                    qosMarshaler.UserPtr,
-                                    0);
+                                    _params==null ? 0 : Convert.ToUInt32(_params.Length),
+                                    qosMarshaler.UserPtr);
                             if (uReader != IntPtr.Zero)
                             {
                                 result = base.init(uReader);
@@ -231,7 +232,7 @@ namespace DDS.OpenSplice
                     (__PublicationBuiltinTopicData) Marshal.PtrToStructure(info, typeof(__PublicationBuiltinTopicData));
             GCHandle argGCHandle = GCHandle.FromIntPtr(arg);
             PublicationBuiltinTopicData to = argGCHandle.Target as PublicationBuiltinTopicData;
-            PublicationBuiltinTopicDataMarshaler.CopyOut(ref nativeImage, ref to);
+            __PublicationBuiltinTopicDataMarshaler.CopyOut(ref nativeImage, ref to);
             argGCHandle.Target = to;
             return V_RESULT.OK;
         }
@@ -781,6 +782,10 @@ namespace DDS.OpenSplice
             if (QosManager.countErrors(maxWait) > 0)
             {
                 result = DDS.ReturnCode.BadParameter;
+            }
+            else if (!this.IsEnabled())
+            {
+                result = DDS.ReturnCode.NotEnabled;
             }
             else
             {

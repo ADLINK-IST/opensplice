@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dds xmlns="http://www.omg.org/dds/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="file:DDS_QoSProfile.xsd">
+<qos_profile name="DDS DefaultQosProfile">
+     <datareader_qos>
+     </datareader_qos>
+     <datawriter_qos>
+     </datawriter_qos>
+     <domainparticipant_qos>
+          <user_data>
+               <value></value>
+          </user_data>
+          <entity_factory>
+               <autoenable_created_entities>true</autoenable_created_entities>
+          </entity_factory>
+     </domainparticipant_qos>
+     <subscriber_qos>
+          <presentation>
+               <access_scope>INSTANCE_PRESENTATION_QOS</access_scope>
+               <coherent_access>false</coherent_access>
+               <ordered_access>false</ordered_access>
+          </presentation>
+          <partition>
+               <name></name>
+          </partition>
+          <group_data>
+               <value></value>
+          </group_data>
+          <entity_factory>
+               <autoenable_created_entities>true</autoenable_created_entities>
+          </entity_factory>
+     </subscriber_qos>
+     <publisher_qos>
+          <presentation>
+               <access_scope>INSTANCE_PRESENTATION_QOS</access_scope>
+               <coherent_access>false</coherent_access>
+               <ordered_access>false</ordered_access>
+          </presentation>
+          <partition>
+               <name></name>
+          </partition>
+          <group_data>
+               <value></value>
+          </group_data>
+          <entity_factory>
+               <autoenable_created_entities>true</autoenable_created_entities>
+          </entity_factory>
+     </publisher_qos>
+     <topic_qos>
+     </topic_qos>
+</qos_profile>
+</dds>

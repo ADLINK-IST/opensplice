@@ -109,6 +109,7 @@ public interface ContentFilteredTopic<TYPE> extends TopicDescription<TYPE> {
      *                              The number of supplied parameters must fit with the requested values
      *                              in the queryExpression (i.e., the number of "%n" tokens).
      * @see     #getExpressionParameters()
+     * NOTE: This operation is not yet implemented. It is scheduled for a future release.
      */
     public void setExpressionParameters(String... expressionParameters);
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -51,7 +52,8 @@
 
 /* Updates the liveliness statistic for an instance. If oldState == 0, then
  * nothing is done. This is useful for initialization. It uses the newState
- * (oldState ^ xoredState) to determine whether counters have to be updated. */
+ * (oldState ^ xoredState) to determine whether counters have to be updated.
+ */
 #define __V_DATAREADER_UPDATE_ALIVE__(reader, oldState, xoredState) \
     if (oldState && __V_DATAREADER_LIVELINESS_CHANGED__(xoredState)) { \
         if (__V_DATAREADER_ALIVE__(oldState)){\
@@ -62,7 +64,8 @@
     }
 
 /* Updates the statistics for the instance-state flags that are enabled. Updates
- * are only performed when statistics are enabled for the specified reader. */
+ * are only performed when statistics are enabled for the specified reader.
+ */
 #define UPDATE_READER_STATISTICS(index, instance, oldState) \
     if (reader->statistics) { \
         v_state xoredState = oldState^v_instanceState(instance); \
@@ -75,7 +78,8 @@
 
 /* Subtracts the currently still enabled instance-state flags from the
  * statistics. Updates are only performed when statistics are enabled for
- * the specified reader. */
+ * the specified reader.
+ */
 #define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(reader, instance) \
     if (reader->statistics) { \
         __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW, New, reader, \
@@ -88,12 +92,6 @@
             reader->statistics->numberOfInstancesWithStatusAlive--; \
         } \
     }
-
-#define v_dataReaderLock(_this) \
-        v_observerLock(v_dataReader(_this))
-
-#define v_dataReaderUnlock(_this) \
-        v_observerUnlock(v_dataReader(_this))
 
 #define v_dataReaderQos(_this) \
         (v_reader(v_dataReader(_this))->qos)
@@ -151,28 +149,8 @@ v_dataReaderField(
     v_dataReader reader,
     const c_char *name);
 
-c_bool
-v_dataReaderSubscribe(
-    v_dataReader reader,
-    v_partition partition);
-
-c_bool
-v_dataReaderUnSubscribe(
-    v_dataReader reader,
-     v_partition partition);
-
-c_bool
-v_dataReaderSubscribeGroup(
-    v_dataReader reader,
-    v_group group);
-
-c_bool
-v_dataReaderUnSubscribeGroup(
-    v_dataReader reader,
-    v_group group);
-
 #define v_dataReaderAddEntry(_this,entry) \
-        v_dataReaderEntry(v_readerAddEntry(v_reader(_this),v_entry(entry)))
+        v_readerAddEntry(v_reader(_this),v_entry(entry))
 
 #define v_dataReaderNextInstance(_this,_inst) \
         v_dataReaderInstance( \
@@ -185,13 +163,15 @@ v_dataReaderUnSubscribeGroup(
  *
  * This macro returns the parameter sample
  *
- * @return sample */
+ * @return sample
+ */
 #define v_dataReaderTriggerValueKeep(sample) \
         (c_keep(v_readerSample(sample)->instance), \
          c_keep(sample))
 
 /* The sample stored in the trigger-value has its (otherwise unreferenced)
- * instance-pointer explicitly kept, so it has to be freed. */
+ * instance-pointer explicitly kept, so it has to be freed.
+ */
 #define v_dataReaderTriggerValueFree(triggerValue)          \
     {                                                       \
         v_dataReaderInstance _instance;                     \
@@ -207,7 +187,11 @@ v_dataReaderUpdatePurgeLists(
     v_dataReader _this);
 
 void
-v_dataReaderUpdatePurgeListsLocked(
+v_dataReaderBeginAccess(
+    v_dataReader _this);
+
+void
+v_dataReaderEndAccess(
     v_dataReader _this);
 
 typedef struct v_dataReaderConnectionChanges_s {
@@ -215,11 +199,6 @@ typedef struct v_dataReaderConnectionChanges_s {
     c_iter addedPartitions;
     c_iter removedPartitions;
 } v_dataReaderConnectionChanges;
-
-void
-v_dataReaderUpdateConnections(
-    v_dataReader _this,
-    v_dataReaderConnectionChanges *arg);
 
 void
 v_dataReaderNotify(
@@ -237,12 +216,12 @@ v_dataReaderTriggerDataAvailable(
     v_dataReader _this);
 
 void
-v_dataReaderNotifySampleLost(
+v_dataReaderNotifySampleLost_nl(
     v_dataReader _this,
     c_ulong nrSamplesLost);
 
 void
-v_dataReaderNotifySampleLostLock(
+v_dataReaderNotifySampleLost(
     v_dataReader _this,
     c_ulong nrSamplesLost);
 
@@ -320,19 +299,17 @@ v_dataReaderCheckDeadlineMissed(
     os_timeE now);
 
 c_ulong
-v_dataReaderInstanceCount(
+v_dataReaderInstanceCount_nl(
     v_dataReader _this);
 
 v_dataReaderInstance
 v_dataReaderAllocInstance(
     v_dataReader _this);
 
+_Check_return_
+_Ret_maybenull_
 OS_API v_topic
 v_dataReaderGetTopic(
-    v_dataReader _this);
-
-void
-v_dataReaderFlushPending(
     v_dataReader _this);
 
 c_long
@@ -343,14 +320,6 @@ c_bool
 v_dataReaderHasMatchingSamples(
     v_dataReader _this,
     v_sampleMask mask);
-
-void
-v_dataReaderTrigger(
-    v_dataReader _this);
-
-void
-v_dataReaderTriggerNoLock(
-    v_dataReader _this);
 
 void
 v_dataReaderCheckMinimumSeparationList(
@@ -366,6 +335,30 @@ void
 v_dataReaderMinimumSeparationListRemove(
     v_dataReader _this,
     v_dataReaderInstance instance);
+
+v_result
+v_dataReaderAccessTest(
+    v_dataReader _this);
+
+/* This operation informs the reader to either add or remove the publication described by
+ * the given publication info depending on the given ignore flag.
+ * If ignore is TRUE then the publication will be added to the readers ignore list and if
+ * ignore is FALSE then the publication will be removed from the ignore list if it exists.
+ * Note that removing a publication from the ignore list should only be performed if no data
+ * from the publication is to be expected in the future according to the DCPS specification.
+ */
+v_result
+v_dataReaderIgnore(
+    v_dataReader _this,
+    struct v_publicationInfo *info,
+    os_boolean ignore);
+
+/* This operation will return the actual builtin subscription data for this dataReader.
+ * The dataReader caches this last published subscription data.
+ */
+v_message
+v_dataReaderSubscription(
+    v_dataReader _this);
 
 #undef OS_API
 

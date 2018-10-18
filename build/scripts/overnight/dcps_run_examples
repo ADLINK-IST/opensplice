@@ -54,7 +54,7 @@ add_example()
       # The protobuf example is not built with MPC so there is no
       # Makefile and the example should be added as we check it has
       # been built before we add it anyway.
-      if [ "$1" != "protobuf/java5/standalone" -a "$1" != "protobuf/isocpp2/standalone" ]
+      if [ "$1" != "protobuf/isocpp2/standalone" ]
       then
          if test -f "$1/Makefile"
          then
@@ -289,24 +289,6 @@ else
         add_example dcps/Throughput/c99/
     fi
 
-    # isocpp - need to check for more than a directory because the
-    # run scripts are copied in as a whole so there will always be
-    # an isocpp directory
-    if [ -f "$EXAMPLESDIR/dcps/HelloWorld/isocpp/HelloWorld.mpc" ]
-    then
-        add_example dcps/BuiltInTopics/isocpp
-        add_example dcps/ContentFilteredTopic/isocpp
-        add_example dcps/HelloWorld/isocpp
-        add_example dcps/Lifecycle/isocpp
-        add_example dcps/Listener/isocpp
-        add_example dcps/Ownership/isocpp
-        add_example dcps/QueryCondition/isocpp
-        add_example dcps/RoundTrip/isocpp
-        add_example dcps/Throughput/isocpp
-        add_example dcps/Tutorial/isocpp
-        add_example dcps/WaitSet/isocpp
-    fi
-
     # isocpp2 - need to check for more than a directory because the
     # run scripts are copied in as a whole so there will always be
     # an isocpp2 directory
@@ -331,7 +313,7 @@ else
     #  java standalone
     add_example dcps/ContentFilteredTopic/java/standalone
     add_example dcps/HelloWorld/java/standalone
-    add_example dcps/HelloWorld/java5/
+    add_example dcps/HelloWorld/java5
     add_example dcps/Lifecycle/java/standalone
     add_example dcps/Listener/java/standalone
     add_example dcps/Ownership/java/standalone
@@ -343,8 +325,7 @@ else
     add_example dcps/RoundTrip/java5
     add_example dcps/Throughput/java5
     add_example dcps/Tutorial/java5
-    add_example dcps/PingPong/java5/corba
-    add_example dcps/PingPong/java5/standalone
+    add_example dcps/PingPong/java5
     add_example dcps/BuiltInTopics/java5
     add_example dcps/ContentFilteredTopic/java5
     add_example dcps/Lifecycle/java5
@@ -400,9 +381,9 @@ else
     fi
 
     #Add the protobuf example if it has built successfully - just check for the publishers
-    if [ -f "$EXAMPLESDIR/protobuf/java5/standalone/saj5-protobuf-publisher.jar" ]
+    if [ -f "$EXAMPLESDIR/protobuf/java5/pub/java5_protobuf_pub.jar" ]
     then
-        add_example protobuf/java5/standalone
+        add_example protobuf/java5
     fi
     if [ -f "$EXAMPLESDIR/protobuf/isocpp2/standalone/publisher" ]
     then
@@ -413,6 +394,22 @@ else
             add_example protobuf/isocpp2/standalone
         fi
     fi
+
+    # The Durability and DBMS connect examples have their own config files
+    # so run them last
+    add_example dcps/Durability/c/standalone
+    add_example dcps/Durability/cpp/standalone
+    add_example dcps/Durability/java/standalone
+
+    # Always need to check for more than the isocpp2 directory as
+    # the run scripts are copied in regardless so there will always
+    # be an isocpp2 directory.  run the durability example last as
+    # it has a it's own config file.
+    if [ -f "$EXAMPLESDIR/dcps/Durability/isocpp2/Durability.mpc" ]
+    then
+        add_example dcps/Durability/isocpp2
+    fi
+
 
     if [ "$DEP" != "none" ]
     then
@@ -440,9 +437,9 @@ else
             export PATH
 
             XPATH="$(cygpath -w $BASE)";
-            
-            echo "Running examples "  
-            cmd.exe /C $XPATH/run_python_examples.bat  >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
+
+            echo "Running examples "
+            cmd.exe /C $XPATH/run_python_examples.bat  >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt 2>&1
             grep "Examples Failed = 0" $SUMMARY_HTML
             RESULT=$?
         else
@@ -463,7 +460,7 @@ else
                     sh $BASE/run_python_examples.sh >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
                 fi
                 grep "Examples Failed = 0" $SUMMARY_HTML
-                RESULT=$?	
+                RESULT=$?
             else
                 echo "Running VxWorks examples"
                 cd ..
@@ -499,6 +496,7 @@ else
         echo export LD_LIBRARY_PATH >> $RRSCRIPT
         echo OVERRIDE_LD_LIBRARY_PATH='$LD_LIBRARY_PATH' >> $RRSCRIPT
         echo export OVERRIDE_LD_LIBRARY_PATH >> $RRSCRIPT
+        echo export SPLICE_TARGET_HOST=$SPLICE_TARGET_HOST >> $RRSCRIPT
         echo sh ./run_examples.sh >> $RRSCRIPT
         chmod +x $RRSCRIPT
         cp $BASE/run_examples.sh $EXAMPLESDIR

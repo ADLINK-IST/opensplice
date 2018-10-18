@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@
  *
  */
 package org.opensplice.dds.domain;
+
 
 /**
  * OpenSplice-specific extension of {@link org.omg.dds.domain.DomainParticipant} with
@@ -71,5 +73,74 @@ public interface DomainParticipant extends org.omg.dds.domain.DomainParticipant 
      * @throws org.omg.dds.core.DDSException    An internal error has occurred.
      */
     public void createPersistentSnapshot(String partitionExpression,String topicExpression,String uri);
+
+    /**
+     * This operation sets the property specified by a key value pair.
+     * Currently, the following property is defined:
+     *
+     * isolateNode
+     * The isolateNode property allows applications to isolate the federation from the rest of
+     * the Domain, i.e. at network level disconnect the node from the rest of the system.
+     * Additionally, they also need to be able to issue a request to reconnect their federation
+     * to the domain again after which the durability merge-policy that is configured needs to be
+     * applied.
+     *
+     * To isolate a federation, the application needs to set the isolateNode property value
+     * to 'true' and to (de)isolate the federation the same property needs to set to 'false'.
+     * The default value of the isolateNode property is 'false'.
+     *
+     * All data that is published after isolateNode is set to true will not be sent to the network
+     * and any data received from the network will be ignored. Be aware that data being processed
+     * by the network service at time of isolating a node may still be sent to the network due
+     * to asynchronous nature of network service internals.
+     *
+     * The value is interpreted as a boolean (i.e., it must be either 'true' or 'false').
+     * false (default): The federation is connected to the domain.
+     * true: The federation is disconnected from the domain meaning that data is not published
+     * on the network and data from the network is ignored.
+     *
+     * @param   key      The name of the property
+     * @param   value    The value of the property
+     *
+     * @throws  IllegalArgumentException
+     *                  if an invalid value has been specified
+     * @throws  UnsupportedOperationException
+     *                  if the key specifies an undefined property or the operation is not
+     *                  supported in this version.
+     * @throws org.omg.dds.core.DDSException
+     *                  An internal error has occurred.
+     * @throws org.omg.dds.core.AlreadyClosedException
+     *                  The corresponding DomainParticipant has been closed.
+     * @throws org.omg.dds.core.OutOfResourcesException
+     *                  The Data Distribution Service ran out of resources to
+     *                  complete this operation.
+     *
+     */
+    public void setProperty(String key, String value);
+
+    /**
+     * This operation looks up the property for a given key
+     * in the DomainParticipant, returning the value belonging to this key
+     * If the property has not been set using setProperty,
+     * the default value of the property is returned.
+     *
+     * @param   key      The name of the property to request the value from
+     * @return the value of the requested property
+     *
+     * @throws  IllegalArgumentException
+     *                  if an invalid key has been specified
+     * @throws  UnsupportedOperationException
+     *                  if the key specifies an undefined property or the operation is not
+     *                  supported in this version.
+     * @throws org.omg.dds.core.DDSException
+     *                  An internal error has occurred.
+     * @throws org.omg.dds.core.AlreadyClosedException
+     *                  The corresponding DomainParticipant has been closed.
+     * @throws org.omg.dds.core.OutOfResourcesException
+     *                  The Data Distribution Service ran out of resources to
+     *                  complete this operation.
+     *
+     */
+    public String getProperty(String key);
 
 }

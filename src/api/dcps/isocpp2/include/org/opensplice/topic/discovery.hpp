@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -64,15 +65,6 @@ struct typed_lookup_topic<T, dds::topic::detail::ContentFilteredTopic<T> > {
             const dds::core::Duration& timeout)
     {
         ISOCPP_THROW_EXCEPTION(ISOCPP_UNSUPPORTED_ERROR, "Function not currently supported");
-#if 0
-        dds::topic::ContentFilteredTopic<T> cft = dds::topic::find<dds::topic::ContentFilteredTopic<T>>(dp, topic_name);
-
-        if (!cft.is_nil()) {
-            return cft.delegate()->clone();
-        }
-
-        return dds::core::null;
-#endif
     }
 
     static inline void discover(

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,12 +18,17 @@
  *   limitations under the License.
  *
  */
+#include "vortex_os.h"
 #include "v_groupSet.h"
 #include "v__observable.h"
 #include "v_entity.h"
 #include "v__group.h"
+#include "v__kernel.h"
 #include "v_event.h"
 #include "v_public.h"
+#include "v__partition.h"
+#include "v_topic.h"
+#include "v_configuration.h"
 
 #include "c_collection.h"
 
@@ -33,7 +39,6 @@ v_groupSetNew(
     v_groupSet groupSet;
 
     groupSet = v_groupSet(v_objectNew(kernel,K_GROUPSET));
-    v_observableInit(v_observable(groupSet));
     groupSet->sequenceNumber = 0;
     groupSet->groups = c_tableNew(v_kernelType(kernel,K_GROUP),"partition,topic");
     c_lockInit(c_getBase(groupSet), &groupSet->lock);
@@ -60,6 +65,40 @@ alwaysFalse(
 }
 
 
+static c_bool
+getGidKeyPolicy (
+    v_topic topic,
+    v_partition partition)
+{
+    v_configuration config;
+    v_cfElement root;
+    v_cfElement element;
+    c_iter iter;
+    c_value gidkeyValue;
+    c_bool gidkey = FALSE;
+    os_size_t size;
+    os_char *str;
+
+    config = v_getConfiguration(v_objectKernel(topic));
+    if(config) {
+        root = v_configurationGetRoot(config);
+        /* Iterate over all TopicAccess elements */
+        iter = v_cfElementXPath(root, "Domain/GIDKey");
+        while((element = v_cfElement(c_iterTakeFirst(iter))) != NULL && !gidkey) {
+            gidkeyValue = v_cfElementAttributeValue(element, "groups");
+            size = strlen(v_partitionName(partition)) + strlen(v_topicName(topic)) + 2;
+            str = os_malloc(size);
+            sprintf(str, "%s.%s", v_partitionName(partition), v_topicName(topic));
+            if (gidkeyValue.kind == V_STRING) {
+                gidkey = v_partitionStringMatchesExpression(str, gidkeyValue.is.String);
+            }
+            os_free(str);
+        }
+        c_iterFree(iter);
+    }
+    return gidkey;
+}
+
 v_group
 v_groupSetCreate(
     v_groupSet set,
@@ -67,9 +106,10 @@ v_groupSetCreate(
     v_topic topic)
 {
     v_group group, found;
-    C_STRUCT(v_event) event;
     v_kernel kernel;
     C_STRUCT(v_group) dummyGroup;
+    C_STRUCT(v_event) event;
+    c_bool gidkey;
 
     assert(set != NULL);
     assert(partition != NULL);
@@ -78,6 +118,7 @@ v_groupSetCreate(
     assert(C_TYPECHECK(partition,v_partition));
     assert(C_TYPECHECK(topic,v_topic));
 
+    gidkey = getGidKeyPolicy(topic, partition);
     c_lockWrite(&set->lock);
     /* First create a dummy group used for checking existence */
     memset(&dummyGroup, 0, sizeof(dummyGroup));
@@ -85,14 +126,17 @@ v_groupSetCreate(
     dummyGroup.topic = topic;
 
     /* Note: the following call does not execute the actual remove because
-     *       the alwaysFalse function returns FALSE */
+     *       the alwaysFalse function returns FALSE
+     */
     found = NULL;
+    group = NULL;
     /* Note: The alwaysFalse function increases the refCount of
-     * found, which is the out-parameter of the tableRemove. */
+     * found, which is the out-parameter of the tableRemove.
+     */
     c_tableRemove(set->groups, &dummyGroup, alwaysFalse, &found);
 
     if (!found) {
-        group = v_groupNew(partition, topic, set->sequenceNumber);
+        group = v_groupNew(partition, topic, set->sequenceNumber, gidkey);
         found = c_tableInsert(set->groups,group);
         /* Because understanding assertion holds true, we practically
          * transferred the refCount from group to found. Because found
@@ -101,17 +145,16 @@ v_groupSetCreate(
         assert(found == group);
         set->sequenceNumber++;
         kernel = v_objectKernel(set);
-
-        c_lockUnlock(&set->lock);
-
-        /* Update the status of the observers */
-        /* And trigger the waiting observers */
+    }
+    c_lockUnlock(&set->lock);
+    if (group) {
+        v_kernelConnectGroup(kernel, group);
+        /* Update the status of the observers and trigger the waiting observers */
         event.kind = V_EVENT_NEW_GROUP;
         event.source = v_observable(kernel);
         event.data = group;
-        v_observableNotify(v_observable(kernel),&event);
-    } else {
-        c_lockUnlock(&set->lock);
+        event.handled = TRUE;
+        OSPL_THROW_EVENT(kernel,&event);
     }
 
     return found;

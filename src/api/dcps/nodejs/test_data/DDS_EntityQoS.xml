@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dds xmlns="http://www.omg.org/dds/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="file:DDS_QoSProfile.xsd">
+	<qos_profile name="DDS EntityQosProfile">
+		<datareader_qos>
+			<reader_data_lifecycle>
+				<autopurge_nowriter_samples_delay>
+					<sec>0</sec>
+					<nanosec>1000</nanosec>
+				</autopurge_nowriter_samples_delay>
+				<autopurge_disposed_samples_delay>
+					<sec>0</sec>
+					<nanosec>500</nanosec>
+				</autopurge_disposed_samples_delay>
+			</reader_data_lifecycle>
+		</datareader_qos>
+		<publisher_qos>
+			<partition>
+				<name>
+					<element>
+						partition1
+					</element>
+					<element>
+						partition2
+					</element>
+				</name>
+			</partition>
+		</publisher_qos>
+		<subscriber_qos>
+			<partition>
+				<name></name>
+			</partition>
+		</subscriber_qos>
+		<topic_qos>
+			<deadline>
+				<period>
+					<sec>0</sec>
+					<nanosec>5000</nanosec>
+				</period>
+			</deadline>
+			<lifespan>
+				<duration>
+					<sec>0</sec>
+					<nanosec>3600</nanosec>
+				</duration>
+			</lifespan>
+			<liveliness>
+				<kind>AUTOMATIC_LIVELINESS_QOS</kind>
+				<lease_duration>
+					<sec>0</sec>
+					<nanosec>500</nanosec>
+				</lease_duration>
+			</liveliness>
+		</topic_qos>
+	</qos_profile>
+</dds>

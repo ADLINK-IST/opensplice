@@ -13,13 +13,26 @@ entities and data, and perform other related tasks.*
 Starting and Stopping the Tuner
 *******************************
 
-Starting
-========
-
 Vortex OpenSplice Tuner has been implemented in the Java language. The
 supported platforms for the Tuner are listed in the *Release Notes* in
 the section ‘Supported Platforms’. The Tuner will work on all
 platforms that support JAVA (SAJ) SDK.
+
+Starting Tuner Using Launcher
+=============================
+
+The Vortex OpenSplice Launcher application provides easy access to the Vortex OpenSplice tools, configurations, documentation and examples.
+
+Vortex OpenSplice Tuner can be quickly started using the Vortex OpenSplice Launcher application.  
+
+Instructions for starting Launcher can be found in the ‘Launcher’ section of the *OpenSplice_GettingStartedGuide.pdf* document.
+
+In Launcher, select the *Tools* tab, and select the *Tuner* button.
+This will open the Tuner application.
+
+
+Starting Tuner Using Command Line
+=================================
 
 The Vortex OpenSplice Tuner provides a command line instruction for
 specifying the domain config file that the tuner needs to connect to.
@@ -52,8 +65,7 @@ of the OpenSplice installation (from now on referred to by
 
    %  . <OSPL_HOME>/release.com
 
-Once the environment has been initialized correctly, the OpenSplice
-DDS Tuner can be started by typing the following command in the shell:
+Once the environment has been initialized correctly, the Vortex OpenSplice Tuner can be started by typing the following command in the shell:
 
 ::
 
@@ -255,7 +267,7 @@ This domain URI can represent any of the following values:
 
   *a*: Integer Domain ID (*e.g.* ``1``)
 
-  *b*: Domain URI (*e.g.* ``file:///home/Prismtech/ospl.xml``)
+  *b*: Domain URI (*e.g.* ``file:///home/ADLINK/ospl.xml``)
 
   *c*: SOAP service URL (*e.g.* ``http://192.168.1.20:8000``)
 
@@ -948,7 +960,7 @@ in the domain where OpenSplice Tuner is currently participating.
 
 To create a subscriber, choose *Edit > Create Subscriber* in the menu
 bar of the main window (see `Main Window Edit Menu`_) or right-click 
-the SPLICE Tuner participant in the entity tree then choose the *Create
+the Vortex OpenSplice Tuner participant in the entity tree then choose the *Create
 Subscriber* item.
 
 Both of these actions will result in the display of the dialog box
@@ -996,6 +1008,14 @@ in the status bar of the dialog box.
 
 The Create subscriber action can be cancelled by clicking the 
 *Cancel* button. In this case, no subscriber will be created.
+
+|info| If the subscriber was created with *coherent_access* and *GROUP*
+*access_scope*, then it will be created in the disabled state, regardless of
+the value of the entity factory policy of the parent participant. For group
+coherent subscribers, data readers can only be created while it is disabled.
+When the subscriber is explicitly enabled, then the contained readers can begin
+their access to the data. After the subscriber is enabled, no further data readers
+can be created under it.
 
 Creating a Reader
 =================
@@ -1080,7 +1100,7 @@ allows a reader-writer to inject and consume in multiple partitions.
 
 To create such a reader-writer, choose *Edit > Create Reader-Writer >
 Partition expression* in the menu bar of the main window (see
-`Main Window Edit Menu`_) *or* right-click on the SPLICE Tuner participant 
+`Main Window Edit Menu`_) *or* right-click on the Vortex OpenSplice Tuner participant 
 in the entity tree then choose the 
 *Create Reader-Writer > Partition expression* item.
 
@@ -1148,7 +1168,7 @@ partition.
 
 To create such a reader-writer, choose *Edit > Create
 Reader-Writer > Existing Partition* in the menu bar of the main window
-(`Main Window Edit Menu`_) *or* right-click on the SPLICE Tuner participant 
+(`Main Window Edit Menu`_) *or* right-click on the Vortex OpenSplice Tuner participant 
 in the entity tree then choose the *Create Reader-Writer > Existing Partition*
 item.
 
@@ -2643,6 +2663,9 @@ the import window (`The Import Window`_) is displayed. By using
 the import window a subset of the data can be injected or disposed 
 in the specified partition.
 
+.. raw:: latex
+
+    \newpage
 
 Preferences
 ***********
@@ -2667,13 +2690,7 @@ dialog to edit the preferences.
 
 .. XX Figure 47  Edit Preferences
 
-There are seven configuration options and four tabs for creating and
-editing Writer, Reader, Publisher and Subscriber QoS Profiles (see
-also `QoS Profiles`_).
-
-All options, their meaning and their possible values are explained in
-the following subsections. The preferences are saved to disk so they
-will be remembered when OpenSplice Tuner is exited.
+The *Edit preferences* dialog allows user to save preferences to disk, so they will be remembered when OpenSplice Tuner is exited.
 
 Once the options are set to the desired value, they can be saved by
 clicking the *OK* button. This action triggers OpenSplice Tuner to save
@@ -2685,8 +2702,19 @@ window.
 The Edit preferences action can be cancelled by clicking the
 *Cancel* button. In this case, the preferences will not be saved.
 
+The *Edit preferences* dialog has 6 tabs.
+
++ The *Attributes* tab has seven configuration options (see also `Attributes Tab`_).
+
++ The *Topic Filters* tab provides filters to hide/show built-in topics in the different views (see also `Topic Filters Tab`_). 
+
++ There are four tabs for creating and editing Writer, Reader, Publisher and Subscriber QoS Profiles (see also `QoS Profiles`_).
+
+Attributes Tab
+==============
+
 Auto Update Entity information
-==============================
+------------------------------
 
 This option determines whether the information in an entity
 information window is updated automatically and at what frequency.
@@ -2703,7 +2731,7 @@ The default value for this option is ``2000``.
 .. _`Auto update entity tree`:
 
 Auto Update Entity Tree
-=======================
+-----------------------
 
 This option determines whether the entity relations (see 
 `Entity Relationships`_) in the entity tree in the main window 
@@ -2722,7 +2750,7 @@ The default value for this option is ``"-1"``.
 .. _`Default entity tree type`:
 
 Default Entity Tree Type
-========================
+------------------------
 
 This option determines the default view for the entity tree in the
 main window. There are three options: ``"participant"``, ``"topic"``
@@ -2732,7 +2760,7 @@ and ``"partition"``. The view can be changed during execution
 The default value for this option is ``"topic"``.
 
 Logging
-=======
+-------
 
 This option can be used to log internal OpenSplice Tuner information.
 
@@ -2743,7 +2771,7 @@ only and should *not* be used.
 The default value for this option is ``""``.
 
 Datatype Content Type
-=====================
+---------------------
 
 This option determines the default content type for the displaying of
 entity data types in the Data type tab of an entity information
@@ -2753,7 +2781,7 @@ window. There are two options: ``"text/plain"`` and ``"text/html"``.
 The default value for this option is ``"text/plain"``.
 
 Display Entity Relations
-========================
+------------------------
 
 This option determines whether entity relations are visible by
 default. There are two possibilities: ``"true"`` and ``"false"``.
@@ -2761,7 +2789,7 @@ default. There are two possibilities: ``"true"`` and ``"false"``.
 The default value for this option is ``"false"``.
 
 Display Internals
-=================
+-----------------
 
 This option determines whether OpenSplice internals are visible in
 the information that is shown by OpenSplice Tuner. There are two
@@ -2775,6 +2803,12 @@ entity are displayed.
 
 The default value for this option is ``"false"``.
 
+Topic Filters Tab
+=================
+
+The topic filters allow the user to hide and show built-in topics in the different views (Participant, Topic and Partition).
+
+By default the specification (DCPS) built-in topics are shown, and the other topic filters for internal built-in product topics are hidden. (CM, d\_, q\_, rr\_)
 
 QoS Profiles
 ************

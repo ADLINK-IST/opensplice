@@ -32,10 +32,10 @@ namespace core
  * @file
  * This file contains the type definitions for BuiltinTopicTypes
  */
-typedef TBytesTopicType<detail::BytesTopicType> BytesTopicType;
-typedef TStringTopicType<detail::StringTopicType> StringTopicType;
-typedef TKeyedBytesTopicType<detail::KeyedBytesTopicType> KeyedBytesTopicType;
-typedef TKeyedStringTopicType<detail::KeyedStringTopicType> KeyedStringTopicType;
+typedef dds::core::detail::BytesTopicType BytesTopicType;
+typedef dds::core::detail::StringTopicType StringTopicType;
+typedef dds::core::detail::KeyedBytesTopicType KeyedBytesTopicType;
+typedef dds::core::detail::KeyedStringTopicType KeyedStringTopicType;
 }
 }
 

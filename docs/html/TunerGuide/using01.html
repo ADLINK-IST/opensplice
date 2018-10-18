@@ -56,12 +56,20 @@ including how to start, stop, perform connection management, manage
 entities and data, and perform other related tasks.</em></p>
 <div class="section" id="starting-and-stopping-the-tuner">
 <h2>3.1. Starting and Stopping the Tuner<a class="headerlink" href="#starting-and-stopping-the-tuner" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="starting">
-<h3>3.1.1. Starting<a class="headerlink" href="#starting" title="Permalink to this headline">¶</a></h3>
 <p>Vortex OpenSplice Tuner has been implemented in the Java language. The
 supported platforms for the Tuner are listed in the <em>Release Notes</em> in
 the section ‘Supported Platforms’. The Tuner will work on all
 platforms that support JAVA (SAJ) SDK.</p>
+<div class="section" id="starting-tuner-using-launcher">
+<h3>3.1.1. Starting Tuner Using Launcher<a class="headerlink" href="#starting-tuner-using-launcher" title="Permalink to this headline">¶</a></h3>
+<p>The Vortex OpenSplice Launcher application provides easy access to the Vortex OpenSplice tools, configurations, documentation and examples.</p>
+<p>Vortex OpenSplice Tuner can be quickly started using the Vortex OpenSplice Launcher application.</p>
+<p>Instructions for starting Launcher can be found in the ‘Launcher’ section of the <em>OpenSplice_GettingStartedGuide.pdf</em> document.</p>
+<p>In Launcher, select the <em>Tools</em> tab, and select the <em>Tuner</em> button.
+This will open the Tuner application.</p>
+</div>
+<div class="section" id="starting-tuner-using-command-line">
+<h3>3.1.2. Starting Tuner Using Command Line<a class="headerlink" href="#starting-tuner-using-command-line" title="Permalink to this headline">¶</a></h3>
 <p>The Vortex OpenSplice Tuner provides a command line instruction for
 specifying the domain config file that the tuner needs to connect to.</p>
 <p>The option is</p>
@@ -74,7 +82,7 @@ specifying the domain config file that the tuner needs to connect to.</p>
 <p>The following subsections provide the startup procedures for the
 verified operating systems.</p>
 <div class="section" id="solaris-and-linux">
-<h4>3.1.1.1. Solaris and Linux<a class="headerlink" href="#solaris-and-linux" title="Permalink to this headline">¶</a></h4>
+<h4>3.1.2.1. Solaris and Linux<a class="headerlink" href="#solaris-and-linux" title="Permalink to this headline">¶</a></h4>
 <p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
 <p>Before starting Vortex OpenSplice Tuner, the Vortex OpenSplice environment
 must be set correctly. This can be realized by starting a shell and
@@ -84,8 +92,7 @@ of the OpenSplice installation (from now on referred to by
 <div class="highlight-python"><div class="highlight"><pre>%  . &lt;OSPL_HOME&gt;/release.com
 </pre></div>
 </div>
-<p>Once the environment has been initialized correctly, the OpenSplice
-DDS Tuner can be started by typing the following command in the shell:</p>
+<p>Once the environment has been initialized correctly, the Vortex OpenSplice Tuner can be started by typing the following command in the shell:</p>
 <div class="highlight-python"><div class="highlight"><pre>%  ospltun
 </pre></div>
 </div>
@@ -93,7 +100,7 @@ DDS Tuner can be started by typing the following command in the shell:</p>
 the user. (See the illustration <a class="reference internal" href="#the-main-tuner-window">The Main Tuner Window</a>.)</p>
 </div>
 <div class="section" id="windows">
-<h4>3.1.1.2. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h4>
+<h4>3.1.2.2. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h4>
 <p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
 <p>The Vortex OpenSplice environment must be set correctly before starting
 the Vortex OpenSplice Tuner. This is done by opening a command prompt
@@ -114,7 +121,7 @@ started (see <a class="reference internal" href="#the-main-tuner-window">The Mai
 </div>
 </div>
 <div class="section" id="graphical-user-interface-conventions">
-<h3>3.1.2. Graphical User Interface Conventions<a class="headerlink" href="#graphical-user-interface-conventions" title="Permalink to this headline">¶</a></h3>
+<h3>3.1.3. Graphical User Interface Conventions<a class="headerlink" href="#graphical-user-interface-conventions" title="Permalink to this headline">¶</a></h3>
 <p>Some conventions are used for all graphical components of the
 Vortex OpenSplice Tuner. Each window of Vortex OpenSplice Tuner provides a
 menu bar. Each menu bar has three menus:</p>
@@ -150,7 +157,7 @@ menu item, it is displayed at the right side of the menu item in
 manual.</p>
 </div>
 <div class="section" id="main-window">
-<h3>3.1.3. Main Window<a class="headerlink" href="#main-window" title="Permalink to this headline">¶</a></h3>
+<h3>3.1.4. Main Window<a class="headerlink" href="#main-window" title="Permalink to this headline">¶</a></h3>
 <p>When Vortex OpenSplice Tuner is started the main window appears.</p>
 <p class="centered" id="the-main-tuner-window">
 <strong><strong>The Main Tuner Window</strong></strong></p><a class="reference internal image-reference" href="_images/002_MainWindow.png"><img alt="The Main Tuner Window" class="align-center" src="_images/002_MainWindow.png" style="width: 70mm;" /></a>
@@ -177,7 +184,7 @@ focus. When a new window is opened, it is added to the window list;
 it is removed from this list when the window is closed again.</p>
 </div>
 <div class="section" id="shutdown">
-<h3>3.1.4. Shutdown<a class="headerlink" href="#shutdown" title="Permalink to this headline">¶</a></h3>
+<h3>3.1.5. Shutdown<a class="headerlink" href="#shutdown" title="Permalink to this headline">¶</a></h3>
 <p>OpenSplice Tuner can be exited at any time by choosing <em>File &gt; Exit</em> in
 the menu bar of the main window or by clicking the ‘close’ (X) icon at
 the top-right corner of the main window.</p>
@@ -231,7 +238,7 @@ a domain URI.</p>
 <p>This domain URI can represent any of the following values:</p>
 <blockquote>
 <div><p><em>a</em>: Integer Domain ID (<em>e.g.</em> <tt class="docutils literal"><span class="pre">1</span></tt>)</p>
-<p><em>b</em>: Domain URI (<em>e.g.</em> <tt class="docutils literal"><span class="pre">file:///home/Prismtech/ospl.xml</span></tt>)</p>
+<p><em>b</em>: Domain URI (<em>e.g.</em> <tt class="docutils literal"><span class="pre">file:///home/ADLINK/ospl.xml</span></tt>)</p>
 <p><em>c</em>: SOAP service URL (<em>e.g.</em> <tt class="docutils literal"><span class="pre">http://192.168.1.20:8000</span></tt>)</p>
 </div></blockquote>
 <p>Value <em>b</em> can be selected from a file chooser. Click the <em>Browse</em>
@@ -748,7 +755,7 @@ a data reader. A subscriber can be attached to one or more partitions
 in the domain where OpenSplice Tuner is currently participating.</p>
 <p>To create a subscriber, choose <em>Edit &gt; Create Subscriber</em> in the menu
 bar of the main window (see <a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) or right-click
-the SPLICE Tuner participant in the entity tree then choose the <em>Create
+the Vortex OpenSplice Tuner participant in the entity tree then choose the <em>Create
 Subscriber</em> item.</p>
 <p>Both of these actions will result in the display of the dialog box
 shown below.</p>
@@ -779,6 +786,13 @@ see <a class="reference internal" href="#enable-and-disable-displaying-relations
 in the status bar of the dialog box.</p>
 <p>The Create subscriber action can be cancelled by clicking the
 <em>Cancel</em> button. In this case, no subscriber will be created.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> If the subscriber was created with <em>coherent_access</em> and <em>GROUP</em>
+<em>access_scope</em>, then it will be created in the disabled state, regardless of
+the value of the entity factory policy of the parent participant. For group
+coherent subscribers, data readers can only be created while it is disabled.
+When the subscriber is explicitly enabled, then the contained readers can begin
+their access to the data. After the subscriber is enabled, no further data readers
+can be created under it.</p>
 </div>
 <div class="section" id="creating-a-reader">
 <h3>3.5.4. Creating a Reader<a class="headerlink" href="#creating-a-reader" title="Permalink to this headline">¶</a></h3>
@@ -835,7 +849,7 @@ writer, subscriber and reader can be changed.</p>
 allows a reader-writer to inject and consume in multiple partitions.</p>
 <p>To create such a reader-writer, choose <em>Edit &gt; Create Reader-Writer &gt;
 Partition expression</em> in the menu bar of the main window (see
-<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the SPLICE Tuner participant
+<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the Vortex OpenSplice Tuner participant
 in the entity tree then choose the
 <em>Create Reader-Writer &gt; Partition expression</em> item.</p>
 <p>Both of these actions will result in the display of the dialog box
@@ -882,7 +896,7 @@ reader-writer to inject and consume in one already existing
 partition.</p>
 <p>To create such a reader-writer, choose <em>Edit &gt; Create
 Reader-Writer &gt; Existing Partition</em> in the menu bar of the main window
-(<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the SPLICE Tuner participant
+(<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the Vortex OpenSplice Tuner participant
 in the entity tree then choose the <em>Create Reader-Writer &gt; Existing Partition</em>
 item.</p>
 <p>Both of these actions will result in the display of the dialog box
@@ -1907,12 +1921,7 @@ menu bar of the main window. This action results in the display of a
 dialog to edit the preferences.</p>
 <p class="centered" id="edit-preferences">
 <strong><strong>Edit Preferences</strong></strong></p><a class="reference internal image-reference" href="_images/047_EditPreferences.png"><img alt="Edit Preferences" class="align-center" src="_images/047_EditPreferences.png" style="width: 70mm;" /></a>
-<p>There are seven configuration options and four tabs for creating and
-editing Writer, Reader, Publisher and Subscriber QoS Profiles (see
-also <a class="reference internal" href="#qos-profiles">QoS Profiles</a>).</p>
-<p>All options, their meaning and their possible values are explained in
-the following subsections. The preferences are saved to disk so they
-will be remembered when OpenSplice Tuner is exited.</p>
+<p>The <em>Edit preferences</em> dialog allows user to save preferences to disk, so they will be remembered when OpenSplice Tuner is exited.</p>
 <p>Once the options are set to the desired value, they can be saved by
 clicking the <em>OK</em> button. This action triggers OpenSplice Tuner to save
 the preferences to disk. The dialog window is closed when the
@@ -1921,8 +1930,16 @@ correct, an error message appears in the status bar of the dialog
 window.</p>
 <p>The Edit preferences action can be cancelled by clicking the
 <em>Cancel</em> button. In this case, the preferences will not be saved.</p>
+<p>The <em>Edit preferences</em> dialog has 6 tabs.</p>
+<ul class="simple">
+<li>The <em>Attributes</em> tab has seven configuration options (see also <a class="reference internal" href="#attributes-tab">Attributes Tab</a>).</li>
+<li>The <em>Topic Filters</em> tab provides filters to hide/show built-in topics in the different views (see also <a class="reference internal" href="#topic-filters-tab">Topic Filters Tab</a>).</li>
+<li>There are four tabs for creating and editing Writer, Reader, Publisher and Subscriber QoS Profiles (see also <a class="reference internal" href="#qos-profiles">QoS Profiles</a>).</li>
+</ul>
+<div class="section" id="attributes-tab">
+<h3>3.7.1. Attributes Tab<a class="headerlink" href="#attributes-tab" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="auto-update-entity-information">
-<h3>3.7.1. Auto Update Entity information<a class="headerlink" href="#auto-update-entity-information" title="Permalink to this headline">¶</a></h3>
+<h4>3.7.1.1. Auto Update Entity information<a class="headerlink" href="#auto-update-entity-information" title="Permalink to this headline">¶</a></h4>
 <p>This option determines whether the information in an entity
 information window is updated automatically and at what frequency.
 This only applies to the status of the entity that is displayed in
@@ -1935,7 +1952,7 @@ OpenSplice Tuner on OpenSplice increases.</p>
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">2000</span></tt>.</p>
 </div>
 <div class="section" id="auto-update-entity-tree">
-<span id="id8"></span><h3>3.7.2. Auto Update Entity Tree<a class="headerlink" href="#auto-update-entity-tree" title="Permalink to this headline">¶</a></h3>
+<span id="id8"></span><h4>3.7.1.2. Auto Update Entity Tree<a class="headerlink" href="#auto-update-entity-tree" title="Permalink to this headline">¶</a></h4>
 <p>This option determines whether the entity relations (see
 <a class="reference internal" href="#entity-relationships">Entity Relationships</a>) in the entity tree in the main window
 are updated automatically and at what frequency.</p>
@@ -1948,7 +1965,7 @@ increases.</p>
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;-1&quot;</span></tt>.</p>
 </div>
 <div class="section" id="default-entity-tree-type">
-<span id="id9"></span><h3>3.7.3. Default Entity Tree Type<a class="headerlink" href="#default-entity-tree-type" title="Permalink to this headline">¶</a></h3>
+<span id="id9"></span><h4>3.7.1.3. Default Entity Tree Type<a class="headerlink" href="#default-entity-tree-type" title="Permalink to this headline">¶</a></h4>
 <p>This option determines the default view for the entity tree in the
 main window. There are three options: <tt class="docutils literal"><span class="pre">&quot;participant&quot;</span></tt>, <tt class="docutils literal"><span class="pre">&quot;topic&quot;</span></tt>
 and <tt class="docutils literal"><span class="pre">&quot;partition&quot;</span></tt>. The view can be changed during execution
@@ -1956,7 +1973,7 @@ and <tt class="docutils literal"><span class="pre">&quot;partition&quot;</span><
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;topic&quot;</span></tt>.</p>
 </div>
 <div class="section" id="logging">
-<h3>3.7.4. Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
+<h4>3.7.1.4. Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h4>
 <p>This option can be used to log internal OpenSplice Tuner information.</p>
 <p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
 This setting is intended for OpenSplice Tuner engineering purposes
@@ -1964,7 +1981,7 @@ only and should <em>not</em> be used.</p>
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt>.</p>
 </div>
 <div class="section" id="datatype-content-type">
-<h3>3.7.5. Datatype Content Type<a class="headerlink" href="#datatype-content-type" title="Permalink to this headline">¶</a></h3>
+<h4>3.7.1.5. Datatype Content Type<a class="headerlink" href="#datatype-content-type" title="Permalink to this headline">¶</a></h4>
 <p>This option determines the default content type for the displaying of
 entity data types in the Data type tab of an entity information
 window. There are two options: <tt class="docutils literal"><span class="pre">&quot;text/plain&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;text/html&quot;</span></tt>.
@@ -1972,13 +1989,13 @@ window. There are two options: <tt class="docutils literal"><span class="pre">&q
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;text/plain&quot;</span></tt>.</p>
 </div>
 <div class="section" id="display-entity-relations">
-<h3>3.7.6. Display Entity Relations<a class="headerlink" href="#display-entity-relations" title="Permalink to this headline">¶</a></h3>
+<h4>3.7.1.6. Display Entity Relations<a class="headerlink" href="#display-entity-relations" title="Permalink to this headline">¶</a></h4>
 <p>This option determines whether entity relations are visible by
 default. There are two possibilities: <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
 </div>
 <div class="section" id="display-internals">
-<h3>3.7.7. Display Internals<a class="headerlink" href="#display-internals" title="Permalink to this headline">¶</a></h3>
+<h4>3.7.1.7. Display Internals<a class="headerlink" href="#display-internals" title="Permalink to this headline">¶</a></h4>
 <p>This option determines whether OpenSplice internals are visible in
 the information that is shown by OpenSplice Tuner. There are two
 possibilities for this option: <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
@@ -1987,6 +2004,12 @@ is selected, they are not.</p>
 <p>This option currently only has impact on which attributes of an
 entity are displayed.</p>
 <p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="topic-filters-tab">
+<h3>3.7.2. Topic Filters Tab<a class="headerlink" href="#topic-filters-tab" title="Permalink to this headline">¶</a></h3>
+<p>The topic filters allow the user to hide and show built-in topics in the different views (Participant, Topic and Partition).</p>
+<p>By default the specification (DCPS) built-in topics are shown, and the other topic filters for internal built-in product topics are hidden. (CM, d_, q_, rr_)</p>
 </div>
 </div>
 <div class="section" id="qos-profiles">
@@ -2144,14 +2167,15 @@ written from a regular topic.</p>
   <ul>
 <li><a class="reference internal" href="#">3. Using the Vortex OpenSplice Tuner</a><ul>
 <li><a class="reference internal" href="#starting-and-stopping-the-tuner">3.1. Starting and Stopping the Tuner</a><ul>
-<li><a class="reference internal" href="#starting">3.1.1. Starting</a><ul>
-<li><a class="reference internal" href="#solaris-and-linux">3.1.1.1. Solaris and Linux</a></li>
-<li><a class="reference internal" href="#windows">3.1.1.2. Windows</a></li>
+<li><a class="reference internal" href="#starting-tuner-using-launcher">3.1.1. Starting Tuner Using Launcher</a></li>
+<li><a class="reference internal" href="#starting-tuner-using-command-line">3.1.2. Starting Tuner Using Command Line</a><ul>
+<li><a class="reference internal" href="#solaris-and-linux">3.1.2.1. Solaris and Linux</a></li>
+<li><a class="reference internal" href="#windows">3.1.2.2. Windows</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#graphical-user-interface-conventions">3.1.2. Graphical User Interface Conventions</a></li>
-<li><a class="reference internal" href="#main-window">3.1.3. Main Window</a></li>
-<li><a class="reference internal" href="#shutdown">3.1.4. Shutdown</a></li>
+<li><a class="reference internal" href="#graphical-user-interface-conventions">3.1.3. Graphical User Interface Conventions</a></li>
+<li><a class="reference internal" href="#main-window">3.1.4. Main Window</a></li>
+<li><a class="reference internal" href="#shutdown">3.1.5. Shutdown</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#connection-management">3.2. Connection Management</a><ul>
@@ -2243,13 +2267,17 @@ written from a regular topic.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#preferences">3.7. Preferences</a><ul>
-<li><a class="reference internal" href="#auto-update-entity-information">3.7.1. Auto Update Entity information</a></li>
-<li><a class="reference internal" href="#auto-update-entity-tree">3.7.2. Auto Update Entity Tree</a></li>
-<li><a class="reference internal" href="#default-entity-tree-type">3.7.3. Default Entity Tree Type</a></li>
-<li><a class="reference internal" href="#logging">3.7.4. Logging</a></li>
-<li><a class="reference internal" href="#datatype-content-type">3.7.5. Datatype Content Type</a></li>
-<li><a class="reference internal" href="#display-entity-relations">3.7.6. Display Entity Relations</a></li>
-<li><a class="reference internal" href="#display-internals">3.7.7. Display Internals</a></li>
+<li><a class="reference internal" href="#attributes-tab">3.7.1. Attributes Tab</a><ul>
+<li><a class="reference internal" href="#auto-update-entity-information">3.7.1.1. Auto Update Entity information</a></li>
+<li><a class="reference internal" href="#auto-update-entity-tree">3.7.1.2. Auto Update Entity Tree</a></li>
+<li><a class="reference internal" href="#default-entity-tree-type">3.7.1.3. Default Entity Tree Type</a></li>
+<li><a class="reference internal" href="#logging">3.7.1.4. Logging</a></li>
+<li><a class="reference internal" href="#datatype-content-type">3.7.1.5. Datatype Content Type</a></li>
+<li><a class="reference internal" href="#display-entity-relations">3.7.1.6. Display Entity Relations</a></li>
+<li><a class="reference internal" href="#display-internals">3.7.1.7. Display Internals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#topic-filters-tab">3.7.2. Topic Filters Tab</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#qos-profiles">3.8. QoS Profiles</a><ul>
@@ -2310,7 +2338,7 @@ written from a regular topic.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

@@ -2,8 +2,6 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dcpssacs", "code\DDS\dcpssacs.csproj", "{AFB382F9-84F5-4226-BD28-A02F0B15F2E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestBinding", "api_quick_test\code\TestBinding.csproj", "{33364B52-2443-4B73-8C14-8EEFBABE5923}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

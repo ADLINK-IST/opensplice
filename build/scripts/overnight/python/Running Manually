@@ -25,13 +25,13 @@ JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0 (as appropriate for mach
 ODBCHOME=/home/dds/INSTALLED_FOR_DDS/ODBC
 ODBCINI=$ODBCHOME/etc/odbc.ini
 ODBCINST=$ODBCHOME/etc/odbcinst.ini
-ODBC_MSSQL_SERVER=10.1.0.189
+ODBC_MSSQL_SERVER=10.1.5.197
 ODBC_MYSQL_SERVER=10.1.0.191
 ODBCSYSINI=$ODBCHOME/etc
 LD_LIBRARY_PATH="$ODBCHOME/lib:.:$LD_LIBRARY_PATH"
 ODBC_LIB_NAME="odbc"
 
- 
+
 
 On windows also set
 
@@ -57,7 +57,7 @@ Where lang is from c, cpp, cs, isocpp, isocpp2, java, java5 and where type is fr
 
 Note: the use of standalone / corba will only be effective where applicable and is handled internally
 
- 
+
 
 ExampleName will be from
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -779,7 +780,8 @@ saj_cacheStructBuild (
     copyStruct.nrOfMembers = c_arraySize(o->members);
 
     headerIndex = saj_copyCacheWrite (context.copyCache, &copyStruct, sizeof(sajCopyStruct));
-    c_iterInsert (ctx->typeStack, saj_typeHistoryNew (c_metaObject(o), headerIndex));
+    ctx->typeStack = c_iterInsert(
+        ctx->typeStack, saj_typeHistoryNew(c_metaObject(o), headerIndex));
 
     TRACE (printf ("Struct\n    Class name %s\n", classDescriptor));
     TRACE (printf ("    Java class %x\n", (int)copyStruct.structClass));
@@ -1255,7 +1257,8 @@ saj_cacheUnionBuild (
     }
 
     headerIndex = saj_copyCacheWrite (context.copyCache, &copyUnion, sizeof(sajCopyUnion));
-    c_iterInsert (ctx->typeStack, saj_typeHistoryNew (c_metaObject(o), headerIndex));
+    ctx->typeStack = c_iterInsert(
+        ctx->typeStack, saj_typeHistoryNew(c_metaObject(o), headerIndex));
     if (c_baseObject(c_typeActualType(o->switchType))->kind == M_ENUMERATION) {
         saj_cacheEnumBuild(c_enumeration(c_typeActualType(o->switchType)), ctx);
     }
@@ -2090,6 +2093,8 @@ saj_scopedTypeName (
     sep[0] = context->separator;
     sep[1] = '\0';
 
+    bufferSize -= 1;
+
     if (object->definedIn) {
         /* Step 1: determine the 'original' scoped name, without any prefixing
          * or substitution
@@ -2141,7 +2146,6 @@ saj_scopedTypeName (
 
         if (scope) {
             if (strlen(scope) != 0) {
-                bufferSize-=1;
                 os_strncat (buffer, scope, bufferSize);
                 bufferSize-=strlen(scope);
                 os_strncat (buffer, sep, bufferSize);
@@ -2249,14 +2253,14 @@ saj_fieldDescriptor (
     case M_ENUMERATION:
         os_strncpy(descriptor, "L", size);
         saj_scopedTypeName(descriptor, size, c_metaObject(type), context);
-        strncat(descriptor, ";", size);
+        os_strncat(descriptor, ";", size - 1);
         break;
     case M_MODULE:
         break;
     case M_STRUCTURE:
         os_strncpy(descriptor, "L", size);
         saj_scopedTypeName(descriptor, size, c_metaObject(type), context);
-        strncat(descriptor, ";", size);
+        os_strncat(descriptor, ";", size - 1);
         break;
     case M_TYPEDEF:
         saj_fieldDescriptor(c_typeDef(type)->alias, descriptor, size, context);
@@ -2264,7 +2268,7 @@ saj_fieldDescriptor (
     case M_UNION:
         os_strncpy(descriptor, "L", size);
         saj_scopedTypeName(descriptor, size, c_metaObject(type), context);
-        strncat(descriptor, ";", size);
+        os_strncat(descriptor, ";", size - 1);
         break;
     }
     assert (strlen (descriptor) != (size - 1));

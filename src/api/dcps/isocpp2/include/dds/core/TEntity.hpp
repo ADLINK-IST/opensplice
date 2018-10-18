@@ -118,6 +118,29 @@ public:
      * dr.enable();
      * @endcode
      *
+     *  In addition to the general description, the enable operation on a dds::sub::Subscriber
+     *  has special meaning in specific usecases. This applies only to Subscribers with PresentationQoS
+     *  coherent-access set to true with access-scope set to group.
+     *
+     *  In this case the subscriber is always created in a disabled state, regardless of the auto-enable
+     *  created entities setting on the corresponding participant. While the subscriber remains disabled,
+     *  DataReaders can be created that will participate in coherent transactions of the subscriber.
+     *
+     *  See dds::sub::CoherentAccess for more information.
+     *
+     *  All DataReaders will also be created in a disabled state. Coherency with group access-scope requires
+     *  data to be delivered as a transaction, atomically, to all eligible readers. Therefore data should not be
+     *  delivered to any single DataReader immediately after it's created, as usual, but only after the application
+     *  has finished creating all DataReaders for a given Subscriber. At this point, the application should enable the
+     *  Subscriber which in turn enables all its DataReaders.
+     *
+     *  Note that for a dds::pub::DataWriter which has a corresponding dds::pub::Publisher
+     *  with a PresentationQoS with coherent-access set to true and access-scope set to topic or group
+     *  that the HistoryQoS of the dds::pub::DataWriter should be set to keep-all otherwise the enable operation
+     *  will fail.
+     *
+     *  See dds::pup::DataWriter for more information.
+     *
      * @return void
      * @throw  dds::core::PreconditionNotMetError
      *              Entities' factory is not enabled.

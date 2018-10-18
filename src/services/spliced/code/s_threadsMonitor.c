@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -57,6 +58,7 @@ C_STRUCT(s_threadsMonitor)
 
 /* number of seconds before going into error state. */
 static const os_duration POLL_LIMIT = OS_DURATION_INIT(1, 0);
+static const os_duration POLL_INITIAL = OS_DURATION_INIT(1*60, 0);
 
 static void
 s_threadsReport(
@@ -72,6 +74,31 @@ static void*
 s_threadsWatchdogMain(
     void* arg);
 
+
+void
+s_threadsMonitorSetInterval(
+    spliced splicedaemon)
+{
+    s_configuration config;
+    ut_threads threads;
+    os_duration interval;
+
+    assert(splicedaemon);
+
+    config = splicedGetConfiguration(splicedaemon);
+    threads = splicedGetThreads(splicedaemon);
+    assert(config);
+    /* Set allowed thread progress delay interval.
+     * This will be the thread checking polling interval as well.
+     */
+    interval = (os_durationCompare(config->leasePeriod, config->serviceTerminatePeriod) == OS_MORE) ?
+                                config->leasePeriod :
+                                config->serviceTerminatePeriod;
+    interval = (os_durationCompare(interval, POLL_LIMIT) == OS_MORE) ?
+                                interval :
+                                POLL_LIMIT;
+    ut_threadsSetInterval(threads, interval);
+}
 
 s_threadsMonitor
 s_threadsMonitorNew(
@@ -93,14 +120,7 @@ s_threadsMonitorNew(
     _this->threads = splicedGetThreads(splicedaemon);
     _this->main = ut_threadLookupSelf(_this->threads);
 
-    /* Set allowed thread progress delay interval.
-     * This will be the thread checking polling interval as well. */
-    _this->interval = (os_durationCompare(config->leasePeriod, config->serviceTerminatePeriod) == OS_MORE) ?
-                                config->leasePeriod :
-                                config->serviceTerminatePeriod;
-    _this->interval = (os_durationCompare(_this->interval, POLL_LIMIT) == OS_MORE) ?
-                                config->leasePeriod :
-                                POLL_LIMIT;
+    _this->interval = POLL_INITIAL;
     ut_threadsSetInterval(_this->threads, _this->interval);
 
     result = os_mutexInit(&_this->terminate.mtx, NULL);
@@ -115,7 +135,8 @@ s_threadsMonitorNew(
     }
 
     /* Use the shared memory monitor thread attribute.
-     * We will mainly be monitoring that thread anyway. */
+     * We will mainly be monitoring that thread anyway.
+     */
     ut_threadCreate(splicedGetThreads(splicedaemon), &(_this->watchdog), "threadsWatchdog", &config->shmMonitorAttribute, s_threadsWatchdogMain, _this);
     if (_this->watchdog == NULL) {
         OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0, "Failed to start threads watchdog");
@@ -135,12 +156,16 @@ err_threadsMonitor_mtx:
     return NULL;
 }
 
-
-void
+os_boolean
 s_threadsMonitorFree(
     s_threadsMonitor _this)
 {
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
+
     if (_this != NULL) {
+        config = splicedGetConfiguration(_this->spliced);
         /* Stop watchdog thread. */
         os_mutexLock(&_this->terminate.mtx);
         _this->terminate.stop = OS_TRUE;
@@ -148,14 +173,23 @@ s_threadsMonitorFree(
         os_mutexUnlock(&_this->terminate.mtx);
 
         /* Wait for the watchdog thread. */
-        (void)ut_threadWaitExit(_this->watchdog, NULL);
-        _this->watchdog = NULL;
-
-        /* Delete variables. */
-        os_mutexDestroy(&_this->terminate.mtx);
-        os_condDestroy(&_this->terminate.cnd);
-        os_free(_this);
+        osr = ut_threadTimedWaitExit(_this->watchdog, config->serviceTerminatePeriod, NULL);
+        if (osr != os_resultSuccess) {
+            OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                ut_threadGetName(_this->watchdog),
+                (os_address)os_threadIdToInteger(ut_threadGetId(_this->watchdog)),
+                os_resultImage(osr));
+            result = OS_FALSE;
+        } else {
+            _this->watchdog = NULL;
+            /* Delete variables. */
+            os_mutexDestroy(&_this->terminate.mtx);
+            os_condDestroy(&_this->terminate.cnd);
+            os_free(_this);
+        }
     }
+    return result;
 }
 
 static void
@@ -202,14 +236,13 @@ s_threadsReport(
 
     if ((thread != NULL) && (changed) && (!alive)) {
 #ifndef S_DEBUG_THREADS
-        ut_threadToString(thread, alive, info, report->bfr, S_REPORT_BUFFER_SIZE);
+        ut_threadToString(thread, alive, info, report->bfr, sizeof(report->bfr));
         s_printEvent(splicedaemon, S_RPTLEVEL_SEVERE, "Thread deadlocked: %s\n", report->bfr);
         OS_REPORT(OS_ERROR, caller, 0, "Thread deadlocked: %s", report->bfr);
         TRACE_THREADS("Thread deadlocked: %s\n", report->bfr);
 #endif
 
-        /*
-         * When a thread fails to make progress, you'd still like to shutdown
+        /* When a thread fails to make progress, you'd still like to shutdown
          * as much and as cleanly as possible.
          * This can be done by signaling the spliced to terminate when a thread
          * deadlocks (see s_threadsWatchdogMain()).
@@ -221,7 +254,7 @@ s_threadsReport(
             s_printEvent(splicedaemon, S_RPTLEVEL_SEVERE, "The spliced main thread found not-responding. "
                                                           "A clean shutdown is highly unlikely. "
                                                           "Best action left: abort!\n");
-            OS_REPORT(OS_ERROR, caller, 0, "The spliced main thread found not-responding. "
+            OS_REPORT(OS_FATAL, caller, 0, "The spliced main thread found not-responding. "
                                            "A clean shutdown is highly unlikely. "
                                            "Best action left: abort!");
             TRACE_THREADS("The spliced main thread found not-responding. "
@@ -252,8 +285,9 @@ s_threadsWatchdogMain(
     while(_this->terminate.stop == OS_FALSE) {
         /* Sleep until polling time or termination. */
         osr = ut_condTimedWait(_this->watchdog, &_this->terminate.cnd, &_this->terminate.mtx, POLL_LIMIT);
-        if (osr == os_resultSuccess) {
-            /* Condition triggered: likely a termination request. */
+        if ((osr == os_resultSuccess) ||
+            (_this->terminate.stop == OS_TRUE)) {
+            /* No action required */
         } else if (osr == os_resultTimeout) {
             /* Condition timed out: poll the threads progress. */
             report.bfr[0] = '\0';

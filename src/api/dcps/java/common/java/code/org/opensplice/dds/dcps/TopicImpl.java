@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@
 package org.opensplice.dds.dcps;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import DDS.ExtTopicListener;
 
@@ -93,18 +95,22 @@ public class TopicImpl extends TopicBase implements DDS.Topic, TopicDescription 
                          * that events that can trigger a listener on an owning
                          * entity are propagated instead of being consumed by
                          * the listener being destroyed. */
-                        set_listener(this.listener, 0);
+                        result = set_listener(this.listener, 0);
                     }
-                    this.disable_callbacks();
-                    result = ((EntityImpl) this).detach_statuscondition();
                     if (result == DDS.RETCODE_OK.value) {
-                        this.typeSupport = null;
-                        this.name = null;
-                        this.type_name = null;
-                        this.participant = null;
-                        result = jniTopicFree(uTopic);
+                        result = this.disable_callbacks();
                         if (result == DDS.RETCODE_OK.value) {
-                            result = super.deinit();
+                            result = ((EntityImpl) this).detach_statuscondition();
+                            if (result == DDS.RETCODE_OK.value) {
+                                this.typeSupport = null;
+                                this.name = null;
+                                this.type_name = null;
+                                this.participant = null;
+                                result = jniTopicFree(uTopic);
+                                if (result == DDS.RETCODE_OK.value) {
+                                    result = super.deinit();
+                                }
+                            }
                         }
                     }
                 } else {
@@ -174,6 +180,7 @@ public class TopicImpl extends TopicBase implements DDS.Topic, TopicDescription 
         int result = DDS.RETCODE_OK.value;
 
         assert(uTopic != 0);
+        assert(dp != null);
 
         synchronized (this)
         {
@@ -187,57 +194,51 @@ public class TopicImpl extends TopicBase implements DDS.Topic, TopicDescription 
             } else {
                 String typename = jniGetTypeName(uTopic);
 
-                if (this.participant != null) {
-                    this.typeSupport = this.participant.lookup_typeSupport(typename);
-                    /*
-                     * type is not registered with idl type name so do a lookup
-                     * over all registered types to find a matching alias for
-                     * the idl type name
-                     */
-                    if (this.typeSupport == null) {
-                        Map<String, TypeSupportImpl> ts = this.participant.get_typesupports();
+                this.typeSupport = this.participant.lookup_typeSupport(typename);
+                /*
+                 * type is not registered with idl type name so do a lookup
+                 * over all registered types to find a matching alias for
+                 * the idl type name
+                 */
+                if (this.typeSupport == null) {
+                    Map<String, TypeSupportImpl> ts = this.participant.get_typesupports();
 
-                        for (String alias : ts.keySet()) {
-                            TypeSupportImpl tsp = ts.get(alias);
-                            if (tsp.get_type_name().equals(typename)) {
-                                this.typeSupport = tsp;
-                                break;
-                            }
+                    for (Entry<String, TypeSupportImpl> tsp : ts.entrySet()) {
+                        if (tsp.getValue().get_type_name().equals(typename)) {
+                            this.typeSupport = tsp.getValue();
+                            break;
                         }
                     }
+                }
 
-                    if (this.typeSupport != null) {
+                if (this.typeSupport != null) {
 
-                        // check if typesupport keys are compatible with topic type keys
-                        String typeKeyList = this.typeSupport.get_key_list();
-                        String topicKeyList = jniGetKeyExpr(uTopic);
+                    // check if typesupport keys are compatible with topic type keys
+                    String typeKeyList = this.typeSupport.get_key_list();
+                    String topicKeyList = jniGetKeyExpr(uTopic);
 
-                        if (typeKeyList == null || topicKeyList == null) {
-                            if (typeKeyList != topicKeyList) {
-                                if (typeKeyList == null) {
-                                    ReportStack.report(DDS.RETCODE_OK.value,
-                                        "incompatible keys: registered typesupport has no key but topic has key '" + topicKeyList + "'.");
-                                } else {
-                                    ReportStack.report(DDS.RETCODE_OK.value,
-                                        "incompatible keys: registered typesupport has key '" + typeKeyList + "' but topic has no key.");
-                                }
+                    if (typeKeyList == null || topicKeyList == null) {
+                        if (typeKeyList == null && topicKeyList != null ) {
+                            ReportStack.report(DDS.RETCODE_OK.value,
+                                "incompatible keys: registered typesupport has no key but topic has key '" + topicKeyList + "'.");
+                        } else if (typeKeyList != null && topicKeyList == null ) {
+                            ReportStack.report(DDS.RETCODE_OK.value,
+                                "incompatible keys: registered typesupport has key '" + typeKeyList + "' but topic has no key.");
+                        }
+                    } else {
+                        String[] typeKeyArr = typeKeyList.split(",\\s");
+                        String[] topicKeyArr = topicKeyList.split(",\\s");
+
+                        boolean consistent = typeKeyArr.length == topicKeyArr.length;
+                        if (consistent) {
+                            for (int i = 0; consistent && i < typeKeyArr.length; i++) {
+                                consistent = typeKeyArr[i].equals(topicKeyArr[i]);
                             }
-                        } else {
-
-                            String[] typeKeyArr = typeKeyList.split(",\\s");
-                            String[] topicKeyArr = topicKeyList.split(",\\s");
-
-                            boolean consistent = typeKeyArr.length == topicKeyArr.length;
-                            if (consistent) {
-                                for (int i = 0; consistent && i < typeKeyArr.length; i++) {
-                                    consistent = typeKeyArr[i].equals(topicKeyArr[i]);
-                                }
-                            }
-                            if (!consistent) {
-                                ReportStack.report(DDS.RETCODE_OK.value,
-                                       "incompatible keys: registered typesupport has key '" + typeKeyList +
-                                       "' but topic has key '" + topicKeyList + "'.");
-                            }
+                        }
+                        if (!consistent) {
+                            ReportStack.report(DDS.RETCODE_OK.value,
+                                   "incompatible keys: registered typesupport has key '" + typeKeyList +
+                                   "' but topic has key '" + topicKeyList + "'.");
                         }
                     }
                 }

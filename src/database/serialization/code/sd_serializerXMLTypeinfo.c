@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -77,52 +78,6 @@ sd_checkSerializerType(
             ((unsigned int)serializer->formatID == SD_FORMAT_ID) &&
             ((unsigned int)serializer->formatVersion == SD_FORMAT_VERSION));
 }
-#endif
-
-#if 0
-typedef struct {
-    sd_contextItemKind kind;
-    c_metaKind         metaKind;
-    const c_char      *xmlName;
-    const c_char      *typeName;
-    union {
-        int            kind;
-        c_primKind     primKind;
-        c_collKind     collKind;
-    } special;
-} sd_typeInfo;
-
-static const sd_typeInfo typeInfoMap[] = {
-    { SD_CONTEXT_ITEM_MODULE,      M_MODULE,      "Module",      "c_structure",   { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_STRUCTURE,   M_STRUCTURE,   "Struct",      "c_structure",   { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_MEMBER,      M_MEMBER,      "Member",      "c_member",      { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_TYPEDEF,     M_TYPEDEF,     "TypeDef",     "c_typeDef",     { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_ARRAY,       M_COLLECTION,  "Array",       "c_collection",  { (int) C_ARRAY     } },
-    { SD_CONTEXT_ITEM_SEQUENCE,    M_COLLECTION,  "Sequence",    "c_collection",  { (int) C_SEQUENCE  } },
-    { SD_CONTEXT_ITEM_ENUMERATION, M_ENUMERATION, "Enum",        "c_enumeration", { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_UNION,       M_UNION,       "Union",       "c_union",       { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_UNIONCASE,   M_UNIONCASE,   "UNIONCASE",   "c_unionCase",   { (int) P_UNDEFINED } }
-};
-static const c_long typeInfoMapSize = sizeof(typeInfoMap)/sizeof(sd_typeInfo);
-
-static const sd_typeInfo specTypeInfoMap[] = {
-    { SD_CONTEXT_ITEM_TYPE,      M_UNDEFINED,  "Type",      NULL,           { (int) P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_STRING,    M_COLLECTION, "String",    "c_string",     { (int) C_STRING    } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Address",   "c_address",    { (int) P_ADDRESS   } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Boolean",   "c_bool",       { (int) P_BOOLEAN   } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Char",      "c_char",       { (int) P_CHAR      } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "WChar",     "c_wchar",      { (int) P_WCHAR     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Octet",     "c_octet",      { (int) P_OCTET     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Short",     "c_short",      { (int) P_SHORT     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "UShort",    "c_ushort",     { (int) P_USHORT    } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Long",      "c_long",       { (int) P_LONG      } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULong",     "c_ulong",      { (int) P_ULONG     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "LongLong",  "c_longlong",   { (int) P_LONGLONG  } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULongLong", "c_ulonglong",  { (int) P_ULONGLONG } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Float",     "c_float",      { (int) P_FLOAT     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Double",    "c_double",     { (int) P_DOUBLE    } }
-};
-static const c_long specTypeInfoMapSize = sizeof(specTypeInfoMap)/sizeof(sd_typeInfo);
 #endif
 
 /* --------------------- Serialization driving functions -------------------- */
@@ -373,7 +328,8 @@ sd_itemDerefDependee(
 }
 
 /* Deref dependees. Dependees are deref'd when a dependency (the item passed to this function) is
- * resolved. When a dependee reaches refcount zero, it can be processed itself. */
+ * resolved. When a dependee reaches refcount zero, it can be processed itself.
+ */
 static void
 sd_itemDerefDependees(
     sd_item item)
@@ -454,7 +410,7 @@ sd_contextProcessed(
 {
     struct sd_contextFindModule_t walkData;
     assert(!sd_contextIsProcessed(context, item->self));
-    c_iterAppend(context->items, item);
+    context->items = c_iterAppend(context->items, item);
 
     /* Find corresponding module */
     walkData.find = c_metaObject(item->self)->definedIn;
@@ -481,7 +437,7 @@ sd_contextDeclare(
     sd_item item)
 {
     assert(!sd_contextIsProcessed(context, item->self));
-    c_iterAppend(context->declarations, item);
+    context->declarations = c_iterAppend(context->declarations, item);
 }
 
 /* Serialize a type */
@@ -628,7 +584,8 @@ error:
  * Parameter 'rootType' is typically the same as the 'type' parameter.
  * However, for inline types these two differ. The distinction
  * enables that dependencies are always added to the
- * top-level type. */
+ * top-level type. *
+ */
 static int
 sd_serializeTypeDependencies(
     sd_context context,
@@ -704,7 +661,8 @@ sd_serializeType(
             }else {
                 /* Don't process inlined types in graph. These are resolved when the parent-type is printed, which is always in correct
                  * dependency order, which is the order of members(structs) or cases(unions). Collections are also considered
-                 * inlined, because the actual location of a collection type is implementation specific. */
+                 * inlined, because the actual location of a collection type is implementation specific.
+                 */
                 if(!sd_utilIsInlined(type)) {
                     /* Here, the usage of 'rootType' is prohibited since this is not an inlined type. */
 
@@ -713,7 +671,8 @@ sd_serializeType(
 
                     /* Add forward-declaration marker for structs and unions, to allow references to self, so that
                      * the cycles can be detected. IDL does not allow other types to be forward-declared, thus
-                     * cannot introduce cyclic references. */
+                     * cannot introduce cyclic references.
+                     */
                     if((c_baseObject(type)->kind == M_STRUCTURE) || (c_baseObject(type)->kind == M_UNION)) {
                         sd_contextDeclare(context, item);
                     }
@@ -741,13 +700,15 @@ sd_serializeType(
                     }
 
                     /* If rootType is referencing an inlined type that is defined in the scope of another type,
-                     * rootType is implicitly dependent on the rootType of the inlined type. */
+                     * rootType is implicitly dependent on the rootType of the inlined type.
+                     */
                     if(rootType->self != (typeRoot = sd_utilRootType(type))) {
                         sd_item typeRootItem = NULL;
 
                         /* An empty typeRoot means that the type is not stored as inlined object, but conceptually it is.
                          * This will typically occur for intern collectiontypes like c_string, who are defined
-                         * in the root. */
+                         * in the root.
+                         */
                         if(typeRoot) {
                             /* Serialize rootType of type */
                             if(sd_serializeType(context, NULL, typeRoot, allowCycles, &typeRootItem)) {
@@ -1136,7 +1097,8 @@ sd_printXmlCollection(
 
     /* Print collection size, subType and footer. Pass current rootType to
      * sd_printXmlType so inlined types that are used as subtype are defined within
-     * the inline collection. */
+     * the inline collection.
+     */
     switch(type->kind) {
     case OSPL_C_SEQUENCE:
     case OSPL_C_ARRAY:
@@ -1269,7 +1231,8 @@ sd_printXmlTyperef(
 }
 
 /* Open module. This function finds the shortest path from the current module to the next,
- * and opens and closes modules where necessary. */
+ * and opens and closes modules where necessary.
+ */
 static void
 sd_printXmlModuleOpen(
     sd_context context,
@@ -1291,7 +1254,8 @@ sd_printXmlModuleOpen(
 
         /* Find common module. First build up a scope-stack for the two modules which
          * are ordered base -> <module>. Then walk through these stacks to find the
-         * last common module. */
+         * last common module.
+         */
         sd_utilModuleStack(from, fromStack);
         sd_utilModuleStack(to, toStack);
         toPtr = sd_utilFirstCommonModule(from, to, fromStack, toStack, &i);
@@ -1345,7 +1309,8 @@ sd_printXmlType(
     }else {
         /* If object is defined outside the current scope and is not a collection or primitive, serialize a typeref.
          * Also, if the type is already defined serialize a typeref. This prevents inline types to be defined multiple
-         * times if they are used multiple times within a module-scoped type. */
+         * times if they are used multiple times within a module-scoped type.
+         */
         if(!((c_baseObject(type)->kind == M_COLLECTION) || (c_baseObject(type)->kind == M_PRIMITIVE) ||
                 (!c_iterContains(context->inlineProcessed, type) &&
                 (c_metaObject(type)->definedIn == c_metaObject(current))))) {
@@ -1374,7 +1339,8 @@ sd_printXmlType(
                 break;
             default:
                 /* This may not happen. Types other than the ones listed
-                 * above cannot be printed. */
+                 * above cannot be printed.
+                 */
                 assert(0);
                 break;
             }
@@ -1410,14 +1376,16 @@ sd_printXmlItem(
         break;
     default:
         /* This may not happen. Types other than the ones listed
-         * above cannot be directly printed. */
+         * above cannot be directly printed.
+         */
         OS_REPORT(OS_ERROR, "sd_printXmlItem", 0, "invalid typeKind for serializer.");
         assert(0);
         break;
     }
 
     /* Dereference dependees of item. This will populate module-objects with types
-     * that reach refcount 0. */
+     * that reach refcount 0.
+     */
     sd_itemDerefDependees(item);
 }
 
@@ -1433,7 +1401,8 @@ sd_addInitialItems(
     item = o;
 
     /* If refcount of item is zero, it means that it has no unresolved dependencies, thus that it can
-     * be processed. */
+     * be processed.
+     */
     if(!item->refcount){
         sd_itemAddToModule(item);
     }
@@ -2126,27 +2095,6 @@ sd_deserXmlSequence (
     return result;
 }
 
-#if 0
-static sd_elementContext
-sd_findScopeRoot (
-    sd_elementContext context,
-    const c_char     *name)
-{
-    sd_elementContext root = NULL;
-
-    assert(name);
-
-    while ( !root && context ) {
-        if ( context->name && (strcmp(context->name, name) == 0) ) {
-            root = context;
-        } else {
-            context = context->parent;
-        }
-    }
-    return root;
-}
-#endif
-
 static c_metaObject
 sd_findScopeInContext (
     sd_elementContext  context,
@@ -2243,9 +2191,10 @@ sd_findTypeInScope (
         /* If not found, look it up in the root scope of the database. */
         o = c_metaResolve(scope->info->base, name);
         if ( !o ) {
-            /* If still not found, look it up in the root of the serializer scope. */
-            /* This is appropriate in case of recursive references to self, where  */
-            /* self is not yet inserted into the database.                         */
+            /* If still not found, look it up in the root of the serializer scope.
+             * This is appropriate in case of recursive references to self, where
+             * self is not yet inserted into the database.
+             */
             o = sd_findScopeInContext(scope, (c_char*)name);
         }
     }
@@ -2607,7 +2556,7 @@ sd_stringToPrimValue (
             break;
         case P_USHORT:
             if ( sd_stringToLong(str, &lv) ) {
-                value = c_longValue((c_ushort)lv);
+                value = c_ushortValue((c_ushort)lv);
             }
             break;
         case P_ULONG:

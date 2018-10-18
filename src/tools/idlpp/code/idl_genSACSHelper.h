@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@
 #define IDL_GENSACSHELPER_H_
 
 #include "c_typebase.h"
+#include "c_iterator.h"
 
 #include "idl_scope.h"
 #include "idl_program.h"
@@ -35,6 +37,15 @@ typedef struct {
     c_type type;
     c_char *descriptor;
 } idl_metaCsharp;
+
+struct SACSTypeUserData_s {
+    os_iter idlpp_metaList;
+    c_char *tmplPrefix;
+    c_bool customPSM;
+    c_iter typeStack;
+};
+
+typedef struct SACSTypeUserData_s SACSTypeUserData;
 
 idl_metaCsharp *
 idl_metaCsharpNew(c_type type, c_char *descriptor);
@@ -67,6 +78,13 @@ idl_toCsharpScopingOperator(c_char *scopedName);
 c_char *
 idl_scopeStackFromCType(c_type dataType);
 
+c_char *
+idl_CsharpScopeStackFromCType(
+        c_type dataType,
+        c_bool customPSM,
+        c_bool isCType,
+        c_bool fullyScoped);
+
 c_char *idl_scopeStackCsharp(
         idl_scope scope,
         const c_char *scopeSepp,
@@ -75,6 +93,12 @@ c_char *idl_scopeStackCsharp(
 c_char *idl_CsharpTypeFromTypeSpec(
         idl_typeSpec typeSpec,
         c_bool customPSM);
+
+c_char *
+idl_genCsharpLiteralValueImage(
+        c_value literal,
+        c_type type,
+        void *userData);
 
 c_char *idl_genCsharpConstantGetter(void);
 
@@ -87,6 +111,12 @@ c_char * idl_arrayCsharpIndexString (
         idl_typeSpec typeSpec,
         SACS_INDEX_POLICY policy);
 
+c_char *
+idl_labelCsharpEnumVal (
+        const char *typeEnum,
+        idl_labelEnum labelVal,
+        c_bool customPSM);
+
 const c_char *
 idl_translateIfPredefined(
     const c_char *scopedName);
@@ -94,5 +124,6 @@ idl_translateIfPredefined(
 c_bool
 idl_isPredefined(
         const c_char *scopedName);
+
 
 #endif /* IDL_GENSACSHELPER_H_ */

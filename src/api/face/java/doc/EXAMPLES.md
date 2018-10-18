@@ -6,7 +6,7 @@ Examples                                                                        
 FACE Examples                                                                   {#face_examples_dcpslist}
 =============
 
-The examples source code can be found in the examples folder of your OpenSplice installation.
+The examples source code can be found in the examples folder of your Vortex OpenSplice installation.
 The descriptions below summarize what each example demonstrates. Towards the bottom of the page
 you will find instructions on how to build and run the examples.
 
@@ -21,7 +21,7 @@ Building the examples                                           {#face_build_exa
 =========================================
 
 In the following sections `$OSPL_HOME` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be exported as a variable
+Vortex OpenSplice. *Note* it is not however required that this be exported as a variable
 in the shell environment.
 
 In order to build and or run applications that use face the library `ddsface.jar` need to be in the classPath.
@@ -33,11 +33,11 @@ POSIX:                                                                          
 
 ### General posix build/run environment setup                                           {#posixgeneral}
 In the following examples `$OSPL_HOME` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be exported as a variable
+Vortex OpenSplice. *Note* it is not however required that this be exported as a variable
 in the shell environment.
 
 A script `release.com` is provided. It exports a value of `OSPL_URI` to indicate
-the file `$OSPL_HOME/etc/config/ospl.xml` and also makes the OpenSplice libraries
+the file `$OSPL_HOME/etc/config/ospl.xml` and also makes the Vortex OpenSplice libraries
 available on the library load path.
 
 ### Building a single example
@@ -65,14 +65,14 @@ Windows:                                                                        
 ### General windows build/run environment setup                                         {#windowsgeneral}
 
 In the following examples `%%OSPL_HOME%` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be set as a variable
+Vortex OpenSplice. *Note* it is not however required that this be set as a variable
 in the console environment.
 
 A script `release.bat` is provided. It exports a value of `OSPL_URI` to indicate
-the file `%%OSPL_HOME%\etc\config\ospl.xml` and also makes the OpenSplice
+the file `%%OSPL_HOME%\etc\config\ospl.xml` and also makes the Vortex OpenSplice
 executables and dynamic-link libraries available on the `PATH`.
 
-A shortcut within the OpenSplice HDE folder on the Start Menu: **OpenSplice DDS
+A shortcut within the Vortex OpenSplice HDE folder on the Start Menu: **Vortex OpenSplice
 command prompt** creates a `cmd.exe` console session with this environment ready
 set.
 
@@ -80,7 +80,7 @@ set.
 
 Change directory to the example source directory and `make`. E.g.:
 
-    open the OpenSplice DDS command prompt
+    open the Vortex OpenSplice command prompt
     "<<< OpenSplice HDE Release V6.6.4 For x86_64.win64, Date 2016-08-01 >>>"
     cd examples\face\HelloWorld\java
    BUILD_java.bat
@@ -90,7 +90,7 @@ Change directory to the example source directory and `make`. E.g.:
 The top-level makefile `Makefile.All_Java` can be used to build all
 the examples.
 
-    open the OpenSplice DDS command prompt
+    open the Vortex OpenSplice command prompt
     "<<< OpenSplice HDE Release V6.6.4 For x86_64.win64, Date 2016-08-01 >>>"
     cd examples
     BUILD_All_Java.bat
@@ -134,7 +134,7 @@ Windows:                                                                        
 
 To run an example in _single process_ mode:
 
-    open the OpenSplice DDS command prompt
+    open the Vortex OpenSplice command prompt
     "<<< OpenSplice HDE Release V6.6.4 For x86_64.win64, Date 2016-08-01 >>>"
     cd examples\face\HelloWorld\java
     start /b java -classpath "%OSPL_HOME%\jar\ddsface.jar";classes HelloWorldDataSubscriber
@@ -143,7 +143,7 @@ To run an example in _single process_ mode:
 
 To run an example in _shared memory_ mode you might do:
 
-    open the OpenSplice DDS command prompt
+    open the Vortex OpenSplice command prompt
     "<<< OpenSplice HDE Release V6.6.4 For x86_64.win64, Date 2016-08-01 >>>"
     set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml
     cd examples\face\HelloWorld\java

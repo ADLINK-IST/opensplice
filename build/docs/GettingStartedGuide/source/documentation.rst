@@ -27,9 +27,10 @@ Vortex OpenSplice Documentation Set
 |              | who need to be aware of the latest changes which may    |
 |              | affect the Service's performance and usage.             |
 |              | A link to the Release Notes is in ``index.html``        |
-|              | located in the directory where OpenSplice is installed. |
+|              | located in the directory where Vortex OpenSplice is     |
+|              | installed.                                              |
 +--------------+---------------------------------------------------------+
-| Getting      | General information about OpenSplice, including         |
+| Getting      | General information about Vortex OpenSplice, including  |
 | Started      | installation instructions, initial configuration        |
 | Guide        | requirements and instructions for running the           |
 |              | Opensplice examples on supported platforms.             |
@@ -37,27 +38,27 @@ Vortex OpenSplice Documentation Set
 |              | For managers, administrators, and developers            |
 |              | to gain an initial understanding of the product,        |
 |              | as well as for product installers for                   |
-|              | installing and administering OpenSplice.                |
+|              | installing and administering Vortex OpenSplice.         |
 |              |                                                         |
 |              | *Essential reading for users new to DDS.*               |
 +--------------+---------------------------------------------------------+
 | Evaluation   | A short guide to help new users evaluate Vortex         |
 | Guide        | OpenSplice.                                             |
 +--------------+---------------------------------------------------------+
-| Tutorial     | A short course on developing applications with          |
+| Tutorial     | A short course on developing applications with Vortex   |
 | Guide        | OpenSplice. Includes example code in C, C++ and Java.   |
 +--------------+---------------------------------------------------------+
 | Deployment   | *A complete reference on how to configure and           |
-| Guide        | tune the OpenSplice service.*                           |
+| Guide        | tune the Vortex OpenSplice service.*                    |
 +--------------+---------------------------------------------------------+
 | Tuner        | Describes how to use the Tuner tool for monitoring      |
 | Guide        | and controlling Opensplice.                             |
 |              |                                                         |
 |              | For programmers, testers, system designers and          |
-|              | system integrators using OpenSplice.                    |
+|              | system integrators using Vortex OpenSplice.             |
 +--------------+---------------------------------------------------------+
-| IDL Pre-\    | Describes how to use the Opensplice IDL pre-processor   |
-| processor    | for C, C++ and Java.                                    |
+| IDL Pre-\    | Describes how to use the Vortex Opensplice IDL          |
+| processor    | pre-processor for C, C++ and Java.                      |
 | Guide        |                                                         |
 +--------------+---------------------------------------------------------+
 | OpenSplice   | Provides a complete reference on how to configure the   |
@@ -92,22 +93,22 @@ Vortex OpenSplice Documentation Set
 |              |                                                         |
 +--------------+---------------------------------------------------------+
 | RMI over DDS | Explains how to take advantage of the client/server     |
-| Getting      | interaction paradigm provided by OpenSplice RMI         |
+| Getting      | interaction paradigm provided by Vortex OpenSplice RMI  |
 | Started      | layered over the publish/subscribe paradigm of          |
 | Guide        | Vortex OpenSplice.                                      |
 +--------------+---------------------------------------------------------+
 | Streams User | Explains the Streams API where continuous flows or      |
-| Guide        | ‘streams’ of data have to be transported with minimal   |
+| Guide        | streams of data have to be transported with minimal     |
 |              | overhead and therefore maximal achievable throughput.   |
 +--------------+---------------------------------------------------------+
 | GPB User     | Explains how to use Google Protocol Buffers with the    |
 | Guide        | new ISO C++ and Java 5 APIs.                            |
 +--------------+---------------------------------------------------------+
-| Record and   | Explains how to configure and use the Record and Replay | 
+| Record and   | Explains how to configure and use the Record and Replay |
 | Replay       | Service.                                                |
 | Service Guide|                                                         |
 +--------------+---------------------------------------------------------+
-| Security User| Explains how to configure security when using the       | 
+| Security User| Explains how to configure security when using the       |
 | Configuration| Real Time Native Networking Protocol.                   |
 | Guide        |                                                         |
 +--------------+---------------------------------------------------------+
@@ -119,14 +120,14 @@ Vortex OpenSplice Documentation Set
 |              | and used.                                               |
 |              |                                                         |
 |              | Documentation for the examples can be found in the      |
-|              | OpenSplice Release Notes.                               |
+|              | Vortex OpenSplice Release Notes.                        |
 +--------------+---------------------------------------------------------+
 | White Papers | Technical papers providing information about            |
 | and Data     | Vortex Opensplice.                                      |
 | Sheets       |                                                         |
 |              | These technical papers are in PDF format and they       |
-|              | can be obtained from the PrismTech web site at          |
-|              | http://www.prismtech.com                                |
+|              | can be obtained from the ADLINK web site at             |
+|              | http://ist.adlinktech.com/         |
 +--------------+---------------------------------------------------------+
 
 
@@ -137,32 +138,32 @@ Information Sources
 Product Information
 ===================
 
-Links to useful technical information for PrismTech's products,
+Links to useful technical information for ADLINK's products,
 including the Vortex OpenSplice and associated components, are listed
 below.
 
 
 |caution|
   These links are provided for the reader's convenience and may become
-  out-of-date if changes are made on the PrismTech Web site after
+  out-of-date if changes are made on the ADLINK Web site after
   publication of this guide. Nonetheless, these links should still be
-  reachable from the main PrismTech Web page located at
-  http://www.prismtech.com.
+  reachable from the main ADLINK Web page located at
+  http://ist.adlinktech.com/.
 
 
 
 Knowledge Base
 ==============
 
-The PrismTech Knowledge Base is a collection of documents and resources
-intended to assist our customers in getting the most out of the
+The ADLINK Knowledge Base is a collection of documents and resources
+intended to assist our customers in getting the most out of the Vortex
 OpenSplice products. The Knowledge Base has the most up-to-date
 information about bug fixes, product issues and technical support for
 difficulties that you may experience.
 
 The Knowledge Base can be found at:
 
-  http://www.prismtech.com/knowledge-base
+  http://ist.adlinktech.com/knowledge-base
 
 
 
@@ -171,25 +172,25 @@ Additional Technical Information
 
 Information provided by independent publishers, newsgroups, web sites,
 and organisations, such as the Object Management Group, can be found on
-the Prismtech Web site:
+the ADLINK Web site:
 
-  http://www.prismtech.com
+  http://ist.adlinktech.com/
 
 
 *******
 Support
 *******
 
-PrismTech provides a range of product support, consultancy and
+ADLINK provides a range of product support, consultancy and
 educational programmes to help you from product evaluation and
-development, through to deployment of applications using OpenSplice DDS.
+development, through to deployment of applications using Vortex OpenSplice.
 The support programmes are designed to meet customers' particular needs
 and range from a basic Standard programme to the Gold programme, which
 provides comprehensive, 24 x 7 support.
 
-Detailed information about PrismTech's product support services, general
-support contacts and enquiries are described on the PrismTech Support
-page reached via the PrismTech Home page at http://www.prismtech.com.
+Detailed information about ADLINK's product support services, general
+support contacts and enquiries are described on the ADLINK Support
+page reached via the ADLINK Home page at http://ist.adlinktech.com/.
 
 
 

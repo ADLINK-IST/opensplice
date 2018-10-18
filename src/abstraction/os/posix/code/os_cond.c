@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -204,7 +205,7 @@ os_condDestroy (
         OS_REPORT(OS_FATAL,"os_condDestroy",0,
                     "Operation failed: cond 0x%"PA_PRIxADDR", result = %s",
                     (os_address)cond, strerror(result));
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -236,7 +237,7 @@ os_condWait (
         OS_REPORT(OS_FATAL,"os_condDestroy",0,
                     "Operation failed: cond 0x%"PA_PRIxADDR", result = %s",
                     (os_address)cond, strerror(result));
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -287,7 +288,7 @@ os_condTimedWait (
     wt = OS_TIMEW_INIT(t.tv_sec, t.tv_nsec);
     wt = os_timeWAdd(wt, timeout);
     t.tv_sec = (time_t) OS_TIMEW_GET_SECONDS(wt);
-    t.tv_nsec = OS_TIMEW_GET_NANOSECONDS(wt);
+    t.tv_nsec = (long)OS_TIMEW_GET_NANOSECONDS(wt);
 
     do {
 #ifdef OSPL_STRICT_MEM
@@ -314,7 +315,7 @@ os_condTimedWait (
                     result);
 #endif
         rv = os_resultFail;
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
     return rv;

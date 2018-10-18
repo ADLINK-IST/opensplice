@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,9 +46,9 @@
 
 /** Text indentation level (4 spaces per indent) */
 static c_long loopIndent;
-    /** Index for array loop variables, incremented for each array dimension */
+/** Index for array loop variables, incremented for each array dimension */
 static c_long varIndex;
-    /** Indicates if the generation of a type should be skipped until the following type */
+/** Indicates if the generation of a type should be skipped until the following type */
 static c_bool skip;
 
 
@@ -438,10 +439,6 @@ idl_structureMemberOpenClose(
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_cxxId(name));
         /* QAC EXPECT 3416; No side effect here */
-#if 0
-    } else if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
-               (idl_typeSpecType(typeSpec) == idl_tunion)) {
-#endif
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
         IDL_PRINTLINE(indent);
         idl_printIndent(indent);
@@ -474,8 +471,6 @@ idl_structureMemberOpenClose(
                 snprintf(sname, (size_t) sizeof(sname), "_%s_seq", idl_cxxId(name));
                 idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType",
                         idl_scopedLiteTypeName(subType));
-//                idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType",
-//                        idl_scopeStack(idl_typeUserScope(idl_typeUser(subType)), "::", sname));
             } else {
                 idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType", idl_scopedLiteTypeName(subType));
             }
@@ -753,7 +748,8 @@ idl_arrayLoopCopyBody(
     c_long total_indent;
 
     char* tmp_string = 0;
-
+    char* scopedTypeName = idl_scopedTypeName(typeSpec);
+    char* scopedLiteTypeName = idl_scopedLiteTypeName(typeSpec);
     loopIndent++;
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tstruct:
@@ -762,10 +758,10 @@ idl_arrayLoopCopyBody(
         idl_printIndent(loopIndent + indent);
         varIndex = 0;
         idl_fileOutPrintf(idl_fileCur(), "extern void __%s__copyOut(const void *, void *);\n",
-            idl_scopedTypeName(typeSpec));
+            scopedTypeName);
         idl_printIndent(loopIndent + indent);
         idl_fileOutPrintf(idl_fileCur(), "__%s__copyOut((const void *)&(*%s)",
-            idl_scopedTypeName(typeSpec),
+            scopedTypeName,
             from);
         idl_arrayLoopCopyIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ", (void *)&(%s)", to);
@@ -781,10 +777,10 @@ idl_arrayLoopCopyBody(
             case idl_tarray:
             case idl_tseq:
                 idl_fileOutPrintf(idl_fileCur(), "extern void __%s__copyOut(const void *, void *);\n",
-                        idl_scopedTypeName(typeSpec));
+                        scopedTypeName);
                 idl_printIndent(loopIndent + indent);
                 idl_fileOutPrintf(idl_fileCur(), "__%s__copyOut((const void *)&(*%s)",
-                        idl_scopedTypeName(typeSpec), from);
+                        scopedTypeName, from);
                 idl_arrayLoopCopyIndex(typeArray);
                 idl_fileOutPrintf(idl_fileCur(), ", (void *)&(%s)", to);
                 idl_arrayLoopCopyIndex(typeArray);
@@ -844,8 +840,8 @@ idl_arrayLoopCopyBody(
         snprintf(source, (size_t)sizeof(source), "&(%s)", from);
         idl_arrayLoopCopyIndexString(source, typeArray);
         idl_fileOutPrintf(idl_fileCur(), "    %s *src0 = (%s *)%s;\n\n",
-                idl_scopedLiteTypeName(typeSpec),
-                idl_scopedLiteTypeName(typeSpec),
+                scopedLiteTypeName,
+                scopedLiteTypeName,
                 source);
         idl_printIndent(total_indent);
         idl_fileOutPrintf(idl_fileCur(),"    size0 = (*src0)._length;\n");
@@ -874,6 +870,7 @@ idl_arrayLoopCopyBody(
     break;
     }
     loopIndent--;
+    os_free(scopedTypeName);
 }
 
 /** @brief Generate array loop copy closing code.
@@ -1179,7 +1176,8 @@ idl_seqLoopCopy(
     c_char source[32];
     idl_typeSpec nextType;
     char* tmp_string = 0;
-
+    char * scopedTypeName = idl_scopedTypeName(typeSpec);
+    
    if (idl_isContiguous(idl_typeSpecDef(typeSpec))) {
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "{\n");
@@ -1248,10 +1246,10 @@ idl_seqLoopCopy(
         IDL_PRINTLINE(indent);
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    extern void __%s__copyOut(const void *from, void *to);\n",
-            idl_scopedTypeName(typeSpec));
+            scopedTypeName);
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    __%s__copyOut((const void *)&(*%s)[j%d], (void *)&(%s)%s);\n",
-            idl_scopedTypeName(typeSpec),
+            scopedTypeName,
             from,
             loop_index-1,
             to,
@@ -1267,10 +1265,10 @@ idl_seqLoopCopy(
             IDL_PRINTLINE(indent);
             idl_printIndent(indent);
             idl_fileOutPrintf(idl_fileCur(), "    extern void __%s__copyOut(const void *, void *);\n",
-                idl_scopedTypeName(typeSpec));
+                scopedTypeName);
             idl_printIndent(indent);
             idl_fileOutPrintf(idl_fileCur(), "    __%s__copyOut((const void *)&((*%s)[j%d]), (void *)&(%s)%s);\n",
-                idl_scopedTypeName(typeSpec),
+                scopedTypeName,
                 from,
                 loop_index-1,
                 to,
@@ -1385,6 +1383,7 @@ idl_seqLoopCopy(
 
     idl_printIndent(indent);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
+    os_free(scopedTypeName);
     /* QAC EXPECT 5101, 5103: Complexity is limited, by independent cases, per case the number of lines is lower  */
 }
 

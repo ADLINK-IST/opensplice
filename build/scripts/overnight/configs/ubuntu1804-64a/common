@@ -1,7 +1,11 @@
-export JAVA_HOME=/usr/local/jdk1.6.0
-export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
+export JAVA6_HOME=/usr/local/jdk1.6.0
+export JAVA_HOME=/usr/local/jdk1.8.0
+#export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
 export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
 export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-unset TAO_ROOT
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+
 export OVERRIDE_STRICT_CHECKS=no
+#export PATH=$JAVA_HOME/bin:$PATH
+export SQLITE_HOME=/home/dds/INSTALLED_FOR_DDS/sqlite-amalgamation-3071602
+export LEVELDB_HOME=/home/dds/INSTALLED_FOR_DDS/leveldb-1.9.0

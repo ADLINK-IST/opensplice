@@ -50,7 +50,7 @@
           <div class="body">
             
   <div class="section" id="about-vortex-opensplice">
-<span id="about-opensplice"></span><h1>2. About Vortex Opensplice<a class="headerlink" href="#about-vortex-opensplice" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>2. About Vortex Opensplice<a class="headerlink" href="#about-vortex-opensplice" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="why-vortex-opensplice">
 <h2>2.1. Why Vortex OpenSplice<a class="headerlink" href="#why-vortex-opensplice" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="what-is-vortex-opensplice">
@@ -98,9 +98,9 @@ developers of the DDS standard</li>
 <li>Unprecedented throughput of millions of samples/sec for
 typical &#8216;stream&#8217; data</li>
 </ul>
-<p>Please go to <a class="reference external" href="http://www.prismtech.com">http://www.prismtech.com</a> to obtain evaluation copies of
-Vortex OpenSplice, and <a class="reference external" href="http://www.opensplice.org">http://www.opensplice.org</a> for free downloads of the
-community version.</p>
+<p>Please go to <a class="reference external" href="http://ist.adlinktech.com/">http://ist.adlinktech.com/</a> to obtain evaluation copies of
+Vortex OpenSplice, and <a class="reference external" href="http://ist.adlinktech.com/dds-community">http://ist.adlinktech.com/dds-community</a> for free downloads of the
+DDS Community Edition.</p>
 </div>
 </div>
 <div class="section" id="vortex-opensplice-architecture">
@@ -116,7 +116,7 @@ networking (providing QoS driven real-time networking based on multiple
 reliable multicast `channels&#8217;), durability (providing fault tolerant
 storage for both real-time `state&#8217; data as well as persistent
 `settings&#8217;), and remote control &amp; monitoring `soap service&#8217; (providing
-remote web based access using the SOAP protocol from the OpenSplice DDS
+remote web based access using the SOAP protocol from the Vortex OpenSplice
 Tuner tools).</p>
 </div>
 <div class="section" id="scalability">
@@ -127,7 +127,7 @@ administration still provides each subscriber with his own private
 `view&#8217; on this data. This allows a subscriber&#8217;s data cache to be
 perceived as an individual `database&#8217; that can be content-filtered,
 queried, etc. (using the content-subscription profile as supported by
-OpenSplice DDS). This shared-memory architecture results in an extremely
+Vortex OpenSplice). This shared-memory architecture results in an extremely
 small footprint, excellent scalability and optimal performance when
 compared to implementations where each reader/writer are `communication
 endpoints&#8217; each with its own storage (in other words, historical data
@@ -143,7 +143,7 @@ architecture, where both the DDS related administration (including the
 optional pluggable services) and DDS applications interface directly
 with shared memory. Alternatively, Vortex OpenSplice also supports a
 <em>single process</em> library architecture, where one or more DDS
-applications, together with the OpenSplice administration and services,
+applications, together with the Vortex OpenSplice administration and services,
 can all be grouped into a single operating system process. Both
 deployment modes support a configurable and extensible set of services,
 providing functionality such as:</p>
@@ -154,7 +154,7 @@ scalability (supporting ultra-large systems).</li>
 <li><em>durability</em> - providing fault-tolerant storage for both real-time state
 data as well as persistent settings</li>
 <li><em>remote control and monitoring SOAP service</em> - providing remote web-based
-access using the SOAP protocol from the OpenSplice Tuner tool</li>
+access using the SOAP protocol from the Vortex OpenSplice Tuner tool</li>
 <li><em>dbms service</em> - providing a connection between the real-time and the
 enterprise domain by bridging data from DDS to DBMS and <em>vice versa</em></li>
 </ul>
@@ -170,7 +170,7 @@ depends on the user&#8217;s exact requirements and DDS scenario.</p>
 </div>
 <div class="section" id="single-process-library-architecture">
 <h2>2.3. Single Process Library Architecture<a class="headerlink" href="#single-process-library-architecture" title="Permalink to this headline">¶</a></h2>
-<p>This deployment allows the DDS applications and OpenSplice
+<p>This deployment allows the DDS applications and Vortex OpenSplice
 administration to be contained together within one single operating
 system process. This single process deployment option is most useful in
 environments where shared memory is unavailable or undesirable. As
@@ -199,11 +199,11 @@ coupled.</p>
 <p>The Single Process deployment is the default architecture provided
 within Vortex OpenSplice and allows for easy deployment with minimal
 configuration required for a running DDS system.</p>
-<p>The figure <a class="reference internal" href="#the-opensplice-single-process-architecture">The OpenSplice Single Process Architecture</a>
+<p>The figure <a class="reference internal" href="#the-vortex-opensplice-single-process-architecture">The Vortex OpenSplice Single Process Architecture</a>
 shows an overview of the single process architecture of Vortex OpenSplice.</p>
-<div class="figure" id="the-opensplice-single-process-architecture">
-<a class="reference internal image-reference" href="_images/SingleProcessArchitecture.png"><img alt="The OpenSplice Single Process Architecture" src="_images/SingleProcessArchitecture.png" style="height: 70mm;" /></a>
-<p class="caption"><strong>The OpenSplice Single Process Architecture</strong></p>
+<div class="figure" id="the-vortex-opensplice-single-process-architecture">
+<a class="reference internal image-reference" href="_images/SingleProcessArchitecture.png"><img alt="The Vortex OpenSplice Single Process Architecture" src="_images/SingleProcessArchitecture.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The Vortex OpenSplice Single Process Architecture</strong></p>
 </div>
 </div>
 <div class="section" id="shared-memory-architecture">
@@ -211,10 +211,10 @@ shows an overview of the single process architecture of Vortex OpenSplice.</p>
 <p>In the shared memory architecture data is physically present only once
 on any machine but smart administration still provides each subscriber
 with his own private view on this data. Both the DDS applications and
-OpenSplice administration interface directly with the shared memory
-which is created by the OpenSplice daemon on start up. This architecture
+Vortex OpenSplice administration interface directly with the shared memory
+which is created by the Vortex OpenSplice daemon on start up. This architecture
 enables a subscriber&#8217;s data cache to be seen as an individual database
-and the content can be filtered, queried, etc. by using the OpenSplice
+and the content can be filtered, queried, etc. by using the Vortex OpenSplice
 content subscription profile.</p>
 <p>Typically for advanced DDS users, the shared memory architecture is a
 more powerful mode of operation and results in extremely low footprint,
@@ -223,13 +223,13 @@ implementation where each reader/writer are communication end points
 each with its own storage (<em>i.e.</em> historical data both at reader and
 writer) and where the data itself still has to be moved, even within the
 same platform.</p>
-<p>The figure <a class="reference internal" href="#the-opensplice-shared-memory-architecture">The OpenSplice Shared Memory Architecture</a>
+<p>The figure <a class="reference internal" href="#the-vortex-opensplice-shared-memory-architecture">The Vortex OpenSplice Shared Memory Architecture</a>
 shows an overview of the shared memory architecture of
 Vortex OpenSplice on <em>one</em> computing node. Typically, there
 are <em>many</em> nodes within a system.</p>
-<div class="figure" id="the-opensplice-shared-memory-architecture">
-<a class="reference internal image-reference" href="_images/SharedMemoryArchitecture.png"><img alt="The OpenSplice Shared Memory Architecture" src="_images/SharedMemoryArchitecture.png" style="height: 70mm;" /></a>
-<p class="caption"><strong>The OpenSplice Shared Memory Architecture</strong></p>
+<div class="figure" id="the-vortex-opensplice-shared-memory-architecture">
+<a class="reference internal image-reference" href="_images/SharedMemoryArchitecture.png"><img alt="The Vortex OpenSplice Shared Memory Architecture" src="_images/SharedMemoryArchitecture.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The Vortex OpenSplice Shared Memory Architecture</strong></p>
 </div>
 </div>
 <div class="section" id="vortex-opensplice-features-and-benefits">
@@ -237,9 +237,9 @@ are <em>many</em> nodes within a system.</p>
 <p>The table below shows the following
 aspects of Vortex OpenSplice, where:</p>
 <blockquote>
-<div><p><em>Features</em> are significant characteristics of OpenSplice</p>
+<div><p><em>Features</em> are significant characteristics of Vortex OpenSplice</p>
 <p><em>Advantages</em> shows why a feature is important</p>
-<p><em>Benefits</em> describes how users of OpenSplice can exploit the advantages</p>
+<p><em>Benefits</em> describes how users of Vortex OpenSplice can exploit the advantages</p>
 </div></blockquote>
 <table border="1" class="docutils">
 <colgroup>
@@ -436,7 +436,7 @@ protocols</td>
 </div>
 <div class="section" id="conclusion">
 <h2>2.6. Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h2>
-<p>PrismTech&#8217;s Vortex OpenSplice product complemented by its tool support
+<p>ADLINK&#8217;s Vortex OpenSplice product complemented by its tool support
 together encompass the industry&#8217;s most profound expertise on the OMG&#8217;s
 DDS standard and products.</p>
 <p>The result is unrivalled functional DDS coverage and performance in
@@ -525,7 +525,7 @@ demanding real-time world.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

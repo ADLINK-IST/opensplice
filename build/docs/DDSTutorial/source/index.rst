@@ -9,7 +9,7 @@ The Data Distribution Service Tutorial
 .. toctree::
    :maxdepth: 4
    :numbered:
-      
+
    foundations
    topics-etc
    readandwrite
@@ -18,8 +18,8 @@ The Data Distribution Service Tutorial
    acronyms
    biblio
 
-   contacts   
-   
+   contacts
+
 
 Indices and tables
 ==================

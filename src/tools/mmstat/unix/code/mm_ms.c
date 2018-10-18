@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -289,12 +290,12 @@ monitor_msAction (
                 MM_MS_NEWLINE
                 ,
                 timbuf,
-                (unsigned long)(s.size - msData->prevState.size),
+                s.size - msData->prevState.size,
                 s.count - msData->prevState.count,
-                (unsigned long)(s.used - msData->prevState.used),
-                (unsigned long)(s.preallocated - msData->prevState.preallocated),
-                (unsigned long)(s.maxUsed - msData->prevState.maxUsed),
-                (unsigned long)(s.garbage - msData->prevState.garbage),
+                s.used - msData->prevState.used,
+                s.preallocated - msData->prevState.preallocated,
+                s.maxUsed - msData->prevState.maxUsed,
+                s.garbage - msData->prevState.garbage,
                 s.fails - msData->prevState.fails);
 
         msData->prevState = s;
@@ -309,11 +310,11 @@ monitor_msAction (
                 MM_MS_NEWLINE
                 ,
                 timbuf,
-                (unsigned long)(s.size - msData->prevState.size),
+                s.size - msData->prevState.size,
                 s.count - msData->prevState.count,
-                (unsigned long)(s.used - msData->prevState.used),
-                (unsigned long)(s.maxUsed - msData->prevState.maxUsed),
-                (unsigned long)(s.garbage - msData->prevState.garbage),
+                s.used - msData->prevState.used,
+                s.maxUsed - msData->prevState.maxUsed,
+                s.garbage - msData->prevState.garbage,
                 s.fails - msData->prevState.fails);
 
         msData->prevState = s;

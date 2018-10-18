@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -152,7 +153,7 @@ SAJ_FUNCTION(jniReportFlushRequired) (
     OS_UNUSED_ARG (env);
     OS_UNUSED_ARG (jReportStack);
 
-    return (jint)os_report_stack_flush_required(jFlush ? OS_TRUE : OS_FALSE);
+    return (jint)os_report_status(jFlush ? OS_TRUE : OS_FALSE);
 }
 
 
@@ -179,7 +180,7 @@ SAJ_FUNCTION(jniFlush) (
 
     OS_UNUSED_ARG (jReportStack);
 
-    if (os_report_stack_flush_required(jFlush ? OS_TRUE : OS_FALSE)) {
+    if (os_report_status(jFlush ? OS_TRUE : OS_FALSE)) {
         assert (jFile != NULL);
         assert (jMethod != NULL);
 
@@ -191,7 +192,7 @@ SAJ_FUNCTION(jniFlush) (
         }
 
         if (exception == OS_FALSE) {
-            os_report_stack_unwind((os_boolean)jFlush, method, file, line, domainId);
+            os_report_flush((os_boolean)jFlush, method, file, line, domainId);
         }
 
         /* ReleaseStringUTFChars may be invoked even in case of pending exceptions

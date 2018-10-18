@@ -11,9 +11,9 @@ echo "=== Launching Lifecycle "
 
 echo "=== (step 1)"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataSubscriber > subResult_1.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Lifecycle_sub.jar > subResult_1.txt &
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataPublisher false dispose > pubResult_1.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Lifecycle_pub.jar false dispose > pubResult_1.txt
 
 stopOSPL
 startOSPL
@@ -21,18 +21,18 @@ sleep 2
 
 echo "=== (step 2)"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataSubscriber > subResult_2.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Lifecycle_sub.jar > subResult_2.txt &
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataPublisher false unregister > pubResult_2.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Lifecycle_pub.jar false unregister > pubResult_2.txt
 
 stopOSPL
 startOSPL
 sleep 2
 echo "=== (step 3)"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataSubscriber > subResult_3.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Lifecycle_sub.jar > subResult_3.txt &
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP LifecycleDataPublisher false stoppub > pubResult_3.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Lifecycle_pub.jar false stoppub > pubResult_3.txt
 
 lifecycleCheckResult
 

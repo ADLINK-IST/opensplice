@@ -7,10 +7,10 @@ The Vortex OpenSplice Deployment Guide
 .. toctree::
    :maxdepth: 8
    :numbered:
-      
+
    preface
    overview
-   
+
    service-feature-list
    domain-service
    durability-service
@@ -19,15 +19,17 @@ The Vortex OpenSplice Deployment Guide
    networkingbridge-service
    tuner-service
    dbmsconnect-service
-   
+
    tools
-   
+
    guide
 
    referencesystems
 
-   contacts   
-   
+   logrotate
+
+   contacts
+
 
 Indices and tables
 ==================

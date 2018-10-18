@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
  */
 #include "v_durabilityClient.h"
 
+#include "v__kernel.h"
 #include "v__topic.h"
 #include "v__topicImpl.h"
 #include "v__writer.h"
@@ -26,14 +28,17 @@
 #include "v__subscriber.h"
 #include "v__reader.h"
 #include "v__policy.h"
+#include "v__entry.h"
 #include "v__group.h"
+#include "v_groupInstance.h"
 #include "v_public.h"
 #include "v_topicQos.h"
 #include "v_writerQos.h"
 #include "v_publisherQos.h"
 #include "v_dataReaderInstance.h"
-#include "v_observable.h"
-#include "v_observer.h"
+#include "v_configuration.h"
+#include "v__observer.h"
+#include "v__observable.h"
 #include "v_builtin.h"
 #include "v_waitset.h"
 #include "v_handle.h"
@@ -102,6 +107,28 @@
 #define COMPLETENESS_INCOMPLETE                        1
 #define COMPLETENESS_COMPLETE                          2
 
+#define V_DC_RETCODE_NO_ERROR                            0x0
+/* Syntax errors  -- 1 - 8388607 (= 1 .. 2^23-1) */
+#define V_DC_RETCODE_INCOMPATIBLE_VERSION                0x1
+#define V_DC_RETCODE_NO_TOPIC                            0x2
+#define V_DC_RETCODE_INVALID_START_TIME                  0x3
+#define V_DC_RETCODE_INVALID_END_TIME                    0x4
+#define V_DC_RETCODE_INVALID_TIME_RANGE                  0x5
+#define V_DC_RETCODE_INVALID_SERIAZATION                 0x6
+#define V_DC_RETCODE_NO_PARTITIONS                       0x7
+#define V_DC_RETCODE_INVALID_MAX_SAMPLES                 0x8
+#define V_DC_RETCODE_INVALID_MAX_INSTANCES               0x9
+#define V_DC_RETCODE_INVALID_MAX_SAMPLES_PER_INSTANCE    0xA
+/* Syntax OK, but server is not able process -- 8388608 - (= 2^23 - 2^24-1) - */
+#define V_DC_RETCODE_SERVER_IS_NOT_ALIGNER               0x80000000
+#define V_DC_RETCODE_SERVER_IS_NOT_RESPONSIBLE           0x80000001
+#define V_DC_RETCODE_READER_NOT_KNOWN                    0x80000002
+#define V_DC_RETCODE_NO_MASTER_SELECTED                  0x80000003
+#define V_DC_RETCODE_GROUP_NOT_FOUND                     0x80000004
+#define V_DC_RETCODE_INVALID                             0xFFFFFFFF
+
+
+
 #define V_DC_ALL_READERS_AVAILABLE(flags) \
             ((flags & (V_DC_STATE_REQUEST_FLAG|V_DC_DATA_REQUEST_FLAG)) == \
                       (V_DC_STATE_REQUEST_FLAG|V_DC_DATA_REQUEST_FLAG)  )
@@ -127,20 +154,27 @@
 #define v__dcSampleGetSystemId(s)               (v__dcMessageGetSystemId             (v_dataReaderSampleTemplate(s)->message))
 
 
-const char *builtin_topics[] = {
-    V_TOPICINFO_NAME,
-    V_PARTICIPANTINFO_NAME,
-    V_PUBLICATIONINFO_NAME,
-    V_SUBSCRIPTIONINFO_NAME,
-    V_CMPARTICIPANTINFO_NAME,
-    V_CMDATAWRITERINFO_NAME,
-    V_CMDATAREADERINFO_NAME,
-    V_CMPUBLISHERINFO_NAME,
-    V_CMSUBSCRIBERINFO_NAME,
-    V_HEARTBEATINFO_NAME,
-    V_DELIVERYINFO_NAME,
-    NULL   /* Must be the last element, used as delimiter */
+
+struct v__builtinTopicInfo {
+    const char *topicName;
+    c_bool align;  /* align when builtin topics enabled */
+    c_bool always; /* align always */
 };
+
+static const struct v__builtinTopicInfo builtin_topics[] = {
+    { V_TOPICINFO_NAME,         TRUE,  TRUE  },
+    { V_PARTICIPANTINFO_NAME,   TRUE,  FALSE },
+    { V_PUBLICATIONINFO_NAME,   TRUE,  TRUE  },
+    { V_SUBSCRIPTIONINFO_NAME,  TRUE,  FALSE },
+    { V_CMPARTICIPANTINFO_NAME, TRUE,  FALSE },
+    { V_CMDATAWRITERINFO_NAME,  TRUE,  FALSE },
+    { V_CMDATAREADERINFO_NAME,  TRUE,  FALSE },
+    { V_CMPUBLISHERINFO_NAME,   TRUE,  FALSE },
+    { V_CMSUBSCRIBERINFO_NAME,  TRUE,  FALSE },
+    { V_HEARTBEATINFO_NAME,     FALSE, FALSE },
+    { V_DELIVERYINFO_NAME,      FALSE, FALSE }
+};
+static const c_ulong num_builtin_topics = sizeof(builtin_topics)/sizeof(struct v__builtinTopicInfo);
 
 
 typedef void (*v__dcDataAction)(v_durabilityClient _this, v_dataReaderSample sample);
@@ -287,6 +321,7 @@ static void cleanup_server(void *n);
 static void cleanup_group(void *n);
 static void v_dcUpdateDurabilityState(v_durabilityClient _this, struct _DDS_RequestId_t *requestId, v_message msg, struct _DDS_DurabilityState *data, struct server_node *n);
 void v_durabilityClientFree (v_durabilityClient _this);
+static void v__dcRequestHistoricalBuiltinData (v_durabilityClient _this);
 
 /******************************************************************************
  * Private functions
@@ -477,11 +512,16 @@ v_dcInsertHistoricalDataLink(
     assert(data->content._d == HISTORICAL_DATA_KIND_LINK);    /* link */
     assert(chain->link == NULL);      /* not received yet */
 
-    chain->sampleCount = data->content._u.link.sampleCount;
-    chain->completeness = data->content._u.link.completeness;
-    chain->errorCode = data->content._u.link.errorCode;
-    chain->link = c_keep(msg);
-    V_DC_TRACE("%s - link %p added to chain administration %p\n", OS_FUNCTION, (void *)msg, (void *)chain);
+    if (data->content._u.link.errorCode == V_DC_RETCODE_NO_ERROR) {
+        chain->sampleCount = data->content._u.link.sampleCount;
+        chain->completeness = data->content._u.link.completeness;
+        chain->errorCode = data->content._u.link.errorCode;
+        chain->link = c_keep(msg);
+        V_DC_TRACE("%s - link %p added to chain administration %p\n", OS_FUNCTION, (void *)msg, (void *)chain);
+    } else {
+        V_DC_TRACE("%s - link %p related to chain administration %p ignored because of error %x\n",
+                OS_FUNCTION, (void *)msg, (void *)chain, data->content._u.link.errorCode);
+    }
 }
 
 
@@ -521,58 +561,6 @@ v_dcInsertHistoricalData(
     }
 }
 
-
-static void tracegroupGenKeystr(char *keystr, size_t keystr_size, v_groupInstance gi)
-{
-    v_group g = gi->group;
-    c_array instanceKeyList = c_tableKeyList(g->instances);
-    c_ulong i, nrOfKeys = c_arraySize(instanceKeyList);
-    size_t pos = 0;
-    assert (keystr_size >= 4); /* for ...\0 */
-    for (i = 0; i < nrOfKeys; i++)
-    {
-        c_value v = c_fieldValue(instanceKeyList[i], gi);
-        char *vimg = c_valueImage(v);
-        int n = snprintf(keystr + pos, keystr_size - pos, "%s%s", (i == 0) ? "" : ";", vimg);
-        c_valueFreeRef(v);
-        os_free(vimg);
-        if (n > 0) { pos += (size_t)n; } else { break; }
-    }
-    if (i < nrOfKeys || pos >= keystr_size) {
-        if (pos >= keystr_size - 4) {
-            pos = keystr_size - 4;
-        }
-        strcpy(keystr + pos, "...");
-    }
-    c_free(instanceKeyList);
-}
-
-
-#if 0
-static void tracegroupGenMsgKeystr(char *keystr, size_t keystr_size, v_group g, v_message msg)
-{
-    c_array messageKeyList = v_topicMessageKeyList(v_groupTopic(g));
-    c_ulong i, nrOfKeys = c_arraySize(messageKeyList);
-    size_t pos = 0;
-    assert (keystr_size >= 4); /* for ...\0 */
-    for (i = 0; i < nrOfKeys; i++)
-    {
-        c_value v = c_fieldValue(messageKeyList[i], msg);
-        char *vimg = c_valueImage(v);
-        int n = snprintf(keystr + pos, keystr_size - pos, "%s%s", (i == 0) ? "" : ";", vimg);
-        c_valueFreeRef(v);
-        os_free(vimg);
-        if (n > 0) { pos += (size_t)n; } else { break; }
-    }
-    if (i < nrOfKeys || pos >= keystr_size) {
-        if (pos >= keystr_size - 4) {
-            pos = keystr_size - 4;
-        }
-        strcpy(keystr + pos, "...");
-    }
-}
-#endif
-
 static void tracegroupInstance(v_groupInstance gi, const char *prefix)
 {
     v_groupSample s;
@@ -580,14 +568,15 @@ static void tracegroupInstance(v_groupInstance gi, const char *prefix)
 
     OS_UNUSED_ARG(prefix);
 
-    tracegroupGenKeystr(keystr, sizeof (keystr), gi);
+    v_groupInstanceKeyToString(gi, keystr, sizeof (keystr));
     V_DC_TRACE("%s - %sInstance %p state=%u epoch=%"PA_PRItime" key={%s}\n", OS_FUNCTION, prefix, (void*)gi, gi->state, OS_TIMEE_PRINT(gi->epoch), keystr);
     s = v_groupSample(gi->oldest);
     while (s != NULL) {
         v_message msg = v_groupSampleTemplate(s)->message;
         OS_UNUSED_ARG(msg);
         V_DC_TRACE("%s - %s  Sample %p msg %p state=%u time=%"PA_PRItime" wrgid=%u:%u:%u\n",
-              OS_FUNCTION, prefix, (void*)s, (void*)msg, msg->_parent.nodeState, OS_TIMEW_PRINT(msg->writeTime), msg->writerGID.systemId, msg->writerGID.localId, msg->writerGID.serial);
+                   OS_FUNCTION, prefix, (void*)s, (void*)msg, msg->_parent.nodeState, OS_TIMEW_PRINT(msg->writeTime),
+                   msg->writerGID.systemId, msg->writerGID.localId, msg->writerGID.serial);
         s = s->newer;
     }
 }
@@ -607,164 +596,32 @@ static void tracegroup(v_group g, const char *info)
 
     V_DC_TRACE("%s - Group %s.%s lastDisposeAllTime=%"PA_PRItime" - %s\n",
         OS_FUNCTION, v_partitionName(v_groupPartition(g)), v_topicName(v_groupTopic(g)), OS_TIMEW_PRINT(g->lastDisposeAllTime), info);
-    c_mutexLock(&g->mutex);
-    (void)c_walk((c_collection)g->instances, tracegroupHelper, NULL);
-    c_mutexUnlock(&g->mutex);
+    v_groupWalkInstances(g, tracegroupHelper, NULL);
 }
-
-
-static v_message
-create_message(v_group group, struct _DDS_HistoricalData *bead, v_messageQos mqos, c_array messageKeyList, c_ulong nrOfKeys, c_value keyValues[], c_ulong nodeState)
-{
-    v_message message;
-    c_ulong i;
-
-    assert(group);
-    assert(bead);
-    assert(mqos);
-
-    /* Currently, beads have a writerGID (12 bytes) to identify the writer, not a GUID (16 bytes).
-     * Since the only server currently available is a durability service that uses beads with
-     * writerGID this is OK. If some time in the future a server is constructed that uses
-     * GUIDs to identify the writer the code below must be changed. */
-    if (bead->content._u.bead.writerId[12] | bead->content._u.bead.writerId[13] | bead->content._u.bead.writerId[14] | bead->content._u.bead.writerId[15]) {
-        OS_REPORT(OS_ERROR, OS_FUNCTION, V_RESULT_INTERNAL_ERROR,
-                  "The writerId of bead %p is not a valid writerGID", (void *)bead);
-        abort();
-    }
-    message = v_topicMessageNew_s(v_groupTopic(group));
-    if (message != NULL) {
-        v_nodeState(message) = nodeState;
-        memcpy(&message->writerGID, bead->content._u.bead.writerId, sizeof(message->writerGID));
-        message->writeTime = OS_TIMEW_INIT(bead->content._u.bead.sourceTimestamp.sec, bead->content._u.bead.sourceTimestamp.nanosec);
-        message->qos = c_keep(mqos);
-        for (i=0;i<nrOfKeys;i++) {
-            c_fieldAssign(messageKeyList[i], message, keyValues[i]);
-        }
-    }
-    return message;
-}
-
 
 /* Inject a message to the group or reader */
 static v_writeResult
-inject_message(v_durabilityClient _this, v_message msg, v_messageQos mqos, struct _DDS_HistoricalData *bead, v_group group, v_entry entry)
+inject_message(
+    v_group group,
+    v_message msg,
+    v_entry entry)
 {
-    c_array messageKeyList;
-    c_ulong i, nrOfKeys;
-    c_value keyValues[32];
-    v_registration registration;
-    v_groupInstance instance = NULL;
-    v_message registerMessage = NULL;
-    v_message unregisterMessage = NULL;
-    c_bool doRegister = FALSE;
-    c_bool doUnregister = FALSE;
     c_base base;
-    v_writeResult writeResult = V_WRITE_SUCCESS;
-    v_resendScope resendScope = V_RESEND_NONE;
-
-    OS_UNUSED_ARG(_this);
+    v_writeResult writeResult = V_WRITE_OUT_OF_RESOURCES;
 
     base = c_getBase(group);
-    /* Get key values associated with the bead msg */
-    messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
-    if ((nrOfKeys = c_arraySize(messageKeyList)) > 32) {
-        OS_REPORT(OS_ERROR, OS_FUNCTION, 0, "number of keys for topic %s (%d) exceeds limit of 32", v_topicName(v_groupTopic(group)), nrOfKeys);
-        writeResult = V_WRITE_PRE_NOT_MET;
-        goto err_nrOfKeys;
-    }
-    for (i = 0; i < nrOfKeys; i++) {
-        keyValues[i] = c_fieldValue(messageKeyList[i], msg);
-    }
-    /* get the instance associated with the msg key, or remember to register the instance */
-    instance = v_groupLookupInstanceAndRegistration(group, keyValues, msg->writerGID, v_gidCompare, &registration);
-    if (instance) {
-        if (registration) {
-            c_free(registration);
-        } else {
-            doRegister = TRUE;
-        }
-    } else {
-        doRegister = TRUE;
-    }
-
-    /* Create registration and acquire the instance */
-    if (doRegister) {
-        if ((registerMessage = create_message(group, bead, mqos, messageKeyList, nrOfKeys, keyValues, L_REGISTER)) == NULL) {
-            writeResult = V_WRITE_OUT_OF_RESOURCES;
-            goto err_register;
-        }
-        if (!c_baseMakeMemReservation(base, C_MM_RESERVATION_HIGH)) {
-            c_free(registerMessage);
-            writeResult = V_WRITE_OUT_OF_RESOURCES;
-            goto err_register_claim;
-        }
-        (void)v_groupWrite(group, registerMessage, &instance, V_NETWORKID_ANY, &resendScope);
-        c_baseReleaseMemReservation(base, C_MM_RESERVATION_HIGH);
-        if (v_gidIsNil(registerMessage->writerGID)) {
-            /* An unregister message must be sent to */
-            if ((unregisterMessage = create_message(group, bead, mqos, messageKeyList, nrOfKeys, keyValues, L_UNREGISTER)) == NULL) {
-                writeResult = V_WRITE_OUT_OF_RESOURCES;
-                goto err_unregister;
-            }
-            doUnregister = TRUE;
-        }
-        c_free(registerMessage);
-    }
-    for (i = 0; i < nrOfKeys; i++) {
-        /* c_fieldValue adds a ref, so undo the ref */
-        c_valueFreeRef(keyValues[i]);
-    }
-
-    /* At this point we should have an instance */
-    assert(instance);
-
-    /* Send the data */
-    if (writeResult == V_WRITE_SUCCESS) {
-        if (!c_baseMakeMemReservation(base, C_MM_RESERVATION_HIGH)) {
-            writeResult = V_WRITE_OUT_OF_RESOURCES;
-            goto err_data_claim;
-        }
+    if (c_baseMakeMemReservation(base, C_MM_RESERVATION_HIGH)) {
+        /* no caching, deliver to the reader */
         if (entry) {
-            /* no caching, deliver to the reader */
-            writeResult = v_groupWriteNoStreamWithEntry(group, msg, &instance, V_NETWORKID_ANY, entry);
+            writeResult = v_groupWriteHistoricalToReader(group, msg, entry);
+        } else if (v_gidIsNil(msg->writerGID)) {
+            writeResult = v_groupWriteHistoricalData(group, msg, NULL, V_NETWORKID_ANY);
         } else {
-            /* caching, write to group */
-            writeResult = v_groupWrite(group, msg, &instance, V_NETWORKID_ANY, &resendScope);
+            v_resendScope resendScope = V_RESEND_NONE;
+            writeResult = v_groupWrite(group, msg, NULL, V_NETWORKID_ANY, &resendScope);
         }
         c_baseReleaseMemReservation(base, C_MM_RESERVATION_HIGH);
     }
-
-    /* Send unregister when needed. */
-    if (writeResult == V_WRITE_SUCCESS) {
-        if (doUnregister) {
-            if (!c_baseMakeMemReservation(c_getBase(group), C_MM_RESERVATION_HIGH)) {
-                writeResult = V_WRITE_OUT_OF_RESOURCES;
-                goto err_unregister_claim;
-            }
-            writeResult = v_groupWrite(group, unregisterMessage, &instance, V_NETWORKID_ANY, &resendScope);
-            /* Note that unregister message will never be rejected */
-            c_baseReleaseMemReservation(c_getBase(group), C_MM_RESERVATION_HIGH);
-            c_free(unregisterMessage);
-            unregisterMessage = NULL;
-        }
-    }
-
-    c_free(instance);
-    return writeResult;
-
-err_unregister_claim:
-    if (unregisterMessage) {
-        c_free(unregisterMessage);
-    }
-
-err_data_claim:
-err_unregister:
-err_register_claim:
-    c_free(registerMessage);
-err_register:
-    c_free(instance);
-err_nrOfKeys:
     return writeResult;
 }
 
@@ -1045,9 +902,10 @@ v__dcChainBeadInject(
                 goto err_bead_kind;
     }
     /* Inject the message to the group or reader.
-     * Possible return values of inject_message are V_WRITE_SUCCESS, V_WRITE_PRE_NOT_MET, V_WRITE_OUT_OF_RESOURCES, or V_WRITE_REJECTED.
+     * Possible return values of inject_message are:
+     *     V_WRITE_SUCCESS, V_WRITE_PRE_NOT_MET, V_WRITE_OUT_OF_RESOURCES, or V_WRITE_REJECTED.
      * Only in case the message is injected successfully the bead is removed. */
-    if ((writeResult = inject_message(_this, msg, mqos, bead, group, entry)) == V_WRITE_SUCCESS) {
+    if ((writeResult = inject_message(group, msg, entry)) == V_WRITE_SUCCESS) {
         ut_avlCDelete (&beads_avltreedef, &chain->beads, b);
         cleanup_bead(b);
     }
@@ -1260,7 +1118,7 @@ v__dcCheckChainComplete(
             } else if (writeResult == V_WRITE_SUCCESS) {
                 /* All beads successfully injected */
                 if (cache) {
-                    v_groupCompleteSet(chain->vgroup, TRUE);
+                    (void)v_groupCompleteSet(chain->vgroup, V_ALIGNSTATE_COMPLETE);
                 }
             } else {
                 /* V_WRITE_PRE_NOT_MET or V_WRITE_OUT_OF_RESOURCES */
@@ -1329,7 +1187,7 @@ v__dcCreateEntities(v_durabilityClient _this)
      */
     _this->waitset = v_waitsetNew (_this->participant);
     _this->publisher  = v_publisherNew (_this->participant, V_DC_PUBLISHER_NAME,  pQos, FALSE);
-    _this->subscriber = v_subscriberNew(_this->participant, V_DC_SUBSCRIBER_NAME, sQos, FALSE);
+    _this->subscriber = v_subscriberNew(_this->participant, V_DC_SUBSCRIBER_NAME, sQos);
     if ((_this->waitset    == NULL) ||
         (_this->publisher  == NULL) ||
         (_this->subscriber == NULL) ){
@@ -1492,9 +1350,9 @@ is_builtin_group(
     if(strcmp(partition, V_BUILTIN_PARTITION) != 0) {
         return FALSE;
     } else {
-        int i;
-        for (i = 0; builtin_topics[i] != NULL; i++) {
-            if (strcmp (topic, builtin_topics[i]) == 0) {
+        c_ulong i;
+        for (i = 0; i < num_builtin_topics; i++) {
+            if (strcmp (topic, builtin_topics[i].topicName) == 0) {
                 return TRUE;
             }
         }
@@ -1560,25 +1418,29 @@ v__dcEventHistoricalDataRequest(v_durabilityClient _this, v_durabilityClientEven
         v_partition p;
         c_bool cache;
         v_subscriber subscriber;
+        v_topic vtopic;
 
         assert (v_objectKind(rd) == K_DATAREADER);
         /* Make sure that the subscriber exists, the subscriber could be removed while the reader is being destroyed */
-        v_observerLock(v_observer(rd));
-        subscriber = c_keep(rd->subscriber);
-        v_observerUnlock(v_observer(rd));
+        subscriber = v_readerGetSubscriber(rd);
         if (subscriber != NULL) {
             rhandle = v_publicHandle(v_public(rd));
-            topic = c_keep(v_entityName(v_dataReaderGetTopic(v_dataReader(rd))));
-            c_mutexLock(&v_subscriber(subscriber)->partitions->mutex);
-            kps = ospl_c_select(v_subscriber(subscriber)->partitions->partitions, 0);
-            c_mutexUnlock(&v_subscriber(subscriber)->partitions->mutex);
-            while ((p = v_partition(c_iterTakeFirst(kps))) != NULL) {
-                /* skip builtin topics and groups that do not need to be aligned by client durability */
-                if ((!is_builtin_group(v_partitionName(p), topic)) && (v_durabilityClientIsResponsibleForAlignment(_this, v_partitionName(p), topic, &cache))) {
-                    ps = c_iterAppend(ps, c_keep(v_entity(p)->name));
-                    doRequest = TRUE;
+            vtopic = v_readerGetTopic(rd);
+
+            if(vtopic){
+                topic = c_keep(v_entityName(vtopic));
+                c_mutexLock(&v_subscriber(rd->subscriber)->partitions->mutex);
+                kps = ospl_c_select(v_subscriber(rd->subscriber)->partitions->partitions, 0);
+                c_mutexUnlock(&v_subscriber(rd->subscriber)->partitions->mutex);
+                while ((p = v_partition(c_iterTakeFirst(kps))) != NULL) {
+                    /* skip builtin topics and groups that do not need to be aligned by client durability */
+                    if ((!is_builtin_group(v_partitionName(p), topic)) && (v_durabilityClientIsResponsibleForAlignment(_this, v_partitionName(p), topic, &cache))) {
+                        ps = c_iterAppend(ps, c_keep(v_entity(p)->name));
+                        doRequest = TRUE;
+                    }
+                    c_free(p);
                 }
-                c_free(p);
+                c_free(vtopic);
             }
             c_iterFree(kps);
             c_free(subscriber);
@@ -1870,7 +1732,7 @@ v__dcHandleHistoricalData(v_durabilityClient _this, v_dataReaderSample sample)
     {   /* To print the message */
         char tmpstr[30];
         if (data->content._d == HISTORICAL_DATA_KIND_LINK) {
-            snprintf(tmpstr, sizeof(tmpstr), "L %u %u %u", data->content._u.link.sampleCount, data->content._u.link.completeness, data->content._u.link.errorCode);
+            snprintf(tmpstr, sizeof(tmpstr), "L %u %u %x", data->content._u.link.sampleCount, data->content._u.link.completeness, data->content._u.link.errorCode);
         }
         V_DC_TRACE("%s - Sample %p msg %p state=%u time=%"PA_PRItime" wrgid=%u:%u:%u %s\n",
             OS_FUNCTION, (void*)sample, (void*)msg, msg->_parent.nodeState, OS_TIMEW_PRINT(msg->writeTime),
@@ -2206,7 +2068,7 @@ v__dcNewReader(v_subscriber subscriber, v_topic topic, v_readerQos qos)
         assert (0);
     }
     expr_q = q_parse(expr_str);
-    dr = v_dataReaderNew(subscriber, name, expr_q, NULL, qos, FALSE);
+    dr = v_dataReaderNew(subscriber, name, expr_q, NULL, 0, qos);
 
     q_dispose(expr_q);
 
@@ -2591,13 +2453,14 @@ v__dcWaitsetAction(v_waitsetEvent e, c_voidp arg)
 static void
 v__dcWaitsetSetup(v_durabilityClient _this)
 {
-    v_observerSetEventMask(v_observer(_this->waitset),
-                           V_EVENT_DATA_AVAILABLE | V_EVENT_TERMINATE | V_EVENT_HISTORY_REQUEST);
+    v_eventMask mask = V_EVENT_DATA_AVAILABLE | V_EVENT_TERMINATE | V_EVENT_HISTORY_REQUEST;
 
-    (void)v_observableAddObserver(v_observable(_this->participant), v_observer(_this->waitset), NULL);   /* to trigger the participant */
-    (void)v_observableAddObserver(v_observable(_this->readers[V_DC_READER_STATE_ID]),            v_observer(_this->waitset), NULL);
-    (void)v_observableAddObserver(v_observable(_this->readers[V_DC_READER_DATA_ID]),             v_observer(_this->waitset), NULL);
-    (void)v_observableAddObserver(v_observable(_this->readers[V_DC_READER_SUBSCRIPTIONINFO_ID]), v_observer(_this->waitset), NULL);
+    OSPL_SET_EVENT_MASK(_this->waitset, V_EVENTMASK_ALL);
+
+    (void)OSPL_ADD_OBSERVER(_this->participant,                              _this->waitset, mask, NULL);
+    (void)OSPL_ADD_OBSERVER(_this->readers[V_DC_READER_STATE_ID],            _this->waitset, mask, NULL);
+    (void)OSPL_ADD_OBSERVER(_this->readers[V_DC_READER_DATA_ID],             _this->waitset, mask, NULL);
+    (void)OSPL_ADD_OBSERVER(_this->readers[V_DC_READER_SUBSCRIPTIONINFO_ID], _this->waitset, mask, NULL);
 }
 
 
@@ -2682,6 +2545,8 @@ v_durabilityClientNew(
     _this->partitions[V_DC_PARTITION_REQUEST_ID]      = c_stringNew(base, partitionRequest);
     _this->partitions[V_DC_PARTITION_GLOBAL_DATA_ID]  = c_stringNew(base, partitionDataGlobal);
     _this->partitions[V_DC_PARTITION_PRIVATE_DATA_ID] = c_stringNew(base, partitionDataPrivate);
+
+    _this->alignBuiltin = FALSE;
 
     if (!v__dcCreateEntities(_this)) {
         OS_REPORT (OS_ERROR,
@@ -2777,7 +2642,7 @@ get_durable_policies_str(
         strcpy(result, "\0");
         while ((policy = (struct durablePolicy *)c_iterNext(&iter)) != NULL) {
             char *tmp;
-            tmp = os_malloc(strlen(result) + 1 /*   */ + 1 /* ( */ + strlen(policy->obtain) + 1 /* , */  + 5 /* TRUE, FALSE */ + 1 /* ) */);
+            tmp = os_malloc(strlen(result) + 1 /*   */ + 1 /* ( */ + strlen(policy->obtain) + 1 /* , */  + 5 /* TRUE, FALSE */ + 1 /* ) */ + 1 /* \0 */);
             os_sprintf(tmp, "%s (%s,%s)", result, policy->obtain, policy->cache ? "TRUE" : "FALSE");
             os_free(result);
             result = tmp;
@@ -2795,6 +2660,7 @@ get_durable_policies_str(
 void
 v_durabilityClientMain(v_durabilityClient _this)
 {
+    v_kernel kernel;
     os_duration retry_time = OS_DURATION_INIT( 0, 100000000 );  /* 100 ms */
     os_duration timeout;
 
@@ -2809,6 +2675,8 @@ v_durabilityClientMain(v_durabilityClient _this)
         assert(_this->partitions[V_DC_PARTITION_GLOBAL_DATA_ID]);
         assert(_this->partitions[V_DC_PARTITION_PRIVATE_DATA_ID]);
 
+        kernel = v_objectKernel(_this);
+
         /* Enable the readers and writers */
         v__dcEnable(_this);
 
@@ -2820,6 +2688,19 @@ v_durabilityClientMain(v_durabilityClient _this)
         V_DC_TRACE("%s - DurablePolicies:        %s\n", OS_FUNCTION, durablePoliciesStr);
 
         os_free(durablePoliciesStr);
+
+        /* When the networking service or the secure networking service is configured
+         * client durability should also perform the alignment of the builtin topics.
+         * Because the builtin readers are created before the durability client is
+         * created the historical data request of these readers are not received by
+         * client durability and have to be added.
+         */
+        if (!v_configurationContainsService(kernel->configuration, "DurabilityService") &&
+            (v_configurationContainsService(kernel->configuration, "NetworkService") ||
+             v_configurationContainsService(kernel->configuration, "SNetworkService"))) {
+            _this->alignBuiltin = TRUE;
+            v__dcRequestHistoricalBuiltinData(_this);
+        }
 
         while (!_this->terminate) {
             /* Handle events in the queue. */
@@ -2854,9 +2735,7 @@ v_durabilityClientTerminate(v_durabilityClient _this)
         term.data = NULL;
 
         o = v_observer(_this->waitset);
-        v_observerLock(o);
-        v_observerNotify(o, &term, NULL);
-        v_observerUnlock(o);
+        OSPL_TRIGGER_EVENT(o, &term, NULL);
     }
 }
 
@@ -2922,6 +2801,22 @@ v_durabilityClientIsResponsibleForAlignment(
         }
         os_free(str);
     }
+
+    if (!result) {
+        v_kernel kernel = v_objectKernel(_this);
+        if (_this->alignBuiltin) {
+            c_ulong i;
+            for (i = 0; i < num_builtin_topics; i++) {
+                if (strcmp(builtin_topics[i].topicName, topic) == 0) {
+                    if (builtin_topics[i].always || (kernel->qos->builtin.v.enabled && builtin_topics[i].align)) {
+                        result = TRUE;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     return result;
 }
 
@@ -2967,7 +2862,7 @@ has_non_volatile_reader(v_groupEntry groupEntry, c_voidp arg)
     if (!*interest) {
         v_reader r;
 
-        r = v_reader(v_dataReaderEntry(groupEntry->entry));
+        r = v_entryReader(groupEntry->entry);
         if (r) {
             if (r->qos) {
                 *interest = (r->qos->durability.v.kind > V_DURABILITY_VOLATILE);
@@ -3079,3 +2974,52 @@ v_dcUpdateDurabilityState(
     return;
 }
 
+static void
+v__dcRequestHistoricalBuiltinData(
+    v_durabilityClient _this)
+{
+    v_kernel kernel;
+    v_spliced spliced;
+    v_handle rhandle;
+    c_iter ps, alignmentPartition;
+    c_bool alignBuiltin;
+    c_ulong i;
+
+    kernel = v_objectKernel(_this);
+    spliced = v_kernelGetSpliced(kernel);
+    alignBuiltin = kernel->qos->builtin.v.enabled;
+
+    ps = c_iterNew(V_BUILTIN_PARTITION);
+
+    alignmentPartition = c_iterNew(_this->partitions[V_DC_PARTITION_PRIVATE_DATA_ID]);
+
+    for (i = 0; i < num_builtin_topics; i++) {
+        c_ulong j;
+        c_bool found = FALSE;
+
+        if (builtin_topics[i].align && (alignBuiltin || builtin_topics[i].always)) {
+            for (j = 0; !found && (j < V_INFO_ID_COUNT); j++) {
+                v_topic vtopic;
+
+                if (c_instanceOf(spliced->readers[j], "v_dataReader")) {
+                    vtopic = v_dataReaderGetTopic(spliced->readers[j]);
+                    if (vtopic && (strcmp(builtin_topics[i].topicName, v_topicName(vtopic)) == 0)) {
+                        rhandle = v_publicHandle(v_public(spliced->readers[j]));
+                        found = TRUE;
+                    }
+                    c_free(vtopic);
+                }
+            }
+        }
+
+        if (found) {
+            v_dcSendMsgDataRequest(
+                 _this, rhandle, ps, (char *)builtin_topics[i].topicName,
+                 NULL, NULL, OS_TIMEW_ZERO, OS_TIMEW_INFINITE,
+                 -1, -1, -1, alignmentPartition, OS_DURATION_ZERO);
+        }
+    }
+
+    c_iterFree(alignmentPartition);
+    c_iterFree(ps);
+}

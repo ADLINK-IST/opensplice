@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,9 +26,9 @@ import org.omg.dds.core.Duration;
 import org.omg.dds.core.policy.DurabilityService;
 import org.omg.dds.core.policy.History;
 import org.omg.dds.core.policy.History.Kind;
-import org.omg.dds.core.policy.QosPolicy;
 import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
 import org.opensplice.dds.core.OsplServiceEnvironment;
+import org.omg.dds.core.policy.QosPolicy;
 
 public class DurabilityServiceImpl extends QosPolicyImpl implements
         DurabilityService {

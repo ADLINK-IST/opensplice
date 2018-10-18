@@ -57,7 +57,7 @@ running on a single node and briefly explains the role of each
 entity. Furthermore, it defines a reference system that will
 be used throughout the rest of the document as an example.</em></p>
 <div class="section" id="vortex-opensplice-architecture">
-<span id="vortex-opensplice-dds-architecture"></span><h2>2.1. Vortex OpenSplice Architecture<a class="headerlink" href="#vortex-opensplice-architecture" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2>2.1. Vortex OpenSplice Architecture<a class="headerlink" href="#vortex-opensplice-architecture" title="Permalink to this headline">¶</a></h2>
 <p>Vortex OpenSplice is highly configurable, even allowing the architectural
 structure of the DDS middleware to be chosen by the user at deployment time.</p>
 <p>Vortex OpenSplice can be configured to run using a so-called ‘federated’
@@ -88,7 +88,7 @@ domain, including networking parameters, and durability levels for example).</p>
 architectures, so the most appropriate deployment choice depends on the user’s
 exact requirements and DDS scenario.</p>
 <div class="section" id="single-process-architecture">
-<span id="id2"></span><h3>2.1.1. Single Process architecture<a class="headerlink" href="#single-process-architecture" title="Permalink to this headline">¶</a></h3>
+<span id="id3"></span><h3>2.1.1. Single Process architecture<a class="headerlink" href="#single-process-architecture" title="Permalink to this headline">¶</a></h3>
 <p>This deployment allows the DDS applications and Vortex OpenSplice administration to be
 contained together within one single operating system process. This ‘standalone’
 single process deployment option is most useful in environments where shared
@@ -120,7 +120,7 @@ shows an overview of the single process architecture of Vortex OpenSplice.</p>
 <strong><strong>The Vortex OpenSplice Single Process Architecture</strong></strong></p><a class="reference internal image-reference" href="_images/SingleProcessArchitecture.png"><img alt="The Vortex OpenSplice Single Process Architecture" class="align-center" src="_images/SingleProcessArchitecture.png" style="height: 70mm;" /></a>
 </div>
 <div class="section" id="shared-memory-architecture">
-<span id="id3"></span><h3>2.1.2. Shared Memory architecture<a class="headerlink" href="#shared-memory-architecture" title="Permalink to this headline">¶</a></h3>
+<span id="id4"></span><h3>2.1.2. Shared Memory architecture<a class="headerlink" href="#shared-memory-architecture" title="Permalink to this headline">¶</a></h3>
 <p>In the ‘federated’ shared memory architecture data is physically present only once
 on any machine but smart administration still provides each subscriber with his own
 private view on this data. Both the DDS applications and Vortex OpenSplice
@@ -141,7 +141,7 @@ shows an overview of the shared memory architecture of Vortex OpenSplice on
 <strong><strong>The Vortex OpenSplice Shared Memory Architecture</strong></strong></p><a class="reference internal image-reference" href="_images/SharedMemoryArchitecture.png"><img alt="The Vortex OpenSplice Shared Memory Architecture" class="align-center" src="_images/SharedMemoryArchitecture.png" style="height: 70mm;" /></a>
 </div>
 <div class="section" id="comparison-of-deployment-architectures">
-<span id="id4"></span><h3>2.1.3. Comparison of Deployment Architectures<a class="headerlink" href="#comparison-of-deployment-architectures" title="Permalink to this headline">¶</a></h3>
+<span id="id5"></span><h3>2.1.3. Comparison of Deployment Architectures<a class="headerlink" href="#comparison-of-deployment-architectures" title="Permalink to this headline">¶</a></h3>
 <p><strong>Simple when sufficient, Performant when required</strong></p>
 <p>The choice between the ‘federated’ or ‘standalone’ deployment architecture is
 basically about going for out-of-the-box simplicity or for maximum performance:</p>
@@ -169,7 +169,7 @@ lifecycle is simply coupled to that of the application process)</li>
 <strong><strong>Non-federated, single-process Applications</strong></strong></p><a class="reference internal image-reference" href="_images/NonFederatedSingleProcessApplication.png"><img alt="Non-federated, single-process Applications" class="align-center" src="_images/NonFederatedSingleProcessApplication.png" style="height: 25mm;" /></a>
 </div>
 <div class="section" id="configuring-and-using-the-deployment-architectures">
-<span id="id5"></span><h3>2.1.4. Configuring and Using the Deployment Architectures<a class="headerlink" href="#configuring-and-using-the-deployment-architectures" title="Permalink to this headline">¶</a></h3>
+<span id="id6"></span><h3>2.1.4. Configuring and Using the Deployment Architectures<a class="headerlink" href="#configuring-and-using-the-deployment-architectures" title="Permalink to this headline">¶</a></h3>
 <p>The deployment architecture choice between a shared-memory federation or a
 standalone ‘single process’ is a runtime choice driven by a simple single
 configuration parameter in the domain configuration xml file:</p>
@@ -203,7 +203,7 @@ configurations start with <tt class="docutils literal"><span class="pre">ospl_sh
 </div>
 </div>
 <div class="section" id="vortex-opensplice-usage">
-<span id="vortex-opensplice-dds-usage"></span><h2>2.2. Vortex OpenSplice Usage<a class="headerlink" href="#vortex-opensplice-usage" title="Permalink to this headline">¶</a></h2>
+<span id="id7"></span><h2>2.2. Vortex OpenSplice Usage<a class="headerlink" href="#vortex-opensplice-usage" title="Permalink to this headline">¶</a></h2>
 <p>The Vortex OpenSplice environment has to be set up to instruct the node where executables
 and libraries can be found in order to be able to start the Domain Service.</p>
 <p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
@@ -219,7 +219,7 @@ the Vortex OpenSplice installation:</div></blockquote>
 <div>On the Windows platform the environment must be set up by running
 <tt class="docutils literal"><span class="pre">release.bat</span></tt>, or else the Vortex OpenSplice Command Prompt must be used.</div></blockquote>
 <div class="section" id="starting-vortex-opensplice-for-a-single-process-deployment">
-<span id="starting-vortex-opensplice-dds-for-a-single-process-deployment"></span><h3>2.2.1. Starting Vortex OpenSplice for a Single Process Deployment<a class="headerlink" href="#starting-vortex-opensplice-for-a-single-process-deployment" title="Permalink to this headline">¶</a></h3>
+<span id="id8"></span><h3>2.2.1. Starting Vortex OpenSplice for a Single Process Deployment<a class="headerlink" href="#starting-vortex-opensplice-for-a-single-process-deployment" title="Permalink to this headline">¶</a></h3>
 <p>For ‘standalone’ single process deployment, there is no need to start the Vortex OpenSplice
 middleware before starting the DDS application, since the application itself
 will implicitly start the library threads of Vortex OpenSplice Domain Service and
@@ -227,7 +227,7 @@ associated services at the point when the DDS <tt class="docutils literal"><span
 invoked by the standalone application process.</p>
 </div>
 <div class="section" id="starting-vortex-opensplice-for-a-shared-memory-deployment">
-<span id="starting-vortex-opensplice-dds-for-a-shared-memory-deployment"></span><h3>2.2.2. Starting Vortex OpenSplice for a Shared Memory Deployment<a class="headerlink" href="#starting-vortex-opensplice-for-a-shared-memory-deployment" title="Permalink to this headline">¶</a></h3>
+<span id="id9"></span><h3>2.2.2. Starting Vortex OpenSplice for a Shared Memory Deployment<a class="headerlink" href="#starting-vortex-opensplice-for-a-shared-memory-deployment" title="Permalink to this headline">¶</a></h3>
 <p>For a shared memory deployment, it is necessary to start the Vortex OpenSplice
 Domain Service prior to running a DDS application. The <tt class="docutils literal"><span class="pre">ospl</span></tt> command-tool is
 provided to manage Vortex OpenSplice for shared memory deployments. To start
@@ -249,12 +249,12 @@ program. Please refer to the <em>Getting Started Guide</em> for details of how t
 VxWorks projects and Real Time Processes to deploy Vortex OpenSplice applications.</div></blockquote>
 </div>
 <div class="section" id="monitoring">
-<span id="id6"></span><h3>2.2.3. Monitoring<a class="headerlink" href="#monitoring" title="Permalink to this headline">¶</a></h3>
+<span id="id10"></span><h3>2.2.3. Monitoring<a class="headerlink" href="#monitoring" title="Permalink to this headline">¶</a></h3>
 <p>The Vortex OpenSplice Domain Service can be monitored and tuned in numerous ways
 after it has been started. The monitoring and tuning capabilities are described in the
 following subsections.</p>
 <div class="section" id="diagnostic-messages">
-<span id="id7"></span><h4>2.2.3.1. Diagnostic Messages<a class="headerlink" href="#diagnostic-messages" title="Permalink to this headline">¶</a></h4>
+<span id="id11"></span><h4>2.2.3.1. Diagnostic Messages<a class="headerlink" href="#diagnostic-messages" title="Permalink to this headline">¶</a></h4>
 <p>Vortex OpenSplice outputs diagnostic information. This information is written to the
 <tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file located in the start-up directory, by default. Error messages
 are written to the <tt class="docutils literal"><span class="pre">ospl-error.log</span></tt> file, by default. The state of the system can be
@@ -274,7 +274,7 @@ section for details).</p>
 <div>Values specified in the domain configuration override the environment values.</div></blockquote>
 </div>
 <div class="section" id="vortex-opensplice-tuner">
-<span id="id8"></span><h4>2.2.3.2. Vortex OpenSplice Tuner<a class="headerlink" href="#vortex-opensplice-tuner" title="Permalink to this headline">¶</a></h4>
+<span id="id12"></span><h4>2.2.3.2. Vortex OpenSplice Tuner<a class="headerlink" href="#vortex-opensplice-tuner" title="Permalink to this headline">¶</a></h4>
 <p>The intention of Vortex OpenSplice Tuner, <tt class="docutils literal"><span class="pre">ospltun</span></tt>, is to provide facilities for monitoring
 and controlling Vortex OpenSplice, as well as the applications that use OpenSplice for the
 distribution of data. The <em>Vortex OpenSplice Tuner User Guide</em> specifies the capabilities of
@@ -289,7 +289,7 @@ cluster. Please refer to the <em>Vortex OpenSplice Tuner User Guide</em> for a
 description of how to cluster applications together in a single process.</p>
 </div>
 <div class="section" id="vortex-opensplice-memory-management-statistics-monitor">
-<span id="id9"></span><h4>2.2.3.3. Vortex OpenSplice Memory Management Statistics Monitor<a class="headerlink" href="#vortex-opensplice-memory-management-statistics-monitor" title="Permalink to this headline">¶</a></h4>
+<span id="id13"></span><h4>2.2.3.3. Vortex OpenSplice Memory Management Statistics Monitor<a class="headerlink" href="#vortex-opensplice-memory-management-statistics-monitor" title="Permalink to this headline">¶</a></h4>
 <p>The Vortex OpenSplice Memory Management Statistics Tool, <tt class="docutils literal"><span class="pre">mmstat</span></tt>, provides a
 command line interface that allows monitoring the status of the nodal shared
 administration (shared memory) used by the middleware and the applications. Use
@@ -303,9 +303,9 @@ and its use is only applicable in shared memory mode.</div></blockquote>
 </div>
 </div>
 <div class="section" id="stopping-vortex-opensplice">
-<span id="stopping-vortex-opensplice-dds"></span><h3>2.2.4. Stopping Vortex OpenSplice<a class="headerlink" href="#stopping-vortex-opensplice" title="Permalink to this headline">¶</a></h3>
+<span id="id14"></span><h3>2.2.4. Stopping Vortex OpenSplice<a class="headerlink" href="#stopping-vortex-opensplice" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="stopping-a-single-process-deployment">
-<span id="id10"></span><h4>2.2.4.1. Stopping a Single Process deployment<a class="headerlink" href="#stopping-a-single-process-deployment" title="Permalink to this headline">¶</a></h4>
+<span id="id15"></span><h4>2.2.4.1. Stopping a Single Process deployment<a class="headerlink" href="#stopping-a-single-process-deployment" title="Permalink to this headline">¶</a></h4>
 <p>When deployed as a single process, the application can either be terminated
 naturally when the end of the main function is reached, or stopped prematurely by
 means of a signal interrupt, for example <tt class="docutils literal"><span class="pre">Ctrl-C</span></tt>. In either case, the
@@ -313,7 +313,7 @@ Vortex OpenSplice middleware running within the process will be stopped and the
 process will terminate.</p>
 </div>
 <div class="section" id="stopping-a-shared-memory-deployment">
-<span id="id11"></span><h4>2.2.4.2. Stopping a Shared Memory deployment<a class="headerlink" href="#stopping-a-shared-memory-deployment" title="Permalink to this headline">¶</a></h4>
+<span id="id16"></span><h4>2.2.4.2. Stopping a Shared Memory deployment<a class="headerlink" href="#stopping-a-shared-memory-deployment" title="Permalink to this headline">¶</a></h4>
 <p>In shared memory deployment mode, the Vortex OpenSplice Domain Service can be
 stopped by issuing the following command on the command-line.</p>
 <div class="highlight-python"><div class="highlight"><pre>% ospl stop
@@ -324,7 +324,7 @@ shared administration. Applications will not be able to use DDS functionality
 anymore and services will terminate elegantly. Once this has succeeded, the Domain
 Service will destroy the shared administration and finally terminate itself.</p>
 <div class="section" id="stopping-ospl-by-using-signals">
-<span id="id12"></span><h5>2.2.4.2.1. Stopping OSPL by using signals<a class="headerlink" href="#stopping-ospl-by-using-signals" title="Permalink to this headline">¶</a></h5>
+<span id="id17"></span><h5>2.2.4.2.1. Stopping OSPL by using signals<a class="headerlink" href="#stopping-ospl-by-using-signals" title="Permalink to this headline">¶</a></h5>
 <p>Alternatively the Vortex OpenSplice domain service can also be stopped by sending a
 signal to the <tt class="docutils literal"><span class="pre">ospl</span></tt> process, assuming the process was started using the <tt class="docutils literal"><span class="pre">-f</span></tt>
 option.</p>
@@ -474,7 +474,7 @@ background process</td>
 </table>
 </div>
 <div class="section" id="stopping-applications-in-shared-memory-mode">
-<span id="id13"></span><h5>2.2.4.2.2. Stopping Applications in Shared Memory Mode<a class="headerlink" href="#stopping-applications-in-shared-memory-mode" title="Permalink to this headline">¶</a></h5>
+<span id="id18"></span><h5>2.2.4.2.2. Stopping Applications in Shared Memory Mode<a class="headerlink" href="#stopping-applications-in-shared-memory-mode" title="Permalink to this headline">¶</a></h5>
 <p>Applications that are connected to and use Vortex OpenSplice in shared memory
 mode must not be terminated with a <tt class="docutils literal"><span class="pre">KILL</span></tt> signal. This will ensure that Vortex OpenSplice
 DDS shared memory always remains in a valid, functional state.</p>
@@ -497,14 +497,14 @@ node.</div></blockquote>
 </div>
 </div>
 <div class="section" id="deploying-vortex-opensplice-on-vxworks-6-x">
-<span id="deploying-vortex-opensplice-dds-on-vxworks-6-x"></span><h3>2.2.5. Deploying Vortex OpenSplice on VxWorks 6.x<a class="headerlink" href="#deploying-vortex-opensplice-on-vxworks-6-x" title="Permalink to this headline">¶</a></h3>
+<span id="id19"></span><h3>2.2.5. Deploying Vortex OpenSplice on VxWorks 6.x<a class="headerlink" href="#deploying-vortex-opensplice-on-vxworks-6-x" title="Permalink to this headline">¶</a></h3>
 <p>The <strong>VxWorks</strong> version of Vortex OpenSplice does not include the <tt class="docutils literal"><span class="pre">ospl</span></tt> program.
 Please refer to the <em>Getting Started Guide</em> for details of how to use
 VxWorks projects and Real Time Processes to deploy Vortex OpenSplice
 applications.</p>
 </div>
 <div class="section" id="deploying-vortex-opensplice-on-integrity">
-<span id="deploying-vortex-opensplice-dds-on-integrity"></span><h3>2.2.6. Deploying Vortex OpenSplice on Integrity<a class="headerlink" href="#deploying-vortex-opensplice-on-integrity" title="Permalink to this headline">¶</a></h3>
+<span id="id20"></span><h3>2.2.6. Deploying Vortex OpenSplice on Integrity<a class="headerlink" href="#deploying-vortex-opensplice-on-integrity" title="Permalink to this headline">¶</a></h3>
 <p>The <strong>Integrity</strong> version of Vortex OpenSplice does not include the <tt class="docutils literal"><span class="pre">ospl</span></tt> program.
 Instead there is a project generator, <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt>, which generates projects
 containing the required address spaces which will auto-start when loaded. Please
@@ -512,14 +512,14 @@ refer to the <em>Getting Started Guide</em> for detailed information about
 Vortex OpenSplice deployment on Integrity.</p>
 </div>
 <div class="section" id="installing-uninstalling-the-vortex-opensplice-c-assembly-to-the-global-assembly-cache">
-<span id="installing-uninstalling-the-vortex-opensplice-dds-c-assembly-to-the-global-assembly-cache"></span><h3>2.2.7. Installing/Uninstalling the Vortex OpenSplice C# Assembly to the Global Assembly Cache<a class="headerlink" href="#installing-uninstalling-the-vortex-opensplice-c-assembly-to-the-global-assembly-cache" title="Permalink to this headline">¶</a></h3>
+<span id="id21"></span><h3>2.2.7. Installing/Uninstalling the Vortex OpenSplice C# Assembly to the Global Assembly Cache<a class="headerlink" href="#installing-uninstalling-the-vortex-opensplice-c-assembly-to-the-global-assembly-cache" title="Permalink to this headline">¶</a></h3>
 <p>The installer for the commercial distribution of Vortex OpenSplice includes the option
 to install the C# Assembly to the Global Assembly Cache during the installation
 process. If you chose to omit this step, or you are an open source user, then you
 should follow the instructions in the next few paragraphs, which describe how to
 manually install and uninstall the assembly to the Global Assembly Cache.</p>
 <div class="section" id="installing-the-c-assembly-to-the-global-assembly-cache">
-<span id="id14"></span><h4>2.2.7.1. Installing the C# Assembly to the Global Assembly Cache<a class="headerlink" href="#installing-the-c-assembly-to-the-global-assembly-cache" title="Permalink to this headline">¶</a></h4>
+<span id="id22"></span><h4>2.2.7.1. Installing the C# Assembly to the Global Assembly Cache<a class="headerlink" href="#installing-the-c-assembly-to-the-global-assembly-cache" title="Permalink to this headline">¶</a></h4>
 <p>To install an assembly to the Global Assembly Cache, you need to use the
 <tt class="docutils literal"><span class="pre">gacutil.exe</span></tt> tool. Start a Visual Studio command prompt and type:</p>
 <div class="highlight-python"><div class="highlight"><pre>% gacutil /i &lt;Vortex OpenSplice installation path&gt;\bin\dcpssacsAssembly.dll
@@ -529,7 +529,7 @@ manually install and uninstall the assembly to the Global Assembly Cache.</p>
 Vortex OpenSplice distribution. If you are successful you will see a message similar
 to the following:</p>
 <div class="highlight-python"><div class="highlight"><pre>% C:\Program Files\Microsoft Visual Studio 9.0\VC&gt;gacutil.exe /i
-&quot;C:\Program Files \PrismTech\VortexOpenSplice\V6.6.0\HDE\x86.win32\
+&quot;C:\Program Files \ADLINK\VortexOpenSplice\V6.6.0\HDE\x86.win32\
 bin\dcpssacsAssembly.dll&quot;
 %
 % Microsoft (R) .NET Global Assembly Cache Utility. Version
@@ -543,7 +543,7 @@ bin\dcpssacsAssembly.dll&quot;
 </div>
 </div>
 <div class="section" id="uninstalling-the-c-assembly-from-the-global-assembly-cache">
-<span id="id15"></span><h4>2.2.7.2. Uninstalling the C# Assembly from the Global Assembly Cache<a class="headerlink" href="#uninstalling-the-c-assembly-from-the-global-assembly-cache" title="Permalink to this headline">¶</a></h4>
+<span id="id23"></span><h4>2.2.7.2. Uninstalling the C# Assembly from the Global Assembly Cache<a class="headerlink" href="#uninstalling-the-c-assembly-from-the-global-assembly-cache" title="Permalink to this headline">¶</a></h4>
 <p>To uninstall an assembly from the Global Assembly Cache, you need to use the
 <tt class="docutils literal"><span class="pre">gacutil.exe</span></tt> tool. Start a Visual Studio command prompt and type:</p>
 <div class="highlight-python"><div class="highlight"><pre>% gacutil /u dcpssacsAssembly,Version=&lt;version_number_goes_here&gt;
@@ -594,7 +594,7 @@ C# Assembly you specify the version you want to uninstall.</p>
 </div>
 </div>
 <div class="section" id="vortex-opensplice-configuration">
-<span id="vortex-opensplice-dds-configuration"></span><h2>2.3. Vortex OpenSplice Configuration<a class="headerlink" href="#vortex-opensplice-configuration" title="Permalink to this headline">¶</a></h2>
+<span id="id24"></span><h2>2.3. Vortex OpenSplice Configuration<a class="headerlink" href="#vortex-opensplice-configuration" title="Permalink to this headline">¶</a></h2>
 <p>Each application domain has its own characteristics; Vortex OpenSplice therefore allows
 configuring a wide range of parameters that influence its behaviour to be able to
 achieve optimal performance in every situation. This section describes generally
@@ -602,7 +602,7 @@ how to instruct Vortex OpenSplice to use a configuration that is different from 
 This requires the creation of a custom configuration file and an instruction to the
 middleware to use this custom configuration file.</p>
 <div class="section" id="configuration-files">
-<span id="id16"></span><h3>2.3.1. Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
+<span id="id25"></span><h3>2.3.1. Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
 <p>Vortex OpenSplice expects the configuration to be defined in the XML format. The
 expected syntax and semantics of the configuration parameters will be discussed
 further on in this document. Within the context of Vortex OpenSplice, a reference to a
@@ -620,7 +620,7 @@ The services will use default values for the parameters that have not been speci
 in the configuration.</p>
 </div>
 <div class="section" id="environment-variables">
-<span id="id17"></span><h3>2.3.2. Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
+<span id="id26"></span><h3>2.3.2. Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
 <p>The Vortex OpenSplice middleware will read several environment variables for different
 purposes. These variables are mentioned in this document at several places. To some
 extent, the user can customize the Vortex OpenSplice middleware by adapting the
@@ -630,7 +630,7 @@ environment variables can be referenced using the notation <tt class="docutils l
 When parsing the XML configuration, the Domain Service will replace the symbol
 with the variable value found in the environment.</p>
 <div class="section" id="the-ospl-uri-environment-variable">
-<span id="id18"></span><h4>2.3.2.1. The OSPL_URI environment variable<a class="headerlink" href="#the-ospl-uri-environment-variable" title="Permalink to this headline">¶</a></h4>
+<span id="id27"></span><h4>2.3.2.1. The OSPL_URI environment variable<a class="headerlink" href="#the-ospl-uri-environment-variable" title="Permalink to this headline">¶</a></h4>
 <p>The environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> is a convenient mechanism to pass the
 configuration file to the Domain Service and DDS applications. The variable will
 refer to the default configuration that comes with Vortex OpenSplice but of course can
@@ -651,7 +651,7 @@ by the Windows installer. Alternatively, it can be set by executing the supplied
 </div>
 </div>
 <div class="section" id="configuration-of-single-process-deployment">
-<span id="id19"></span><h3>2.3.3. Configuration of Single Process deployment<a class="headerlink" href="#configuration-of-single-process-deployment" title="Permalink to this headline">¶</a></h3>
+<span id="id28"></span><h3>2.3.3. Configuration of Single Process deployment<a class="headerlink" href="#configuration-of-single-process-deployment" title="Permalink to this headline">¶</a></h3>
 <p>A single process deployment is enabled when the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable
 refers to an XML configuration containing the <tt class="docutils literal"><span class="pre">&lt;SingleProcess&gt;</span></tt> attribute within
 the Domain section (<tt class="docutils literal"><span class="pre">//OpenSplice/Domain/SingleProcess</span></tt>).
@@ -665,7 +665,7 @@ environment variable describes the Vortex OpenSplice system, there is no require
 pass any Vortex OpenSplice configuration parameters to the application.</p>
 </div>
 <div class="section" id="configuration-of-shared-memory-deployment">
-<span id="id20"></span><h3>2.3.4. Configuration of Shared Memory deployment<a class="headerlink" href="#configuration-of-shared-memory-deployment" title="Permalink to this headline">¶</a></h3>
+<span id="id29"></span><h3>2.3.4. Configuration of Shared Memory deployment<a class="headerlink" href="#configuration-of-shared-memory-deployment" title="Permalink to this headline">¶</a></h3>
 <p>In order to have Vortex OpenSplice start with a custom configuration file, use:</p>
 <div class="highlight-python"><div class="highlight"><pre>% ospl start &lt;URI&gt;
 </pre></div>
@@ -693,7 +693,7 @@ instances by using the command:</p>
 to be started or stopped.</p>
 </div>
 <div class="section" id="temporary-files">
-<span id="id21"></span><h3>2.3.5. Temporary Files<a class="headerlink" href="#temporary-files" title="Permalink to this headline">¶</a></h3>
+<span id="id30"></span><h3>2.3.5. Temporary Files<a class="headerlink" href="#temporary-files" title="Permalink to this headline">¶</a></h3>
 <p>Please note that for a <em>shared memory</em> deployment, Vortex OpenSplice uses temporary files
 that are used to describe the shared memory that has been created. The exact nature
 of these files varies according to the operating system; however, the user does not
@@ -710,7 +710,7 @@ environments on a particular node.</div></blockquote>
 </div>
 </div>
 <div class="section" id="applications-which-operate-in-multiple-domains">
-<span id="id22"></span><h2>2.4. Applications which operate in multiple domains<a class="headerlink" href="#applications-which-operate-in-multiple-domains" title="Permalink to this headline">¶</a></h2>
+<span id="id31"></span><h2>2.4. Applications which operate in multiple domains<a class="headerlink" href="#applications-which-operate-in-multiple-domains" title="Permalink to this headline">¶</a></h2>
 <p>Vortex OpenSplice can be configured to allow a DDS application to operate in multiple
 domains.</p>
 <p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
@@ -738,7 +738,7 @@ usage of the default domain. If a domain is not explicitly identified in the
 application code, then appropriate steps must be taken at deployment in order to
 ensure that applications operate in the domain they were intended to.</p>
 <div class="section" id="interaction-with-a-networking-service">
-<span id="id23"></span><h3>2.4.1. Interaction with a Networking Service<a class="headerlink" href="#interaction-with-a-networking-service" title="Permalink to this headline">¶</a></h3>
+<span id="id32"></span><h3>2.4.1. Interaction with a Networking Service<a class="headerlink" href="#interaction-with-a-networking-service" title="Permalink to this headline">¶</a></h3>
 <p>Where multiple domains are running on a single node, each domain must run its
 own instance of a networking service if that domain is to participate in remote
 communication.</p>
@@ -750,13 +750,13 @@ the XML for that domain.</li>
 </div>
 </div>
 <div class="section" id="time-jumps">
-<span id="id24"></span><h2>2.5. Time-jumps<a class="headerlink" href="#time-jumps" title="Permalink to this headline">¶</a></h2>
+<span id="id33"></span><h2>2.5. Time-jumps<a class="headerlink" href="#time-jumps" title="Permalink to this headline">¶</a></h2>
 <p>Observed time discontinuities can affect data ordering and processing of
 middleware actions. Time-jumps can be caused by adjusting the clock forward or
 backward. When resuming from being suspended, time will seem to have jumped
 forward as if the clock was advanced.</p>
 <div class="section" id="effect-on-data">
-<span id="id25"></span><h3>2.5.1. Effect on data<a class="headerlink" href="#effect-on-data" title="Permalink to this headline">¶</a></h3>
+<span id="id34"></span><h3>2.5.1. Effect on data<a class="headerlink" href="#effect-on-data" title="Permalink to this headline">¶</a></h3>
 <p>When a sample is published, a  time stamp is determined at the source which is
 attached to the sample before it is sent. The subscriber stores the  time stamp at which
 the sample is received in the sample as well. In DDS samples are ordered within the
@@ -788,7 +788,7 @@ samples in the history from before the time changed.</dd>
 </dl>
 </div>
 <div class="section" id="effect-on-processing">
-<span id="id26"></span><h3>2.5.2. Effect on processing<a class="headerlink" href="#effect-on-processing" title="Permalink to this headline">¶</a></h3>
+<span id="id35"></span><h3>2.5.2. Effect on processing<a class="headerlink" href="#effect-on-processing" title="Permalink to this headline">¶</a></h3>
 <p>Processing of relative time actions, actions for which a time contract exists with
 local entities (<em>e.g.</em>, inter-process leases, wait for attachment of a service) or time
 contracts involving remote parties (<em>e.g.</em>, heartbeats, deadline) may not behave as
@@ -803,7 +803,7 @@ provide these alternative clocks. If the clocks are available, the middleware wi
 these to prevent the adverse effects of observed time-jumps on its processing.</p>
 </div>
 <div class="section" id="background-information">
-<span id="id27"></span><h3>2.5.3. Background information<a class="headerlink" href="#background-information" title="Permalink to this headline">¶</a></h3>
+<span id="id36"></span><h3>2.5.3. Background information<a class="headerlink" href="#background-information" title="Permalink to this headline">¶</a></h3>
 <p>The basic clock used for  time stamps of data published in DDS is the real-time clock.
 This time is expressed as the time since the Unix epoch (00:00:00 on Thursday the
 1st of January 1970, UTC). All systems support some form of a real-time clock. For
@@ -851,19 +851,19 @@ with other nodes. If the domain/y2038Ready option is set, the node will use the 
 makes it incompatible with older nodes prior to version 6.7. (<tt class="docutils literal"><span class="pre">//OpenSplice/Domain/y2038Ready</span></tt> is fully described
 in the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section)</p>
 <div class="section" id="corba-c">
-<span id="id28"></span><h3>2.6.1. CORBA C++<a class="headerlink" href="#corba-c" title="Permalink to this headline">¶</a></h3>
+<span id="id37"></span><h3>2.6.1. CORBA C++<a class="headerlink" href="#corba-c" title="Permalink to this headline">¶</a></h3>
 <p>By default the CORBA C++ library (dcpsccpp) that comes with OpenSplice is built with support for the 32-bit DDS_Time_t representation.
 To rebuild this library to get support for the new 64-bit DDS_Time_t representation please look at the <tt class="docutils literal"><span class="pre">OSPL_HOME/custom_lib/ccpp/README</span></tt>
 document which explains how to do this.</p>
 </div>
 <div class="section" id="corba-java">
-<span id="id29"></span><h3>2.6.2. CORBA Java<a class="headerlink" href="#corba-java" title="Permalink to this headline">¶</a></h3>
+<span id="id38"></span><h3>2.6.2. CORBA Java<a class="headerlink" href="#corba-java" title="Permalink to this headline">¶</a></h3>
 <p>By default the CORBA Java library (dcpscj.jar) that comes with OpenSplice is built with support for the 32-bit DDS_Time_t representation.
 A new library dcpscj_y2038_ready.jar is added which supports the new 64-bit DDS_Time_t representation. This library can be used when
 time stamps beyond year 2038 are needed.</p>
 </div>
 <div class="section" id="migration">
-<span id="id30"></span><h3>2.6.3. Migration<a class="headerlink" href="#migration" title="Permalink to this headline">¶</a></h3>
+<span id="id39"></span><h3>2.6.3. Migration<a class="headerlink" href="#migration" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><em>client-durability</em></dt>
 <dd>Users that use client-durability cannot use times beyond 2038. This is because the client
@@ -892,7 +892,7 @@ by setting the domain/y2038Ready option to true.</li>
 </dl>
 </div>
 <div class="section" id="platform-support">
-<span id="id31"></span><h3>2.6.4. Platform support<a class="headerlink" href="#platform-support" title="Permalink to this headline">¶</a></h3>
+<span id="id40"></span><h3>2.6.4. Platform support<a class="headerlink" href="#platform-support" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Linux 64-bit: On 64-bit platforms linux already supports 64-bit time. No action required.</li>
 <li>Linux 32-bit: On 32-bit platforms linux support for 64-bit time stamps is still in development.
@@ -907,7 +907,7 @@ that the time stamp will rollover in 2036. This may not be an issue when version
 used which provides specification of an era number and era offset.</p>
 </div>
 <div class="section" id="dds-time-structure-change">
-<span id="id32"></span><h3>2.6.5. DDS_Time structure change<a class="headerlink" href="#dds-time-structure-change" title="Permalink to this headline">¶</a></h3>
+<span id="id41"></span><h3>2.6.5. DDS_Time structure change<a class="headerlink" href="#dds-time-structure-change" title="Permalink to this headline">¶</a></h3>
 <p>The new DDS_Time representation which contains a 64-bit second field:</p>
 <div class="highlight-python"><div class="highlight"><pre>module DDS {
     struct Time_t {
@@ -1051,7 +1051,7 @@ used which provides specification of an era number and era offset.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

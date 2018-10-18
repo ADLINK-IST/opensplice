@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,12 +26,8 @@
 
 #include "os_report.h"
 
-static const v_qosChangeMask immutableMask =
-    V_POLICY_BIT_SCHEDULING;
+static const v_qosChangeMask immutableMask = V_POLICY_BIT_SCHEDULING;
 
-/**************************************************************
- * private functions
- **************************************************************/
 static c_bool
 v_participantQosValidValues(
     v_participantQos qos)
@@ -52,9 +49,6 @@ v_participantQosValidValues(
     return (valuesNok) ? FALSE : TRUE;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_participantQos
 v_participantQosNew(
     v_kernel kernel,
@@ -106,9 +100,6 @@ v_participantQosFree(
     c_free(q);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 v_result
 v_participantQosCompare(
     v_participantQos q,
@@ -120,7 +111,7 @@ v_participantQosCompare(
 
     cm = 0;
     if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
-        /* built change mask */
+            /* built change mask */
             if (!v_entityFactoryPolicyIEqual(q->entityFactory, tmpl->entityFactory)) {
             cm |= V_POLICY_BIT_ENTITYFACTORY;
         }
@@ -144,9 +135,6 @@ v_participantQosCompare(
     return result;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 v_result
 v_participantQosCheck(
     v_participantQos _this)

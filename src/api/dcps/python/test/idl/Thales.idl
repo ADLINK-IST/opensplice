@@ -1,0 +1,17 @@
+module test {
+	struct T_ID
+	{
+	    long A_ID;
+	    long A_subID;
+	};
+	
+	typedef sequence<T_ID> T_IDList;
+	
+	struct C_TopicStruct
+	{
+	    T_ID A_ID;
+	    T_IDList A_ForeignIDList;
+	    long value;
+	};
+	#pragma keylist C_TopicStruct A_ID.A_ID A_ID.A_subID
+};

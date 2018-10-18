@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -59,8 +60,6 @@ u_serviceManagerInit(
     assert(_this != NULL);
 
     result = u_entityInit(u_entity(_this), v_entity(sm), u_observableDomain(u_observable(participant)));
-    _this->callback = NULL;
-    _this->usrData = NULL;
 
     return result;
 }
@@ -169,18 +168,6 @@ u_serviceManagerGetServices(
     }
 
     return names;
-}
-
-u_result
-u_serviceManagerSetListener(
-    const u_serviceManager _this,
-    const u_serviceSplicedaemonListener callback,
-    const void *usrData)
-{
-    assert(_this != NULL);
-    _this->callback = (u_serviceSplicedaemonListener)callback;
-    _this->usrData  = (void *)usrData;
-    return U_RESULT_OK;
 }
 
 c_bool

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,6 +33,7 @@
 #include "u_writer.h"
 #include "v_status.h"
 #include "sac_report.h"
+#include "sac_genericCopyOut.h"
 
 #define DDS_DataWriterClaim(_this, writer) \
         DDS_Object_claim(DDS_Object(_this), DDS_DATAWRITER, (_Object *)writer)
@@ -144,7 +146,7 @@ DDS_DataWriterNew (
         _this->copy_in    = DDS_TypeSupportCopyIn(typeSupport);
         _this->copy_out   = DDS_TypeSupportCopyOut(typeSupport);
         _this->copy_cache = DDS_TypeSupportCopyCache(typeSupport);
-/* TODO       copy_action = DDS_TypeSupportGetWriterCopy(typeSupport);*/
+        /* TODO copy_action = DDS_TypeSupportGetWriterCopy(typeSupport);*/
 
         *writer = (DDS_DataWriter)_this;
     }
@@ -160,9 +162,9 @@ DDS_DataWriterFree (
     return result;
 }
 
-/*     ReturnCode_t
- *     set_qos(
- *         in DataWriterQos qos);
+/* ReturnCode_t
+ * set_qos(
+ *      in DataWriterQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_set_qos (
@@ -227,9 +229,9 @@ DDS_DataWriter_set_qos (
     return result;
 }
 
-/*     ReturnCode_t
- *     get_qos(
- *         inout DataWriterQos qos);
+/* ReturnCode_t
+ * get_qos(
+ *      inout DataWriterQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_qos (
@@ -269,10 +271,10 @@ DDS_DataWriter_get_qos (
     return result;
 }
 
-/*     ReturnCode_t
- *     set_listener(
- *         in DataWriterListener a_listener,
- *         in StatusKindMask mask);
+/* ReturnCode_t
+ * set_listener(
+ *      in DataWriterListener a_listener,
+ *      in StatusKindMask mask);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_set_listener (
@@ -300,8 +302,8 @@ DDS_DataWriter_set_listener (
     return result;
 }
 
-/*     DataWriterListener
- *     get_listener();
+/* DataWriterListener
+ * get_listener();
  */
 struct DDS_DataWriterListener
 DDS_DataWriter_get_listener (
@@ -324,9 +326,9 @@ DDS_DataWriter_get_listener (
     return *listener;
 }
 
-/*     ReturnCode_t
- *     set_listener_mask(
- *         in StatusKindMask mask);
+/* ReturnCode_t
+ * set_listener_mask(
+ *      in StatusKindMask mask);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_set_listener_mask (
@@ -343,8 +345,8 @@ DDS_DataWriter_set_listener_mask (
 }
 
 
-/*     Topic
- *     get_topic();
+/* Topic
+ * get_topic();
  */
 DDS_Topic
 DDS_DataWriter_get_topic (
@@ -364,8 +366,8 @@ DDS_DataWriter_get_topic (
     return topic;
 }
 
-/*     Publisher
- *     get_publisher();
+/* Publisher
+ * get_publisher();
  */
 DDS_Publisher
 DDS_DataWriter_get_publisher (
@@ -386,7 +388,7 @@ DDS_DataWriter_get_publisher (
 }
 
 /* ReturnCode_t
- *   wait_for_acknowledgments(
+ * wait_for_acknowledgments(
  *      in Duration_t max_wait);
  */
 DDS_ReturnCode_t
@@ -429,10 +431,10 @@ copy_liveliness_lost_status(
     return V_RESULT_OK;
 }
 
-/*     // Access the status
+/* Access the status
  * ReturnCode_t
  * get_liveliness_lost_status(
- *       inout LivelinessLostStatus a_status);
+ *      inout LivelinessLostStatus a_status);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_liveliness_lost_status (
@@ -493,10 +495,10 @@ copy_deadline_missed_status(
     return result;
 }
 
-/*     // Access the status
+/* Access the status
  * ReturnCode_t
  * get_offered_deadline_missed_status(
- *       inout OfferedDeadlineMissedStatus a_status);
+ *      inout OfferedDeadlineMissedStatus a_status);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_offered_deadline_missed_status (
@@ -576,10 +578,10 @@ copy_IncompatibleQosStatus(
     return result;
 }
 
-/*     // Access the status
+/* Access the status
  * ReturnCode_t
  * get_offered_incompatible_qos_status(
- *       inout OfferedIncompatibleQosStatus a_status);
+ *      inout OfferedIncompatibleQosStatus a_status);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_offered_incompatible_qos_status (
@@ -629,10 +631,10 @@ copy_publication_matched_status(
     return V_RESULT_OK;
 }
 
-/*     // Access the status
+/* Access the status
  * ReturnCode_t
  * get_publication_matched_status(
- *       inout PublicationMatchedStatus a_status);
+ *      inout PublicationMatchedStatus a_status);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_publication_matched_status (
@@ -663,8 +665,8 @@ DDS_DataWriter_get_publication_matched_status (
     return result;
 }
 
-/*     ReturnCode_t
- *     assert_liveliness();
+/* ReturnCode_t
+ * assert_liveliness();
  */
 DDS_ReturnCode_t
 DDS_DataWriter_assert_liveliness (
@@ -709,9 +711,9 @@ copy_matched_subscription(
     return V_RESULT_OK;
 }
 
-/*     ReturnCode_t
- *     get_matched_subscriptions(
- *         inout InstanceHandleSeq subscription_handles);
+/* ReturnCode_t
+ * get_matched_subscriptions(
+ *      inout InstanceHandleSeq subscription_handles);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_matched_subscriptions (
@@ -750,10 +752,10 @@ ___DDS_SubscriptionBuiltinTopicData__copyOut(
     return V_RESULT_OK;
 }
 
-/*     ReturnCode_t
- *     get_matched_subscription_data(
- *         inout SubscriptionBuiltinTopicData subscription_data,
- *         in InstanceHandle_t subscription_handle);
+/* ReturnCode_t
+ * get_matched_subscription_data(
+ *      inout SubscriptionBuiltinTopicData subscription_data,
+ *      in InstanceHandle_t subscription_handle);
  */
 DDS_ReturnCode_t
 DDS_DataWriter_get_matched_subscription_data (
@@ -786,8 +788,7 @@ DDS_DataWriter_get_matched_subscription_data (
  * Typeless Foo API operations
  */
 
-/*
- * Alternative function for DDS_Time_copyIn, which can also handle
+/* Alternative function for DDS_Time_copyIn, which can also handle
  * the proprietary DDS_TIMESTAMP_CURRENT.
  */
 static DDS_ReturnCode_t
@@ -1104,22 +1105,40 @@ DDS_DataWriter_get_key_value (
 
     SAC_REPORT_STACK();
 
-    if (key_holder != NULL) {
-        result = DDS_DataWriterCheck(_this, &w);
-        if (result == DDS_RETCODE_OK) {
-            uResult = u_writerCopyKeysFromInstanceHandle(
-                                           _DataWriter_get_user_entity(w),
-                                           (u_instanceHandle)handle,
-                                           (u_writerCopyKeyAction)_DataWriter(_this)->copy_out,
-                                           key_holder);
-            result = DDS_ReturnCode_get(uResult);
-            if (result != DDS_RETCODE_OK) {
-                SAC_REPORT(result, "Could not copy keys from Instance Handle");
-            }
-        }
-    } else {
+    result = DDS_RETCODE_OK;
+    if (key_holder == NULL) {
         result = DDS_RETCODE_BAD_PARAMETER;
         SAC_REPORT(result, "Sample key_holder = NULL");
+    }
+    if (handle == DDS_HANDLE_NIL) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "InstanceHandle = DDS_HANDLE_NIL");
+    }
+    if (result == DDS_RETCODE_OK) {
+        result = DDS_DataWriterClaim(_this, &w);
+    }
+    if (result == DDS_RETCODE_OK) {
+        PREPEND_COPYOUTCACHE(w->copy_cache, key_holder, NULL);
+        if (key_holder != NULL) {
+            uResult = u_writerCopyKeysFromInstanceHandle(
+                        _DataWriter_get_user_entity(w),
+                        (u_instanceHandle)handle,
+                        (u_copyOut)w->copy_out,
+                        key_holder);
+            result = DDS_ReturnCode_get(uResult);
+            REMOVE_COPYOUTCACHE(w->copy_cache, key_holder);
+        } else {
+            result = DDS_RETCODE_OUT_OF_RESOURCES;
+            SAC_REPORT(result, "DataWriter could not copy out key value");
+        }
+        /* The OpenSplice user-layer may detect that the instance is deleted
+         * In that case according to the spec return PRECONDITION_NOT_MET.
+         */
+        if (result == DDS_RETCODE_ALREADY_DELETED) {
+            result = DDS_RETCODE_PRECONDITION_NOT_MET;
+            SAC_REPORT(result, "InstanceHandle was already deleted");
+        }
+        DDS_DataWriterRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
     return result;

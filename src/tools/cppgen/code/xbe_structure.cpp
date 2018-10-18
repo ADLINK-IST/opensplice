@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@
 #include "xbe_array.h"
 #include "xbe_utils.h"
 #include "xbe_root.h"
+#include "xbe_enum.h"
 #include "xbe_sequence.h"
 #include "xbe_cppfwd.h"
 #include "xbe_scopestack.h"
@@ -771,10 +773,50 @@ void be_structure::Generate (be_ClientHeader& source)
           for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
           {
              field = *mit;
-             relativeName = field->StructMemberTypeName ();
+             be_Type *fieldType = field->get_be_type();
 
-             ts << tab <<"::std::vector< " << field->StructMemberTypeName() << " > " << field->get_local_name() << "_ = generate_test_values< "
-                                 << field->StructMemberTypeName() << " >();" << nl;
+             /* Find out if member directly or indirectly references an enumeration.
+              * In that case, the enumeration bound should be established and enforced
+              * by invoking the properly specialized generate_test_values functions for enums.
+              */
+
+             /* If fieldType is sequence or array, then check its element type. */
+             while (fieldType->IsArrayType() || fieldType->IsSequenceType()) {
+                 be_typedef *fieldBase = (be_typedef *) fieldType->narrow((long) & be_typedef::type_id);
+                 if (fieldBase) {
+                     fieldType = be_typedef::_beBase(fieldBase);
+                 }
+                 be_array *fieldArr = (be_array *) fieldType->narrow((long) & be_array::type_id);
+                 if (fieldArr) {
+                     fieldType = be_Type::_narrow(fieldArr->base_type());
+                 }
+                 be_sequence *fieldSeq = (be_sequence *) fieldType->narrow((long) & be_sequence::type_id);
+                 if (fieldSeq) {
+                     fieldType = be_Type::_narrow(fieldSeq->base_type());
+                 }
+             }
+
+             /* If memberType is directly or indirectly an enumeration, then determine bound and enforce it
+              * by invoking specialized generate_test_values functions for enumerations.
+              */
+             if (fieldType->IsEnumeratedType()) {
+                 be_typedef *fieldBase = (be_typedef *) fieldType->narrow((long) & be_typedef::type_id);
+                 if (fieldBase) {
+                     fieldType = be_typedef::_beBase(fieldBase);
+                 }
+                 be_enum * et = (be_enum *) fieldType->narrow((long) & be_enum::type_id);
+                 UTL_ScopeActiveIterator* i = new UTL_ScopeActiveIterator(et, IK_decls);
+                 int nrLabels = 0;
+                 while (!(i->is_done())) {
+                     nrLabels++;
+                     i->next();
+                 }
+                 ts << tab <<"::std::vector< " << field->StructMemberTypeName() << " > " << field->get_local_name() << "_ = generate_test_values_e< "
+                                     << field->StructMemberTypeName() << " >(" << nrLabels << ");" << nl;
+             } else {
+                 ts << tab <<"::std::vector< " << field->StructMemberTypeName() << " > " << field->get_local_name() << "_ = generate_test_values< "
+                                     << field->StructMemberTypeName() << " >();" << nl;
+             }
              ts << tab << "if(" << field->get_local_name() << "_.size() > biggest)"
                                  << nl << tab << tab << "biggest = " << field->get_local_name() << "_.size();"
                                  << nl;

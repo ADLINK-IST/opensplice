@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -432,7 +433,7 @@ cmx_getVersion()
 #if defined(OSPL_INNER_REV) && defined (OSPL_OUTER_REV)
         result = OSPL_VERSION_STR ", build " OSPL_INNER_REV_STR "/" OSPL_OUTER_REV_STR "";
 #else
-        result = OSPL_VERSION_STR ", non-PrismTech build";
+        result = OSPL_VERSION_STR ", non-ADLINK build";
 #endif
     return (c_char*)(os_strdup(result));
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -107,7 +108,7 @@ idl_macroFromBasename(
     return macro;
 }
 
-/* @brief callback function called on opening the IDL input file.
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - mutiple inclusion prevention
@@ -311,9 +312,10 @@ idl_structureOpen(
                 {
                   idl_fileOutPrintf(
                       idl_fileCur(),
-                      "extern %s v_copyin_result __%s__copyIn(c_base base, const class %s *from, struct _%s *to);\n",
+                      "extern %s v_copyin_result __%s__copyIn(%s, const class %s *from, struct _%s *to);\n",
                       idl_dllGetMacro(),
                       fullyScopedName,
+                      idl_getIsISOCpp2() ? "c_type dbType" : "c_base base",
                       tmpfullyScopedName,
                       fullyScopedName);
                 }
@@ -786,7 +788,9 @@ idl_unionCaseOpenClose(
         idl_typeSpecType(typeSpec) == idl_tstruct ||
         idl_typeSpecType(typeSpec) == idl_tunion ||
         idl_typeSpecType(typeSpec) == idl_tbasic) {
-    /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
+        /* generate code for a standard mapping or a typedef,
+         * enum, struct or union user-type mapping
+         */
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
@@ -952,7 +956,7 @@ idl_enumerationElementOpenClose(
     }
 }
 
-/* @brief generate dimension of an array
+/** @brief generate dimension of an array
  *
  * arrayDimensions is a local support function to generate
  * the array dimensions of an array

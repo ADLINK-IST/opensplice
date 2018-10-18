@@ -1,0 +1,14 @@
+
+module EnvironmentConditions
+{
+   struct Data
+   {
+      /** Temperature */
+      long temp;
+      /**  Humidity */
+      long hum;
+   };
+   #pragma keylist Data temp
+};
+
+/** @}*/

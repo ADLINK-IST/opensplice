@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,13 +27,13 @@
 #include <os_errno.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include <mach/mach.h>
 #include <mach/mach_time.h>
 
 #include <../common/code/os_time.c>
 #include <../common/code/os_time_ctime.c>
 
-
-/*  \brief Get the current time
+/**  \brief Get the current time
  */
 static os_timeW
 os__timeWGet (
@@ -111,7 +112,7 @@ os_timeEGet (
  * the remaining time.
  */
 os_result
-os_sleep(
+ospl_os_sleep(
     os_duration delay)
 {
     struct timespec t;

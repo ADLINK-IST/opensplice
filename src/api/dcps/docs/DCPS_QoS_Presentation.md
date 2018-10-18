@@ -235,6 +235,8 @@ If all concerned  DataReaders have been accessed properly, they can be unlocked 
  the DataReaders should be locked for incoming updates by invoking the begin_access on the \ref DCPS_Modules_Subscription "Subscriber" prior to accessing the first \ref DCPS_Modules_Subscription_DataReader "DataReader".
 If all concerned  DataReaders have been accessed properly, they can be unlocked for incoming updates by invoking the end_access on the \ref DCPS_Modules_Subscription "Subscriber".
 \endif
+Note that in this case a \ref DCPS_Modules_Subscription "Subscriber" is created in a disabled state. This allows the application to create all concerned DataReaders, preventing any transactions from completing prematurely
+before all DataReaders have been created. The application must explicitly enable the subscriber after it has finished creating DataReaders.
 
 If access_scope is set to GROUP and ordered_access is set to TRUE, then ordering is maintained between samples that are written
 by DataWriters attached to a common \ref DCPS_Modules_Publication "Publisher" and received by DataReaders attached to a common \ref DCPS_Modules_Subscription "Subscriber". This way the subscribing application can
@@ -275,3 +277,5 @@ The value offered is considered compatible with the value requested if and only 
 -# Requested coherent_access is FALSE, or else both offered and requested coherent_access are TRUE.
 
 -# Requested ordered_access is FALSE, or else both offered and requested ordered _access are TRUE.
+
+For a DataWriter that is attached to a Publisher which has coherent-access set to TRUE and the access-scope set to TOPIC or GROUP there is a constraint on the HistoryQosPolicy. In that case the HistoryQosPolicy should be set to KEEP-ALL. This constraint is applied because for a DataWriter with a HistoryQosPolicy set to KEEP-LAST the samples in the DataWriter history may be overwritten by new samples which causes that the corresponding transaction will not become complete anymore because of the missing samples.

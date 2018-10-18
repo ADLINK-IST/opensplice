@@ -102,6 +102,10 @@ else
 endif
 endif 
 
+ifeq ($(OSPL_USE_CXX11), yes)
+	CXXFLAGS += -DOSPL_USE_CXX11
+endif
+
 # We have to target at least Windows XP SP2. This currently is hardcoded for all build-machines.
 # Preferably though, this should be part of the target/tied to the platform code.
 CFLAGS += -D_WIN32_WINNT=0x0502
@@ -144,6 +148,7 @@ LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
+DURABILITY_PLUGIN_LIBS = -lws2_32
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj

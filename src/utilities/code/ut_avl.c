@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,27 +42,6 @@ static int comparenk (const ut_avlTreedef_t *td, const ut_avlNode_t *a, const vo
         return td->u.comparekk (ka, b);
     }
 }
-
-#if 0
-static int comparenn_direct (const ut_avlTreedef_t *td, const ut_avlNode_t *a, const ut_avlNode_t *b)
-{
-    return td->comparekk (LOAD_DIRKEY (a, td), LOAD_DIRKEY (b, td));
-}
-
-static int comparenn_indirect (const ut_avlTreedef_t *td, const ut_avlNode_t *a, const ut_avlNode_t *b)
-{
-    return td->comparekk (LOAD_INDKEY (a, td), LOAD_INDKEY (b, td));
-}
-
-static int comparenn (const ut_avlTreedef_t *td, const ut_avlNode_t *a, const ut_avlNode_t *b)
-{
-    if (IS_INDKEY (td->keyoffset)) {
-        return comparenn_indirect (td, a, b);
-    } else {
-        return comparenn_direct (td, a, b);
-    }
-}
-#endif
 
 static ut_avlNode_t *node_from_onode (const ut_avlTreedef_t *td, char *onode)
 {
@@ -177,14 +157,15 @@ static void augment (const ut_avlTreedef_t *td, ut_avlNode_t *n)
 static ut_avlNode_t *rotate_single (const ut_avlTreedef_t *td, ut_avlNode_t **pnode, ut_avlNode_t *node, int dir)
 {
     /* rotate_single(N, dir) performs one rotation, e.g., for dir=1, a
-       right rotation as depicted below, for dir=0 a left rotation:
-
-                     N                      _ND'
-            _ND          v     ==>    u             N'
-         u    _ND_D                          _ND_D     v
-
-       Since a right rotation is only ever done with the left side is
-       overweight, _ND must be != NULL.  */
+     * right rotation as depicted below, for dir=0 a left rotation:
+     *
+     *               N                      _ND'
+     *      _ND          v     ==>    u             N'
+     *   u    _ND_D                          _ND_D     v
+     *
+     * Since a right rotation is only ever done with the left side is
+     * overweight, _ND must be != NULL.
+     */
     ut_avlNode_t * const parent = node->parent;
     ut_avlNode_t * const node_ND = node->cs[1-dir];
     ut_avlNode_t * const node_ND_D = node_ND->cs[dir];
@@ -209,21 +190,22 @@ static ut_avlNode_t *rotate_single (const ut_avlTreedef_t *td, ut_avlNode_t **pn
 static ut_avlNode_t *rotate_double (const ut_avlTreedef_t *td, ut_avlNode_t **pnode, ut_avlNode_t *node, int dir)
 {
     /* rotate_double() performs one double rotation, which is slightly
-       faster when written out than the equivalent:
-
-         rotate_single(N->cs[1-dir], 1-dir)
-         rotate_single(N, dir)
-
-       A right double rotation therefore means:
-
-                    N                    N'            _ND_D''
-            _ND         v  =>    _ND_D'     v  =>   _ND''     N''
-         u    _ND_D            _ND'    y           u    x    y   v
-             x     y         u     x
-
-       Since a right double rotation is only ever done with the N is
-       overweight on the left side and _ND is overweight on the right
-       side, both _ND and _ND_D must be != NULL. */
+     * faster when written out than the equivalent:
+     *
+     *   rotate_single(N->cs[1-dir], 1-dir)
+     *   rotate_single(N, dir)
+     *
+     * A right double rotation therefore means:
+     *
+     *              N                    N'            _ND_D''
+     *      _ND         v  =>    _ND_D'     v  =>   _ND''     N''
+     *   u    _ND_D            _ND'    y           u    x    y   v
+     *       x     y         u     x
+     *
+     * Since a right double rotation is only ever done with the N is
+     * overweight on the left side and _ND is overweight on the right
+     * side, both _ND and _ND_D must be != NULL.
+     */
     ut_avlNode_t * const parent = node->parent;
     ut_avlNode_t * const node_ND = node->cs[1-dir];
     ut_avlNode_t * const node_ND_D = node_ND->cs[dir];
@@ -260,9 +242,10 @@ static ut_avlNode_t *rotate_double (const ut_avlTreedef_t *td, ut_avlNode_t **pn
 static ut_avlNode_t *rotate (const ut_avlTreedef_t *td, ut_avlNode_t **pnode, ut_avlNode_t *node, int dir)
 {
     /* _D => child in the direction of rotation (1 for right, 0 for
-       left); _ND => child in the opposite direction.  So in a right
-       rotation, _ND_D means the grandchild that is the right child of
-       the left child. */
+     * left); _ND => child in the opposite direction.  So in a right
+     * rotation, _ND_D means the grandchild that is the right child of
+     * the left child.
+     */
     ut_avlNode_t * const node_ND = node->cs[1-dir];
     ut_avlNode_t * const node_ND_ND = node_ND->cs[1-dir];
     ut_avlNode_t * const node_ND_D = node_ND->cs[dir];
@@ -290,10 +273,11 @@ static ut_avlNode_t *rebalance_one (const ut_avlTreedef_t *td, ut_avlNode_t **pn
         return rotate (td, pnode, node, 0);
     } else {
         /* Rebalance happens only on insert & delete, and augment needs to
-           be called during rotations.  Therefore, rebalancing integrates
-           calling augment, and because of that, includes running all the
-           way up to the root even when not needed for the rebalancing
-           itself. */
+         * be called during rotations.  Therefore, rebalancing integrates
+         * calling augment, and because of that, includes running all the
+         * way up to the root even when not needed for the rebalancing
+         * itself.
+         */
         int height = (height_L < height_R ? height_R : height_L) + 1;
         if (td->augment == 0 && height == node->height) {
             return NULL;
@@ -371,8 +355,9 @@ void *ut_avlLookupIPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, co
 {
     const ut_avlNode_t *node = lookup_path (td, tree, key, &path->p);
     /* If no duplicates allowed, path may not be used for insertion,
-       and hence there is no need to continue descending the tree.
-       Since we can invalidate it very efficiently, do so. */
+     * and hence there is no need to continue descending the tree.
+     * Since we can invalidate it very efficiently, do so.
+     */
     if (node) {
         if (!(td->flags & UT_AVL_TREEDEF_FLAG_ALLOWDUPS)) {
             path->p.pnode[path->p.depth] = NULL;
@@ -525,8 +510,9 @@ void ut_avlSwapNode (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *vold, 
     ut_avlNode_t *new = node_from_onode (td, vnew);
     *nodeptr_from_node (tree, old) = new;
     /* use memmove so partially overlap between old & new is allowed
-       (yikes!, but exploited by the memory allocator, and not a big
-       deal to get right) */
+     * (yikes!, but exploited by the memory allocator, and not a big
+     * deal to get right)
+     */
     memmove (new, old, sizeof (*new));
     if (new->cs[0]) {
         new->cs[0]->parent = new;
@@ -648,14 +634,16 @@ void ut_avlWalk (const ut_avlTreedef_t *td, ut_avlTree_t *tree, ut_avlWalk_t f, 
             n = n->cs[0];
         }
         /* Then process it and its parents until a node N is hit that has
-           a right subtree, with (by definition) key values in between N
-           and the parent of N */
+         * a right subtree, with (by definition) key values in between N
+         * and the parent of N
+         */
         do {
             right = (*todop)->cs[1];
             f ((void *) conode_from_node (td, *todop), a);
         } while (todop-- > todo+1 && right == NULL);
         /* Continue with right subtree rooted at 'right' before processing
-           the parent node of the last node processed in the loop above */
+         * the parent node of the last node processed in the loop above
+         */
         *++todop = right;
     }
 }
@@ -696,7 +684,8 @@ static const ut_avlNode_t *fixup_predsucceq (const ut_avlTreedef_t *td, const vo
         return tmp;
     } else {
         /* key exists - but it there's no guarantee we hit the first
-           one in the in-order enumeration of the tree */
+         * one in the in-order enumeration of the tree
+         */
         cand = tmp;
         tmp = tmp->cs[1-dir];
         while (tmp) {
@@ -757,8 +746,9 @@ static const ut_avlNode_t *fixup_predsucc (const ut_avlTreedef_t *td, const void
         return tmp;
     } else {
         /* Duplicates allowed, therefore: if tmp has no right subtree,
-           cand else scan the right subtree for the minimum larger
-           than key, return cand if none can be found */
+         * cand else scan the right subtree for the minimum larger
+         * than key, return cand if none can be found
+         */
         tmp = tmp->cs[dir];
         while (tmp) {
             if (comparenk (td, tmp, key) != 0) {
@@ -842,7 +832,8 @@ void *ut_avlIterSuccEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_
         *++iter->todop = (ut_avlNode_t *) tmp;
         if (td->flags & UT_AVL_TREEDEF_FLAG_ALLOWDUPS) {
             /* key exists - but it there's no guarantee we hit the
-               first one in the in-order enumeration of the tree */
+             * first one in the in-order enumeration of the tree
+             */
             tmp = tmp->cs[0];
             while (tmp) {
                 if (comparenk (td, tmp, key) != 0) {

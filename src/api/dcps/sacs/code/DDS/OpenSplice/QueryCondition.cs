@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,13 +38,13 @@ namespace DDS.OpenSplice
     {
         private string queryExpression;
         private string[] queryParameters;
-    
+
         internal QueryCondition(
                 DataReader dataReader,
-                SampleStateKind sampleState, 
-                ViewStateKind viewState, 
-                InstanceStateKind instanceState, 
-                string queryExpression, 
+                SampleStateKind sampleState,
+                ViewStateKind viewState,
+                InstanceStateKind instanceState,
+                string queryExpression,
                 string[] queryParameters)
             : base(dataReader, sampleState, viewState, instanceState)
         {
@@ -55,7 +56,7 @@ namespace DDS.OpenSplice
         {
             return base.init(query);
         }
-        
+
         /// <summary>
         /// This operation returns the query expression associated with the QueryCondition.
         /// </summary>
@@ -82,7 +83,7 @@ namespace DDS.OpenSplice
         /// <summary>
         /// This operation obtains the queryParameters associated with the QueryCondition
         /// </summary>
-        /// <param name="queryParameters">A reference to a sequence of strings that will be 
+        /// <param name="queryParameters">A reference to a sequence of strings that will be
         /// used to store the parameters used in the SQL expression</param>
         /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetQueryParameters(ref string[] queryParameters)
@@ -142,25 +143,25 @@ namespace DDS.OpenSplice
             ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
         }
-        
+
         internal override ReturnCode Read(IntPtr sampleList)
         {
             return uResultToReturnCode(
                     User.Query.Read(rlReq_UserPeer, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
         }
-         
+
         internal override ReturnCode Take(IntPtr sampleList)
         {
             return uResultToReturnCode(
                     User.Query.Take(rlReq_UserPeer, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
         }
-         
+
         internal override ReturnCode ReadNextInstance(InstanceHandle handle, IntPtr sampleList)
         {
             return uResultToReturnCode(
                     User.Query.ReadNextInstance(rlReq_UserPeer, handle, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
         }
-         
+
         internal override ReturnCode TakeNextInstance(InstanceHandle handle, IntPtr sampleList)
         {
             return uResultToReturnCode(

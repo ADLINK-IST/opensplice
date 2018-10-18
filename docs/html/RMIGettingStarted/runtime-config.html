@@ -130,6 +130,26 @@ currently <em>only</em> implemented for <em>Java</em>.</dd>
 by OpenSplice RMI at the client side, including the AsyncWaiter thread, which is the
 one that waits for asynchronous replies.</p>
 </div>
+<div class="section" id="rmilegacytopicnames-option">
+<h2>7.7. RMILegacyTopicNames option<a class="headerlink" href="#rmilegacytopicnames-option" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>Note</strong>: The <tt class="docutils literal"><span class="pre">RMILegacyTopicNames</span></tt> option applies <em>only</em> to <em>C++</em>.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><tt class="docutils literal"><span class="pre">--RMILegacyTopicNames</span> <span class="pre">=</span> <span class="pre">yes</span> <span class="pre">|</span> <span class="pre">no</span></tt></p>
+<p>This client- and server-side option allows to switch topic names between a legacy-mode
+and a Java-compatible mode.</p>
+<p>In legacy-mode, topics are named <tt class="docutils literal"><span class="pre">DDS_ServiceDefinition</span></tt> and
+<tt class="docutils literal"><span class="pre">DDS_ServiceIdentification</span></tt>. In this mode, a C++ RMI client or server is compatible
+with previous releases of C++ RMI. Since Java RMI uses different topic names, a C++
+RMI client cannot communicate with a Java RMI server (or vice-versa). This is the
+default behaviour.</p>
+<p>When legacy-mode is disabled, topics are named <tt class="docutils literal"><span class="pre">DDS_RMIDefinition</span></tt> and
+<tt class="docutils literal"><span class="pre">DDS_RMIIdentification</span></tt>. This enables compatibility with Java RMI which has always
+used these topic names, but unfortunately doesn&#8217;t allow communication with older
+versions of C++ RMI that don&#8217;t support this option.</p>
+</div>
 </div>
 
 
@@ -150,6 +170,7 @@ one that waits for asynchronous replies.</p>
 <li><a class="reference internal" href="#rmiserverschedulingmodel-option">7.4. RMIServerSchedulingModel option</a></li>
 <li><a class="reference internal" href="#rmidurability-option">7.5. RMIDurability option</a></li>
 <li><a class="reference internal" href="#rmiclientschedulingmodel-option">7.6. RMIClientSchedulingModel option</a></li>
+<li><a class="reference internal" href="#rmilegacytopicnames-option">7.7. RMILegacyTopicNames option</a></li>
 </ul>
 </li>
 </ul>
@@ -198,7 +219,7 @@ one that waits for asynchronous replies.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

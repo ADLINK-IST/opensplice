@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -66,8 +67,8 @@ namespace DDS.OpenSplice
         private const int DCPS_PARTICIPANT_INDEX = 0;
         private const int DCPS_TOPIC_INDEX = 1;
 
-        private ParticipantBuiltinTopicDataMarshaler ParticipantDataMarshaler;
-        private TopicBuiltinTopicDataMarshaler TopicDataMarshaler;
+        private __ParticipantBuiltinTopicDataMarshaler ParticipantDataMarshaler;
+        private __TopicBuiltinTopicDataMarshaler TopicDataMarshaler;
         private PublisherQos defaultPublisherQos = new PublisherQos();
         private SubscriberQos defaultSubscriberQos = new SubscriberQos();
         private TopicQos defaultTopicQos = new TopicQos();
@@ -255,7 +256,7 @@ namespace DDS.OpenSplice
                             {
 								V_RESULT uResult = User.Domain.LoadXmlDescriptor (uDomain, descriptor);
 								result = uResultToReturnCode (uResult);
-								if (result != DDS.ReturnCode.Ok) 
+								if (result != DDS.ReturnCode.Ok)
                                 {
                                     ReportStack.Report(result, "Given type \"" + typeName + "\" is incompatible with an already registered type using the same name.");
                                 }
@@ -360,12 +361,12 @@ namespace DDS.OpenSplice
             if (result == DDS.ReturnCode.Ok)
             {
                 this.ParticipantDataMarshaler = DatabaseMarshaler.GetMarshaler(
-                        this, osplBuiltinTopics[DCPS_PARTICIPANT_INDEX].typeSupport.TypeSpec) as ParticipantBuiltinTopicDataMarshaler;
+                        this, osplBuiltinTopics[DCPS_PARTICIPANT_INDEX].typeSupport.TypeSpec) as __ParticipantBuiltinTopicDataMarshaler;
             }
             if (result == DDS.ReturnCode.Ok)
             {
                this.TopicDataMarshaler = DatabaseMarshaler.GetMarshaler(
-                       this, osplBuiltinTopics[DCPS_TOPIC_INDEX].typeSupport.TypeSpec) as TopicBuiltinTopicDataMarshaler;
+                       this, osplBuiltinTopics[DCPS_TOPIC_INDEX].typeSupport.TypeSpec) as __TopicBuiltinTopicDataMarshaler;
             }
 
             return result;
@@ -695,7 +696,9 @@ namespace DDS.OpenSplice
                         if (result == ReturnCode.Ok)
                         {
                             subscriberList.Add(subscriber);
-                            if (rlReq_AutoEnableCreatedEntities)
+                            if (rlReq_AutoEnableCreatedEntities &&
+                                !(qos.Presentation.CoherentAccess &&
+                                  qos.Presentation.AccessScope == PresentationQosPolicyAccessScopeKind.GroupPresentationQos))
                             {
                                 result = subscriber.Enable();
                             }
@@ -1557,6 +1560,33 @@ namespace DDS.OpenSplice
                 }
             }
             ReportStack.Flush(this, result != ReturnCode.Ok);
+            return result;
+        }
+
+        public ReturnCode GetProperty(ref Property property)
+        {
+            IntPtr Value = IntPtr.Zero;
+
+            ReturnCode result = DDS.ReturnCode.Unsupported;
+            result = checkProperty(ref property);
+            if (result == DDS.ReturnCode.Ok) {
+                IntPtr uDomain = User.DomainParticipant.Domain(rlReq_UserPeer);
+                result = uResultToReturnCode(User.Entity.GetProperty(uDomain, property.Name, ref Value));
+                if (Value != IntPtr.Zero) {
+                    property.Value = Marshal.PtrToStringAnsi(Value);
+                }
+            }
+            return result;
+        }
+    
+        public ReturnCode SetProperty(Property property)
+        {
+            ReturnCode result = DDS.ReturnCode.Unsupported;
+            result = checkProperty(ref property);
+            if (result == DDS.ReturnCode.Ok) {
+                IntPtr uDomain = User.DomainParticipant.Domain(rlReq_UserPeer);
+                result = uResultToReturnCode(User.Entity.SetProperty(uDomain, property.Name, property.Value));
+            }
             return result;
         }
 

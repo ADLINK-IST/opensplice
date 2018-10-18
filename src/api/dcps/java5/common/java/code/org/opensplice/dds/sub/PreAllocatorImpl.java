@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -135,16 +136,10 @@ public class PreAllocatorImpl<TYPE> implements PreAllocator<TYPE> {
                 index = this.lastLength;
 
                 while (index < this.infoSeqHolder.value.length) {
-                    if (this.infoSeqHolder.value[index].valid_data) {
-                        this.sampleList
-                                .add(new SampleImpl<TYPE>(this.environment,
-                                        (TYPE) Array.get(dataValue, index),
-                                        this.infoSeqHolder.value[index]));
-                    } else {
-                        this.sampleList.add(new SampleImpl<TYPE>(
-                                this.environment, null,
-                                this.infoSeqHolder.value[index]));
-                    }
+                    this.sampleList.add(new SampleImpl<TYPE>(
+                            this.environment,
+                            (TYPE)Array.get(dataValue, index),
+                            this.infoSeqHolder.value[index]));
                     index++;
                 }
             } catch (IllegalArgumentException e) {

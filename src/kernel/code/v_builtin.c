@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,39 +36,27 @@
 #include "v__policy.h"
 #include "v_topic.h"
 #include "v_dataReader.h"
+#include "v_dataReaderInstance.h"
 #include "v_deliveryServiceEntry.h"
 #include "v_public.h"
-#include "v_observer.h"
+#include "v__observer.h"
+#include "v__observable.h"
 #include "v_participant.h"
 #include "v_topicQos.h"
 #include "v_writerQos.h"
 #include "v_publisherQos.h"
 #include "v_policy.h"
 #include "v_groupSet.h"
-
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-/**************************************************************
- * Public functions
- **************************************************************/
-
+#include "v_configuration.h"
+#include "v_cfElement.h"
 
 void
 v_builtinWritersDisable(
     v_builtin _this)
 {
     /* set builtin writer to NULL, to prevent using those writers
-       while publishing builtin topic information
-    */
+     * while publishing builtin topic information
+     */
     unsigned i;
     v_writer w = NULL;
 
@@ -77,6 +66,661 @@ v_builtinWritersDisable(
         v_writerFree(w);
         c_free(w);
     }
+}
+
+char *
+durationImage (
+    c_time duration,
+    char *buf,
+    os_size_t bufsz)
+{
+    char *b = NULL;
+    c_double d;
+
+    assert(buf);
+    assert(bufsz >= OS_DURATION_TO_STRING_BUFSIZE);
+
+    if (buf && bufsz >= OS_DURATION_TO_STRING_BUFSIZE) {
+        if (c_timeIsInfinite(duration)) {
+            strncpy(buf, "INFINITE", bufsz);
+        } else if (c_timeIsInvalid(duration)) {
+            strncpy(buf, "INVALID", bufsz);
+        } else {
+            d = c_timeToReal(duration);
+            sprintf(buf, "%g", d);
+        }
+        b = buf;
+    }
+    return b;
+}
+
+static const os_char *
+dateImage(
+    os_timeW time,
+    os_char *buf,
+    os_size_t size)
+{
+    os_size_t ptr;
+    ptr = os_ctimeW_r(&time, buf, size);
+    buf[ptr++] = ' ';
+    os_timeWImage(time, &buf[ptr], size-ptr);
+    return buf;
+}
+
+#define BUFSIZE (64)
+#define DurationStr(d,b) durationImage(d,b,BUFSIZE)
+#define TimeStr(t,b) dateImage(t,b,BUFSIZE)
+
+typedef os_char timebuf[BUFSIZE];
+
+#define ReliabilityKindStr(k) (k == V_RELIABILITY_BESTEFFORT ? "BestEffort" : \
+                               k == V_RELIABILITY_RELIABLE   ? "Reliable" : "?")
+
+#define SynchronousStr(s) (s ? "Synchronous" : "Asynchronous")
+
+#define DurabilityKindStr(k) (k == V_DURABILITY_VOLATILE ? "Volatile" : \
+                              k == V_DURABILITY_TRANSIENT_LOCAL ? "TransientLocal" : \
+                              k == V_DURABILITY_TRANSIENT ? "Transient" : \
+                              k == V_DURABILITY_PERSISTENT ? "Persistent" : "?")
+
+#define PresentationKindStr(k) (k == V_PRESENTATION_INSTANCE ? "Instance" : \
+                                k == V_PRESENTATION_TOPIC ? "Topic" : \
+                                k == V_PRESENTATION_GROUP ? "Group" : "?")
+
+#define LivelinessKindStr(k) (k == V_LIVELINESS_AUTOMATIC ? "Automatic" : \
+                              k == V_LIVELINESS_PARTICIPANT ? "ByParticipant" : \
+                              k == V_LIVELINESS_TOPIC ? "ByTopic" : "?")
+
+#define OwnershipKindStr(k) (k == V_OWNERSHIP_SHARED ? "Shared" : \
+                             k == V_OWNERSHIP_EXCLUSIVE ? "Exclusive" : "?")
+
+#define HistoryKindStr(k) (k == V_HISTORY_KEEPLAST ? "KeepLast" : \
+                           k == V_HISTORY_KEEPALL ? "KeepAll" : "?")
+
+#define OrderbyKindStr(k) (k == V_ORDERBY_RECEPTIONTIME ? "ByReception" : \
+                           k == V_ORDERBY_SOURCETIME ? "BySource" : "?")
+
+#define SampleVisibilityKindStr(k) (k == V_VISIBILITY_NO_INVALID_SAMPLES ? "NoInvalidSamples" : \
+                                    k == V_VISIBILITY_MINIMUM_INVALID_SAMPLES ? "MinimumInvalidSamples" : \
+                                    k == V_VISIBILITY_ALL_INVALID_SAMPLES ? "AllInvalidSamples" : "?")
+
+#define KeyFmt "[%u,%u,%u]"
+#define KeyStr(k) k.systemId, k.localId, k.serial
+
+#define DurabilityFmt "Durability[%s]"
+#define DurabilityStr(d) DurabilityKindStr(d.kind)
+
+#define ReliabilityFmt "Reliability[%s,%s,%s]"
+#define ReliabilityStr(r,b) ReliabilityKindStr(r.kind), DurationStr(r.max_blocking_time, b), SynchronousStr(r.synchronous)
+
+#define OwnershipFmt "Ownership[%s]"
+#define OwnershipStr(o) OwnershipKindStr(o.kind)
+
+#define ProductDataFmt "ProductData[%s]"
+#define ProductDataStr(p) (p.value ? p.value : "")
+
+#define UserDataFmt "UserData[%s]"
+#define TopicDataFmt "TopicData[%s]"
+#define GroupDataFmt "GroupData[%s]"
+#define PartitionFmt "Partition[%s]"
+#define MetaDataFmt "MetaData[%s]"
+#define KeylistFmt "Keylist[%s]"
+
+#define KeylistStr(s) (s?s:"")
+#define NameStr(n) (n?n:"<no-name>")
+
+#define HistoryFmt "History[%s,%d]"
+#define HistoryStr(h) HistoryKindStr(h.kind), h.depth
+
+#define OrderbyFmt "OrderBy[%s]"
+#define OrderbyStr(o) OrderbyKindStr(o.kind)
+
+#define PresentationFmt "Presentation[%s,%s,%s]"
+#define PresentationStr(p) PresentationKindStr(p.access_scope), (p.coherent_access?"Coherent":"NotCoherent"), (p.ordered_access?"Ordered":"NotOrdered")
+
+#define LivelinessFmt "Liveliness[%s,%s]"
+#define LivelinessStr(l,b) LivelinessKindStr(l.kind), DurationStr(l.lease_duration,b)
+
+#define DeadlineFmt "Deadline[%s]"
+#define DeadlineStr(d,b) DurationStr(d.period, b)
+
+#define LatencyBudgetFmt "LatencyBudget[%s]"
+#define LatencyBudgetStr(l,b) DurationStr(l.duration, b)
+
+#define LifespanFmt "Lifespan[%s]"
+#define LifespanStr(l,b) DurationStr(l.duration, b)
+
+#define TransportPrioFmt "TransportPrio[%d]"
+#define TransportPrioStr(t) t.value
+
+#define LifecycleFmt "AutoDispose[%s], PurgeSuspendedDelay[%s], PurgeUnregisterDelay[%s]"
+#define LifecycleStr(l,b1,b2) \
+        (l.autodispose_unregistered_instances ? "True" : "False"), \
+        DurationStr(l.autopurge_suspended_samples_delay,b1), \
+        DurationStr(l.autounregister_instance_delay, b2)
+
+#define PacingFmt "MinSeperation[%s]"
+#define PacingStr(p,b) DurationStr(p.minSeperation,b)
+
+#define ReaderLifespanFmt "Lifespan[%s,%s]"
+#define ReaderLifespanStr(l,b) (l.used ? "Used" : "NotUsed"), DurationStr(l.duration,b)
+
+#define ResourceLimitsFmt "MaxSamples[%d], MaxInstances[%d], MaxSamplesPerInstance[%d]"
+#define ResourceLimitsStr(l) l.max_samples, l.max_instances, l.max_samples_per_instance
+
+#define DurabilityServiceFmt "DurabilityService[%s,%s,%d,%d,%d,%d]"
+#define DurabilityServiceStr(d,b) DurationStr(d.service_cleanup_delay, b), \
+                                  HistoryKindStr(d.history_kind), \
+                                  d.history_depth, d.max_samples, d.max_instances, d.max_samples_per_instance
+
+#define ReaderLifecycleFmt "Lifecycle[%s,%s,%s,%s,%s]"
+#define ReaderLifecycleStr(l,b1,b2) DurationStr(l.autopurge_nowriter_samples_delay, b1), \
+                                    DurationStr(l.autopurge_disposed_samples_delay, b2), \
+                                    (l.autopurge_dispose_all ? "AutoPurgeDisposeAll" : "NotPurgeDisposeAll"), \
+                                    (l.enable_invalid_samples ? "InvalidSamplesEnabled" : "InvalidSamplesDisabled"), \
+                                    SampleVisibilityKindStr(l.invalid_sample_visibility)
+
+#define UserKeyFmt "UserDefKey[%s,%s]"
+#define UserKeyStr(u) (u.enable ? "Enabled":"Disabled"), (u.expression ? u.expression : "<no-keys>")
+
+#define ShareFmt "Shared[%s,%s]"
+#define ShareStr(s) (s.name && strcmp(s.name,"") ? s.name : "<no-share>"), (s.enable ? "Enabled":"Disabled")
+
+#define v_dataReaderSampleInstanceStateTest(_this,_mask) \
+        v_dataReaderInstanceStateTest(v_dataReaderSampleInstance(_this),_mask)
+
+static os_char *
+PartitionStr(
+    struct v_builtinPartitionPolicy *partition)
+{
+    os_char *p = NULL;
+    os_size_t len, size, i;
+
+    size = 1;
+    len = c_arraySize(partition->name);
+    for (i=0; i<len; i++) {
+        size += strlen(partition->name[i]) + 1;
+    }
+    p = os_malloc(size);
+    p[0] = 0;
+    for (i=0; i<len; i++) {
+        strcat(p,partition->name[i]);
+        if (i+1<len) strcat(p,",");
+    }
+    return p;
+}
+
+static os_char *
+OctetStr(
+    c_array value)
+{
+    os_char *p = NULL;
+    os_int32 len, n, i;
+
+    len = (os_int32)c_arraySize(value);
+    p = os_malloc((os_uint32)len*4+4);
+    p[0] = 0;
+    n = 0;
+    for (i=0; i<len; i++) {
+        n += sprintf(&p[n],"%o",((os_uchar *)value)[i]);
+        if (i+1<len) {
+            n += sprintf(&p[n],",");
+        }
+    }
+    return p;
+}
+
+static os_char *
+UserDataStr(
+    struct v_builtinUserDataPolicy *userdata)
+{
+    return OctetStr(userdata->value);
+}
+
+static os_char *
+TopicDataStr(
+    struct v_builtinTopicDataPolicy *topicdata)
+{
+    return OctetStr(topicdata->value);
+}
+
+static os_char *
+GroupDataStr(
+    struct v_builtinGroupDataPolicy *groupdata)
+{
+    return OctetStr(groupdata->value);
+}
+
+static const os_char *
+SampleStateStr(
+    v_dataReaderSample sample)
+{
+    v_dataReaderInstance inst;
+
+    inst = v_dataReaderSampleInstance(sample);
+    if (v_dataReaderInstanceStateTest(inst, L_NEW)) {
+        if (v_dataReaderInstanceStateTest(inst, L_DISPOSED)) {
+            return "NewDisposed";
+        } else if (v_dataReaderInstanceStateTest(inst, L_NOWRITERS)) {
+            return "NewNotAlive";
+        } else {
+            return "NewAlive";
+        }
+    } else {
+        if (v_dataReaderInstanceStateTest(inst, L_DISPOSED)) {
+            return "Disposed";
+        } else if (v_dataReaderInstanceStateTest(inst, L_NOWRITERS)) {
+            return "NotAlive";
+        } else {
+            return "Alive";
+        }
+    }
+}
+
+void
+v_builtinLogParticipant(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_participantInfo *info;
+    os_char curtime[BUFSIZE], pubtime[BUFSIZE];
+
+    if (_this->logfile) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_participantInfo *) (msg + 1);
+        fprintf(_this->logfile,
+                "%s : DomainParticipant"KeyFmt", WriteTime[%s]\n",
+                os_timeWImage(os_timeWGet(), curtime, BUFSIZE),
+                KeyStr(info->key),
+                os_timeWImage(msg->writeTime, pubtime, BUFSIZE));
+    }
+}
+
+void
+v_builtinLogPublication(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_publicationInfo *info;
+    timebuf buf[9];
+    os_char *partition = NULL;
+    os_char *user_data = NULL;
+    os_char *group_data = NULL;
+    os_char *topic_data = NULL;
+
+    if (_this->logfile) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_publicationInfo *) (msg + 1);
+        partition = PartitionStr(&info->partition);
+        user_data = UserDataStr(&info->user_data);
+        group_data = GroupDataStr(&info->group_data);
+        topic_data = TopicDataStr(&info->topic_data);
+        fprintf(_this->logfile,
+
+                "%s : DataWriter"KeyFmt", Participant"KeyFmt", State[%s], WriteTime[%s], Topic[%s], Type[%s], "
+                DurabilityFmt", "ReliabilityFmt", "PresentationFmt", "OrderbyFmt", "LivelinessFmt","
+                OwnershipFmt", Strength[%d], "LifespanFmt", "DeadlineFmt", "LatencyBudgetFmt", "
+                LifecycleFmt", "PartitionFmt", "UserDataFmt", "GroupDataFmt", "TopicDataFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->participant_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->topic_name),
+                NameStr(info->type_name),
+                DurabilityStr(info->durability),
+                ReliabilityStr(info->reliability, buf[2]),
+                PresentationStr(info->presentation),
+                OrderbyStr(info->destination_order),
+                LivelinessStr(info->liveliness, buf[3]),
+                OwnershipStr(info->ownership),
+                info->ownership_strength.value,
+                LifespanStr(info->lifespan, buf[4]),
+                DeadlineStr(info->deadline, buf[5]),
+                LatencyBudgetStr(info->latency_budget, buf[6]),
+                LifecycleStr(info->lifecycle, buf[7], buf[8]),
+                partition, user_data, group_data, topic_data);
+
+        os_free(partition);
+        os_free(user_data);
+        os_free(group_data);
+        os_free(topic_data);
+    }
+}
+
+void
+v_builtinLogSubscription(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_subscriptionInfo *info;
+    timebuf buf[9];
+    os_char *partition = NULL;
+    os_char *user_data = NULL;
+    os_char *group_data = NULL;
+    os_char *topic_data = NULL;
+
+    if (_this->logfile) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_subscriptionInfo *) (msg + 1);
+        partition = PartitionStr(&info->partition);
+        user_data = UserDataStr(&info->user_data);
+        group_data = GroupDataStr(&info->group_data);
+        topic_data = TopicDataStr(&info->topic_data);
+        fprintf(_this->logfile,
+
+                "%s : DataReader"KeyFmt", Participant"KeyFmt", State[%s], WriteTime[%s], Topic[%s], Type[%s], "
+                DurabilityFmt", "ReliabilityFmt", "PresentationFmt", "OrderbyFmt", "LivelinessFmt", "
+                OwnershipFmt", "DeadlineFmt", "LatencyBudgetFmt", " ReaderLifespanFmt", "PacingFmt", "
+                PartitionFmt", "UserDataFmt", "GroupDataFmt", "TopicDataFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->participant_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->topic_name),
+                NameStr(info->type_name),
+                DurabilityStr(info->durability),
+                ReliabilityStr(info->reliability,buf[2]),
+                PresentationStr(info->presentation),
+                OrderbyStr(info->destination_order),
+                LivelinessStr(info->liveliness,buf[3]),
+                OwnershipStr(info->ownership),
+                DeadlineStr(info->deadline, buf[5]),
+                LatencyBudgetStr(info->latency_budget, buf[6]),
+                ReaderLifespanStr(info->lifespan, buf[7]),
+                PacingStr(info->time_based_filter,buf[8]),
+                partition, user_data, group_data, topic_data);
+
+        os_free(partition);
+        os_free(user_data);
+        os_free(group_data);
+        os_free(topic_data);
+    }
+}
+
+void
+v_builtinLogTopic(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_topicInfo *info;
+    timebuf buf[8];
+    os_char *topic_data = NULL;
+
+    if (_this->logfile) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_topicInfo *) (msg + 1);
+        topic_data = TopicDataStr(&info->topic_data);
+        fprintf(_this->logfile,
+
+                "%s : Topic"KeyFmt", State[%s], WriteTime[%s], Name[%s], Type[%s], "
+                DurabilityFmt", "DurabilityServiceFmt", "ReliabilityFmt", "
+                HistoryFmt", "OrderbyFmt", "LivelinessFmt","LifespanFmt", "
+                DeadlineFmt", "LatencyBudgetFmt", "OwnershipFmt", "TransportPrioFmt", "
+                ResourceLimitsFmt", "TopicDataFmt", "MetaDataFmt", "KeylistFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->name),
+                NameStr(info->type_name),
+                DurabilityStr(info->durability),
+                DurationStr(info->durabilityService.service_cleanup_delay, buf[2]),
+                HistoryKindStr(info->durabilityService.history_kind),
+                info->durabilityService.history_depth, info->durabilityService.max_samples,
+                info->durabilityService.max_instances, info->durabilityService.max_samples_per_instance,
+                ReliabilityStr(info->reliability, buf[3]),
+                HistoryStr(info->history),
+                OrderbyStr(info->destination_order),
+                LivelinessStr(info->liveliness, buf[4]),
+                LifespanStr(info->lifespan, buf[5]),
+                DeadlineStr(info->deadline, buf[6]),
+                LatencyBudgetStr(info->latency_budget, buf[7]),
+                OwnershipStr(info->ownership),
+                TransportPrioStr(info->transport_priority),
+                ResourceLimitsStr(info->resource_limits),
+                topic_data, info->meta_data,
+                KeylistStr(info->key_list));
+
+        os_free(topic_data);
+    }
+}
+
+void
+v_builtinLogCMParticipant(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_participantCMInfo *info;
+    timebuf buf[2];
+
+    if (_this->logfile && !v_readerSampleTestState(sample, L_REMOVED)) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_participantCMInfo *) (msg + 1);
+        fprintf(_this->logfile,
+                "%s : CMParticipant"KeyFmt", State[%s], WriteTime[%s], "ProductDataFmt"\n\n",
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                ProductDataStr(info->product));
+    }
+}
+
+void
+v_builtinLogCMDataWriter(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_dataWriterCMInfo *info;
+    timebuf buf[4];
+
+    if (_this->logfile && !v_readerSampleTestState(sample, L_REMOVED)) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_dataWriterCMInfo *) (msg + 1);
+        fprintf(_this->logfile,
+
+                "%s : CMDataWriter"KeyFmt", Publisher"KeyFmt", State[%s], WriteTime[%s], Name[%s], "
+                ProductDataFmt", "HistoryFmt", "ResourceLimitsFmt", "LifecycleFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->publisher_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->name),
+                ProductDataStr(info->product),
+                HistoryStr(info->history),
+                ResourceLimitsStr(info->resource_limits),
+                LifecycleStr(info->writer_data_lifecycle, buf[2], buf[3]));
+    }
+}
+
+void
+v_builtinLogCMDataReader(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_dataReaderCMInfo *info;
+    timebuf buf[5];
+
+    if (_this->logfile && !v_readerSampleTestState(sample, L_REMOVED)) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_dataReaderCMInfo *) (msg + 1);
+        fprintf(_this->logfile,
+
+                "%s : CMDataReader"KeyFmt", Subscriber"KeyFmt", State[%s], WriteTime[%s], Name[%s], "ProductDataFmt", "
+                HistoryFmt", "ResourceLimitsFmt", "ReaderLifecycleFmt", "UserKeyFmt", "ShareFmt", "ReaderLifespanFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->subscriber_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->name),
+                ProductDataStr(info->product),
+                HistoryStr(info->history),
+                ResourceLimitsStr(info->resource_limits),
+                ReaderLifecycleStr(info->reader_data_lifecycle, buf[2], buf[3]),
+                UserKeyStr(info->subscription_keys),
+                ShareStr(info->share),
+                ReaderLifespanStr(info->reader_lifespan, buf[4]));
+    }
+}
+
+void
+v_builtinLogCMPublisher(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_publisherCMInfo *info;
+    timebuf buf[2];
+    os_char *partition = NULL;
+
+    if (_this->logfile && !v_readerSampleTestState(sample, L_REMOVED)) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_publisherCMInfo *) (msg + 1);
+        partition = PartitionStr(&info->partition);
+        fprintf(_this->logfile,
+
+                "%s : CMPublisher"KeyFmt", Participant"KeyFmt", State[%s], WriteTime[%s], Name[%s], "ProductDataFmt", "
+                "AutoEnable[%s], "PartitionFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->participant_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->name),
+                ProductDataStr(info->product),
+                (info->entity_factory.autoenable_created_entities ? "True" : "False"),
+                partition);
+
+        os_free(partition);
+    }
+}
+
+void
+v_builtinLogCMSubscriber(
+    v_builtin _this,
+    const v_dataReaderSample sample)
+{
+    v_message msg;
+    struct v_subscriberCMInfo *info;
+    timebuf buf[2];
+    os_char *partition = NULL;
+
+    if (_this->logfile && !v_readerSampleTestState(sample, L_REMOVED)) {
+        msg = v_dataReaderSampleMessage(sample);
+        info = (struct v_subscriberCMInfo *) (msg + 1);
+        fprintf(_this->logfile, "v_subscriberCMInfo\n");
+        partition = PartitionStr(&info->partition);
+        fprintf(_this->logfile,
+
+                "%s : CMPublisher"KeyFmt", Participant"KeyFmt", State[%s], WriteTime[%s], Name[%s], "ProductDataFmt", "
+                "AutoEnable[%s], "ShareFmt", "PartitionFmt"\n\n",
+
+                TimeStr(os_timeWGet(), buf[0]),
+                KeyStr(info->key),
+                KeyStr(info->participant_key),
+                SampleStateStr(sample),
+                TimeStr(msg->writeTime, buf[1]),
+                NameStr(info->name),
+                ProductDataStr(info->product),
+                (info->entity_factory.autoenable_created_entities ? "True" : "False"),
+                ShareStr(info->share),
+                partition);
+
+        os_free(partition);
+    }
+}
+
+static FILE *
+v_builtinGetLogfile(
+    v_builtin _this)
+{
+    char *filename = NULL;
+    FILE *logfile=NULL;
+    os_char *dir, *str;
+    os_size_t len;
+
+    c_iter iter;
+    c_value value;
+    v_cfElement root, elem;
+    v_kernel kernel;
+    v_configuration config;
+
+    kernel = v_objectKernel(_this->participant);
+    if (!kernel->configuration) {
+        return NULL;
+    }
+    config = kernel->configuration;
+    root = v_configurationGetRoot(config);
+    iter = v_cfElementXPath(root, "Domain/BuiltinTopics");
+    elem = v_cfElement(c_iterTakeFirst(iter));
+    while (elem) {
+        value = v_cfElementAttributeValue(elem, "logfile");
+        if (value.kind == V_STRING) {
+            if (filename) {
+                os_free(filename);
+            }
+            filename = os_strdup(value.is.String);
+        }
+        elem = v_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+
+    if (filename) {
+        _this->kernelQos = c_keep(kernel->qos);
+        if (strcmp (filename, "<stdout>") == 0) {
+            logfile = stdout;
+        } else if (strcmp (filename, "<stderr>") == 0) {
+            logfile = stderr;
+        } else {
+            dir = os_getenv("OSPL_LOGPATH");
+            if (dir == NULL) {
+                dir = ".";
+            }
+            len = strlen(dir) + strlen(filename) + 2; /* '/' + '\0' */
+            str = os_malloc (len);
+            if (str != NULL) {
+                (void)snprintf (str, len, "%s/%s", dir, filename);
+                os_free(filename);
+                filename = os_fileNormalize (str);
+                os_free (str);
+                if (filename != NULL) {
+                    logfile = fopen (filename, "a");
+                    if (logfile == NULL) {
+                        OS_REPORT_NOW(OS_ERROR, "Configuration file", V_RESULT_PRECONDITION_NOT_MET, 0,
+                                  "Failed to open Domain/BuiltinTopics/logfile: '%s' with error : %s.",
+                                  filename, strerror(errno));
+                    }
+                } else {
+                    OS_REPORT_NOW(OS_ERROR,
+                              "kernel::v_builtin::v_builtinNew", V_RESULT_INTERNAL_ERROR, 0,
+                              "Failed to allocate logfile name (1).");
+                }
+            } else {
+                OS_REPORT_NOW(OS_ERROR,
+                          "kernel::v_builtin::v_builtinNew", V_RESULT_INTERNAL_ERROR, 0,
+                          "Failed to allocate logfile name (2).");
+            }
+        }
+        os_free(filename);
+    }
+    return logfile;
 }
 
 v_builtin
@@ -155,7 +799,7 @@ v_builtinNew(
                   "Failed to allocate \"Built-in participant\" object.");
         goto error;
     }
-
+    _this->logfile = v_builtinGetLogfile(_this);
     if ((pQos = v_publisherQosNew (kernel, NULL)) == NULL) {
         OS_REPORT(OS_ERROR,
                     "kernel::v_builtin::v_builtinNew", V_RESULT_INTERNAL_ERROR,
@@ -227,8 +871,9 @@ v_builtinNew(
                     tQos->reliability.v.max_blocking_time = OS_DURATION_INIT(0,100000000);
                     tQos->durabilityService.v.service_cleanup_delay = OS_DURATION_ZERO;
                     /* make the history qos to have keep all and unlimited depth so
-                       that samples that are marked for resend don't get squeezed out
-                       of the writer's history */
+                     * that samples that are marked for resend don't get squeezed out
+                     * of the writer's history
+                     */
                     tQos->history.v.kind = V_HISTORY_KEEPALL;
                     tQos->history.v.depth = V_LENGTH_UNLIMITED;
                     break;
@@ -253,7 +898,7 @@ v_builtinNew(
                              ts[i].topicname, typename, ts[i].keylist);
                 goto error;
             }
-            /* Overrule TopicAccess for builtin topics see OSPL-6437 */
+            /* Overrule TopicAccess for builtin topics */
             v_topicImpl(_this->topics[ts[i].id])->accessMode = V_ACCESS_MODE_READ_WRITE;
             if (ts[i].transient >= trans_threshold) {
                 wQos->durability.v.kind = V_DURABILITY_TRANSIENT;
@@ -265,31 +910,34 @@ v_builtinNew(
             wQos->reliability.v.kind = ts[i].isreliable ? V_RELIABILITY_RELIABLE : V_RELIABILITY_BESTEFFORT;
             wQos->transport.v.value = ts[i].transportPriority;
             _this->writers[ts[i].id] = v_writerNew (_this->publisher, wrname, _this->topics[ts[i].id], wQos);
-            if (_this->writers[ts[i].id] == NULL) {
-                OS_REPORT (OS_ERROR,
-                             "kernel::v_builtin::v_builtinNew", V_RESULT_INTERNAL_ERROR,
-                             "Operation failed because v_writerNew failed for:"
-                             OS_REPORT_NL "Name: \"%s"
-                             OS_REPORT_NL "Topic: \"%s",
-                             wrname, ts[i].topicname);
-                goto error;
-            } else {
-                v_entityEnable(v_entity(_this->writers[ts[i].id]));
-            }
         }
     }
     c_free (wQos);
     c_free (tQos);
     c_free (pQos);
 
+    kernel->builtin = _this;
+    for (i = 0; i < sizeof (ts) / sizeof (ts[0]); i++) {
+        if (ts[i].always || _this->kernelQos->builtin.v.enabled) {
+            if (_this->writers[ts[i].id] == NULL) {
+                OS_REPORT (OS_ERROR, "kernel::v_builtin::v_builtinNew",
+                           V_RESULT_INTERNAL_ERROR, "Operation failed because v_writerNew failed for:"
+                           OS_REPORT_NL "Topic: \"%s", ts[i].topicname);
+                goto error;
+            } else {
+                (void)v__writerEnable(_this->writers[ts[i].id], OS_FALSE);
+            }
+        }
+    }
     /* We have to solve a bootstrapping problem here! The kernel
-       entities created above have notified their existence to the
-       builtin interface.  Unfortunately the implementation does not
-       yet exists as being in the construction of it :) Therefore this
-       information is published below. */
+     * entities created above have notified their existence to the
+     * builtin interface.  Unfortunately the implementation does not
+     * yet exists as being in the construction of it :) Therefore this
+     * information is published below.
+     */
     {
         os_timeW time = os_timeWGet();
-        v_message msg, msg2;
+        v_message msg;
 
         if (_this->kernelQos->builtin.v.enabled) {
             msg = v_builtinCreateParticipantInfo (_this, _this->participant);
@@ -304,7 +952,8 @@ v_builtinNew(
         }
         for (i = 0; i < V_INFO_ID_COUNT; i++) {
             /* Do not use v_topicAnnounce (_this->topics[i]) as
-               kernel->builtin is not assigned yet! */
+             * kernel->builtin is not assigned yet!
+             */
             if (_this->topics[i] != NULL) {
                 msg = v_builtinCreateTopicInfo (_this, _this->topics[i]);
                 v_writerWrite (_this->writers[V_TOPICINFO_ID], msg, time, NULL);
@@ -314,14 +963,14 @@ v_builtinNew(
         if (_this->kernelQos->builtin.v.enabled) {
             for (i = 0; i < V_INFO_ID_COUNT; i++) {
                 if (_this->writers[i]) {
-                    v_observerLock (v_observer(_this->writers[i]));
-                    msg = v_builtinCreatePublicationInfo (_this, _this->writers[i]);
-                    msg2 = v_builtinCreateCMDataWriterInfo (_this, _this->writers[i]);
-                    v_observerUnlock (v_observer(_this->writers[i]));
-                    v_writerWrite (_this->writers[V_PUBLICATIONINFO_ID], msg, time, NULL);
-                    v_writerWrite (_this->writers[V_CMDATAWRITERINFO_ID], msg2, time, NULL);
-                    c_free (msg);
-                    c_free (msg2);
+                    msg = v_writerPublication(_this->writers[i]);
+                    v_writerWrite(_this->writers[V_PUBLICATIONINFO_ID], msg, time, NULL);
+                    c_free(msg);
+                    OSPL_LOCK(_this->writers[i]);
+                    msg = v_builtinCreateCMDataWriterInfo (_this, _this->writers[i]);
+                    OSPL_UNLOCK(_this->writers[i]);
+                    v_writerWrite(_this->writers[V_CMDATAWRITERINFO_ID], msg, time, NULL);
+                    c_free(msg);
                 }
             }
         }
@@ -405,7 +1054,8 @@ v_builtinCreateCMParticipantInfo (
                         parNameLength = strlen(participantName);
                     }
                     /* Note: the template has the vendor ID hardcoded to the DDSI vendor ID code
-                       allocated by the OMG. */
+                     * allocated by the OMG.
+                     */
 #define T "<Product>" \
           "<ExecName><![CDATA[%s]]></ExecName>" \
           "<ParticipantName><![CDATA[%s]]></ParticipantName>" \
@@ -832,37 +1482,6 @@ v_builtinCreateCMDataWriterInfo (
     return msg;
 }
 
-static c_bool
-getTopic (
-    c_object o,
-    c_voidp arg)
-{
-    v_topic *topic = (v_topic *)arg;
-    c_bool result = TRUE;
-
-    if (c_instanceOf(o, "v_dataReaderEntry")) {
-        v_dataReaderEntry entry = v_dataReaderEntry(o);
-        if (*topic == NULL) {
-            *topic = c_keep(entry->topic);
-        } else {
-            /* Already a topic was found so this must be a Multi Topic reader.
-             * In that case abort and clear the topic.
-             */
-            c_free(*topic);
-            *topic = NULL;
-            result = FALSE;
-        }
-    } else if (c_instanceOf(o, "v_deliveryServiceEntry")) {
-        v_deliveryServiceEntry entry = v_deliveryServiceEntry(o);
-        *topic = c_keep(entry->topic);
-    } else {
-        OS_REPORT(OS_ERROR, "kernel::v_builtin::getTopic", V_RESULT_ILL_PARAM, "Type mismatch: object type is %s, but v_dataReaderEntry or v_deliveryServiceEntry was expected", c_metaObject(c_getType(o))->name);
-        assert(FALSE);
-    }
-
-    return result;
-}
-
 v_message
 v_builtinCreateSubscriptionInfo (
     v_builtin _this,
@@ -904,8 +1523,7 @@ v_builtinCreateSubscriptionInfo (
         return NULL;
     }
 
-    topic = NULL;
-    v_readerWalkEntries(reader,getTopic,&topic);
+    topic = v_readerGetTopic_nl(reader);
     assert (topic);
     qos = reader->qos;
     topicQos = v_topicGetQos (topic);
@@ -1211,4 +1829,61 @@ v_builtinInfoIdToName(
     assert (name != NULL);
 
     return name;
+}
+
+/* Returns TRUE if there is a partition match between
+ * the given publication and subscription info.
+ */
+os_boolean
+v_builtinTestPartitionMatch(
+    const struct v_publicationInfo *pubInfo,
+    const struct v_subscriptionInfo *subInfo)
+{
+    c_ulong i, j;
+    c_value val;
+    c_value str1, str2;
+    c_array name1, name2;
+
+    val.kind = V_BOOLEAN;
+    val.is.Boolean = FALSE;
+
+    if ((pubInfo != NULL) && (subInfo != NULL)) {
+        name1 = pubInfo->partition.name;
+        name2 = subInfo->partition.name;
+        for (i = 0; val.is.Boolean == FALSE && i < c_arraySize(name1); i++) {
+            str1 = c_stringValue(name1[i]);
+            for (j = 0; val.is.Boolean == FALSE && j < c_arraySize(name2); j++) {
+                str2 = c_stringValue(name2[j]);
+                val = c_valueStringMatch(str1, str2);
+                if (!val.is.Boolean) {
+                    val = c_valueStringMatch(str2, str1);
+                }
+            }
+        }
+    }
+    return (os_boolean)val.is.Boolean;
+}
+
+/* Returns TRUE if there is a Qos match between
+ * the given publication and subscription info.
+ */
+os_boolean
+v_builtinTestQosMatch(
+    const struct v_publicationInfo *pubInfo,
+    const struct v_subscriptionInfo *subInfo)
+{
+    if ((pubInfo != NULL) &&
+        (subInfo != NULL) &&
+        v_reliabilityPolicyCompatible(pubInfo->reliability, subInfo->reliability) &&
+        v_durabilityPolicyCompatible(pubInfo->durability, subInfo->durability) &&
+        v_presentationPolicyCompatible(pubInfo->presentation, subInfo->presentation) &&
+        v_latencyPolicyCompatible(pubInfo->latency_budget, subInfo->latency_budget) &&
+        v_orderbyPolicyCompatible(pubInfo->destination_order, subInfo->destination_order) &&
+        v_deadlinePolicyCompatible(pubInfo->deadline, subInfo->deadline) &&
+        v_livelinessPolicyCompatible(pubInfo->liveliness, subInfo->liveliness) &&
+        v_ownershipPolicyCompatible(pubInfo->ownership, subInfo->ownership))
+    {
+        return OS_TRUE;
+    }
+    return OS_FALSE;
 }

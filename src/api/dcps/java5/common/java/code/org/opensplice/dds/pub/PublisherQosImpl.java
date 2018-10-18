@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -56,18 +57,20 @@ public class PublisherQosImpl extends EntityQosImpl<ForPublisher> implements
 
     @Override
     protected void setupMissingPolicies() {
-        if (!this.containsKey(Presentation.class)) {
-            this.put(Presentation.class, new PresentationImpl(this.environment));
-        }
-        if (!this.containsKey(Partition.class)) {
-            this.put(Partition.class, new PartitionImpl(this.environment));
-        }
-        if (!this.containsKey(GroupData.class)) {
-            this.put(GroupData.class, new GroupDataImpl(this.environment));
-        }
-        if (!this.containsKey(EntityFactory.class)) {
-            this.put(EntityFactory.class, new EntityFactoryImpl(
-                    this.environment));
+        synchronized(this.policies) {
+            if (!this.containsKey(Presentation.class)) {
+                this.put(Presentation.class, new PresentationImpl(this.environment));
+            }
+            if (!this.containsKey(Partition.class)) {
+                this.put(Partition.class, new PartitionImpl(this.environment));
+            }
+            if (!this.containsKey(GroupData.class)) {
+                this.put(GroupData.class, new GroupDataImpl(this.environment));
+            }
+            if (!this.containsKey(EntityFactory.class)) {
+                this.put(EntityFactory.class, new EntityFactoryImpl(
+                        this.environment));
+            }
         }
     }
 
@@ -98,7 +101,9 @@ public class PublisherQosImpl extends EntityQosImpl<ForPublisher> implements
 
     @Override
     public PublisherQos withPolicies(ForPublisher... policy) {
-        return new PublisherQosImpl(this, policy);
+        synchronized(this.policies) {
+            return new PublisherQosImpl(this, policy);
+        }
     }
 
     public static PublisherQosImpl convert(OsplServiceEnvironment env,

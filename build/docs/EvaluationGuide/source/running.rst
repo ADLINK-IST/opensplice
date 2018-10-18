@@ -1,48 +1,48 @@
-.. _`How to run OpenSplice Enterprise`:
+. _`How to run Vortex OpenSplice`:
 
 ################################
-How to run OpenSplice Enterprise
+How to run Vortex OpenSplice
 ################################
 
 
-.. _`The OpenSplice Enterprise Environment`:
+.. _`The Vortex OpenSplice Environment`:
 
 *************************************
-The OpenSplice Enterprise Environment
+The Vortex OpenSplice Environment
 *************************************
 
-A release file is provided with the OpenSplice Enterprise 
+A release file is provided with the Vortex OpenSplice 
 installation which contains the environment variables that 
 are required. 
 
-Create an OpenSplice Enterprise environment as follows.
+Create an Vortex OpenSplice environment as follows.
 
 **First:**
 
 |linux|
 
   Open a shell and source the ``release.com`` file from 
-  the OpenSplice Enterprise installation directory. 
+  the Vortex OpenSplice installation directory. 
 
 
 |windows|
 
   Open a *Windows Command prompt* and run the ``release.bat``
-  file in the OpenSplice Enterprise installation directory. 
+  file in the Vortex OpenSplice installation directory. 
 
 |windows|
 
-  Alternatively, use the *OpenSplice DDS Command Prompt*
+  Alternatively, use the *Vortex OpenSplice Command Prompt*
   that can be accessed from the Windows *Start* menu 
   (this will implicitly run ``release.bat``). 
 
 |info|
-  Note that the OpenSplice Enterprise Launcher tool also provides a 
-  ``Console`` option which sets up the OpenSplice Enterprise environment. 
+  Note that the Vortex OpenSplice Launcher tool also provides a 
+  ``Console`` option which sets up the Vortex OpenSplice environment. 
 
 **Next:**
 
-Set the ``OSPL_URI`` variable to refer to the OpenSplice Enterprise 
+Set the ``OSPL_URI`` variable to refer to the Vortex OpenSplice 
 configuration that is required (see the section 
 :ref:`How to select the Architectural Mode`).
 

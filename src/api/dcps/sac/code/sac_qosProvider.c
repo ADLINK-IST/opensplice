@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -225,7 +226,7 @@ DDS_QosProvider_get_topic_qos(
     }
     (void)DDS_TopicQos_deinit (&namedTopicQos.topic_qos);
 err_init_failed:
-    DDS_free(&namedTopicQos.name);
+    DDS_free(namedTopicQos.name);
 err_not_found:
     DDS_QosProviderRelease (_this);
 err_bad_parameter:
@@ -283,7 +284,7 @@ DDS_QosProvider_get_subscriber_qos(
     }
     (void)DDS_SubscriberQos_deinit (&namedSubscriberQos.subscriber_qos);
 err_init_failed:
-    DDS_free(&namedSubscriberQos.name);
+    DDS_free(namedSubscriberQos.name);
 err_not_found:
     DDS_QosProviderRelease (_this);
 err_bad_parameter:
@@ -345,7 +346,7 @@ DDS_QosProvider_get_datareader_qos(
     }
     (void)DDS_DataReaderQos_deinit (&namedDataReaderQos.datareader_qos);
 err_init_failed:
-    DDS_free(&namedDataReaderQos.name);
+    DDS_free(namedDataReaderQos.name);
 err_not_found:
     DDS_QosProviderRelease (_this);
 err_bad_parameter:
@@ -403,7 +404,7 @@ DDS_QosProvider_get_publisher_qos(
     }
     (void)DDS_PublisherQos_deinit (&namedPublisherQos.publisher_qos);
 err_init_failed:
-    DDS_free(&namedPublisherQos.name);
+    DDS_free(namedPublisherQos.name);
 err_not_found:
     DDS_QosProviderRelease (_this);
 err_bad_parameter:
@@ -465,7 +466,7 @@ DDS_QosProvider_get_datawriter_qos(
     }
     (void)DDS_DataWriterQos_deinit (&namedDataWriterQos.datawriter_qos);
 err_init_failed:
-    DDS_free(&namedDataWriterQos.name);
+    DDS_free(namedDataWriterQos.name);
 err_not_found:
     DDS_QosProviderRelease (_this);
 err_bad_parameter:

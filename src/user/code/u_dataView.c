@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,7 +34,6 @@
 #include "v_public.h"
 
 #include "v_dataView.h"
-#include "v_dataViewInstance.h"
 #include "v_dataReader.h"
 #include "os_report.h"
 
@@ -59,6 +59,8 @@ u_dataViewInstanceAction(
     v_dataView view;
     struct instanceActionArg *a = (struct instanceActionArg *)arg;
 
+    OS_UNUSED_ARG(timeout);
+
     result = u_observableReadClaim(u_observable(a->view),(v_public*)(&view), C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
         handle = u_instanceHandleFix(handle,v_collection(view));
@@ -66,7 +68,7 @@ u_dataViewInstanceAction(
         result = u_instanceHandleClaim(handle, &instance);
         if ((result == U_RESULT_OK) && (instance != NULL)) {
             assert(instance != NULL);
-            action(v_dataViewInstance(instance),arg, timeout);
+            action((v_dataViewInstance)instance,arg, timeout);
             u_instanceHandleRelease(handle);
         }
     }
@@ -330,15 +332,6 @@ u_dataViewReadInstance(
     instanceActionArg.readerAction = readAction;
     instanceActionArg.readerActionArg = &arg;
     result = u_dataViewInstanceAction(handle, u_readInstanceAction, (c_voidp)&instanceActionArg, timeout);
-#if 0
-    if (result == U_RESULT_HANDLE_EXPIRED) {
-        /* Error propagation moves the role of the handle from
-         * being the object to being a parameter, this affect the
-         * already deleted status into ill parameter status.
-         */
-        result = U_RESULT_ILL_PARAM;
-    }
-#endif
     return result;
 }
 
@@ -398,15 +391,6 @@ u_dataViewTakeInstance(
     result = u_dataViewInstanceAction(handle,
                                       u_takeInstanceAction,
                                       (c_voidp)&instanceActionArg, timeout);
-#if 0
-    if (result == U_RESULT_HANDLE_EXPIRED) {
-        /* Error propagation moves the role of the handle from
-         * being the object to being a parameter, this affect the
-         * already deleted status into ill parameter status.
-         */
-        result = U_RESULT_ILL_PARAM;
-    }
-#endif
     return result;
 }
 
@@ -624,26 +608,31 @@ u_dataViewLookupInstance(
     if (result == U_RESULT_OK) {
         assert(view);
         topic = v_dataReaderGetTopic(view->reader);
-        message = v_topicMessageNew_s(topic);
-        if (message) {
-            to = (void *) (message + 1);
-            copyIn(v_topicDataType(topic), keyTemplate, to);
-            instance = v_dataViewLookupInstance(view, message);
-            *handle = u_instanceHandleNew(v_public(instance));
-            c_free(instance);
-            c_free(message);
-        } else {
-            c_char *name = v_topicName(topic);
-            if (name == NULL) {
-                name = "No Name";
+
+        if(topic){
+            message = v_topicMessageNew_s(topic);
+            if (message) {
+                to = (void *) (message + 1);
+                copyIn(v_topicDataType(topic), keyTemplate, to);
+                instance = v_dataViewLookupInstance(view, message);
+                *handle = u_instanceHandleNew(v_public(instance));
+                c_free(instance);
+                c_free(message);
+            } else {
+                c_char *name = v_topicName(topic);
+                if (name == NULL) {
+                    name = "No Name";
+                }
+                result = U_RESULT_OUT_OF_MEMORY;
+                OS_REPORT(OS_ERROR,
+                            "u_dataViewLookupInstance", result,
+                            "Out of memory: unable to create message for Topic '%s'.",
+                            name);
             }
-            result = U_RESULT_OUT_OF_MEMORY;
-            OS_REPORT(OS_ERROR,
-                        "u_dataViewLookupInstance", result,
-                        "Out of memory: unable to create message for Topic '%s'.",
-                        name);
+            c_free(topic);
+        } else {
+            result = U_RESULT_ALREADY_DELETED;
         }
-        c_free(topic);
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     } else {
         OS_REPORT(OS_WARNING, "u_dataViewLookupInstance", result,

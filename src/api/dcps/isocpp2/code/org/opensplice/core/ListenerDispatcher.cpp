@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,6 +64,7 @@ org::opensplice::core::ListenerDispatcher::ListenerDispatcher(
         this->stackSize = DEFAULT_STACKSIZE;
     }
 
+    this->uParticipant = participant;
     this->uListener = u_listenerNew(u_entity(participant), OS_TRUE);
     if (!this->uListener) {
         ISOCPP_THROW_EXCEPTION(ISOCPP_ERROR, "Could not get user layer listener.");
@@ -85,8 +87,17 @@ org::opensplice::core::ListenerDispatcher::~ListenerDispatcher()
     os_duration timeout = 100*OS_DURATION_MILLISECOND;
     int i = 0;
     bool stop = false;
+    v_listenerEvent event;
 
-    os_mutexLock(&this->mutex);
+    /* This is called when the parent DomainParticipant is deleted.
+     * The DomainParticipant will only be deleted when the ListenerDispatcher
+     * thread is not in the running state.
+     * - either no listener is attached and thus no thread is running
+     * - or the DomainParticipant is deleted as last thing happening in
+     *   the ListenDispatcher thread (see threadWrapper()).
+     * Either way, the thread state will be STOPPED.
+     */
+    assert(this->threadState == STOPPED);
 
     /* Stop thread, which also waits until it is stopped. */
     if (this->threadState == RUNNING) {
@@ -117,25 +128,20 @@ org::opensplice::core::ListenerDispatcher::~ListenerDispatcher()
         this->uListener = NULL;
     }
 
-    os_mutexUnlock(&this->mutex);
-    if (os_threadIdToInteger(this->threadId) != os_threadIdToInteger(OS_THREAD_ID_NONE)) {
-        (void)os_threadWaitExit(this->threadId, NULL);
+    event = this->eventListHead;
+    while (event) {
+        this->eventListHead = event->next;
+        c_free(c_object(event->eventData));
+        delete event;
+        event = this->eventListHead;
     }
 
-    v_listenerEvent event = this->eventListHead;
-     while (event) {
-         this->eventListHead = event->next;
-         c_free(c_object(event->eventData));
-         delete event;
-         event = this->eventListHead;
-     }
-
-     event = this->freeList;
-     while (event) {
-         this->freeList = event->next;
-         delete event;
-         event = this->freeList;
-     }
+    event = this->freeList;
+    while (event) {
+        this->freeList = event->next;
+        delete event;
+        event = this->freeList;
+    }
 
     os_condDestroy (&this->cond);
     os_mutexDestroy (&this->mutex);
@@ -206,7 +212,11 @@ org::opensplice::core::ListenerDispatcher::remove_listener(
 
     /* Remove observable from user layer. */
     uResult = u_entitySetListener(uEntity, NULL, NULL, 0);
-    if (uResult != U_RESULT_OK) {
+    if ((uResult != U_RESULT_OK) && (uResult != U_RESULT_ALREADY_DELETED)){
+        /* Ignore ALREADY_DELETED as this indicates the user layer is shut down. Due to this shut down
+         * we nee to clean up, which must be done even when the user layer is gone. Throwing an exception
+         * due to the fact the user layer is deleted will cause the caller to skip al clean-up.
+         */
         os_mutexUnlock(&this->mutex);
         ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Could not (re)set listener on user layer.");
     }
@@ -221,7 +231,7 @@ org::opensplice::core::ListenerDispatcher::remove_listener(
         stoppedThread = this->threadId;
     }
 
-    /* Wait until dispatcher thread is complete when needed. */
+    /* Wait until dispatcher thread is stopped when needed. */
     os_mutexUnlock(&this->mutex);
     if ((os_threadIdToInteger(stoppedThread) != os_threadIdToInteger(OS_THREAD_ID_NONE)) &&
         (os_threadIdToInteger(stoppedThread) != os_threadIdToInteger(os_threadIdSelf())) ) {
@@ -352,12 +362,55 @@ org::opensplice::core::ListenerDispatcher::threadWrapper(
     void *arg)
 {
     org::opensplice::core::ListenerDispatcher *dispatcher = static_cast<org::opensplice::core::ListenerDispatcher*>(arg);
-    dispatcher->thread();
+
+    /* We have to hold a reference to the parent DomainParticipant.
+     *
+     * The ListenerDispatcher contains this thread, which holds strong
+     * references (aka shared pointers) to Entities. Because of this,
+     * entities can be destructed within this ListenerDispatcher thread
+     * context.
+     * This, in the end, can mean that the ListenerDispatcher itself is
+     * destroyed within its own thread.
+     *
+     * That will happen when a event is dispatched on the DomainParticipant
+     * (which is the parent of this ListenerDispatcher) and the application
+     * decreases the refcount of the participant (for instance when the
+     * participant goes of of scope).
+     * Now, when the ListenerDispatcher thread decreases the refcount,
+     * the participant will be deleted, causing the ListenerDispatcher to
+     * be deleted while the thread (that uses the ListenerDispatcher object)
+     * is still running.
+     *
+     * This causes all kinds of problems, as you can imagine.
+     *
+     * You can't wait for the thread to finish in the destructor, because
+     * the destruction takes place in that threads' context.
+     *
+     * The following solution has been chosen.
+     * When the thread is started, it always increases the refcount of the
+     * parent participant.
+     * When the thread is stopped, it decreases the refcount, which can
+     * cause the participant (and thus this dispatcher) to be destroyed. By
+     * letting the possible destruction take place in this static function,
+     * we won't need access to the object anymore.
+     *
+     * However, when the application participant goes out of scope, this
+     * thread will keep the participant object alive. This means that it
+     * will never be destroyed.
+     * When this thread is the only one with a reference to the participant
+     * object, then it can safely stop the thread, which will destroy the
+     * participant.
+     */
+    org::opensplice::core::ObjectDelegate::ref_type participant(
+            org::opensplice::core::EntityDelegate::extract_strong_ref(u_entity(dispatcher->uParticipant)));
+
+    dispatcher->thread(participant);
+
     return NULL;
 }
 
 void
-org::opensplice::core::ListenerDispatcher::thread()
+org::opensplice::core::ListenerDispatcher::thread(const org::opensplice::core::ObjectDelegate::ref_type& participant)
 {
     os_result osResult;
     u_result uResult = U_RESULT_OK;
@@ -378,7 +431,7 @@ org::opensplice::core::ListenerDispatcher::thread()
     TRACE_EVENT("0x%08lx::ListenerDispatcher::thread(): RUNNING\n", this);
 
     /* The main listening thread loop. */
-    while ((uResult == U_RESULT_OK) && (this->threadState == RUNNING)) {
+    while ((uResult == U_RESULT_OK) && (this->threadState == RUNNING) && (participant.use_count() != 1)) {
         os_mutexUnlock(&this->mutex);
 
         //TRACE_EVENT("0x%08lx::ListenerDispatcher::thread(): Enter Wait\n", this);
@@ -452,7 +505,8 @@ copyStatus(
         case K_PUBLISHERSTATUS:
             copy = static_cast<v_status>(os_malloc(sizeof(C_STRUCT(v_status))));
             /* These status are just instantations of v_status and have no
-             * addition attributes! */
+             * addition attributes!
+             */
             memcpy(copy, s, sizeof(C_STRUCT(v_status)));
             break;
         default:
@@ -557,18 +611,21 @@ org::opensplice::core::ListenerDispatcher::eventHandler (
 
     /* The strong refs go out of scope, meaning that it is possible that the related entities
      * are deleted. This will result in listener removals.
-     * Be sure to be unlocked before the strong refs go out of scope. */
+     * Be sure to be unlocked before the strong refs go out of scope.
+     */
     scopedLock.unlock();
 
     TRACE_EVENT("static::ListenerDispatcher::eventHandler: flags 0x%08lx\n", event->kind);
 
     if (event->kind & (V_EVENT_OBJECT_DESTROYED | V_EVENT_PREPARE_DELETE)) {
         /* We should only get these events from invalid entities, which means that they
-         * should already have been handled. */
+         * should already have been handled.
+         */
         assert(false);
     } else {
         /* Call entity to notify its listener of the current event
-         * (when they're not in the process of being deleted. */
+         * (when they're not in the process of being deleted.
+         */
         if (lRef && sRef) {
             TRACE_EVENT("static::ListenerDispatcher::eventHandler: trigger 0x%08lx\n", (unsigned long)(lRef.get()));
             OSPL_CXX11_STD_MODULE::dynamic_pointer_cast<org::opensplice::core::EntityDelegate>(lRef)
@@ -602,40 +659,4 @@ org::opensplice::core::ListenerDispatcher::processEvents()
         event = this->eventListHead;
     }
 }
-
-/*
- * Special create and destroy functionallity.
- */
-org::opensplice::core::ListenerDispatcher*
-org::opensplice::core::ListenerDispatcher::create(
-    u_participant                                            participant,
-    const org::opensplice::core::policy::ListenerScheduling& scheduling)
-{
-    return new ListenerDispatcher(participant, scheduling);
-}
-
-void
-org::opensplice::core::ListenerDispatcher::destroy(
-    org::opensplice::core::ListenerDispatcher* ld)
-{
-    assert(ld);
-    org::opensplice::core::ScopedMutexLock scopedLock(org::opensplice::core::ListenerDispatcher::livecycle_mutex);
-    /* Stop thread. */
-    if (ld->threadState == RUNNING) {
-        ld->threadState = STOPPING;
-    }
-    /* Wake up thread. */
-    u_result result = u_listenerNotify(ld->uListener);
-    if (result != U_RESULT_ALREADY_DELETED) {
-        ISOCPP_U_RESULT_CHECK_AND_THROW(result, "Could not destroy ListenerDispatcher.");
-    }
-
-    /* Don't delete the given ListenerDispatcher, but store it in a strong
-     * reference. See the header file for the explanation. */
-    org::opensplice::core::ListenerDispatcher::livecycle_ref.reset(ld);
-}
-
-org::opensplice::core::ListenerDispatcher::ref_type org::opensplice::core::ListenerDispatcher::livecycle_ref;
-org::opensplice::core::Mutex                        org::opensplice::core::ListenerDispatcher::livecycle_mutex;
-
 

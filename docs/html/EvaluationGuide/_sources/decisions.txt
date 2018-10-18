@@ -7,7 +7,7 @@ Benchmarking OpenSplice: Decision Trees
 DDS provides many functional benefits that set it apart from other 
 middleware technologies, but users often still have specific 
 performance requirements for latency, throughput, CPU and network 
-utilization. OpenSplice Enterprise provides the functional benefits 
+utilization. Vortex OpenSplice provides the functional benefits 
 of the technology whilst remaining committed to excellent 
 performance. 
 

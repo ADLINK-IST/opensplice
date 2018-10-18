@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,11 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-/**
- *
- *
- * @date Jun 9, 2005
- */
 public class Utilities {
     public static final int EXCEPTION_TYPE_BAD_PARAM     = 0;
     public static final int EXCEPTION_TYPE_NO_MEMORY     = 1;
@@ -607,28 +603,20 @@ public class Utilities {
                 "Time_t 'null' is invalid.");
         } else {
             try {
+                long max_value = Long.MAX_VALUE;
                 if (o.getClass().getField("sec").getType() != Long.TYPE) {
-                    if (!((o.sec == Integer.MAX_VALUE &&
-                           o.nanosec == Integer.MAX_VALUE) ||
-                          (o.sec != Integer.MAX_VALUE &&
-                           o.nanosec < 1000000000)))
-                    {
-                        result = DDS.RETCODE_BAD_PARAMETER.value;
-                        ReportStack.report(result,
-                                           "Time_t is invalid, seconds '" + o.sec +
-                                           "', nanoseconds '" + o.nanosec + "'.");
-                    }
-                } else {
-                    if (!(((long)o.sec == Long.MAX_VALUE &&
-                            o.nanosec == Integer.MAX_VALUE) ||
-                           ((long)o.sec != Long.MAX_VALUE &&
-                            o.nanosec < 1000000000)))
-                    {
-                         result = DDS.RETCODE_BAD_PARAMETER.value;
-                         ReportStack.report(result,
-                                            "Time_t is invalid, seconds '" + o.sec +
-                                            "', nanoseconds '" + o.nanosec + "'.");
-                    }
+                    max_value = Integer.MAX_VALUE;
+                }
+
+                if (!((o.sec == max_value &&
+                        o.nanosec == Integer.MAX_VALUE) ||
+                       (o.sec != max_value &&
+                        o.nanosec < 1000000000)))
+                {
+                     result = DDS.RETCODE_BAD_PARAMETER.value;
+                     ReportStack.report(result,
+                                        "Time_t is invalid, seconds '" + o.sec +
+                                        "', nanoseconds '" + o.nanosec + "'.");
                 }
             } catch (NoSuchFieldException e) {
                 result = DDS.RETCODE_BAD_PARAMETER.value;
@@ -1060,6 +1048,15 @@ public class Utilities {
             ReportStack.report(result,
                 policy + ".max_samples_per_instance '" +
                 o.max_samples_per_instance + "' is invalid.");
+
+        } else if ((o.max_samples != DDS.LENGTH_UNLIMITED.value) &&
+                   (o.max_samples_per_instance != DDS.LENGTH_UNLIMITED.value) &&
+                   (o.max_samples < o.max_samples_per_instance) )
+        {
+            result = DDS.RETCODE_BAD_PARAMETER.value;
+            ReportStack.report(result,
+                policy + ".max_samples(" + o.max_samples + ") < "  +
+                policy + ".max_samples_per_instance(" + o.max_samples_per_instance + ") is invalid.");
         }
 
         return result;
@@ -1544,8 +1541,12 @@ public class Utilities {
         {
             try
             {
-               oos.close();
-               ois.close();
+               if (oos != null) {
+                   oos.close();
+               }
+               if (ois != null) {
+                   ois.close();
+               }
             } catch(Exception e) {
                System.out.println("Exception in Utilities.deepCopy = " + e);
             }

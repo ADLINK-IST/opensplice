@@ -4,20 +4,20 @@
 Performance Tests and Examples
 ##############################
 
-To make the evaluation process as easy as possible, OpenSplice 
-Enterprise is shipped with dedicated performance tests that can be 
-used to measure latency and throughput. The tests are simple and 
-clear, allowing the user to obtain performance results easily. 
+To make the evaluation process as easy as possible, Vortex OpenSplice
+is shipped with dedicated performance tests that can be used to measure
+latency and throughput. The tests are simple and clear, allowing the
+user to obtain performance results easily.
 
 The easiest way to build and run the performance tests is to use the 
-OpenSplice Enterprise *Launcher* tool. In the *Examples* menu select the 
+Vortex OpenSplice *Launcher* tool. In the *Examples* menu select the 
 specific example and the appropriate language and configuration. 
 Click the *Compile Example* button and then *Run Example*. This will run 
 the DDS applications, and if running with a shared memory 
 configuration it will also manage the starting and stopping of 
-OpenSplice Enterprise. 
+Vortex OpenSplice. 
 
-OpenSplice Enterprise also provides dedicated performance testing 
+Vortex OpenSplice also provides dedicated performance testing 
 scripts which: 
 
 + Test multiple API bindings 
@@ -43,7 +43,7 @@ Application A to Application B and back again, so importantly it
 includes metrics for both data delivery and reception. 
 
 The easiest way to build and run the performance tests is to use the 
-OpenSplice Enterprise *Launcher* tool as explained above. 
+Vortex OpenSplice *Launcher* tool as explained above. 
 
 Alternatively, to manually build and run the round-trip performance 
 test, for example for the ISO C++ API: 
@@ -52,7 +52,7 @@ test, for example for the ISO C++ API:
 
 .. code-block:: bash
 
-   # In an OpenSplice Enterprise environment:
+   # In an Vortex OpenSplice environment:
    cd $OSPL_HOME/examples/dcps/RoundTrip/isocpp
    make
     
@@ -61,7 +61,7 @@ test, for example for the ISO C++ API:
    ./pong
    # If using shared memory do "ospl stop" 
 
-   # In another OpenSplice Enterprise environment:
+   # In another Vortex OpenSplice environment:
    cd $OSPL_HOME/examples/dcps/RoundTrip/isocpp
    # If using shared memory do "ospl start"
    ./ping 20 100
@@ -74,16 +74,16 @@ test, for example for the ISO C++ API:
 
 .. code-block:: bat
 
-   # Load the OpenSplice DDS examples project solution 
+   # Load the Vortex OpenSplice examples project solution 
    # into Visual Studio and build the required projects 
    
-   # In an OpenSplice Enterprise environment:
+   # In an Vortex OpenSplice environment:
    cd %OSPL_HOME%\examples\dcps\RoundTrip\isocpp
    # If using shared memory do "ospl start" 
    pong.exe
    # If using shared memory do "ospl stop" 
    
-   # In another OpenSplice Enterprise environment:
+   # In another Vortex OpenSplice environment:
    cd %OSPL_HOME%\examples\dcps\RoundTrip\isocpp
    # If using shared memory do "ospl start" 
    ping.exe 20 100     
@@ -124,7 +124,7 @@ it describes the ability of the DDS implementation to effectively
 deliver DDS data without data loss. 
 
 As with the round-trip test, the easiest way to build and run the 
-throughput performance test is to use the OpenSplice Enterprise 
+throughput performance test is to use the Vortex OpenSplice 
 *Launcher* tool. 
 
 Alternatively, to manually build and run the throughput performance 
@@ -134,7 +134,7 @@ test, for example for the ISO C++ API:
 
 .. code-block:: bash
 
-   # In an OpenSplice Enterprise environment: 
+   # In an Vortex OpenSplice environment: 
    cd $OSPL_HOME/examples/dcps/Throughput/isocpp 
    make 
    cd $OSPL_HOME/examples/dcps/Throughput/isocpp
@@ -142,7 +142,7 @@ test, for example for the ISO C++ API:
    ./publisher
    # If using shared memory do "ospl stop"
    
-   # In another In an OpenSplice Enterprise environment: 
+   # In another In an Vortex OpenSplice environment: 
    cd $OSPL_HOME/examples/dcps/Throughput/isocpp
    # If using shared memory do "ospl start"
    ./subscriber
@@ -154,16 +154,16 @@ test, for example for the ISO C++ API:
 
 .. code-block:: bat
 
-   # Load the OpenSplice DDS examples project solution 
+   # Load the Vortex OpenSplice examples project solution 
    # into Visual Studio and build the required projects 
    
-   # In an OpenSplice Enterprise environment:
+   # In an Vortex OpenSplice environment:
    cd %OSPL_HOME%\examples\dcps\Throughput\isocpp
    # If using shared memory do "ospl start"
    publisher.exe
    # If using shared memory do "ospl stop" 
 
-   # In another OpenSplice Enterprise environment:
+   # In another Vortex OpenSplice environment:
    cd %OSPL_HOME%\examples\dcps\Throughput\isocpp
    # If using shared memory do "ospl start"
    subscriber.exe 
@@ -201,7 +201,7 @@ Achieving Maximum Throughput
 
 Where there is a requirement to support continuous flows or 
 'streams' of data with minimal overhead consider the use 
-of OpenSplice Streams. The ability to deliver potentially millions of 
+of Vortex OpenSplice Streams. The ability to deliver potentially millions of 
 samples per second is realized by the Streams feature transparently 
 batching (packing and queuing) the periodic samples. 
 

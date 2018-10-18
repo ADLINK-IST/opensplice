@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -59,7 +60,7 @@ idl_genSajXMLMeta(
     char *ptr;
     os_size_t i;
     
-    meta = idl_genXMLmeta(type);
+    meta = idl_genXMLmeta(type, TRUE);
     len = strlen(meta);
     pcs = (len/IDL_MAX_JSTRING_META_SIZE);
     if ((len % IDL_MAX_JSTRING_META_SIZE) != 0) {
@@ -104,7 +105,7 @@ idl_genMeta (
     c_char *tmplPath;
     c_char *orbPath;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");

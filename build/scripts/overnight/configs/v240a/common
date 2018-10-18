@@ -1,7 +1,11 @@
-JAVA_HOME=/usr/local/jdk1.6.0
+JAVA6_HOME=/usr/local/jdk1.6.0
 JACORB_HOME=/usr/users/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
 GSOAPHOME=/usr/users/dds/INSTALLED\ FOR\ DDS/GSOAP/
 
-export JAVA_HOME
+export JAVA6_HOME
 export JACORB_HOME
 export GSOAPHOME
+JAVA_HOME=/usr/local/jdk1.7.0
+export JAVA_HOME
+M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+export M2_HOME

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -16,12 +17,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
-// Csharp backend
-// PTF C# mapping for IDL
-// File /Users/Jcm/Documents/Ecllipse_WS/CSharpDDS/generated/dds_dcps.cs
-// Generated on 2008-11-11 13:36:00
-// from dds_dcps.idl
 
 using System;
 using System.Runtime.InteropServices;
@@ -216,9 +211,14 @@ namespace DDS
         AllDataDisposed = 0x80000000,
 
         /// <summary>
+        /// Any_V1_2 status.
+        /// </summary>
+        Any_V1_2 = 0x7fff,
+
+        /// <summary>
         /// Any status.
         /// </summary>
-        Any = 0x7fffffff,
+        Any = 0xffffffff
     }
 
     /// <summary>

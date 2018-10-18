@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -403,6 +404,7 @@ ut_dirOutFree(void)
 {
     if (ut_outputdir) {
         os_free(ut_outputdir);
+        ut_outputdir = NULL;
     }
     return;
 }
@@ -414,12 +416,12 @@ ut_dirOutNew(
     os_int32 result;
     os_result status;
     char dirName[OS_PATH_MAX];
-    struct os_stat statBuf;
+    struct os_stat_s statBuf;
     os_uint32 i;
 
     memset(dirName, 0, OS_PATH_MAX);
 
-    if (name) {
+    if ((name) && (strlen(name))){
         result = 1;
 
         for (i = 0; i < strlen(name) && result; i++) {
@@ -427,7 +429,7 @@ ut_dirOutNew(
                 status = os_stat(dirName, &statBuf);
 
                 if (status != os_resultSuccess) {
-                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
+                    (void)os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
                     status = os_stat(dirName, &statBuf);
                 }
                 if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode)) {
@@ -437,12 +439,12 @@ ut_dirOutNew(
                     } else {
                         printf("'%s' is not a directory\n", dirName);
                         result = 0;
-                        ut_outputdir = NULL;
+                        ut_dirOutFree();
                     }
 #else
                     printf("'%s' is not a directory\n", dirName);
                     result = 0;
-                    ut_outputdir = NULL;
+                    ut_dirOutFree();
 #endif
                 }
             }
@@ -453,7 +455,7 @@ ut_dirOutNew(
                 status = os_stat(dirName, &statBuf);
 
                 if (status != os_resultSuccess) {
-                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
+                    (void)os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
                     status = os_stat(dirName, &statBuf);
                 }
                 ut_outputdir = os_strdup(name);
@@ -468,17 +470,17 @@ ut_dirOutNew(
                         if (status == os_resultFail) {
                             printf("'%s' is not available", dirName);
                             result = 0;
-                            ut_outputdir = NULL;
+                            ut_dirOutFree();
                         }
                     } else {
                         printf("'%s' is not a directory.\n", ut_outputdir);
                         result = 0;
-                        ut_outputdir = NULL;
+                        ut_dirOutFree();
                     }
 #else
                     printf("'%s' is not a directory\n", dirName);
                     result = 0;
-                    ut_outputdir = NULL;
+                    ut_dirOutFree();
 #endif
                 }
             } else {
@@ -488,7 +490,7 @@ ut_dirOutNew(
         }
     } else {
         result = 0;
-        ut_outputdir = NULL;
+        ut_dirOutFree();
     }
 
     if (result) {
@@ -504,17 +506,15 @@ ut_dirOutNew(
                 if (status == os_resultFail) {
                     printf("'%s' cannot be found", dirName);
                     result = 0;
-                    ut_outputdir = NULL;
                 }
             } else {
                 printf("Specified output directory '%s' is not writable.\n", ut_outputdir);
                 result = 0;
-                ut_outputdir = NULL;
             }
 #else
             printf("Specified output directory '%s' is not writable.\n", ut_outputdir);
             result = 0;
-            ut_outputdir = NULL;
+            ut_dirOutFree();
 #endif
         }
     }

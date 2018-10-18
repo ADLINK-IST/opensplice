@@ -1,0 +1,1874 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>dds module &#8212; Python DCPS API 6.8.3 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.8.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ddsutil module" href="ddsutil.html" />
+    <link rel="prev" title="code" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dds">
+<span id="dds-module"></span><h1>dds module<a class="headerlink" href="#module-dds" title="Permalink to this headline">¶</a></h1>
+<p>DDS Python DCPS API class</p>
+<dl class="class">
+<dt id="dds.Condition">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Condition</code><a class="headerlink" href="#dds.Condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract condition class</p>
+<dl class="method">
+<dt id="dds.Condition.triggered">
+<code class="descname">triggered</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.Condition.triggered" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSDestinationOrderKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSDestinationOrderKind</code><a class="headerlink" href="#dds.DDSDestinationOrderKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSDestinationOrderKind.BY_RECEPTION_TIMESTAMP">
+<code class="descname">BY_RECEPTION_TIMESTAMP</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSDestinationOrderKind.BY_RECEPTION_TIMESTAMP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSDestinationOrderKind.BY_SOURCE_TIMESTAMP">
+<code class="descname">BY_SOURCE_TIMESTAMP</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSDestinationOrderKind.BY_SOURCE_TIMESTAMP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSDurabilityKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSDurabilityKind</code><a class="headerlink" href="#dds.DDSDurabilityKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSDurabilityKind.PERSISTENT">
+<code class="descname">PERSISTENT</code><em class="property"> = 3</em><a class="headerlink" href="#dds.DDSDurabilityKind.PERSISTENT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSDurabilityKind.TRANSIENT">
+<code class="descname">TRANSIENT</code><em class="property"> = 2</em><a class="headerlink" href="#dds.DDSDurabilityKind.TRANSIENT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSDurabilityKind.TRANSIENT_LOCAL">
+<code class="descname">TRANSIENT_LOCAL</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSDurabilityKind.TRANSIENT_LOCAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSDurabilityKind.VOLATILE">
+<code class="descname">VOLATILE</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSDurabilityKind.VOLATILE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSDuration">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSDuration</code><a class="headerlink" href="#dds.DDSDuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.DDSTime" title="dds.DDSTime"><code class="xref py py-class docutils literal"><span class="pre">dds.DDSTime</span></code></a></p>
+<p>DDS Duration</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sec</strong> (<em>long</em>) – seconds (default: 0)</li>
+<li><strong>nanosec</strong> (<em>long</em>) – nanoseconds (default: 0)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="dds.DDSDuration.infinity">
+<code class="descname">infinity</code><a class="headerlink" href="#dds.DDSDuration.infinity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DDSDuration for infinity</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="dds.DDSException">
+<em class="property">exception </em><code class="descclassname">dds.</code><code class="descname">DDSException</code><a class="headerlink" href="#dds.DDSException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
+<p>DDS exception</p>
+<dl class="method">
+<dt id="dds.DDSException.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.DDSException.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSHistoryKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSHistoryKind</code><a class="headerlink" href="#dds.DDSHistoryKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSHistoryKind.KEEP_ALL">
+<code class="descname">KEEP_ALL</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSHistoryKind.KEEP_ALL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSHistoryKind.KEEP_LAST">
+<code class="descname">KEEP_LAST</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSHistoryKind.KEEP_LAST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSLivelinessKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSLivelinessKind</code><a class="headerlink" href="#dds.DDSLivelinessKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSLivelinessKind.AUTOMATIC">
+<code class="descname">AUTOMATIC</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSLivelinessKind.AUTOMATIC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSLivelinessKind.MANUAL_BY_PARTICIPANT">
+<code class="descname">MANUAL_BY_PARTICIPANT</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSLivelinessKind.MANUAL_BY_PARTICIPANT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSLivelinessKind.MANUAL_BY_TOPIC">
+<code class="descname">MANUAL_BY_TOPIC</code><em class="property"> = 2</em><a class="headerlink" href="#dds.DDSLivelinessKind.MANUAL_BY_TOPIC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSMaskUtil">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSMaskUtil</code><a class="headerlink" href="#dds.DDSMaskUtil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Mask utility.
+Some commonly used mask combination
+See <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> for list of available status</p>
+<dl class="attribute">
+<dt id="dds.DDSMaskUtil.all_samples">
+<code class="descname">all_samples</code><a class="headerlink" href="#dds.DDSMaskUtil.all_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>[DDSStateKind.ANY_STATE]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> enumeration literals</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSMaskUtil.new_instance_samples">
+<code class="descname">new_instance_samples</code><a class="headerlink" href="#dds.DDSMaskUtil.new_instance_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>[DDSStateKind.NOT_READ_SAMPLE_STATE, DDSStateKind.ALIVE_INSTANCE_STATE, DDSStateKind.NEW_VIEW_STATE]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> enumeration literals</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSMaskUtil.new_samples">
+<code class="descname">new_samples</code><a class="headerlink" href="#dds.DDSMaskUtil.new_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>[DDSStateKind.NOT_READ_SAMPLE_STATE, DDSStateKind.ALIVE_INSTANCE_STATE, DDSStateKind.ANY_VIEW_STATE]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> enumeration literals</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSMaskUtil.not_alive_instance_samples">
+<code class="descname">not_alive_instance_samples</code><a class="headerlink" href="#dds.DDSMaskUtil.not_alive_instance_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>[DDSStateKind.ANY_SAMPLE_STATE, DDSStateKind.ANY_VIEW_STATE, DDSStateKind.NOT_ALIVE_NO_WRITERS_INSTANCE_STATE, DDSStateKind.NOT_ALIVE_DISPOSED_INSTANCE_STATE]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> enumeration literals</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSMaskUtil.read_samples">
+<code class="descname">read_samples</code><a class="headerlink" href="#dds.DDSMaskUtil.read_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>[DDSStateKind.READ_SAMPLE_STATE, DDSStateKind.ALIVE_INSTANCE_STATE, DDSStateKind.ANY_VIEW_STATE]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.DDSStateKind" title="dds.DDSStateKind"><code class="xref py py-class docutils literal"><span class="pre">DDSStateKind</span></code></a> enumeration literals</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSOwnershipKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSOwnershipKind</code><a class="headerlink" href="#dds.DDSOwnershipKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSOwnershipKind.EXCLUSIVE">
+<code class="descname">EXCLUSIVE</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSOwnershipKind.EXCLUSIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSOwnershipKind.SHARED">
+<code class="descname">SHARED</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSOwnershipKind.SHARED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSPresentationAccessScopeKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSPresentationAccessScopeKind</code><a class="headerlink" href="#dds.DDSPresentationAccessScopeKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSPresentationAccessScopeKind.GROUP">
+<code class="descname">GROUP</code><em class="property"> = 2</em><a class="headerlink" href="#dds.DDSPresentationAccessScopeKind.GROUP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSPresentationAccessScopeKind.INSTANCE">
+<code class="descname">INSTANCE</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSPresentationAccessScopeKind.INSTANCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSPresentationAccessScopeKind.TOPIC">
+<code class="descname">TOPIC</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSPresentationAccessScopeKind.TOPIC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSReliabilityKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSReliabilityKind</code><a class="headerlink" href="#dds.DDSReliabilityKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSReliabilityKind.BEST_EFFORT">
+<code class="descname">BEST_EFFORT</code><em class="property"> = 0</em><a class="headerlink" href="#dds.DDSReliabilityKind.BEST_EFFORT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSReliabilityKind.RELIABLE">
+<code class="descname">RELIABLE</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSReliabilityKind.RELIABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSStateKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSStateKind</code><a class="headerlink" href="#dds.DDSStateKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSStateKind.ALIVE_INSTANCE_STATE">
+<code class="descname">ALIVE_INSTANCE_STATE</code><em class="property"> = 16</em><a class="headerlink" href="#dds.DDSStateKind.ALIVE_INSTANCE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.ANY_INSTANCE_STATE">
+<code class="descname">ANY_INSTANCE_STATE</code><em class="property"> = 112</em><a class="headerlink" href="#dds.DDSStateKind.ANY_INSTANCE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.ANY_SAMPLE_STATE">
+<code class="descname">ANY_SAMPLE_STATE</code><em class="property"> = 3</em><a class="headerlink" href="#dds.DDSStateKind.ANY_SAMPLE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.ANY_STATE">
+<code class="descname">ANY_STATE</code><em class="property"> = 127</em><a class="headerlink" href="#dds.DDSStateKind.ANY_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.ANY_VIEW_STATE">
+<code class="descname">ANY_VIEW_STATE</code><em class="property"> = 12</em><a class="headerlink" href="#dds.DDSStateKind.ANY_VIEW_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.NEW_VIEW_STATE">
+<code class="descname">NEW_VIEW_STATE</code><em class="property"> = 4</em><a class="headerlink" href="#dds.DDSStateKind.NEW_VIEW_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.NOT_ALIVE_DISPOSED_INSTANCE_STATE">
+<code class="descname">NOT_ALIVE_DISPOSED_INSTANCE_STATE</code><em class="property"> = 32</em><a class="headerlink" href="#dds.DDSStateKind.NOT_ALIVE_DISPOSED_INSTANCE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.NOT_ALIVE_NO_WRITERS_INSTANCE_STATE">
+<code class="descname">NOT_ALIVE_NO_WRITERS_INSTANCE_STATE</code><em class="property"> = 64</em><a class="headerlink" href="#dds.DDSStateKind.NOT_ALIVE_NO_WRITERS_INSTANCE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.NOT_NEW_VIEW_STATE">
+<code class="descname">NOT_NEW_VIEW_STATE</code><em class="property"> = 8</em><a class="headerlink" href="#dds.DDSStateKind.NOT_NEW_VIEW_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.NOT_READ_SAMPLE_STATE">
+<code class="descname">NOT_READ_SAMPLE_STATE</code><em class="property"> = 2</em><a class="headerlink" href="#dds.DDSStateKind.NOT_READ_SAMPLE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStateKind.READ_SAMPLE_STATE">
+<code class="descname">READ_SAMPLE_STATE</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSStateKind.READ_SAMPLE_STATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSStatusKind">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSStatusKind</code><a class="headerlink" href="#dds.DDSStatusKind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">enum.Enum</span></code></p>
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.DATA_AVAILABLE">
+<code class="descname">DATA_AVAILABLE</code><em class="property"> = 1024</em><a class="headerlink" href="#dds.DDSStatusKind.DATA_AVAILABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.DATA_ON_READERS">
+<code class="descname">DATA_ON_READERS</code><em class="property"> = 512</em><a class="headerlink" href="#dds.DDSStatusKind.DATA_ON_READERS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.INCONSISTENT_TOPIC">
+<code class="descname">INCONSISTENT_TOPIC</code><em class="property"> = 1</em><a class="headerlink" href="#dds.DDSStatusKind.INCONSISTENT_TOPIC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.LIVELINESS_CHANGED">
+<code class="descname">LIVELINESS_CHANGED</code><em class="property"> = 4096</em><a class="headerlink" href="#dds.DDSStatusKind.LIVELINESS_CHANGED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.LIVELINESS_LOST">
+<code class="descname">LIVELINESS_LOST</code><em class="property"> = 2048</em><a class="headerlink" href="#dds.DDSStatusKind.LIVELINESS_LOST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.OFFERED_DEADLINE_MISSED">
+<code class="descname">OFFERED_DEADLINE_MISSED</code><em class="property"> = 2</em><a class="headerlink" href="#dds.DDSStatusKind.OFFERED_DEADLINE_MISSED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.OFFERED_INCOMPATIBLE_QOS">
+<code class="descname">OFFERED_INCOMPATIBLE_QOS</code><em class="property"> = 32</em><a class="headerlink" href="#dds.DDSStatusKind.OFFERED_INCOMPATIBLE_QOS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.PUBLICATION_MATCHED">
+<code class="descname">PUBLICATION_MATCHED</code><em class="property"> = 8192</em><a class="headerlink" href="#dds.DDSStatusKind.PUBLICATION_MATCHED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.REQUESTED_DEADLINE_MISSED">
+<code class="descname">REQUESTED_DEADLINE_MISSED</code><em class="property"> = 4</em><a class="headerlink" href="#dds.DDSStatusKind.REQUESTED_DEADLINE_MISSED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.REQUESTED_INCOMPATIBLE_QOS">
+<code class="descname">REQUESTED_INCOMPATIBLE_QOS</code><em class="property"> = 64</em><a class="headerlink" href="#dds.DDSStatusKind.REQUESTED_INCOMPATIBLE_QOS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.SAMPLE_LOST">
+<code class="descname">SAMPLE_LOST</code><em class="property"> = 128</em><a class="headerlink" href="#dds.DDSStatusKind.SAMPLE_LOST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.SAMPLE_REJECTED">
+<code class="descname">SAMPLE_REJECTED</code><em class="property"> = 256</em><a class="headerlink" href="#dds.DDSStatusKind.SAMPLE_REJECTED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DDSStatusKind.SUBSCRIPTION_MATCHED">
+<code class="descname">SUBSCRIPTION_MATCHED</code><em class="property"> = 16384</em><a class="headerlink" href="#dds.DDSStatusKind.SUBSCRIPTION_MATCHED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DDSTime">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DDSTime</code><a class="headerlink" href="#dds.DDSTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>DDS Time</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sec</strong> (<em>long</em>) – seconds (default: 1)</li>
+<li><strong>nanosec</strong> (<em>long</em>) – nanoseconds (default: 0)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DDSTime.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.DDSTime.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DataReader">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DataReader</code><a class="headerlink" href="#dds.DataReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>DataReader class</p>
+<dl class="method">
+<dt id="dds.DataReader.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>n=1</em>, <em>masks=DDSMaskUtil.all_samples()</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataReader.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read samples</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>n</strong> (<em>int</em>) – number of samples to read</li>
+<li><strong>masks</strong> (<em>list</em>) – list of DDS statuses</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of sample data and sample info tuple</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DataReader.take">
+<code class="descname">take</code><span class="sig-paren">(</span><em>n=1</em>, <em>masks=DDSMaskUtil.all_samples()</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataReader.take" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take samples</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>n</strong> (<em>int</em>) – number of samples to take</li>
+<li><strong>masks</strong> (<em>list</em>) – list of DDS statuses</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of sample data and sample info tuple</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DataReader.wait_for_historical_data">
+<code class="descname">wait_for_historical_data</code><span class="sig-paren">(</span><em>timeout = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataReader.wait_for_historical_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for data reader to receive historical data, up to timeout duration</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeout</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – timeout in seconds(default: infinity)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">False if timeout exipred; True otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DataWriter">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DataWriter</code><a class="headerlink" href="#dds.DataWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>DataWriter class</p>
+<dl class="method">
+<dt id="dds.DataWriter.dispose_instance">
+<code class="descname">dispose_instance</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataWriter.dispose_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dispose instance</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>object</em>) – Topic data class instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DataWriter.dispose_instance_ts">
+<code class="descname">dispose_instance_ts</code><span class="sig-paren">(</span><em>data</em>, <em>ts</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataWriter.dispose_instance_ts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dispose instance with timestamp</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<em>object</em>) – Topic data class instance</li>
+<li><strong>ts</strong> (<em>long</em>) – timestamp</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DataWriter.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DataWriter.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>object</em>) – Topic data class instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DeadlineQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DeadlineQosPolicy</code><a class="headerlink" href="#dds.DeadlineQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Deadline QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>deadline</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Value for deadline (default: infinity)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DeadlineQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.DeadlineQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DeadlineQosPolicy.deadline">
+<code class="descname">deadline</code><a class="headerlink" href="#dds.DeadlineQosPolicy.deadline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DestinationOrderQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DestinationOrderQosPolicy</code><a class="headerlink" href="#dds.DestinationOrderQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Destination order QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kind</strong> (<a class="reference internal" href="#dds.DDSDestinationOrderKind" title="dds.DDSDestinationOrderKind"><em>DDSDestinationOrderKind</em></a>) – Destination order kind</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DestinationOrderQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.DestinationOrderQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DomainParticipant">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DomainParticipant</code><a class="headerlink" href="#dds.DomainParticipant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>Domain participant class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>qos</strong> (<a class="reference internal" href="#dds.Qos" title="dds.Qos"><em>Qos</em></a>) – Participant QoS. Default: None</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Participant listener Default: None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DomainParticipant.create_datareader">
+<code class="descname">create_datareader</code><span class="sig-paren">(</span><em>Topic topic</em>, <em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DomainParticipant.create_datareader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a publisher</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>topic</strong> (<a class="reference internal" href="#dds.Topic" title="dds.Topic"><em>Topic</em></a>) – Topic</li>
+<li><strong>qos</strong> (<em>QoS</em>) – QoS</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.DataReader" title="dds.DataReader">DataReader</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DomainParticipant.create_datawriter">
+<code class="descname">create_datawriter</code><span class="sig-paren">(</span><em>Topic topic</em>, <em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DomainParticipant.create_datawriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a publisher</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>topic</strong> (<a class="reference internal" href="#dds.Topic" title="dds.Topic"><em>Topic</em></a>) – Topic</li>
+<li><strong>qos</strong> (<em>QoS</em>) – QoS</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.DataWriter" title="dds.DataWriter">DataWriter</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DomainParticipant.create_publisher">
+<code class="descname">create_publisher</code><span class="sig-paren">(</span><em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DomainParticipant.create_publisher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a publisher</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>qos</strong> (<em>QoS</em>) – QoS</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.Publisher" title="dds.Publisher">Publisher</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.DomainParticipant.create_subscriber">
+<code class="descname">create_subscriber</code><span class="sig-paren">(</span><em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DomainParticipant.create_subscriber" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a subscriber</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>qos</strong> (<em>QoS</em>) – QoS</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.Subscriber" title="dds.Subscriber">Subscriber</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DurabilityQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DurabilityQosPolicy</code><a class="headerlink" href="#dds.DurabilityQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Durability QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>k</strong> (<a class="reference internal" href="#dds.DDSDurabilityKind" title="dds.DDSDurabilityKind"><em>DDSDurabilityKind</em></a>) – Durability kind</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DurabilityQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>k=DDSDurabilityKind.VOLATILE</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.DurabilityQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.DurabilityServiceQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">DurabilityServiceQosPolicy</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Durability service QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>service_cleanup_delay</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – set service_cleanup_delay (default: 0)</li>
+<li><strong>history_kind</strong> (<a class="reference internal" href="#dds.DDSHistoryKind" title="dds.DDSHistoryKind"><em>DDSHistoryKind</em></a>) – set history kind (default: KEEP_LAST)</li>
+<li><strong>history_depth</strong> (<em>long</em>) – set history_depth (default: 1)</li>
+<li><strong>max_samples</strong> (<em>long</em>) – set max_samples (default: unlimited)</li>
+<li><strong>max_instances</strong> (<em>long</em>) – set max_instances (default: unlimited)</li>
+<li><strong>max_samples_per_instance</strong> (<em>long</em>) – set max_samples_per_instance (default: unlimited)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.DurabilityServiceQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.history_depth">
+<code class="descname">history_depth</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.history_depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.history_kind">
+<code class="descname">history_kind</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.history_kind" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.max_instances">
+<code class="descname">max_instances</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.max_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.max_samples">
+<code class="descname">max_samples</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.max_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.max_samples_per_instance">
+<code class="descname">max_samples_per_instance</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.max_samples_per_instance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.DurabilityServiceQosPolicy.service_cleanup_delay">
+<code class="descname">service_cleanup_delay</code><a class="headerlink" href="#dds.DurabilityServiceQosPolicy.service_cleanup_delay" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Entity">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Entity</code><a class="headerlink" href="#dds.Entity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract base entity class</p>
+<dl class="method">
+<dt id="dds.Entity.get_statuscondition">
+<code class="descname">get_statuscondition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.Entity.get_statuscondition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.Entity.listener">
+<code class="descname">listener</code><a class="headerlink" href="#dds.Entity.listener" title="Permalink to this definition">¶</a></dt>
+<dd><p>Listener</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.Entity.parent">
+<code class="descname">parent</code><a class="headerlink" href="#dds.Entity.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parent entity</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.GroupdataQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">GroupdataQosPolicy</code><a class="headerlink" href="#dds.GroupdataQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.UserdataQosPolicy" title="dds.UserdataQosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.UserdataQosPolicy</span></code></a></p>
+<p>Group data QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> (<em>string</em>) – value</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.GroupdataQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.GroupdataQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.GuardCondition">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">GuardCondition</code><a class="headerlink" href="#dds.GuardCondition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Condition" title="dds.Condition"><code class="xref py py-class docutils literal"><span class="pre">dds.Condition</span></code></a></p>
+<p>Guard condition</p>
+<dl class="method">
+<dt id="dds.GuardCondition.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.GuardCondition.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset guard condition</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.GuardCondition.trigger">
+<code class="descname">trigger</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.GuardCondition.trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trigger guard condition</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.HistoryQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">HistoryQosPolicy</code><a class="headerlink" href="#dds.HistoryQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>History QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>k</strong> (<a class="reference internal" href="#dds.DDSHistoryKind" title="dds.DDSHistoryKind"><em>DDSHistoryKind</em></a>) – History kind</li>
+<li><strong>depth</strong> (<em>int</em>) – History depth (default: 1)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.HistoryQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>kind=DDSHistoryKind.KEEP_LAST</em>, <em>depth=1</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.HistoryQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.HistoryQosPolicy.depth">
+<code class="descname">depth</code><a class="headerlink" href="#dds.HistoryQosPolicy.depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.LatencyBudgetQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">LatencyBudgetQosPolicy</code><a class="headerlink" href="#dds.LatencyBudgetQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Latency budget QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>duration</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Value for duration (default: 0)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.LatencyBudgetQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.LatencyBudgetQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.LatencyBudgetQosPolicy.duration">
+<code class="descname">duration</code><a class="headerlink" href="#dds.LatencyBudgetQosPolicy.duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.LifespanQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">LifespanQosPolicy</code><a class="headerlink" href="#dds.LifespanQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Lifespan QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lifespan</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Value for lifespan (default: infinity)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.LifespanQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.LifespanQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.LifespanQosPolicy.lifespan">
+<code class="descname">lifespan</code><a class="headerlink" href="#dds.LifespanQosPolicy.lifespan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Listener">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Listener</code><a class="headerlink" href="#dds.Listener" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract Listener class.
+Beta: only on_data_available is implemented.</p>
+<dl class="method">
+<dt id="dds.Listener.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_data_available">
+<code class="descname">on_data_available</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_data_available" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_data_readers">
+<code class="descname">on_data_readers</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_data_readers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_inconsistent_topic">
+<code class="descname">on_inconsistent_topic</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_inconsistent_topic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_liveliness_changed">
+<code class="descname">on_liveliness_changed</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_liveliness_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_liveliness_lost">
+<code class="descname">on_liveliness_lost</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_liveliness_lost" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_offered_deadline_missed">
+<code class="descname">on_offered_deadline_missed</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_offered_deadline_missed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_offered_incompatible_qos">
+<code class="descname">on_offered_incompatible_qos</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_offered_incompatible_qos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_publication_matched">
+<code class="descname">on_publication_matched</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_publication_matched" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_requested_deadline_missed">
+<code class="descname">on_requested_deadline_missed</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_requested_deadline_missed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_requested_incompatible_qos">
+<code class="descname">on_requested_incompatible_qos</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_requested_incompatible_qos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_sample_lost">
+<code class="descname">on_sample_lost</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_sample_lost" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_sample_rejected">
+<code class="descname">on_sample_rejected</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_sample_rejected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.Listener.on_subscription_matched">
+<code class="descname">on_subscription_matched</code><span class="sig-paren">(</span><em>entity</em>, <em>status</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Listener.on_subscription_matched" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.LivelinessQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">LivelinessQosPolicy</code><a class="headerlink" href="#dds.LivelinessQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Liveliness QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kind</strong> (<a class="reference internal" href="#dds.DDSLivelinessKind" title="dds.DDSLivelinessKind"><em>DDSLivelinessKind</em></a>) – Liveliness kind</li>
+<li><strong>lease_duration</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Lease duration (default: infinity)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.LivelinessQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.LivelinessQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.LivelinessQosPolicy.lease_duration">
+<code class="descname">lease_duration</code><a class="headerlink" href="#dds.LivelinessQosPolicy.lease_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.OwnershipQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">OwnershipQosPolicy</code><a class="headerlink" href="#dds.OwnershipQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Ownership QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kind</strong> (<a class="reference internal" href="#dds.DDSOwnershipKind" title="dds.DDSOwnershipKind"><em>DDSOwnershipKind</em></a>) – Ownership kind</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.OwnershipQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.OwnershipQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.OwnershipStrengthQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">OwnershipStrengthQosPolicy</code><a class="headerlink" href="#dds.OwnershipStrengthQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Ownership strenth QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> (<em>int</em>) – value for strength (default: 0)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.OwnershipStrengthQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.OwnershipStrengthQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.OwnershipStrengthQosPolicy.value">
+<code class="descname">value</code><a class="headerlink" href="#dds.OwnershipStrengthQosPolicy.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.PartitionQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">PartitionQosPolicy</code><a class="headerlink" href="#dds.PartitionQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Partition QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ps</strong> (<em>list</em>) – list of partition names</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.PartitionQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.PartitionQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.PartitionQosPolicy.ps">
+<code class="descname">ps</code><a class="headerlink" href="#dds.PartitionQosPolicy.ps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.PresentationQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">PresentationQosPolicy</code><a class="headerlink" href="#dds.PresentationQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Presentation QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kind</strong> (<a class="reference internal" href="#dds.DDSPresentationAccessScopeKind" title="dds.DDSPresentationAccessScopeKind"><em>DDSPresentationAccessScopeKind</em></a>) – Presentation kind (default: INSTANCE)</li>
+<li><strong>coherent_access</strong> (<em>bool</em>) – Set coherent access (default: False)</li>
+<li><strong>ordered_access</strong> (<em>bool</em>) – Set ordered access (default: False)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.PresentationQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>kind=DDSHistoryKind.KEEP_LAST</em>, <em>depth=1</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.PresentationQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.PresentationQosPolicy.coherent_access">
+<code class="descname">coherent_access</code><a class="headerlink" href="#dds.PresentationQosPolicy.coherent_access" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.PresentationQosPolicy.ordered_access">
+<code class="descname">ordered_access</code><a class="headerlink" href="#dds.PresentationQosPolicy.ordered_access" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Publisher">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Publisher</code><a class="headerlink" href="#dds.Publisher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>Publisher class</p>
+<dl class="method">
+<dt id="dds.Publisher.create_datawriter">
+<code class="descname">create_datawriter</code><span class="sig-paren">(</span><em>Topic topic</em>, <em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Publisher.create_datawriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a data writer
+:type topic: Topic
+:param topic: Topic</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>qos</strong> (<a class="reference internal" href="#dds.Qos" title="dds.Qos"><em>Qos</em></a>) – Qos</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.DataWriter" title="dds.DataWriter">DataWriter</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Qos">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Qos</code><a class="headerlink" href="#dds.Qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>QoS class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>policies</strong> (<em>list</em>) – list of QoS policies</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.Qos.set_policies">
+<code class="descname">set_policies</code><span class="sig-paren">(</span><em>policies</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Qos.set_policies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set policies
+:type policies: list
+:param policies: list of QoS policies</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.QosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">QosPolicy</code><a class="headerlink" href="#dds.QosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract QoS policy class.
+Users should not instantiate this class.</p>
+<dl class="method">
+<dt id="dds.QosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>i</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.QosPolicy.id">
+<code class="descname">id</code><a class="headerlink" href="#dds.QosPolicy.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>An internal QoS Policy id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.QosPolicy.kind">
+<code class="descname">kind</code><a class="headerlink" href="#dds.QosPolicy.kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>QoS Policy kind</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.QosProfile">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">QosProfile</code><a class="headerlink" href="#dds.QosProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>QoS Provider class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>uri</strong> (<em>string</em>) – uri to xml file</li>
+<li><strong>profile</strong> (<em>string</em>) – profile name</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.QosProfile.get_participant_qos">
+<code class="descname">get_participant_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_participant_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create participant QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.QosProfile.get_publisher_qos">
+<code class="descname">get_publisher_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_publisher_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create publisher QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.QosProfile.get_reader_qos">
+<code class="descname">get_reader_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_reader_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create reader QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.QosProfile.get_subscriber_qos">
+<code class="descname">get_subscriber_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_subscriber_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create subscriber QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.QosProfile.get_topic_qos">
+<code class="descname">get_topic_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_topic_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create topic QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.QosProfile.get_writer_qos">
+<code class="descname">get_writer_qos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.QosProfile.get_writer_qos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create writer QoS</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#dds.Qos" title="dds.Qos">Qos</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.QueryCondition">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">QueryCondition</code><a class="headerlink" href="#dds.QueryCondition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Condition" title="dds.Condition"><code class="xref py py-class docutils literal"><span class="pre">dds.Condition</span></code></a></p>
+<p>Query condition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>reader</strong> (<a class="reference internal" href="#dds.DataReader" title="dds.DataReader"><em>DataReader</em></a>) – Source DataReader</li>
+<li><strong>masks</strong> (<em>list</em>) – list of masks (default: <code class="xref py py-meth docutils literal"><span class="pre">DDSMaskUtil.all_samples()</span></code></li>
+<li><strong>expression</strong> (<em>string</em>) – Expression</li>
+<li><strong>parameters</strong> (<em>list</em>) – list of parameters in string</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.ReadCondition">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">ReadCondition</code><a class="headerlink" href="#dds.ReadCondition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Condition" title="dds.Condition"><code class="xref py py-class docutils literal"><span class="pre">dds.Condition</span></code></a></p>
+<p>Read condition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>reader</strong> (<a class="reference internal" href="#dds.DataReader" title="dds.DataReader"><em>DataReader</em></a>) – Source DataReader</li>
+<li><strong>masks</strong> (<em>list</em>) – list of masks (default: <code class="xref py py-meth docutils literal"><span class="pre">DDSMaskUtil.all_samples()</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.ReaderDataLifecycleQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">ReaderDataLifecycleQosPolicy</code><a class="headerlink" href="#dds.ReaderDataLifecycleQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Reader data lifecycle QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>autopurge_nowriter_samples</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – set autopurge_nowriter_samples (default: infinity)</li>
+<li><strong>autopurge_disposed_samples_delay</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – set autopurge_nowriter_samples (default: infinity)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.ReaderDataLifecycleQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.ReaderDataLifecycleQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ReaderDataLifecycleQosPolicy.autopurge_disposed_samples_delay">
+<code class="descname">autopurge_disposed_samples_delay</code><a class="headerlink" href="#dds.ReaderDataLifecycleQosPolicy.autopurge_disposed_samples_delay" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ReaderDataLifecycleQosPolicy.autopurge_nowriter_samples">
+<code class="descname">autopurge_nowriter_samples</code><a class="headerlink" href="#dds.ReaderDataLifecycleQosPolicy.autopurge_nowriter_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.ReliabilityQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">ReliabilityQosPolicy</code><a class="headerlink" href="#dds.ReliabilityQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Reliability QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kind</strong> (<a class="reference internal" href="#dds.DDSReliabilityKind" title="dds.DDSReliabilityKind"><em>DDSReliabilityKind</em></a>) – Reliability kind</li>
+<li><strong>max_blocking_time</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Max blocking time (default: 100 milliseconds)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.ReliabilityQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.ReliabilityQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ReliabilityQosPolicy.max_blocking_time">
+<code class="descname">max_blocking_time</code><a class="headerlink" href="#dds.ReliabilityQosPolicy.max_blocking_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.ResourceLimitsQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">ResourceLimitsQosPolicy</code><a class="headerlink" href="#dds.ResourceLimitsQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Resource limit QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_samples</strong> (<em>int</em>) – maximum samples (default: -1)</li>
+<li><strong>max_instances</strong> (<em>int</em>) – maximum instances (default: -1)</li>
+<li><strong>max_samples_per_instance</strong> (<em>int</em>) – maximum samples per instance (default: -1)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.ResourceLimitsQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.ResourceLimitsQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ResourceLimitsQosPolicy.max_instances">
+<code class="descname">max_instances</code><a class="headerlink" href="#dds.ResourceLimitsQosPolicy.max_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ResourceLimitsQosPolicy.max_samples">
+<code class="descname">max_samples</code><a class="headerlink" href="#dds.ResourceLimitsQosPolicy.max_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.ResourceLimitsQosPolicy.max_samples_per_instance">
+<code class="descname">max_samples_per_instance</code><a class="headerlink" href="#dds.ResourceLimitsQosPolicy.max_samples_per_instance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.SampleInfo">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">SampleInfo</code><a class="headerlink" href="#dds.SampleInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Base sample info class</p>
+<dl class="method">
+<dt id="dds.SampleInfo.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.SampleInfo.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.StatusCondition">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">StatusCondition</code><a class="headerlink" href="#dds.StatusCondition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Condition" title="dds.Condition"><code class="xref py py-class docutils literal"><span class="pre">dds.Condition</span></code></a></p>
+<p>Status condition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>entity</strong> (<a class="reference internal" href="#dds.Entity" title="dds.Entity"><em>Entity</em></a>) – Source entity</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.StatusCondition.enable_status">
+<code class="descname">enable_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.StatusCondition.enable_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.StatusCondition.entity">
+<code class="descname">entity</code><a class="headerlink" href="#dds.StatusCondition.entity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dds.StatusCondition.get_enabled_status">
+<code class="descname">get_enabled_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.StatusCondition.get_enabled_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Subscriber">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Subscriber</code><a class="headerlink" href="#dds.Subscriber" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>Subscriber class</p>
+<dl class="method">
+<dt id="dds.Subscriber.create_datareader">
+<code class="descname">create_datareader</code><span class="sig-paren">(</span><em>Topic topic</em>, <em>Qos qos = None</em>, <em>listener = None</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.Subscriber.create_datareader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a data reader
+:type topic: Topic
+:param topic: Topic</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>qos</strong> (<a class="reference internal" href="#dds.Qos" title="dds.Qos"><em>Qos</em></a>) – Qos</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Listener</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#dds.DataReader" title="dds.DataReader">DataReader</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.TimeBasedFilterQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">TimeBasedFilterQosPolicy</code><a class="headerlink" href="#dds.TimeBasedFilterQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Time based filter QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>minimum_separation</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – Value for minimum separation (default: 0)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.TimeBasedFilterQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.TimeBasedFilterQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.TimeBasedFilterQosPolicy.minimum_separation">
+<code class="descname">minimum_separation</code><a class="headerlink" href="#dds.TimeBasedFilterQosPolicy.minimum_separation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.Topic">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">Topic</code><a class="headerlink" href="#dds.Topic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.Entity" title="dds.Entity"><code class="xref py py-class docutils literal"><span class="pre">dds.Entity</span></code></a></p>
+<p>Topic class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dp</strong> (<a class="reference internal" href="#dds.DomainParticipant" title="dds.DomainParticipant"><em>DomainParticipant</em></a>) – Domain participant</li>
+<li><strong>name</strong> (<em>string</em>) – Topic name</li>
+<li><strong>qos</strong> (<a class="reference internal" href="#dds.Qos" title="dds.Qos"><em>Qos</em></a>) – Topic QoS (default: None)</li>
+<li><strong>listener</strong> (<a class="reference internal" href="#dds.Listener" title="dds.Listener"><em>Listener</em></a>) – Topic listener (default: None)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.TopicdataQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">TopicdataQosPolicy</code><a class="headerlink" href="#dds.TopicdataQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.UserdataQosPolicy" title="dds.UserdataQosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.UserdataQosPolicy</span></code></a></p>
+<p>Topic data QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> (<em>string</em>) – value</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.TopicdataQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.TopicdataQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.TransportPriorityQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">TransportPriorityQosPolicy</code><a class="headerlink" href="#dds.TransportPriorityQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Transport priority QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> (<em>int</em>) – value for transport priority</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.TransportPriorityQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.TransportPriorityQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.TransportPriorityQosPolicy.value">
+<code class="descname">value</code><a class="headerlink" href="#dds.TransportPriorityQosPolicy.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.TypeSupport">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">TypeSupport</code><a class="headerlink" href="#dds.TypeSupport" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>It is used to generate a dds_topic_descriptor from the
+provided typename, keys and XML type specification.
+The size attribute is need to allocate memory when
+the topic data is deserialized.
+For the serialization and deserialization the struct
+module is used</p>
+<dl class="attribute">
+<dt id="dds.TypeSupport.__init__">
+<code class="descname">__init__</code><a class="headerlink" href="#dds.TypeSupport.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.TypeSupport.deserialize">
+<code class="descname">deserialize</code><span class="sig-paren">(</span><em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.TypeSupport.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserialize data</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.TypeSupport.handle">
+<code class="descname">handle</code><a class="headerlink" href="#dds.TypeSupport.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>C handle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.TypeSupport.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.TypeSupport.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize data</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dds.TypeSupport.size">
+<code class="descname">size</code><a class="headerlink" href="#dds.TypeSupport.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data size</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.UserdataQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">UserdataQosPolicy</code><a class="headerlink" href="#dds.UserdataQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Userdata QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> (<em>string</em>) – value</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.UserdataQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.UserdataQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.UserdataQosPolicy.value">
+<code class="descname">value</code><a class="headerlink" href="#dds.UserdataQosPolicy.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.WaitSet">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">WaitSet</code><a class="headerlink" href="#dds.WaitSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>WaitSet class</p>
+<dl class="method">
+<dt id="dds.WaitSet.attach">
+<code class="descname">attach</code><span class="sig-paren">(</span><em>Condition cond</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.WaitSet.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attach condition
+:type cond: Condition
+:param cond: condition to attach</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.WaitSet.detach">
+<code class="descname">detach</code><span class="sig-paren">(</span><em>Condition cond</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.WaitSet.detach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detach condition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cond</strong> (<a class="reference internal" href="#dds.Condition" title="dds.Condition"><em>Condition</em></a>) – condition to detach</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.WaitSet.get_conditions">
+<code class="descname">get_conditions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.WaitSet.get_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return conditions</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dds.WaitSet.wait">
+<code class="descname">wait</code><span class="sig-paren">(</span><em>timeout = DDSDuration.infinity()</em><span class="sig-paren">)</span><a class="headerlink" href="#dds.WaitSet.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for any of the conditions attached to the waitset to be triggered</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeout</strong> (<a class="reference internal" href="#dds.DDSDuration" title="dds.DDSDuration"><em>DDSDuration</em></a>) – timeout in seconds(default: infinity)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of <a class="reference internal" href="#dds.Condition" title="dds.Condition"><code class="xref py py-class docutils literal"><span class="pre">Condition</span></code></a> objects that were triggered. list is empty if timeout expired</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dds.WriterDataLifecycleQosPolicy">
+<em class="property">class </em><code class="descclassname">dds.</code><code class="descname">WriterDataLifecycleQosPolicy</code><a class="headerlink" href="#dds.WriterDataLifecycleQosPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dds.QosPolicy" title="dds.QosPolicy"><code class="xref py py-class docutils literal"><span class="pre">dds.QosPolicy</span></code></a></p>
+<p>Writer data lifecycle QoS Policy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>autodispose_unregistered_instances</strong> (<em>bool</em>) – set autodispose_unregistered_instances (default: true)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dds.WriterDataLifecycleQosPolicy.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dds.WriterDataLifecycleQosPolicy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dds.WriterDataLifecycleQosPolicy.autodispose_unregistered_instances">
+<code class="descname">autodispose_unregistered_instances</code><a class="headerlink" href="#dds.WriterDataLifecycleQosPolicy.autodispose_unregistered_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Python DCPS API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">dds module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ddsutil.html">ddsutil module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">code</a></li>
+      <li>Next: <a href="ddsutil.html" title="next chapter">ddsutil module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, ADLINK Technology Limited.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/dds.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

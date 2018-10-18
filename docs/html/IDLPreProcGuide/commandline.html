@@ -59,7 +59,7 @@ command line options:</p>
 [ -I &lt;path&gt; ]
 [ -D &lt;macro&gt;[=&lt;definition&gt;] ]
 &lt; -S | -C &gt;
-&lt; -l (c | c++ | cpp | java | cs | isocpp | isoc++ | c99) &gt;
+&lt; -l (c | c++ | cpp | java | cs | isocpp | isoc++ | c99 | simulink) &gt;
 [ -F ]
 [ -j [old]:&lt;new&gt;]
 [ -o &lt;dds-types&gt; | &lt;custom-psm&gt; | &lt;no-equality&gt; | &lt;deprecated-c++11-mapping&gt;]
@@ -108,7 +108,7 @@ types will be DDS instead of the name space implied by the IDL language mapping.
 <dt><strong>-C</strong></dt>
 <dd>Specifies ORB integrated mode, which allows application programs to
 be built and run integrated with an ORB.</dd>
-<dt><strong>-l (c | c++ | cpp | java | cs | isocpp | isoc++ | isocpp2 | isoc++2 | c99)</strong></dt>
+<dt><strong>-l (c | c++ | cpp | java | cs | isocpp | isoc++ | isocpp2 | isoc++2 | c99 | simulink)</strong></dt>
 <dd><p class="first">Selects the target language.
 Note that the Vortex OpenSplice IDL Pre-processor does not support
 every combination of modes and languages. This option is mandatory; when no
@@ -176,6 +176,11 @@ types. Except that the primitive types are mapped to the corresponding
 c99 types and that bound strings are mapped to char arrays with a
 size one larger than specified in the idl definition to allow for
 the terminating 0 character.</p>
+<p><a href="#id4"><span class="problematic" id="id5">|simulink|</span></a></p>
+</li>
+<li><p class="first">For Simulink a MATLAB .m file is created representing the simulink
+bus for the input IDL file. Typically this option is used when
+invoking a script from MATLAB to import the IDL into Simulink.</p>
 </li>
 </ul>
 <p class="last">See also
@@ -313,7 +318,7 @@ the use of sequences within multi-domain applications.
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

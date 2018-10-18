@@ -92,7 +92,7 @@ goto:EOF
    echo "=== Launching Throughput %EXAMPLE_LANG% "
    start CMD /C RUNPUB.bat
    %SLEEP2% >NUL
-   start "" /B java -classpath "classes;%OSPL_HOME%/jar/dcpssaj5.jar" subscriber 10 > subResult.txt 2>&1
+   start "" /B java -jar sub/java5_Throughput_sub.jar 10 > subResult.txt 2>&1
    set SUB_RESULT=%errorlevel%
    %SLEEP15% >NUL
    set /p PUB_RESULT=<pubReturn.txt
@@ -141,10 +141,10 @@ goto:EOF
    echo "=== Launching RoundTrip %EXAMPLE_LANG% "
    start CMD /C RUNSUB.bat
    %SLEEP2% >NUL
-   start "" /B java -classpath "classes;%OSPL_HOME%/jar/dcpssaj5.jar" ping 100 0 10 > pingResult.txt 2>&1
+   start "" /B java -jar ping/java5_ping.jar 100 0 10 > pingResult.txt 2>&1
    set PUB_RESULT=%errorlevel%
    %SLEEP15% >NUL
-   start "" /B java -classpath "classes;%OSPL_HOME%/jar/dcpssaj5.jar" ping quit >NUL
+   start "" /B java -jar pong/java5_pong.jar quit >NUL
    %SLEEP5% >NUL
    set /p SUB_RESULT=<subReturn.txt
    del subReturn.txt

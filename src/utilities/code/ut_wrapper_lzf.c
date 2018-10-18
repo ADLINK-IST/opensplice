@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,8 +33,7 @@ typedef struct wrapper_lzf {
     _lzf_decompress decompress;
 } wrapper_lzf;
 
-/*
- * The lzf compress wrapper will return a buffer which the
+/* The lzf compress wrapper will return a buffer which the
  * following layout:
  * +=====================================================
  * |  0  |  1  |  2  |  3  |  4  |  5  |  6  | ... |  n
@@ -300,6 +300,8 @@ ut__wrapper_lzf_init (
             OS_REPORT(OS_ERROR, OS_FUNCTION, result,
                       "At least one of required functions 'lzf_compress,lzf_decompress' not found");
         }
+    } else {
+        os_free(wrapper);
     }
     return result;
 }

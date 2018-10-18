@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,7 +33,7 @@ namespace DDS.OpenSplice
         private string internalTypeName;
         private string keyList;
         private Type dataType;
-        
+
         public Type TypeSpec
         {
             get
@@ -48,7 +49,7 @@ namespace DDS.OpenSplice
                 return typeName;
             }
         }
-        
+
         public string InternalTypeName
         {
             get
@@ -57,8 +58,8 @@ namespace DDS.OpenSplice
             }
         }
 
-        public string TypeDescriptor 
-        { 
+        public string TypeDescriptor
+        {
             get
             {
                 return typeDescriptor;
@@ -73,7 +74,7 @@ namespace DDS.OpenSplice
                 return keyList;
             }
         }
-        
+
 
         /*
          * Constructor for a TypeSupport that uses the specified (custom) Marshaler.
@@ -84,9 +85,9 @@ namespace DDS.OpenSplice
             this.typeName = typeName;
             this.internalTypeName = (internalTypeName.Length > 0) ? internalTypeName : typeName;
             this.keyList = keyList;
-            
+
             System.Text.StringBuilder descriptor = new System.Text.StringBuilder();
-            foreach (string s in descriptorArr) 
+            foreach (string s in descriptorArr)
             {
                 descriptor.Append(s);
             }
@@ -117,7 +118,7 @@ namespace DDS.OpenSplice
             } else {
                 dp = participant as DomainParticipant;
                 if (dp == null) {
-                    ReportStack.Report (result, "domain is invalid, not of type " + 
+                    ReportStack.Report (result, "domain is invalid, not of type " +
                         "DDS::OpenSplice::DomainParticipant");
                 } else {
                     if (typeName == null) {

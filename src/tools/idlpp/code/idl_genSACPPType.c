@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -72,7 +73,7 @@ struct idl_genSACPPStructSpec {
     c_bool hasRef;
 };
 
-/* @brief generate dimension of an array slice
+/** @brief generate dimension of an array slice
  *
  * arraySliceDimensions is a local support function to generate
  * the array dimensions of an array slice
@@ -90,7 +91,7 @@ idl_arraySliceDimensions(
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
 }
 
-/* @brief generate dimension of an array
+/** @brief generate dimension of an array
  *
  * arrayDimensions is a local support function to generate
  * the array dimensions of an array
@@ -262,7 +263,7 @@ idl_macroFromBasename(
     return macro;
 }
 
-/* @brief callback function called on opening the IDL input file.
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - mutiple inclusion prevention
@@ -294,7 +295,7 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    /* Generate inclusion of standard OpenSplice DDS type definition files */
+    /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <sacpp_mapping.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
 #ifndef RP
@@ -313,7 +314,7 @@ idl_fileOpen(
     return idl_explore;
 }
 
-/* @brief callback function called on closing the IDL input file.
+/** @brief callback function called on closing the IDL input file.
  *
  * Generate standard file footer consisting of:
  * - mutiple inclusion prevention closure
@@ -832,8 +833,6 @@ idl_enumerationClose (
 
     OS_UNUSED_ARG(name);
 
-/*    idl_printIndent(arg->indent_level);
-      idl_fileOutPrintf(idl_fileCur(), "EORB_FORCE_ENUM32(__%s)\n", name);*/
     arg->indent_level--;
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n");
@@ -1026,7 +1025,7 @@ idl_constantOpenClose (
  * Standard control structure to specify that inline
  * type definitions are to be processed prior to the
  * type itself in contrast with inline.
-*/
+ */
 static idl_programControl idl_genSACPPLoadControl = {
     idl_prior
 };
@@ -1079,8 +1078,7 @@ idl_genSacppTypeProgram(
     return &idl_genSacppType;
 }
 
-/*
- * Implementation Considerations:
+/* Implementation Considerations:
  *
  * - Mapping structures:
  * The members of a structure have a type, which can be arrays, sequences, strings
@@ -1089,5 +1087,4 @@ idl_genSacppTypeProgram(
  * all compilers can handle this. Therefore we will generate these type-defs at the module
  * level of the structure. The structure definition it self will be built on heap and written
  * to the output file in the idl_structureClose() callback.
- *
  */

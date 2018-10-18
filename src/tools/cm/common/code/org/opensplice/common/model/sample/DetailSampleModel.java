@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -52,16 +53,16 @@ import org.opensplice.common.model.table.UserDataTableModel;
  * - ArrayList:                All added Sample objects are added to this list
  *                             so all added Sample objects can be found later
  *                             on.
- * 
+ *
  * Its purpose is to:
- * - Supply a simplification for the administration of a whole bunch of Sample 
+ * - Supply a simplification for the administration of a whole bunch of Sample
  *   objects.
  * - Supply a generic interface for reading/taking data from several types of
  *   entities.
  * - Supply a mechanism to be able to browse through the administration of
  *   samples.
- * 
- * @date Oct 21, 2004 
+ *
+ * @date Oct 21, 2004
  */
 public abstract class DetailSampleModel extends ModelRegister{
     public DetailSampleModel(String structName){
@@ -81,20 +82,20 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Reads a Sample from its reader.
-     * 
+     *
      * @throws SampleModelSizeException Thrown when no more data can be added
      *                                  to this model.
-     * @throws CommonException Thrown when no data could be retreived from the
-     *    
+     * @throws CommonException Thrown when no data could be retrieved from the
+     *
      */
     public abstract Sample read() throws CommonException, SampleModelSizeException;
 
     /**
      * Takes a Sample from its entity.
-     * 
+     *
      * @throws SampleModelSizeException Thrown when no more data can be added
      *                                  to this model.
-     * @throws CommonException Thrown when no data could be retreived from the
+     * @throws CommonException Thrown when no data could be retrieved from the
      *                         reader.
      */
     public abstract Sample take() throws CommonException, SampleModelSizeException;
@@ -104,38 +105,38 @@ public abstract class DetailSampleModel extends ModelRegister{
     /**
      * Exports the complete content of the model to the specified file in XML
      * format.
-     * 
+     *
      * @param file The file to export the data to.
      * @return The number of samples that have been exported.
-     * @throws CommonException Thrown when the file cannot be created or is not 
+     * @throws CommonException Thrown when the file cannot be created or is not
      *                         accessible
      */
     public abstract int export(File file) throws CommonException;
-    
+
     /**
      * Checks whether the maximum amount of data in the model has been reached.
-     * 
-     * @throws SampleModelSizeException Thrown when the maximum has been 
+     *
+     * @throws SampleModelSizeException Thrown when the maximum has been
      *                                  reached.
      */
     public void checkSize() throws SampleModelSizeException{
         int max = 2000;
-        
+
         if(userDataModel.getRowCount() >= max){
             throw new SampleModelSizeException("Maximum #samples in model reached(" + max + ").");
         }
     }
 
     /**
-     * Clears the data in the model.    
+     * Clears the data in the model.
      */
     public void clear(){
         userDataModel.clear();
         singleUserDataModel.clear();
         sampleInfoModel.clear();
-        
+
     }
-    
+
     public void clean() {
         userDataModel.clean();
         singleUserDataModel.clean();
@@ -143,7 +144,7 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Clears a part of the data in the model.
-     * 
+     *
      * @param beginRow The begin row of the data to remove.
      * @param endRow The end row of the data to remove.
      */
@@ -153,7 +154,7 @@ public abstract class DetailSampleModel extends ModelRegister{
                 userDataModel.clear(beginRow, endRow);
             }
             singleUserDataModel.clear();
-            sampleInfoModel.clear();            
+            sampleInfoModel.clear();
         }
     }
 
@@ -162,22 +163,22 @@ public abstract class DetailSampleModel extends ModelRegister{
      * with the Sample/Message info of the Sample at the supplied index and
      * the singleUserDataModel is filled with the UserData within the Sample
      * at the supplied index.
-     * 
+     *
      * @param index The index of the Sample in the list of samples.
      * @return When the supplied index is not available, false is returned,
-     *         true otherwise. 
+     *         true otherwise.
      */
     public boolean setSelectedSample(int index){
         Sample s = null;
         try{
             s = userDataModel.getDataAt(index);
         } catch(IndexOutOfBoundsException e){}
-        
+
         if(s == null){
             return false;
         }
         sampleInfoModel.setData(s);
-        
+
         if(s.getMessage() != null){
             singleUserDataModel.setData(s);
         }
@@ -189,21 +190,21 @@ public abstract class DetailSampleModel extends ModelRegister{
      * with the Sample/Message info of the Sample at the supplied index and
      * the singleUserDataModel is filled with the UserData within the Sample
      * at the supplied index.
-     * 
+     *
      * @param index The index of the Sample in the list of samples.
      * @return When the supplied index is not available, false is returned,
-     *         true otherwise. 
+     *         true otherwise.
      */
     public boolean setSelectedSample(int index, String struct){
         Sample s = null;
         try{
             s = userDataModel.getDataAt(index);
         } catch(IndexOutOfBoundsException e){}
-        
+
         if(s == null){
             return false;
         }
-          
+
         if(s.getMessage() != null){
             UserData data = s.getMessage().getUserData();
             singleUserDataModel.clear();
@@ -219,7 +220,7 @@ public abstract class DetailSampleModel extends ModelRegister{
     /**
      * Provides access to the Sample at the supplied index in the list
      * of samples.
-     * 
+     *
      * @param index The index of the Sample in the administration.
      * @return The Sample at the supplied index.
      */
@@ -233,7 +234,7 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Provides access to singleUserDataModel.
-     * 
+     *
      * @return Returns the singleUserDataModel.
      */
     public UserDataSingleTableModel getSingleUserDataModel() {
@@ -241,7 +242,7 @@ public abstract class DetailSampleModel extends ModelRegister{
     }
     /**
      * Provides access to userDataModel.
-     * 
+     *
      * @return Returns the userDataModel.
      */
     public UserDataTableModel getUserDataModel() {
@@ -250,13 +251,13 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Provides access to sampleInfoTableModel.
-     * 
+     *
      * @return Returns the sampleInfoTableModel.
      */
     public SampleInfoTableModel getSampleInfoModel() {
         return sampleInfoModel;
     }
-    
+
     protected String getKeyList(Topic t) throws CommonException{
         String keys = null;
         String[] keyList;
@@ -279,14 +280,14 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Adds a Sample to the model.
-     * 
+     *
      * @param s The Sample to add.
      * @return true if it was added and is visible (not filtered out by a
      *         UserDataFilter), false otherwise.
      */
     protected boolean addSample(Sample s){
         boolean added = userDataModel.setData(s);
-        
+
         if(added){
             singleUserDataModel.setData(s);
             sampleInfoModel.setData(s);
@@ -297,14 +298,14 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Adds a Sample to the model.
-     * 
+     *
      * @param s The Sample to add.
      * @return true if it was added and is visible (not filtered out by a
      *         UserDataFilter), false otherwise.
      */
     public boolean addSample(Sample s, String struct) {
         boolean added = userDataModel.setData(s, struct);
-        
+
         if(added){
             singleUserDataModel.setData(s,struct);
             sampleInfoModel.setData(s);
@@ -315,7 +316,7 @@ public abstract class DetailSampleModel extends ModelRegister{
 
     /**
      * Adds a Sample to the model.
-     * 
+     *
      * @param s The Sample to add.
      * @return true if it was added and is visible (not filtered out by a
      *         UserDataFilter), false otherwise.
@@ -323,7 +324,7 @@ public abstract class DetailSampleModel extends ModelRegister{
     protected boolean addSample(UserData d, String struct){
         setCurrentUserData(d);
         boolean added = userDataModel.setData(lastReadSample, struct);
-        
+
         if(added){
             singleUserDataModel.setData(lastReadSample,struct);
             sampleInfoModel.setData(lastReadSample);
@@ -334,10 +335,10 @@ public abstract class DetailSampleModel extends ModelRegister{
     protected String getPartitions(Reader reader){
         String partitions = null;
         Entity entity;
-        
+
         try {
             Entity[] entities = reader.getDependantEntities(EntityFilter.SUBSCRIBER);
-            
+
             if(entities.length > 0){
                 /*Free all but the first one.*/
                 for(int i=1; i<entities.length; i++){
@@ -346,7 +347,7 @@ public abstract class DetailSampleModel extends ModelRegister{
                 entity = entities[0];
                 entities = entity.getOwnedEntities(EntityFilter.PARTITION);
                 entity.free();
-                
+
                 for(int i=0; i<entities.length;i++){
                     if(partitions == null){
                         partitions = entities[i].getName();
@@ -405,10 +406,10 @@ public abstract class DetailSampleModel extends ModelRegister{
         }
         return result;
     }
-    
+
     public void setToBeWrittenUserData(UserData data) {
         toBeWrittenUserData = data;
-        
+
     }
 
     public UserData getToBeWrittenUserData() {
@@ -424,19 +425,19 @@ public abstract class DetailSampleModel extends ModelRegister{
     }
 
     /**
-     * All UserData of the Sample object that are added will be administrated 
+     * All UserData of the Sample object that are added will be administrated
      * in this component.
      */
     protected UserDataTableModel userDataModel;
 
     /**
-     * This component holds one instance of UserData. Which one is determined 
+     * This component holds one instance of UserData. Which one is determined
      * by the user.
      */
     protected UserDataSingleTableModel singleUserDataModel;
 
     /**
-     * This component holds one instance of SampleInfo Which one is determined 
+     * This component holds one instance of SampleInfo Which one is determined
      * by the user.
      */
     protected SampleInfoTableModel sampleInfoModel;

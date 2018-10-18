@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -1037,6 +1038,8 @@ saj_sampleInfoCopyOut(
     }
     (*env)->SetObjectField (env, *dst, GET_CACHED(sampleInfo_source_timestamp_fid), source_timestamp);
     CHECK_EXCEPTION(env);
+    DELETE_LOCAL_REF(env, source_timestamp);
+
     SET_LONG_FIELD(env, *dst, sampleInfo_instance_handle, src->instance_handle);
     SET_LONG_FIELD(env, *dst, sampleInfo_publication_handle, src->publication_handle);
 
@@ -1056,7 +1059,7 @@ saj_sampleInfoCopyOut(
     }
     (*env)->SetObjectField (env, *dst, GET_CACHED(sampleInfo_reception_timestamp_fid), reception_timestamp);
     CHECK_EXCEPTION(env);
-
+    DELETE_LOCAL_REF(env, reception_timestamp);
     return SAJ_RETCODE_OK;
     CATCH_EXCEPTION: return SAJ_RETCODE_ERROR;
 }

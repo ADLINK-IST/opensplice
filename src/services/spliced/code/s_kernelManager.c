@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,9 +42,6 @@ C_STRUCT(s_kernelManager) {
 #define S_RESENDMANAGER   (1 << 1)
 #define S_CANDMCMDMANAGER (1 << 2)
 
-/**************************************************************
- * Private functions
- **************************************************************/
 static void *
 kernelManager(
     void *arg)
@@ -92,14 +90,6 @@ cAndMCommandManager(
     return NULL;
 }
 
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
 s_kernelManager
 s_kernelManagerNew(
     spliced daemon)
@@ -180,25 +170,57 @@ err_mutexInit:
     return NULL;
 }
 
-void
+os_boolean
 s_kernelManagerFree(
     s_kernelManager km)
 {
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
     assert(km);
 
+    config = splicedGetConfiguration(km->internal_spliced);
     if(km->expected & S_KERNELMANAGER){
-        ut_threadWaitExit(km->thr, NULL);
+        osr = ut_threadTimedWaitExit(km->thr, config->serviceTerminatePeriod, NULL);
+        if (osr != os_resultSuccess) {
+            OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                ut_threadGetName(km->thr),
+                (os_address)os_threadIdToInteger(ut_threadGetId(km->thr)),
+                os_resultImage(osr));
+            result = OS_FALSE;
+        }
     }
-    if(km->expected & S_RESENDMANAGER){
-        ut_threadWaitExit(km->resendManager, NULL);
+    if(result && (km->expected & S_RESENDMANAGER)) {
+        osr = ut_threadTimedWaitExit(km->resendManager, config->serviceTerminatePeriod, NULL);
+        if (osr != os_resultSuccess) {
+            OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                ut_threadGetName(km->resendManager),
+                (os_address)os_threadIdToInteger(ut_threadGetId(km->resendManager)),
+                os_resultImage(osr));
+            result = OS_FALSE;
+        }
     }
-    if(km->expected & S_CANDMCMDMANAGER){
+    if(result && (km->expected & S_CANDMCMDMANAGER)){
         u_splicedCAndMCommandDispatcherQuit(km->spliced);
-        ut_threadWaitExit(km->cAndMCommandManager, NULL);
+        osr = ut_threadTimedWaitExit(km->cAndMCommandManager, config->serviceTerminatePeriod, NULL);
+        if (osr != os_resultSuccess) {
+            OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                ut_threadGetName(km->cAndMCommandManager),
+                (os_address)os_threadIdToInteger(ut_threadGetId(km->cAndMCommandManager)),
+                os_resultImage(osr));
+            result = OS_FALSE;
+        }
     }
-    os_condDestroy(&km->cv);
-    os_mutexDestroy(&km->mtx);
-    os_free(km);
+    if (result) {
+        os_condDestroy(&km->cv);
+        os_mutexDestroy(&km->mtx);
+        os_free(km);
+    }
+
+    return result;
 }
 
 void
@@ -224,7 +246,3 @@ s_kernelManagerWaitForActive(
     }
     os_mutexUnlock(&km->mtx);
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/

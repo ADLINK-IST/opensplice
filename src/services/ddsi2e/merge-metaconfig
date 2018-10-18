@@ -1,0 +1,11 @@
+if [ $# -ne 2 ] ; then
+   echo "usage: $0 METACONFIG NEW_DDSI2_CONFIG" >&2
+   exit 1
+fi
+
+hdmarker=`head -1 "$2"`
+tlmarker=`tail -1 "$2"`
+
+gawk '$0 == "'"$hdmarker"'" {exit} {print}' "$1"
+cat "$2"
+gawk '$0 == "'"$tlmarker"'" {p=1;next} p {print}' "$1"

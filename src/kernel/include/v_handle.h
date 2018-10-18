@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -102,19 +103,6 @@ OS_API v_handleServer
 v_handleServerNew (
     c_base base);
 
-
-/**
- * \brief The HandleServer destructor.
- *
- * This method will free all resources related to the given HandleServer object.
- *
- * \param _this The given HandleServer object that must be destroyed.
- **
-OS_API void
-v_handleServerFree(
-    v_handleServer _this);
- */
-
 /**
  * \brief The register method that creates a new Handle for a specified object.
  *
@@ -156,7 +144,7 @@ typedef enum {
     V_HANDLE_ILLEGAL, /* The handle is bogus */
     V_HANDLE_SUSPENDED/* The handle server is suspended. */
 } v_handleResult;
- 
+
 OS_API v_handleResult
 v_handleClaim(
     v_handle _this,
@@ -168,7 +156,7 @@ v_handleClaim(
  * This method will release a previous claimed handle and thereby notifying
  * the HandleServer that the object associated to this handle will not be
  * accessed anymore.
- * 
+ *
  * \param _this The handle which specifies the required object.
  * \return  The result indicates the state of the supplied handle
  */

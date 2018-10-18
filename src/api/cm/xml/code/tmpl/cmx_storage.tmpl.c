@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,11 +30,12 @@ cmx_storageOpen (
     int notImplementedLen = 128;
     int actualLen;
 
+    OS_UNUSED_ARG(attrs);
+
     /* Generate output */
     notImplemented = (c_char*)os_malloc(notImplementedLen);
     actualLen = snprintf(notImplemented, notImplementedLen, "<rr_storageOpenResult>"CMX__RR_STORAGERESULT_NOTIMPLEMENTED"<rr_storage>%p</rr_storage></rr_storageOpenResult>", (void *) NULL);
     if(actualLen >= notImplementedLen){
-        c_char * tmp = notImplemented;
         notImplemented = (c_char*)os_realloc(notImplemented, actualLen + 1);
         snprintf(notImplemented, actualLen + 1, "<rr_storageOpenResult>"CMX__RR_STORAGERESULT_NOTIMPLEMENTED"<rr_storage>%p</rr_storage></rr_storageOpenResult>", (void *) NULL);
     }
@@ -44,6 +46,8 @@ c_char* /* <rr_storageResult>Success</rr_storageResult> */
 cmx_storageClose (
     const c_char* storage)
 {
+    OS_UNUSED_ARG(storage);
+
     return os_strdup(CMX__RR_STORAGERESULT_NOTIMPLEMENTED);
 }
 
@@ -53,6 +57,10 @@ cmx_storageAppend (
     const c_char* metadata,
     const c_char* data)
 {
+    OS_UNUSED_ARG(storage);
+    OS_UNUSED_ARG(metadata);
+    OS_UNUSED_ARG(data);
+
     return os_strdup(CMX__RR_STORAGERESULT_NOTIMPLEMENTED);
 }
 
@@ -60,6 +68,8 @@ c_char*
 cmx_storageRead (
     const c_char* storage)
 {
+    OS_UNUSED_ARG(storage);
+
     return os_strdup("<rr_storageReadResult>"CMX__RR_STORAGERESULT_NOTIMPLEMENTED"<rr_storageReadDataXML></rr_storageReadDataXML></rr_storageReadResult>");
 }
 
@@ -68,5 +78,8 @@ cmx_storageGetType (
     const c_char* xmlStorage,
     const c_char* xmlTypeName)
 {
+    OS_UNUSED_ARG(xmlStorage);
+    OS_UNUSED_ARG(xmlTypeName);
+
     return os_strdup("<rr_storageGetTypeResult><rr_storageType></rr_storageType></rr_storageGetTypeResult>");
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,15 +38,13 @@ extern "C" {
 #endif
 
 
-/*
- * An ut_threads object contains information about the threads that were
+/* An ut_threads object contains information about the threads that were
  * created in that objects' context. It can be used to detect if the related
  * threads make progress or are likely deadlocked.
  */
 OS_CLASS(ut_threads);
 
-/*
- * An ut_thread object contains information about a specific thread.
+/* An ut_thread object contains information about a specific thread.
  *
  * An ut_thread should call ut_threadAwake() periodically to let the utility
  * know that the thread is not deadlocked. This 'periodically' means within
@@ -63,8 +62,7 @@ OS_CLASS(ut_threads);
 OS_CLASS(ut_thread);
 
 
-/*
- * If a caller is interested in the states of its threads, it can provide
+/* If a caller is interested in the states of its threads, it can provide
  * a report callback when calling ut_threadsAllIsWell().
  *
  * This is the callback type.
@@ -97,15 +95,13 @@ typedef void
         void *userdata);
 
 
-/*
- * When not knowing when the thread should wake up again, UT_SLEEP_INDEFINITELY
+/* When not knowing when the thread should wake up again, UT_SLEEP_INDEFINITELY
  * can be passed to ut_threadAsleep().
  */
 #define UT_SLEEP_INDEFINITELY (0)
 
 
-/*
- * Create a new threads object with which to manage and check threads.
+/* Create a new threads object with which to manage and check threads.
  *
  * The calling thread is automatically added as an awake thread to the threads
  * object. The thread is added under the assumed name 'selfname'.
@@ -121,10 +117,9 @@ typedef void
  * New threads managing object.
  */
 OS_API ut_threads
-ut_threadsNew(const char* selfname, os_duration interval, os_uint32 maxthreads, void *userdata);
+ut_threadsNew(const char* selfname, os_duration interval, os_int32 maxthreads, void *userdata);
 
-/*
- * Frees the threads managing object.
+/* Frees the threads managing object.
  *
  * All related threads should have stopped.
  *
@@ -137,8 +132,7 @@ ut_threadsNew(const char* selfname, os_duration interval, os_uint32 maxthreads, 
 OS_API void
 ut_threadsFree(ut_threads threads);
 
-/*
- * Overrules the interval set when calling ut_threadsNew.
+/* Overrules the interval set when calling ut_threadsNew.
  *
  * Parameters:
  * threads  - The threads managing object.
@@ -150,8 +144,7 @@ ut_threadsFree(ut_threads threads);
 OS_API void
 ut_threadsSetInterval(ut_threads threads, os_duration interval);
 
-/*
- * Checks the threads that are related to the managing object.
+/* Checks the threads that are related to the managing object.
  *
  * All is well when all threads have either announced themselves awake within
  * the required interval (provided when calling ut_threadsNew) or asleep (and
@@ -186,8 +179,7 @@ ut_threadsSetInterval(ut_threads threads, os_duration interval);
 OS_API os_boolean
 ut_threadsAllIsWell(ut_threads threads, ut_threadReport reportCb, void *reportData);
 
-/*
- * Returns the userdata provided when calling ut_threadsNew().
+/* Returns the userdata provided when calling ut_threadsNew().
  *
  * Parameters:
  * threads - The threads managing object.
@@ -218,8 +210,7 @@ ut_threadsUserData(ut_threads threads);
 OS_API void
 ut_threadCreate(ut_threads threads, ut_thread *thr, const char *name, const os_threadAttr *threadAttr, os_threadRoutine startRoutine, void *arg);
 
-/*
- * Finds and returns the thread info identified by the OS thread ID.
+/* Finds and returns the thread info identified by the OS thread ID.
  *
  * Parameters:
  * threads - The threads managing object.
@@ -233,8 +224,7 @@ ut_threadCreate(ut_threads threads, ut_thread *thr, const char *name, const os_t
 OS_API ut_thread
 ut_threadLookupId(ut_threads threads, os_threadId tid);
 
-/*
- * Finds and returns the thread info of the calling thread.
+/* Finds and returns the thread info of the calling thread.
  *
  * Parameters:
  * threads - The threads managing object.
@@ -246,8 +236,7 @@ ut_threadLookupId(ut_threads threads, os_threadId tid);
 OS_API ut_thread
 ut_threadLookupSelf(ut_threads threads);
 
-/*
- * Indicate that the thread will sleep for a number of seconds and thus will
+/* Indicate that the thread will sleep for a number of seconds and thus will
  * not announce itself awake in that period.
  *
  * Parameters:
@@ -260,8 +249,7 @@ ut_threadLookupSelf(ut_threads threads);
 OS_API void
 ut_threadAsleep(ut_thread thr, os_uint32 sec);
 
-/*
- * Indicate that the thread is still awake.
+/* Indicate that the thread is still awake.
  *
  * Parameters:
  * thr - The thread that is still awake.
@@ -272,8 +260,7 @@ ut_threadAsleep(ut_thread thr, os_uint32 sec);
 OS_API void
 ut_threadAwake(ut_thread thr);
 
-/*
- * Return the OS thread ID of the given utilities thread.
+/* Return the OS thread ID of the given utilities thread.
  *
  * Parameters:
  * thr         - The thread to get the ID from.
@@ -284,8 +271,7 @@ ut_threadAwake(ut_thread thr);
 OS_API os_threadId
 ut_threadGetId(ut_thread thr);
 
-/*
- * Return the name of the given utilities thread.
+/* Return the name of the given utilities thread.
  *
  * Be aware that the pointer is only valid as long as the thread is running.
  *
@@ -298,8 +284,7 @@ ut_threadGetId(ut_thread thr);
 OS_API const char*
 ut_threadGetName(ut_thread thr);
 
-/*
- * Suspend the execution of the calling thread for the specified time.
+/* Suspend the execution of the calling thread for the specified time.
  *
  * It is registered that the thread will not indicate progress while it
  * is sleeping.
@@ -319,8 +304,7 @@ ut_threadGetName(ut_thread thr);
 OS_API os_result
 ut_sleep(ut_thread thr, os_duration delay);
 
-/*
- * Wait for the condition
+/* Wait for the condition
  *
  * It is registered that the thread will not indicate progress while it
  * is waiting on the condition.
@@ -344,8 +328,7 @@ ut_sleep(ut_thread thr, os_duration delay);
 OS_API void
 ut_condWait(ut_thread thr, os_cond *cv, os_mutex *mtx);
 
-/*
- * Wait for the condition but return when the specified time has expired
+/* Wait for the condition but return when the specified time has expired
  * before the condition is triggered
  *
  * It is registered that the thread will not indicate progress while it
@@ -372,8 +355,7 @@ ut_condWait(ut_thread thr, os_cond *cv, os_mutex *mtx);
 OS_API os_result
 ut_condTimedWait(ut_thread thr, os_cond *cv, os_mutex *mtx, os_duration timeout);
 
-/*
- * Wait for the termination of the identified thread
+/* Wait for the termination of the identified thread
  *
  * If the identified thread is still running, wait for its termination else
  * return immediately. In thread_result it returns the exit status of the
@@ -398,8 +380,10 @@ ut_condTimedWait(ut_thread thr, os_cond *cv, os_mutex *mtx, os_duration timeout)
 OS_API os_result
 ut_threadWaitExit(ut_thread thr, void **result);
 
-/*
- * Translate the given thread information into a string and copy it into the
+OS_API os_result
+ut_threadTimedWaitExit(ut_thread thr, os_duration timeout, void **result);
+
+/* Translate the given thread information into a string and copy it into the
  * given buffer.
  *
  * It does not write more than size bytes (including the terminating null byte

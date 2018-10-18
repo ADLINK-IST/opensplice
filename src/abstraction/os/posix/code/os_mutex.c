@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -183,7 +184,7 @@ os_mutexDestroy (
         OS_REPORT(OS_FATAL,"os_mutexDestroy",0,
                     "Operation failed: mutex 0x%"PA_PRIxADDR", result = %s",
                     (os_address)mutex, os_strError(result));
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -209,7 +210,7 @@ os_mutexLock (
         OS_REPORT(OS_FATAL,"os_mutexLock",0,
                     "Operation failed: mutex 0x%"PA_PRIxADDR", result = %s",
                     (os_address)mutex, strerror(result));
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort();
     }
 }
@@ -272,7 +273,7 @@ os_mutexTryLock (
                     "Operation failed: mutex 0x%"PA_PRIxADDR", result = %s",
                     (os_address)mutex, os_strError(result));
         rv=  os_resultFail;
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
     return rv;
@@ -301,7 +302,7 @@ os_mutexUnlock (
         OS_REPORT(OS_FATAL,"os_mutexUnlock",0,
                     "Operation failed: mutex 0x%"PA_PRIxADDR", result = %s",
                     (os_address)mutex, os_strError(result));
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }

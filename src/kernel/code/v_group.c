@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@
  *
  */
 #include "v__group.h"
+#include "v__groupStore.h"
 #include "v__kernel.h"
 #include "v_policy.h"
 #include "v__entry.h"
@@ -26,7 +28,6 @@
 #include "v_message.h"
 #include "v_messageQos.h"
 #include "v__entity.h"
-#include "v_proxy.h"
 #include "v__observable.h"
 #include "v_writer.h"
 #include "v_reader.h"
@@ -43,9 +44,14 @@
 #include "v__transaction.h"
 #include "v__transactionGroup.h"
 #include "v_networkReaderEntry.h"
+#include "v_time.h"
+#include "v_filter.h"
 #include "v__builtin.h"
 #include "v_kernel.h"
+#include "q_helper.h"
 #include "c_time.h"
+#include "v_configuration.h"
+#include "v_cfElement.h"
 
 #include "os_heap.h"
 #include "os_report.h"
@@ -68,15 +74,20 @@ groupWrite (
     v_groupInstance *instancePtr,
     v_networkId writingNetworkId,
     c_bool stream,
-    v_entry entry,
+    c_bool historicalData,
     v_resendScope *resendScope
 );
 
 static v_result
 groupGetHistoricalData(
     v_group g,
+    v_entry e);
+
+static void
+groupGetOpenTransactions(
+    v_group g,
     v_entry e,
-    c_bool openTransactions);
+    c_bool groupAdmin);
 
 v_groupSample
 v_groupSampleNew (
@@ -111,6 +122,25 @@ v_groupSampleNew (
         }
     }
     return sample;
+}
+
+static c_array
+createInstanceKeyList(
+    c_type instanceType,
+    v_topic topic)
+{
+    os_uint32 i, nrOfKeys;
+    c_array newKeyList = NULL;
+    os_char keyName[16];
+
+    nrOfKeys = c_arraySize(v_topicMessageKeyList(topic));
+    newKeyList = c_arrayNew(c_field_t(c_getBase(instanceType)), nrOfKeys);
+    for(i = 0; i<nrOfKeys; i++){
+        os_sprintf(keyName,"key.field%d",i);
+        newKeyList[i] = c_fieldNew(instanceType, keyName);
+        assert(newKeyList[i]);
+    }
+    return newKeyList;
 }
 
 static c_type
@@ -163,7 +193,8 @@ createGroupSampleType(
 static c_type
 createGroupInstanceType(
     v_topic topic,
-    c_type sampleType)
+    c_type sampleType,
+    c_bool gidkey)
 {
     v_kernel kernel;
     c_type instanceType, tmpType, baseType, foundType;
@@ -171,75 +202,96 @@ createGroupInstanceType(
     c_base base;
     c_char *name;
     os_size_t length;
-    int sres;
-    (void)sres;
 
     kernel = v_objectKernel(topic);
     base = c_getBase(kernel);
-    baseType = c_resolve(base,"kernelModuleI::v_groupInstance");
-    assert(baseType != NULL);
-
-    /* Due to the fact that our database will normalize attributes in classes,
-     * it is not possible to define v_groupSample<type> attribute and key-type
-     * attribute in one class. Sometimes the key-type is a reference and
-     * sometimes it is not, leading to different ordering in memory of the
-     * two attributes some situations. As the v_groupInstanceTemplate is
-     * used to get a hold of the typed v_groupSample, it needs to be before the
-     * key in memory in all cases. The algorithm below introduces an
-     * extra anonymous class in between v_groupInstance and the typed
-     * v_groupInstance to ensure memory layout is always the same for any
-     * typed v_groupInstance
+    /* Determine the name of the Topic specific GroupInstance type.
+     * And look for existing definition.
      */
-    /* Declare new class that extends from v_groupInstance. */
-    tmpType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(tmpType)->extends = c_class(baseType);
-
-    /* Declare typed v_groupSample attribute in the anonymous class. */
-    o = c_metaDeclare(c_metaObject(tmpType),"newest",M_ATTRIBUTE);
-    c_property(o)->type = c_keep(sampleType);
-    c_free(o);
-
-    /* Finalize the anonymous class. */
-    c_metaObject(tmpType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(tmpType));
-
-    /* Declare the typed v_groupInstance and make it extend the anonymous
-     * class with the typed v_groupSample.
-     */
-    instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(instanceType)->extends = c_class(tmpType); /* transfer refCount */
-
-    /* If the topic has a key, add a key attribute to the typed
-     * v_groupInstance.
-     */
-    foundType = v_topicKeyType(topic);
-
-    if ( foundType != NULL) {
-        o = c_metaDeclare(c_metaObject(instanceType),"key",M_ATTRIBUTE);
-        c_property(o)->type = foundType; /* transfer refcount */
-        c_free(o);
-    }
-    /* Finalize typed v_groupInstance. */
-    c_metaObject(instanceType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(instanceType));
-
 #define INSTANCE_NAME "v_groupInstance<v_groupSample<>>"
 #define INSTANCE_FORMAT "v_groupInstance<v_groupSample<%s>>"
-    /* Create a name and bind type to name */
-    /* Ths sizeof contains \0 */
     length = sizeof(INSTANCE_NAME) + strlen(v_topicName(topic));
     name = os_malloc(length);
-    sres = snprintf(name,length,INSTANCE_FORMAT,v_topicName(topic));
-    assert(sres >= 0 && (os_size_t) sres == (length-1));
-    OS_UNUSED_ARG(sres);
+    snprintf(name,length,INSTANCE_FORMAT,v_topicName(topic));
 #undef INSTANCE_NAME
 #undef INSTANCE_FORMAT
+    foundType = c_resolve(base,name);
 
-    foundType = c_type(c_metaBind(c_metaObject(base),
-                                  name,
-                                  c_metaObject(instanceType)));
+    if (foundType == NULL) {
+        /* The type doesn't exist so declare it now.
+         * Lookup GroupInstance base type and extend it with type specific attributes.
+         */
+        baseType = c_resolve(base,"kernelModuleI::v_groupInstance");
+        assert(baseType != NULL);
+
+        /* Due to the fact that our database will normalize attributes in classes,
+         * it is not possible to define v_groupSample<type> attribute and key-type
+         * attribute in one class. Sometimes the key-type is a reference and
+         * sometimes it is not, leading to different ordering in memory of the
+         * two attributes some situations. As the v_groupInstanceTemplate is
+         * used to get a hold of the typed v_groupSample, it needs to be before the
+         * key in memory in all cases. The algorithm below introduces an
+         * extra anonymous class in between v_groupInstance and the typed
+         * v_groupInstance to ensure memory layout is always the same for any
+         * typed v_groupInstance
+         */
+        /* Declare new class that extends from v_groupInstance. */
+        tmpType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+        c_class(tmpType)->extends = c_class(baseType);
+        c_free(baseType);
+
+        /* Declare typed v_groupSample attribute in the anonymous class. */
+        o = c_metaDeclare(c_metaObject(tmpType),"newest",M_ATTRIBUTE);
+        c_property(o)->type = c_keep(sampleType);
+        c_free(o);
+
+        /* Finalize the anonymous class. */
+        c_metaObject(tmpType)->definedIn = c_keep(base);
+        c_metaFinalize(c_metaObject(tmpType));
+
+        /* Extend GroupInstance base class with a Topic specific key attribute.
+         * Lookup the GroupInstance key depending on GIDKEY policy as either the Topic key or Instance GID.
+         */
+        if (gidkey) {
+            baseType = tmpType;
+            /* Declare new class that extends from previous. */
+            tmpType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+            c_class(tmpType)->extends = c_class(baseType);
+            /* Declare the system wide unique Instance GID as key to avoid information loss. */
+            o = c_metaDeclare(c_metaObject(tmpType),"gid",M_ATTRIBUTE);
+            c_property(o)->type = c_resolve(base,"kernelModule::v_gid");
+            c_free(o);
+            /* Finalize the anonymous class. */
+            c_metaObject(tmpType)->definedIn = c_keep(base);
+            c_metaFinalize(c_metaObject(tmpType));
+        }
+
+        /* Declare the typed v_groupInstance and make it extend the anonymous
+         * class with the typed v_groupSample.
+         */
+        instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+        c_class(instanceType)->extends = c_class(tmpType); /* transfer refCount */
+
+        /* Declare the key attribute of the extended GroupInstance type. */
+        foundType = v_topicKeyType(topic);
+        if (foundType) {
+            o = c_metaDeclare(c_metaObject(instanceType),"key",M_ATTRIBUTE);
+            c_property(o)->type = foundType; // transfer refcount
+            foundType = NULL;
+            c_free(o);
+        }
+        /* Finalize typed v_groupInstance. */
+        c_metaObject(instanceType)->definedIn = c_keep(base);
+        c_metaFinalize(c_metaObject(instanceType));
+
+        /* Now create the extended GroupInstance type name and register the type to the Database.
+         * The Bind may return an existing GroupInstance type,
+         * in that case the existing is returned and the newly created is destroyed.
+         */
+        foundType = c_type(c_metaBind(c_metaObject(base), name, c_metaObject(instanceType)));
+        c_free(instanceType);
+    }
     os_free(name);
-    c_free(instanceType);
 
     return foundType;
 }
@@ -383,7 +435,8 @@ registerInstance (
            (v_reader(v_entry(proxy->entry)->reader)->qos->userKey.v.enable));
 
     /* Now register all writer instances by forwarding the writers
-     * register messages. Then forward all transient data */
+     * register messages. Then forward all transient data
+     */
     regArg.proxy = proxy;
     regArg.instance = instance;
     return v_groupInstanceWalkRegistrations(instance, doRegister, &regArg);
@@ -414,17 +467,6 @@ doUnregister (
                                        *timestamp);
         registration = registration->next;
     }
-    return TRUE;
-}
-
-
-static c_bool
-instanceFree (
-    c_object o,
-    c_voidp arg)
-{
-    OS_UNUSED_ARG(arg);
-    v_groupInstanceFree(v_groupInstance(o));
     return TRUE;
 }
 
@@ -659,8 +701,7 @@ _empty_purgeList_insert(
     v_groupInstanceDisconnect(instance);
     v_groupInstanceSetEpoch(instance, insertTime);
 
-    purgeItem = c_new(v_kernelType(v_objectKernel(group),
-                      K_GROUPPURGEITEM));
+    purgeItem = c_new(v_kernelType(v_objectKernel(group), K_GROUPPURGEITEM));
     if (purgeItem) {
         purgeItem->instance = c_keep(instance);
         purgeItem->insertionTime = insertTime;
@@ -674,9 +715,8 @@ _empty_purgeList_insert(
             group->purgeListEmptyLast = purgeItem;
         }
     } else {
-        OS_REPORT(OS_FATAL,
-                  "v_group::_empty_purgeList_insert",V_RESULT_INTERNAL_ERROR,
-                  "Failed to allocate purgeItem");
+        OS_REPORT(OS_FATAL, "v_group::_empty_purgeList_insert",
+                  V_RESULT_INTERNAL_ERROR, "Failed to allocate purgeItem");
         assert(FALSE);
     }
 }
@@ -687,7 +727,6 @@ _empty_purge_take(
     os_timeE purgeBefore)
 {
     v_groupPurgeItem purgeItem;
-    v_groupInstance removed;
     v_groupInstance instance = NULL;
     os_compare equality;
 
@@ -717,13 +756,7 @@ _empty_purge_take(
                  */
                 equality = os_timeECompare(purgeItem->insertionTime, instance->epoch);
                 if (equality == OS_EQUAL) {
-                    removed = c_remove(group->instances,instance,NULL,NULL);
-                    /* It is allowed that the instance is already taken and
-                     * no longer exists in the group->instances set.
-                     */
-                    if (removed) {
-                        v_groupInstanceFree(removed);
-                    }
+                    v_groupStoreDelete(group->store, instance);
                     purgeItem->instance = NULL; /* Return instance, so prevent purgeItem from releasing it. */
                     c_free(purgeItem);
                     purgeItem = NULL;
@@ -744,6 +777,12 @@ _empty_purge_take(
     return instance;
 }
 
+struct alignstate_order_constraint {
+    char require_V_ALIGNSTATE_INCOMPLETE_lt_V_ALIGNSTATE_NO_INTEREST [V_ALIGNSTATE_INCOMPLETE < V_ALIGNSTATE_NO_INTEREST];
+    char require_V_ALIGNSTATE_INCOMPLETE_lt_V_ALIGNSTATE_COMPLETE [V_ALIGNSTATE_INCOMPLETE < V_ALIGNSTATE_COMPLETE];
+    char non_empty_dummy_last_member[1];
+};
+
 
 static void
 updatePurgeList(
@@ -762,55 +801,54 @@ updatePurgeList(
 
     /* Purge all instances that are expired. */
     /* Precondition is that the instances in the purge list are not alive
-     * and empty */
+     * and empty
+     */
     exp.t     = currentTime;
     exp.group = group;
 
     v_lifespanAdminTakeExpired(group->lifespanAdmin, currentTime, onSampleExpired, &exp);
 
-    if (group->purgeListEmpty) {
-        delay = kernel->retentionPeriod;
-        purgeBefore = os_timeESub(now, delay);
-        /* purgeBefore can be invalid when retentionPeriod is large and
-         * current elapsed time is small (node was just started). */
-        if (!OS_TIMEE_ISINVALID(purgeBefore)) {
-            while ((instance = _empty_purge_take(group, purgeBefore)) != NULL) {
-                v_groupInstanceFree(instance);
-            }
-        }
-    }
-
-    if (group->disposedInstances) {
-        delay = v_topicQosRef(group->topic)->durabilityService.v.service_cleanup_delay;
-        purgeBefore = os_timeESub(now, delay);
-        /* purgeBefore can be invalid when service_cleanup_delay is large and
-         * current elapsed time is small (node was just started). */
-        if (!OS_TIMEE_ISINVALID(purgeBefore)) {
-            while ((instance = _dispose_purgeList_take(group, purgeBefore)) != NULL) {
-                if (v_stateTest(instance->state, L_EMPTY | L_NOWRITERS)) {
-                    message = v_groupInstanceCreateMessage(instance);
-                    message->writeTime = os_timeWGet();
-                    forwardMessageToStreams(group,
-                                            NULL,
-                                            message,
-                                            purgeBefore,
-                                            V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE);
-                    c_free(message);
-                    _empty_purgeList_insert(instance, now);
-
+    /* If the group is incomplete, the emptylist should not be purged, since
+     * durability can be a source of out-of-order data too. If a group is not
+     * maintained by durability, the state will be V_ALIGNSTATE_NO_INTEREST.
+     * In that case flushing is OK .
+     */
+    if(group->alignState > V_ALIGNSTATE_INCOMPLETE) {
+        if (group->purgeListEmpty) {
+            delay = kernel->retentionPeriod;
+            purgeBefore = os_timeESub(now, delay);
+            /* purgeBefore can be invalid when retentionPeriod is large and
+             * current elapsed time is small (node was just started).
+             */
+            if (!OS_TIMEE_ISINVALID(purgeBefore)) {
+                while ((instance = _empty_purge_take(group, purgeBefore)) != NULL) {
+                    v_groupInstanceFree(instance);
                 }
-                v_groupInstanceFree(instance);
             }
         }
-    }
 
-    if (group->transactionAdmin) {
-        v_transactionGroupAdmin tgroupadm;
-        v_transactionAdminPurgeHistory(group->transactionAdmin);
-
-        tgroupadm = v_transactionGetGroupAdmin(group->transactionAdmin);
-        if (tgroupadm) {
-            v_transactionGroupAdminPurgeHistory(tgroupadm);
+        if (group->disposedInstances) {
+            delay = v_topicQosRef(group->topic)->durabilityService.v.service_cleanup_delay;
+            purgeBefore = os_timeESub(now, delay);
+            /* purgeBefore can be invalid when service_cleanup_delay is large and
+             * current elapsed time is small (node was just started).
+             */
+            if (!OS_TIMEE_ISINVALID(purgeBefore)) {
+                while ((instance = _dispose_purgeList_take(group, purgeBefore)) != NULL) {
+                    if (v_stateTest(instance->state, L_EMPTY | L_NOWRITERS)) {
+                        message = v_groupInstanceCreateMessage(instance);
+                        message->writeTime = os_timeWGet();
+                        forwardMessageToStreams(group,
+                                                NULL,
+                                                message,
+                                                purgeBefore,
+                                                V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE);
+                        c_free(message);
+                        _empty_purgeList_insert(instance, now);
+                    }
+                    v_groupInstanceFree(instance);
+                }
+            }
         }
     }
 }
@@ -834,31 +872,38 @@ v_groupEntrySetAdd (
     c_type type;
     v_groupEntry proxy;
 
-    type = c_resolve(c_getBase(e),"kernelModuleI::v_groupEntry");
-    proxy = c_new(type);
-    c_free(type);
-    if (proxy) {
-        proxy->connectionCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_CONNECTION);
-        if (proxy->connectionCache) {
-            proxy->entry = c_keep(e);
-            proxy->sequenceNumber = set->lastSequenceNumber;
-            proxy->next = set->firstEntry;
-            set->firstEntry = proxy; /* Transfer refCount */
-            set->lastSequenceNumber++;
-        } else {
-            c_free(proxy);
-            proxy = NULL;
-            OS_REPORT(OS_ERROR,
-                      "v_groupEntrySetAdd",V_RESULT_INTERNAL_ERROR,
-                      "Failed to allocate reader instance cache.");
-        }
-    } else {
-        OS_REPORT(OS_FATAL,
-                  "v_groupEntrySetAdd",V_RESULT_INTERNAL_ERROR,
-                  "Failed to allocate reader proxy.");
-        assert(FALSE);
+    proxy = set->firstEntry;
+    while ((proxy != NULL) && (proxy->entry != e)) {
+        proxy = proxy->next;
     }
-    return c_keep(proxy);
+    if (proxy == NULL) {
+        type = c_resolve(c_getBase(e),"kernelModuleI::v_groupEntry");
+        proxy = c_new(type);
+        c_free(type);
+        if (proxy) {
+            proxy->connectionCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_CONNECTION);
+            if (proxy->connectionCache) {
+                proxy->entry = c_keep(e);
+                proxy->sequenceNumber = set->lastSequenceNumber;
+                proxy->next = set->firstEntry;
+                set->firstEntry = proxy; /* Transfer refCount */
+                set->lastSequenceNumber++;
+            } else {
+                c_free(proxy);
+                proxy = NULL;
+                OS_REPORT(OS_ERROR, "v_groupEntrySetAdd",V_RESULT_INTERNAL_ERROR,
+                          "Failed to allocate reader instance cache.");
+            }
+        } else {
+            OS_REPORT(OS_FATAL, "v_groupEntrySetAdd",V_RESULT_INTERNAL_ERROR,
+                      "Failed to allocate reader proxy.");
+            assert(FALSE);
+        }
+        c_keep(proxy);
+    } else {
+        proxy = NULL;
+    }
+    return proxy;
 }
 
 static v_groupEntry
@@ -957,7 +1002,7 @@ createInstanceKeyExpr (
     c_array keyList;
 
     assert(C_TYPECHECK(topic,v_topic));
-    keyList = c_keep(v_topicMessageKeyList(topic));
+    keyList = v_topicMessageKeyList(topic);
     nrOfKeys = c_arraySize(keyList);
     if (nrOfKeys>0) {
         totalSize = nrOfKeys * strlen("key.field0,");
@@ -980,12 +1025,90 @@ createInstanceKeyExpr (
     return keyExpr;
 }
 
-static void
+/* This operation will iterate over all configured filters and apply all matching filters to the group.
+ * Note that each filter that is applied will override a previous filter.
+ * This effectively means that in case of multiple matching filters only the first filter that
+ * is specified in the configuration is applied (filters are stored in reverse order of declaration).
+ */
+static v_result
+lookup_filter(
+    v_group group)
+{
+    c_iter iter, iter2, iter3;
+    v_configuration config;
+    v_cfElement root = NULL;
+    v_cfElement filter_element, group_element;
+    v_cfNode data;
+    c_value value, filter_expr;
+    v_result result = V_RESULT_OK;
+
+    config = v_getConfiguration(v_objectKernel(group));
+    if (config) {
+        root = v_configurationGetRoot(config);
+    }
+    if (root) {
+        iter = v_cfElementXPath(root, "Domain/Filters/Filter");
+
+        while(result == V_RESULT_OK && (filter_element = v_cfElement(c_iterTakeFirst(iter))) != NULL) {
+            filter_expr = v_cfElementAttributeValue(filter_element, "content");
+            assert(filter_expr.kind == V_STRING);
+            iter2 = v_cfElementXPath(filter_element, "PartitionTopic");
+            group_element = v_cfElement(c_iterTakeFirst(iter2));
+            while (result == V_RESULT_OK && group_element) {
+                iter3 = v_cfElementGetChildren(group_element);
+                if (c_iterLength(iter3) != 0) {
+                    data = v_cfNode(c_iterTakeFirst(iter3));
+                    if (v_cfNodeKind(data) == V_CFDATA) {
+                        value = v_cfDataValue(v_cfData(data));
+                        if (value.kind == V_STRING) {
+                            char *tname, *pname;
+                            c_value p,r;
+                            tname = v_topicName(group->topic);
+                            pname = v_partitionName(group->partition);
+                            /* Note that the c_value var p is a heap variable instead of a database object.
+                             * The c_value type is intentionally misused in this manner for the sake of
+                             * using the c_valueStringMatch function.
+                             * Therefore not pass p to any operation that alter this variable.
+                             */
+                            p.kind = V_STRING;
+                            p.is.String = os_malloc(strlen(pname) + strlen(tname) + 2);
+                            os_sprintf(p.is.String, "%s.%s", pname, tname);
+                            r = c_valueStringMatch (value, p);
+                            os_free(p.is.String);
+                            if (r.is.Boolean) {
+                                q_expr condition = q_parse(filter_expr.is.String);
+                                assert(condition);
+                                result = v_groupSetFilter(group, condition, NULL, 0);
+                                q_dispose(condition);
+                                if (result != V_RESULT_OK) {
+                                    OS_REPORT(OS_ERROR,
+                                              "v_groupSetFilter",V_RESULT_INTERNAL_ERROR,
+                                              "Failed to to create a the Domain filter <%s> for topic %s.",
+                                              filter_expr.is.String, tname);
+                                    result = V_RESULT_OK;
+                                }
+                            }
+                        }
+                    }
+                }
+                c_iterFree(iter3);
+                group_element = v_cfElement(c_iterTakeFirst(iter2));
+            } /* while */
+            c_iterFree(iter2);
+        }
+        c_iterFree(iter);
+        c_free(root);
+    }
+    return result;
+}
+
+static v_result
 v_groupInit(
     v_group group,
     v_partition partition,
     v_topic topic,
-    c_long id)
+    c_long id,
+    c_bool gidkey)
 {
     char *groupName;
     os_size_t groupNameLen;
@@ -996,7 +1119,9 @@ v_groupInit(
     c_base base;
     c_type type;
     v_partitionPolicyI partqos;
+    v_result result = V_RESULT_OK;
 
+    assert(C_TYPECHECK(group, v_group));
     kernel = v_objectKernel(group);
     base  = c_getBase(kernel);
 
@@ -1016,73 +1141,91 @@ v_groupInit(
     group->lastDisposeAllTime = OS_TIMEW_ZERO;
     group->partition = c_keep(partition);
     group->topic = c_keep(topic);
+    group->filter = NULL;
     group->sequenceNumber = id;
     group->routingEnabled = FALSE;
 
-    group->lifespanAdmin = v_lifespanAdminNew(kernel);
+    result = lookup_filter(group);
+    if (result == V_RESULT_OK) {
+        group->lifespanAdmin = v_lifespanAdminNew(kernel);
 
-    group->purgeListEmpty = NULL;
-    group->purgeListEmptyLast = NULL;
+        group->purgeListEmpty = NULL;
+        group->purgeListEmptyLast = NULL;
 
-    v_groupEntrySetInit(&group->topicEntrySet);
-    v_groupEntrySetInit(&group->networkEntrySet);
-    v_groupEntrySetInit(&group->routedEntrySet);
-    v_groupEntrySetInit(&group->variantEntrySet);
+        v_groupEntrySetInit(&group->topicEntrySet);
+        v_groupEntrySetInit(&group->networkEntrySet);
+        v_groupEntrySetInit(&group->routedEntrySet);
+        v_groupEntrySetInit(&group->variantEntrySet);
 
-    type  = c_resolve(base,"kernelModuleI::v_groupStream");
-    group->streams = c_setNew(type);
+        type  = c_resolve(base,"kernelModuleI::v_groupStream");
+        group->streams = c_setNew(type);
 
-    type  = c_resolve(base, "c_string");
-    assert(type);
-    group->attachedServices      = c_setNew(type);
-    group->notInterestedServices = c_setNew(type);
+        type  = c_resolve(base, "c_string");
+        assert(type);
+        group->attachedServices      = c_setNew(type);
+        group->notInterestedServices = c_setNew(type);
 
-    qos = v_topicQosRef(topic);
-    infWait = OS_DURATION_ISINFINITE(qos->reliability.v.max_blocking_time);
+        qos = v_topicQosRef(topic);
+        infWait = OS_DURATION_ISINFINITE(qos->reliability.v.max_blocking_time);
 
-    group->sampleType = createGroupSampleType(topic);
-    group->instanceType = createGroupInstanceType(topic, group->sampleType);
+        group->gidkey = gidkey;
+        group->sampleType = createGroupSampleType(topic);
+        group->instanceType = createGroupInstanceType(topic, group->sampleType, gidkey);
+        group->keyList = createInstanceKeyList(group->instanceType, topic);
 
-    keyExpr = createInstanceKeyExpr(topic);
-    group->instances = c_tableNew(group->instanceType,keyExpr);
-    os_free(keyExpr);
+        /* Create the Group Instance table depending on GIDKEY policy with key is either
+         * the Topic key which merges data from multiple publishers or
+         * Instance GID as key which avoids merge conflicts of historical data.
+         */
+        if (gidkey) {
+            OS_REPORT_NOW(OS_INFO, "TRANSIENT DATA", 0, 0, "GIDKey policy applicable on Group '%s.%s'",
+                          v_partitionName(partition), v_topicName(topic));
+            group->store = v_groupStoreNew(group,
+                                           "gid.systemId,gid.localId,gid.serial",
+                                           v_topicMessageKeyList(topic));
+        } else {
+            keyExpr = createInstanceKeyExpr(topic);
+            group->store = v_groupStoreNew(group, keyExpr, v_topicMessageKeyList(topic));
+            os_free(keyExpr);
+        }
 
-    group->resourceSampleCount = 0;
-    group->infWait = infWait;
-    group->disposedInstances = NULL;
-    group->disposedInstancesLast = NULL;
-    if(qos->durability.v.kind == V_DURABILITY_VOLATILE) {
-        group->complete = TRUE;     /* no alignment necessary.*/
-    } else {
-        group->complete = FALSE;    /* until aligned */
+        group->resourceSampleCount = 0;
+        group->infWait = infWait;
+        group->disposedInstances = NULL;
+        group->disposedInstancesLast = NULL;
+        if(qos->durability.v.kind == V_DURABILITY_VOLATILE || !v_kernelGetDurabilitySupport(kernel)) {
+            group->alignState = V_ALIGNSTATE_COMPLETE;     /* no alignment necessary. */
+        } else {
+            group->alignState = V_ALIGNSTATE_INCOMPLETE;    /* until aligned */
+        }
+
+        /* ES, dds1576: For each new group, determine the access mode for the
+         * partition involved in this group.
+         */
+        partqos.v = v_partitionName (partition);
+        group->partitionAccessMode = v_kernelPartitionAccessMode(kernel, partqos);
+
+        type  = c_resolve(base,"kernelModuleI::v_groupwriterAdministration");
+        group->writerAdministration = c_tableNew(type, "gid.systemId,gid.localId,gid.serial");
+        /* The transactionAdmin is created lazy when required. */
+        group->transactionAdmin = NULL;
+        group->onRequest = FALSE;
+        group->pristine = TRUE; /* becomes false as soon a writer connects. */
+        c_free(type);
     }
-    c_mutexInit(c_getBase(group), &group->mutex);
-
-    group->cachedInstance = NULL;
-    group->cachedRegMsg = NULL;
-    /* ES, dds1576: For each new group, determine the access mode for the
-     * partition involved in this group.
-     */
-    partqos.v = v_partitionName (partition);
-    group->partitionAccessMode = v_kernelPartitionAccessMode(kernel, partqos);
-
-    type  = c_resolve(base,"kernelModuleI::v_groupwriterAdministration");
-    group->writerAdministration = c_tableNew(type, "gid.systemId,gid.localId,gid.serial");
-    /* The transactionAdmin is created lazy when required. */
-    group->transactionAdmin = NULL;
-    group->onRequest = FALSE;
-    group->pristine = TRUE; /* becomes false as soon a writer connects. */
-    c_free(type);
+    return result;
 }
 
 v_group
 v_groupNew(
     v_partition partition,
     v_topic topic,
-    c_long id)
+    c_long id,
+    c_bool gidkey)
 {
     v_kernel kernel;
     v_group group;
+    v_result result = V_RESULT_OK;
 
     assert(partition != NULL);
     assert(C_TYPECHECK(partition,v_partition));
@@ -1091,8 +1234,11 @@ v_groupNew(
 
     kernel = v_objectKernel(topic);
     group = v_group(v_objectNew(kernel,K_GROUP));
-    v_groupInit(group, partition, topic, id);
-
+    result = v_groupInit(group, partition, topic, id, gidkey);
+    if (result != V_RESULT_OK) {
+        c_free(group);
+        group = NULL;
+    }
     return group;
 }
 
@@ -1113,7 +1259,7 @@ v_groupDeinit(
     assert(group != NULL);
     assert(C_TYPECHECK(group,v_group));
 
-    c_tableWalk(group->instances,instanceFree,NULL);
+    v_groupStoreDeinit(group->store);
 }
 
 struct findServiceHelper {
@@ -1156,7 +1302,7 @@ v_groupRemoveAwareness (
         helper.search = serviceName;
         helper.serviceName = NULL;
 
-        c_mutexLock(&_this->mutex);
+        OSPL_LOCK(_this);
         (void)c_walk(_this->attachedServices, findService, &helper);
 
         if(helper.found){
@@ -1174,7 +1320,7 @@ v_groupRemoveAwareness (
                 helper.serviceName = NULL;
             }
         }
-        c_mutexUnlock(&_this->mutex);
+        OSPL_UNLOCK(_this);
     }
 }
 
@@ -1195,13 +1341,13 @@ v_groupNotifyAwareness (
         base = c_getBase(_this);
         name = c_stringNew(base, serviceName);
 
-        c_mutexLock(&_this->mutex);
+        OSPL_LOCK(_this);
         if(interested){
             found = ospl_c_insert(_this->attachedServices, name);
         } else {
             found = ospl_c_insert(_this->notInterestedServices, name);
         }
-        c_mutexUnlock(&_this->mutex);
+        OSPL_UNLOCK(_this);
 
         if(found){
             c_free(name);
@@ -1227,7 +1373,7 @@ v_groupServiceGetAttachState (
         helper.search = serviceName;
         helper.serviceName = NULL;
 
-        c_mutexLock(&_this->mutex);
+        OSPL_LOCK(_this);
         (void)c_walk(_this->attachedServices, findService, &helper);
 
         if(helper.found){
@@ -1241,60 +1387,11 @@ v_groupServiceGetAttachState (
                 state = V_GROUP_ATTACH_STATE_UNKNOWN;
             }
         }
-        c_mutexUnlock(&_this->mutex);
+        OSPL_UNLOCK(_this);
     } else {
         state = V_GROUP_ATTACH_STATE_UNKNOWN;
     }
     return state;
-}
-
-void
-v_groupAddEntry(
-    v_group g,
-    v_entry e)
-{
-    v_groupEntry proxy;
-
-    assert(g != NULL);
-    assert(C_TYPECHECK(g,v_group));
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entry));
-
-    c_mutexLock(&g->mutex);
-
-    updatePurgeList(g, os_timeEGet());
-    /* doubly linked connection */
-    if (v_entryAddGroup(e, g))
-    {
-       if (v_objectKind(e) == K_NETWORKREADERENTRY) {
-          c_free(v_groupEntrySetAdd(&g->networkEntrySet,e));
-          if(v_networkReaderEntryIsRouting(v_networkReaderEntry(e))){
-              c_free(v_groupEntrySetAdd(&g->routedEntrySet,e));
-          }
-       } else if (v_reader(v_entry(e)->reader)->qos->userKey.v.enable) {
-           proxy = v_groupEntrySetAdd(&g->variantEntrySet,e);
-           if (proxy) {
-               c_free(proxy);
-               if (v_reader(v_entry(e)->reader)->qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-                   (void)groupGetHistoricalData(g,e,TRUE);
-               }
-           }
-       } else {
-           proxy = v_groupEntrySetAdd(&g->topicEntrySet,e);
-           if (proxy) {
-               c_tableWalk(g->instances,registerInstance,proxy);
-               c_free(proxy);
-               if (v_reader(v_entry(e)->reader)->qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-                   (void)groupGetHistoricalData(g,e,TRUE);
-               }
-           } else {
-               OS_REPORT(OS_ERROR,
-                         "v_groupAddEntry",V_RESULT_INTERNAL_ERROR,
-                         " Failed to register instance in topicEntrySet");
-           }
-       }
-    }
-    c_mutexUnlock(&g->mutex);
 }
 
 void
@@ -1310,7 +1407,7 @@ v_groupRemoveEntry(
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_entry));
 
-    c_mutexLock(&g->mutex);
+    OSPL_LOCK(g);
 
     if (v_objectKind(e) == K_NETWORKREADERENTRY) {
         proxy = v_groupEntrySetRemove(&g->networkEntrySet,e);
@@ -1323,31 +1420,69 @@ v_groupRemoveEntry(
         proxy = v_groupEntrySetRemove(&g->variantEntrySet,e);
     } else {
         proxy = v_groupEntrySetRemove(&g->topicEntrySet,e);
-        if ((proxy != NULL) && !(v_observerEventMask(v_entry(e)->reader) & V_EVENT_PREPARE_DELETE)) {
+        if ((proxy != NULL) && !(v_observerGetEventMask(v_entry(e)->reader) & V_EVENT_PREPARE_DELETE)) {
             timestamp = os_timeWGet();
             (void)v_groupCacheWalk(proxy->connectionCache, doUnregister, &timestamp);
         }
     }
     v_groupEntryFree(proxy);
-    v_entryRemoveGroup(e, g);
-    c_mutexUnlock(&g->mutex);
+    OSPL_UNLOCK(g);
 }
 
-v_entry
-v_groupLookupEntry(
+c_bool
+v_groupAddEntry(
     v_group g,
-    v_reader r)
+    v_entry e)
 {
+    c_bool connected = TRUE;
+    v_groupEntry proxy;
+    c_bool groupAdmin = FALSE;
+
     assert(g != NULL);
     assert(C_TYPECHECK(g,v_group));
-    assert(r != NULL);
-    assert(C_TYPECHECK(r,v_reader));
+    assert(e != NULL);
+    assert(C_TYPECHECK(e,v_entry));
 
-    OS_UNUSED_ARG(g);
-    OS_UNUSED_ARG(r);
+    OSPL_LOCK(g);
 
-    assert(FALSE); /* To be implemented. */
-    return NULL;
+    updatePurgeList(g, os_timeEGet());
+    /* doubly linked connection */
+    if (v_objectKind(e) == K_NETWORKREADERENTRY) {
+        c_free(v_groupEntrySetAdd(&g->networkEntrySet,e));
+        if(v_networkReaderEntryIsRouting(v_networkReaderEntry(e))){
+            c_free(v_groupEntrySetAdd(&g->routedEntrySet,e));
+        }
+    } else if (g->partitionAccessMode == V_ACCESS_MODE_READ_WRITE ||
+               g->partitionAccessMode == V_ACCESS_MODE_READ)
+    {
+        if (v_reader(v_entry(e)->reader)->qos->userKey.v.enable) {
+            proxy = v_groupEntrySetAdd(&g->variantEntrySet,e);
+            if (proxy) {
+                c_free(proxy);
+                if (v_reader(v_entry(e)->reader)->qos->durability.v.kind != V_DURABILITY_VOLATILE) {
+                    (void)groupGetHistoricalData(g,e);
+                    groupAdmin = TRUE;
+                }
+                (void)groupGetOpenTransactions(g,e,groupAdmin);
+            }
+        } else {
+            proxy = v_groupEntrySetAdd(&g->topicEntrySet,e);
+            if (proxy) {
+                /* For all instances in the store write all registrations to the proxy. */
+                v_groupStoreWalk(g->store, registerInstance, proxy);
+                c_free(proxy);
+                if (v_reader(v_entry(e)->reader)->qos->durability.v.kind != V_DURABILITY_VOLATILE) {
+                    (void)groupGetHistoricalData(g,e);
+                    groupAdmin = TRUE;
+                }
+                (void)groupGetOpenTransactions(g,e,groupAdmin);
+            }
+        }
+    } else {
+        connected = FALSE;
+    }
+    OSPL_UNLOCK(g);
+    return connected;
 }
 
 c_bool
@@ -1365,13 +1500,13 @@ v_groupAddStream(
 
     result = FALSE;
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     found = v_groupStream(c_setInsert(group->streams,stream));
 
     if (found == stream) {
         result = TRUE;
     }
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
 
     return result;
 }
@@ -1390,13 +1525,13 @@ v_groupRemoveStream(
     assert(C_TYPECHECK(stream,v_groupStream));
 
     result = FALSE;
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     found = v_groupStream(c_remove(group->streams,stream, NULL, NULL));
 
     if (found == stream) {
         result = TRUE;
     }
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
 
     return result;
 }
@@ -1411,10 +1546,10 @@ v_groupSetRoutingEnabled(
     assert(group != NULL);
     assert(C_TYPECHECK(group,v_group));
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     result = group->routingEnabled;
     group->routingEnabled = routingEnabled;
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
 
     return result;
 }
@@ -1602,8 +1737,7 @@ flushInstanceRegistrations(
             if(entry && propagateTheMessage) {
                 v_message message = v_groupInstanceCreateMessage(grInst);
 
-                if (message)
-                {
+                if (message) {
                     message->writerGID = registration->writerGID;
                     message->qos = c_keep(registration->qos);
                     message->writeTime = registration->writeTime;
@@ -1617,11 +1751,8 @@ flushInstanceRegistrations(
                     /* write the sample to other node(s) */
                     v_entryWrite(entry, message, V_NETWORKID_LOCAL, FALSE, NULL, V_CONTEXT_GETHISTORY);
                     c_free(message);
-                }
-                else
-                {
-                    OS_REPORT(OS_ERROR,
-                              "v_group",V_RESULT_INTERNAL_ERROR,
+                } else {
+                    OS_REPORT(OS_ERROR, "v_group",V_RESULT_INTERNAL_ERROR,
                               "flushInstanceRegistrations(registration=0x%"PA_PRIxADDR", arg=0x%"PA_PRIxADDR")\n"
                               "        Failed to allocate an unregister message.",
                               (os_address)registration, (os_address)arg);
@@ -1647,20 +1778,23 @@ flushInstance (
     /* For each registration that doesn't have a sample, insert an explicit registration
      * message. When the group contains unregister messages for instances that are still
      * alive, the explicit registrations will make sure that when interpreting the result of
-     * a flush the final registration-count will be correct. */
+     * a flush the final registration-count will be correct.
+     */
     flushInstanceRegistrations(grInst, groupFlushArg);
 
     result = v_groupInstanceWalkSamples(grInst,doFlush,arg);
-    if(grInst->oldest) {
+    if (grInst->oldest) {
         if(result == TRUE){
             groupFlushArg->grInst = grInst;
-            v_groupInstanceWalkUnregisterMessages(v_groupInstance(o),
-                                                  doUnregisterFlush, arg);
+            v_groupInstanceWalkUnregisterMessages(v_groupInstance(o), doUnregisterFlush, arg);
         }
-    }else {
-        /* TODO: This will effectively stop forwarding of unregister-only messages when there is no data in a group. This is a situation that should not occur!  At the moment it still does
-         * however, for reasons unknown. This fix (if grInst->oldest) is harmless and is a quick fix for customers. When the real cause is found, this comment should be replaced with
-         * an assert. */
+    } else {
+        /* TODO: This will effectively stop forwarding of unregister-only messages when there
+         * is no data in a group. This is a situation that should not occur!
+         * At the moment it still does however, for reasons unknown.
+         * This fix (if grInst->oldest) is harmless and is a quick fix for customers.
+         * When the real cause is found, this comment should be replaced with an assert.
+         */
     }
     return result;
 }
@@ -1711,8 +1845,8 @@ v_groupFlushAction(
     groupFlushArg.grInst = NULL;
     groupFlushArg.writeResult = V_WRITE_UNDEFINED;
 
-    c_mutexLock(&_this->mutex);
-    (void)c_tableWalk(_this->instances, flushInstance, &groupFlushArg);
+    OSPL_LOCK(_this);
+    v_groupStoreWalk(_this->store, flushInstance, &groupFlushArg);
     if (_this->transactionAdmin) {
         v_transactionGroupAdmin tgroupadm;
         v_transactionAdminWalkTransactions(_this->transactionAdmin, flushTransaction, &groupFlushArg);
@@ -1723,7 +1857,7 @@ v_groupFlushAction(
         }
     }
 
-    c_mutexUnlock(&_this->mutex);
+    OSPL_UNLOCK(_this);
 }
 
 C_STRUCT(v_entryRegisterArg) {
@@ -1758,7 +1892,6 @@ C_STRUCT(v_nwEntryWriteArg) {
     v_networkId networkId;
     c_bool groupRoutingEnabled;
     v_writeResult writeResult;
-    v_entry entry;
 };
 
 C_CLASS(v_nwEntryWriteArg);
@@ -1778,7 +1911,7 @@ handleSampleLost(
     v_writerAdmin wrAdmin = (v_writerAdmin)arg;
     v_reader reader = v_entryReader(proxy->entry);
 
-    /* Filter-out all QoS-incompatible messages. */
+    /* Only notify all QoS-compatible readers. */
     if (v_messageQos_isReaderCompatible(wrAdmin->message->qos,reader)) {
         v_dataReaderNotifySampleLost(v_dataReader(reader),wrAdmin->missedMessages);
     }
@@ -1807,10 +1940,10 @@ entryRegister(
         writeArg->writeResult = result;
     } else {
         /* Write is successfull, however instance may not point to the
-           reader instance, due to the following reasons:
-           - message qos was incompatible with reader qos
-           - the reader has a filter which rejects the message.
-        */
+         * reader instance, due to the following reasons:
+         * - message qos was incompatible with reader qos
+         * - the reader has a filter which rejects the message.
+         */
         if (instance != NULL) {
             /* first check whether instance is already cached */
             unknownArg.instance = instance;
@@ -1846,32 +1979,26 @@ nwEntryWrite(
     c_voidp arg)
 {
     v_nwEntryWriteArg writeArg = (v_nwEntryWriteArg)arg;
+    v_writeResult result;
 
-    if ((writeArg->entry) && (writeArg->entry != proxy->entry)) {
-        /* The message was not addressed to this network.
-         */
-    } else {
-        v_writeResult result;
+    result = v_networkReaderEntryWrite(
+                 v_networkReaderEntry(proxy->entry),
+                 writeArg->message,
+                 writeArg->networkId,
+                 writeArg->groupRoutingEnabled);
 
-        result = v_networkReaderEntryWrite(
-                     v_networkReaderEntry(proxy->entry),
-                     writeArg->message,
-                     writeArg->networkId,
-                     writeArg->groupRoutingEnabled);
-
-        /* This method is used in a walk method and visits all network
-         * interfaces. The callee expects the writeResult to indecate if
-         * a reject has occured so the result will only be set if a message
-         * is rejected.
-         */
-        if (result == V_WRITE_REJECTED) {
-            writeArg->writeResult = result;
-        } else if (result != V_WRITE_SUCCESS) {
-            OS_REPORT(OS_CRITICAL,
-                        "v_writerInstance::nwEntryWrite",result,
-                        "Internal error (%d) occured",
-                        result);
-        }
+    /* This method is used in a walk method and visits all network
+     * interfaces. The callee expects the writeResult to indecate if
+     * a reject has occured so the result will only be set if a message
+     * is rejected.
+     */
+    if (result == V_WRITE_REJECTED) {
+        writeArg->writeResult = result;
+    } else if (result != V_WRITE_SUCCESS) {
+        OS_REPORT(OS_CRITICAL,
+                    "v_writerInstance::nwEntryWrite",result,
+                    "Internal error (%d) occured",
+                    result);
     }
     return TRUE;
 }
@@ -1885,18 +2012,12 @@ entryWrite(
     v_entryWriteArg writeArg = (v_entryWriteArg)arg;
     v_instance instance = NULL;
 
-    if ((writeArg->entry) && (writeArg->entry != proxy->entry)) {
-        /* The message was not addressed to this entry.
-         */
-        result = V_WRITE_SUCCESS;
-    } else {
-        result = v_entryWrite(proxy->entry,
-                              writeArg->message,
-                              writeArg->networkId,
-                              writeArg->groupRoutingEnabled,
-                              &instance,
-                              V_CONTEXT_GROUPWRITE);
-    }
+    result = v_entryWrite(proxy->entry,
+                          writeArg->message,
+                          writeArg->networkId,
+                          writeArg->groupRoutingEnabled,
+                          &instance,
+                          V_CONTEXT_GROUPWRITE);
 
     /* This method is used in a walk method and visits all network
      * interfaces. The callee expects the writeResult to indicate if
@@ -1959,26 +2080,24 @@ instanceWrite(
             assert(item->registrationCount <= instance->liveliness);
 
             compatible = v_messageQos_isReaderCompatible(
-                                writeArg->message->qos,
-                                v_reader(v_instance(instance)->entity));
-
-            result = v_dataReaderInstanceWrite(instance, writeArg->message);
-            /* It is possible at this point that the instance has been freed by a
-             * reader take. So, we shouldn't access it anymore. */
-
-            if (result == V_WRITE_SUCCESS) {
-                if (v_messageStateTest(writeArg->message,L_UNREGISTER)) {
-                    if (compatible) {
+                writeArg->message->qos, v_reader(v_instance(instance)->entity));
+            if (compatible) {
+                result = v_dataReaderInstanceWrite(instance, writeArg->message);
+                /* It is possible at this point that the instance has been
+                   freed by a reader take. So, don't access it anymore.
+                   */
+                if (result == V_WRITE_SUCCESS) {
+                    if (v_messageStateTest(writeArg->message,L_UNREGISTER)) {
                         item->registrationCount--;
                     }
-                }
-            } else {
-                writeArg->writeResult = result;
-                /* only increase pendingResends,
-                 * when not called from instanceResend.
-                 */
-                if (!writeArg->resend) {
-                    item->pendingResends++;
+                } else {
+                    writeArg->writeResult = result;
+                    /* Increase pendingResends only when not called from
+                     * instanceResend.
+                     */
+                    if (!writeArg->resend) {
+                        item->pendingResends++;
+                    }
                 }
             }
         } else {
@@ -1996,8 +2115,7 @@ instanceWrite(
 
 static c_bool
 groupReadyToAcceptSample (
-                          v_group group
-                          )
+    v_group group)
 {
     v_kernel kernel = v_objectKernel(group);
 
@@ -2039,8 +2157,7 @@ static v_writeResult
 forwardMessageToNetwork (
     v_group group,
     v_message message,
-    v_networkId writingNetworkId,
-    v_entry entry)
+    v_networkId writingNetworkId)
 {
     C_STRUCT(v_nwEntryWriteArg) writeArg;
     writeArg.writeResult = V_WRITE_SUCCESS;
@@ -2050,7 +2167,6 @@ forwardMessageToNetwork (
 
         writeArg.message = message;
         writeArg.networkId = writingNetworkId;
-        writeArg.entry = entry;
         writeArg.groupRoutingEnabled = group->routingEnabled;
 
         if (writingNetworkId == V_NETWORKID_LOCAL) {
@@ -2156,7 +2272,6 @@ forwardMessage (
     v_groupInstance instance,
     v_message message,
     v_networkId writingNetworkId,
-    v_entry entry,
     c_bool bypassCache,
     v_resendScope *resendScope)
 {
@@ -2186,7 +2301,6 @@ forwardMessage (
 
         writeArg.networkId = writingNetworkId;
         writeArg.groupRoutingEnabled = group->routingEnabled;
-        writeArg.entry = entry;
 
         /* If the sample has no valid content, replace the typed sample
          * with an untyped sample to save storage space, but only
@@ -2209,14 +2323,12 @@ forwardMessage (
         }
 
         if (writeArg.writeResult == V_WRITE_SUCCESS) {
-            if(!entry && !bypassCache){
+            if(!bypassCache){
                 instanceArg.writeResult    = V_WRITE_SUCCESS;
                 instanceArg.deadCacheItems = NULL;
                 instanceArg.resend         = FALSE;
 
-                /* No connection updates, so forward the messages via the cached
-                   instances.
-                 */
+                /* No connection updates, so forward the messages via the cached instances. */
                 (void)v_groupCacheWalk(instance->targetCache, instanceWrite, &instanceArg);
                 if (instanceArg.deadCacheItems) {
                     item = v_groupCacheItem(c_iterTakeFirst(instanceArg.deadCacheItems));
@@ -2228,7 +2340,6 @@ forwardMessage (
                 }
                 writeArg.writeResult = instanceArg.writeResult;
             } else {
-                /*special case to handle writing to one specific entry*/
                 (void)v_groupEntrySetWalk(&group->topicEntrySet, entryWrite, &writeArg);
             }
 
@@ -2257,41 +2368,6 @@ forwardMessage (
     return writeArg.writeResult;
 }
 
-/*
-c_long
-v_groupSampleCount (
-    v_group group)
-{
-    c_long count;
-    assert(C_TYPECHECK(group,v_group));
-    c_mutexLock(&group->mutex);
-    count = v_sampleListLength(&group->sampleList);
-    c_mutexUnlock(&group->mutex);
-    return count;
-}
-*/
-
-
-static c_bool
-markGroupInstance(c_object o, c_voidp arg)
-{
-    v_groupInstance instance = v_groupInstance(o);
-    c_ulong *flags = (c_ulong *)arg;
-
-    v_stateSet(instance->state, *flags);
-    return TRUE;
-}
-
-static c_bool
-unmarkGroupInstance(c_object o, c_voidp arg)
-{
-    v_groupInstance instance = v_groupInstance(o);
-    c_ulong *flags = (c_ulong *)arg;
-
-    v_stateClear(instance->state, *flags);
-    return TRUE;
-}
-
 /* Set the specified flags for all DataReader instance states associated
  * with the specified group.
  */
@@ -2305,14 +2381,14 @@ v_groupMarkGroupInstanceStates (
     assert(C_TYPECHECK(group,v_group));
 
     if (flags != 0) {
-        c_mutexLock(&group->mutex);
+        OSPL_LOCK(group);
 
         qos = v_topicQosRef(group->topic);
         if (qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-            (void)c_tableWalk(group->instances, markGroupInstance, &flags);
+            v_groupStoreMarkGroupInstanceStates(group->store, flags);
         }
 
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
     }
 }
 
@@ -2329,14 +2405,14 @@ v_groupUnmarkGroupInstanceStates (
     assert(C_TYPECHECK(group,v_group));
 
     if (flags != 0) {
-        c_mutexLock(&group->mutex);
+        OSPL_LOCK(group);
 
         qos = v_topicQosRef(group->topic);
         if (qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-            (void)c_tableWalk(group->instances, unmarkGroupInstance, &flags);
+            v_groupStoreUnmarkGroupInstanceStates(group->store, flags);
         }
 
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
     }
 }
 
@@ -2351,12 +2427,61 @@ v_groupUnmarkReaderInstanceStates (
     assert(C_TYPECHECK(group,v_group));
 
     if (flags != 0) {
-        c_mutexLock(&group->mutex);
+        OSPL_LOCK(group);
 
         v_groupEntrySetUnmarkReaderInstanceStates( &group->topicEntrySet, flags );
 
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
     }
+}
+
+static void forwardToStreams(
+    v_groupInstance instance,
+    v_message message)
+{
+    v_groupActionKind actionKind;
+    os_duration delay;
+    v_topicQos qos;
+    v_group group = v_group(instance->group);
+    os_timeE now = os_timeEGet();
+
+    /* if the instance state is NOWRITERS and DISPOSED then and only
+     * then add the instance to the purge admin.
+     */
+    qos = v_topicQosRef(v_group(instance->group)->topic);
+    if (v_groupInstanceStateTest(instance, L_DISPOSED | L_NOWRITERS)) {
+        delay = qos->durabilityService.v.service_cleanup_delay;
+        if (OS_DURATION_ISZERO(delay)) {
+            /* cleanup_delay is zero, remove all samples and insert instance in emptyList. */
+            if (!v_groupInstanceStateTest(instance,L_EMPTY)) {
+                v_groupInstancePurge(instance);
+            }
+            assert(v_groupInstanceStateTest(instance,L_EMPTY));
+            _empty_purgeList_insert(instance, now);
+            actionKind = V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE;
+        } else if (!OS_DURATION_ISINFINITE(delay)) {
+            /* cleanup_delay is finite, insert instance in disposed list. */
+            _dispose_purgeList_insert(instance, now);
+            actionKind = V_GROUP_ACTION_UNREGISTER;
+        } else {
+            /* If service_cleanup_delay is infinite, do nothing. */
+            actionKind = V_GROUP_ACTION_UNREGISTER;
+        }
+    } else if (v_messageStateTest(message,L_WRITE)) {
+        actionKind = V_GROUP_ACTION_WRITE;
+    } else if (v_messageStateTest(message,L_DISPOSED)) {
+        actionKind = V_GROUP_ACTION_DISPOSE;
+    } else if (v_messageStateTest(message,L_UNREGISTER)) {
+        actionKind = V_GROUP_ACTION_UNREGISTER;
+    } else if (v_messageStateTest(message,L_REGISTER)) {
+        actionKind = V_GROUP_ACTION_REGISTER;
+    } else {
+        actionKind = V_GROUP_ACTION_WRITE;
+    }
+    /* Only forward to stream when sample is inserted in groupInstance and
+     * when streaming is required
+     */
+    forwardMessageToStreams(group, instance, message, now, actionKind);
 }
 
 static c_bool
@@ -2368,9 +2493,11 @@ disposeGroupInstance (
     messageActionArg a = (messageActionArg) arg;
 
     if ((a->condition == NULL) || ((a->condition)(instance, a->arg))) {
-        a->result = v_groupInstanceInsert(instance, a->message, FALSE, NULL, TRUE);
-        /* Make sure that a dispose that is processed correctly without error is treated as success. */
-        if (a->result == V_WRITE_DUPLICATE || a->result == V_WRITE_SUCCESS_NOT_STORED) {
+        a->result = v_groupInstanceInsert(instance, a->message);
+        if (a->result == V_WRITE_SUCCESS) {
+            forwardToStreams(instance, a->message);
+        } else if (a->result == V_WRITE_DUPLICATE || a->result == V_WRITE_SUCCESS_NOT_STORED) {
+            /* Make sure that a dispose that is processed correctly without error is treated as success. */
             a->result = V_WRITE_SUCCESS;
         }
     }
@@ -2393,15 +2520,19 @@ disposeMarkedInstance(
         registerMessage->writerGID = disposeMsg->writerGID;
         registerMessage->writeTime = disposeMsg->writeTime;
         registerMessage->qos = c_keep(disposeMsg->qos);
-        result = groupWrite(group, registerMessage, NULL, V_NETWORKID_ANY, TRUE, NULL, &resendScope);
+        result = groupWrite(group, registerMessage, NULL, V_NETWORKID_ANY, TRUE, FALSE, &resendScope);
         c_free(registerMessage);
         if (result == V_WRITE_REGISTERED || result == V_WRITE_SUCCESS) {
-            result = groupWrite(group, disposeMsg, &instance, V_NETWORKID_ANY, TRUE, NULL, &resendScope);
+            result = groupWrite(group, disposeMsg, &instance, V_NETWORKID_ANY, TRUE, FALSE, &resendScope);
             if (result != V_WRITE_SUCCESS) {
-                OS_REPORT(OS_ERROR, "v_group::disposeMarkedInstances", result, "During CATCHUP failed to dispose instance that no longer exists on master.");
+                OS_REPORT(OS_ERROR, "v_group::disposeMarkedInstances", result,
+                          "During CATCHUP failed to dispose instance that no longer exists on master.");
             }
+        } else if (result == V_WRITE_SUCCESS_NOT_STORED) {
+            result = V_WRITE_SUCCESS;
         } else {
-            OS_REPORT(OS_ERROR, "v_group::disposeMarkedInstances", result, "During CATCHUP failed to re-register instance that no longer exists on master.");
+            OS_REPORT(OS_ERROR, "v_group::disposeMarkedInstances", result,
+                      "During CATCHUP failed to re-register instance that no longer exists on master.");
         }
     } else {
         result = V_WRITE_OUT_OF_RESOURCES;
@@ -2412,8 +2543,8 @@ disposeMarkedInstance(
 
 v_writeResult
 v_groupSweepMarkedInstances(
-        v_group group,
-        os_timeW timestamp)
+    v_group group,
+    os_timeW timestamp)
 {
     v_kernel kernel;
     v_gid nullGID;
@@ -2422,16 +2553,20 @@ v_groupSweepMarkedInstances(
     v_groupInstance grInst;
     v_writeResult result = V_WRITE_SUCCESS;
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     kernel = v_objectKernel(group);
     v_gidSetNil(nullGID);
 
     disposeMsg = v_groupCreateInvalidMessage(kernel, nullGID, NULL, timestamp);
     if (disposeMsg)
     {
-        /* Set the nodeState of the message to DISPOSED. UNREGISTER and L_IMPLICIT. */
-        v_stateSet(v_nodeState(disposeMsg), L_DISPOSED | L_UNREGISTER | L_IMPLICIT);
-        instances = ospl_c_select(group->instances, -1);
+        /* Set the nodeState of the message to DISPOSED and UNREGISTER.
+         * Note that this is NOT an IMPLICIT dispose, because it is not
+         * the result of a disconnect, but a valid deduction from the fact
+         * that the aligner MUST have disposed the data.
+         */
+        v_stateSet(v_nodeState(disposeMsg), L_DISPOSED | L_UNREGISTER);
+        instances = v_groupStoreSelect(group->store, 0);
         while ((grInst = v_groupInstance(c_iterTakeFirst(instances))) != NULL && result == V_WRITE_SUCCESS) {
             if (v_stateTest(grInst->state, L_MARK)) {
                 result = disposeMarkedInstance(grInst, disposeMsg);
@@ -2444,7 +2579,7 @@ v_groupSweepMarkedInstances(
         result = V_WRITE_OUT_OF_RESOURCES;
         OS_REPORT(OS_ERROR, "v_group::v_groupSweepMarkedInstances", result, "Failed to allocate message.");
     }
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
     return result;
 }
 
@@ -2478,7 +2613,7 @@ v_groupDisposeAllMatchingInstancesLocked (
         v_stateSet(v_nodeState(msgActionArg.message), L_DISPOSED | flags);
         msgActionArg.result = V_WRITE_SUCCESS;
         if (qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-            (void)c_tableWalk(group->instances, disposeGroupInstance, &msgActionArg);
+            v_groupStoreWalk(group->store, disposeGroupInstance, &msgActionArg);
         }
         if ( msgActionArg.result == V_WRITE_SUCCESS )
         {
@@ -2506,9 +2641,9 @@ v_groupDisposeAllMatchingInstances (
     c_voidp arg)
 {
     v_writeResult res;
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     res = v_groupDisposeAllMatchingInstancesLocked(group, timestamp, flags, condition, arg);
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
     return res;
 }
 
@@ -2519,10 +2654,10 @@ v_groupDisposeAll (
     c_ulong flags)
 {
     v_writeResult res;
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     res = v_groupDisposeAllMatchingInstancesLocked(group, timestamp, flags, NULL, NULL);
     group->lastDisposeAllTime = timestamp;
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
     return res;
 }
 
@@ -2640,34 +2775,36 @@ v_resendScopeImage (
     return tot;
 }
 
-static v_groupInstance
-lookupInstanceByMessage(
+static v_message
+createRegisterMessage (
     v_group group,
     v_message msg)
 {
-    v_groupInstance instance;
-    c_value _keyValues[32];
-    c_value *keyValues = _keyValues;
-    c_array messageKeyList;
-    c_ulong i, nrOfKeys;
+    v_message regMsg = NULL;
 
-    messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
-    nrOfKeys = c_arraySize(messageKeyList);
-    if (nrOfKeys > 32) {
-        keyValues = os_malloc(sizeof(c_value) * nrOfKeys);
+    regMsg = v_topicMessageNew(group->topic);
+    if (regMsg) {
+        memcpy(regMsg, msg, C_SIZEOF(v_message));
+        v_topicMessageCopyKeyValues(group->topic, regMsg, msg);
+        regMsg->qos = c_keep(msg->qos);
+        v_nodeState(regMsg) = (v_nodeState(msg) & L_TRANSACTION) | L_REGISTER;
     }
-    for (i=0;i<nrOfKeys;i++) {
-        keyValues[i] = c_fieldValue(messageKeyList[i], msg);
+    return regMsg;
+}
+
+static v_message
+createDisposeMessage (
+    v_group group)
+{
+    v_message msg = NULL;
+    v_gid nullGID;
+
+    v_gidSetNil(nullGID);
+    msg = v_groupCreateInvalidMessage(v_objectKernel(group), nullGID, NULL, group->lastDisposeAllTime);
+    if (msg) {
+        v_stateSet(v_nodeState(msg), L_DISPOSED);
     }
-    instance = c_tableFind(group->instances, &keyValues[0]);
-    /* Key values have to be freed again */
-    for (i=0;i<nrOfKeys;i++) {
-        c_valueFreeRef(keyValues[i]);
-    }
-    if (nrOfKeys > 32) {
-        os_free(keyValues);
-    }
-    return instance;
+    return msg;
 }
 
 /* As part of scarab#2907, the new inout v_resendScope parameter to groupWrite
@@ -2689,132 +2826,83 @@ groupWrite (
     v_groupInstance *instancePtr,
     v_networkId writingNetworkId,
     c_bool stream,
-    v_entry entry,
+    c_bool historicalData,
     v_resendScope *resendScope)
 {
-    v_groupInstance instance, found;
+    v_groupInstance instance;
     v_writeResult result;
     v_topicQos qos;
     c_bool rejected = FALSE;
-    v_message regMsg, disposeMsg = NULL;
+    v_message disposeMsg = NULL;
     v_resendScope disposeScope = V_RESEND_NONE;
-    c_bool bypassCache = 0;
+    c_bool bypassCache = historicalData;
     const os_timeE now = msg->allocTime;
 
     assert(C_TYPECHECK(group,v_group));
     assert(C_TYPECHECK(msg,v_message));
     assert(!v_messageStateTest(msg, L_ENDOFTRANSACTION));
 
+    if (instancePtr != NULL && *instancePtr != NULL && v_groupInstanceOwner(*instancePtr) != group) {
+        assert(FALSE);
+        return V_WRITE_PRE_NOT_MET;
+    }
+    /* Check if a key filter is set and filter out key values of no interest */
+    if ((group->filter) && (!v_filterEvalKey(group->filter, msg))) {
+        return V_WRITE_SUCCESS_NOT_STORED;
+    }
     /* cleanup resources,
      * do not delay this call until the data is inserted,
      * it will have undesired side-effects on the just inserted data.
      */
     updatePurgeList(group, now);
 
-    qos = v_topicQosRef(group->topic);
-
-    if ((instancePtr == NULL) || (*instancePtr == NULL)) {
-        instance = lookupInstanceByMessage(group, msg);
-        if (instance == NULL) {
-            if(v_messageStateTest(msg, L_UNREGISTER)){
-                /* The instance doesn't exist, meaning no writer has it currently
-                 * registered. An implicit register doesn't make sense for an
-                 * unregister either. */
-                return V_WRITE_SUCCESS;
-            }
-            instance = v_groupInstanceNew(group, msg);
-            found = c_tableInsert(group->instances, instance);
-            assert(found == instance);
-            OS_UNUSED_ARG(found);
-        }
-
-        result = v_groupInstanceRegister(instance, msg);
-        if (result == V_WRITE_REGISTERED){
-            /* This writer is new for this instance. */
-            if (!v_messageStateTest(msg, L_REGISTER)) {
-                /* This message is not a register message.
-                 * Therefore create an implicit register message and forward it to all peers.
-                 */
-                regMsg = v_topicMessageNew(group->topic);
-                if (regMsg) {
-                    memcpy(regMsg, msg, C_SIZEOF(v_message));
-                    v_topicMessageCopyKeyValues(group->topic, regMsg, msg);
-                    regMsg->qos = c_keep(msg->qos);
-                    v_nodeState(regMsg) = (v_nodeState(msg) & L_TRANSACTION) | L_REGISTER;
-
-                    if(stream == TRUE) {
-                        forwardMessageToStreams(group, NULL, regMsg, now, V_GROUP_ACTION_REGISTER);
-                    }
-                    result = forwardRegisterMessage(instance, regMsg);
-                    c_free(regMsg);
-                } else {
-                    OS_REPORT(OS_CRITICAL, OS_FUNCTION, V_RESULT_OUT_OF_MEMORY,
-                              "Failed to create a register message for topic %s", v_topicName(group->topic));
-                    assert(FALSE);
-                    return V_RESULT_OUT_OF_MEMORY;
-                }
-            }
-        } else if (result == V_WRITE_UNREGISTERED) {
-            bypassCache = 1;
-            result = V_WRITE_SUCCESS;
-        }
-        if ((instancePtr != NULL) && (*instancePtr == NULL)) {
+    if ((instancePtr != NULL) && (*instancePtr != NULL)) {
+        instance = c_keep(*instancePtr);
+    } else {
+        instance = v_groupStoreCreateInstance(group->store, msg);
+        if (instancePtr) {
             *instancePtr = c_keep(instance);
         }
-        v_groupInstanceFree(instance);
-        /* When the message is delivered out-of-order and belongs to an instance that
-         * should have been covered by a newer dispose_all_data event that has already
-         * been processed, then make sure the a corresponding dispose message is inserted
-         * behind it in the readers. This dispose message is by definition an invalid
-         * sample, and so does not count towards the resource limits. It should therefore
-         * not be rejected by reason of resource limit exhaustion. If it is rejected
-         * because of a still missing connection, then the previous sample is rejected
-         * as well. So during its re-transmission this snippet of code will be touched
-         * again, thereby re-inserting the dispose message as well.
-         */
-        if ( qos->orderby.v.kind == V_ORDERBY_SOURCETIME &&
-             os_timeWCompare( msg->writeTime, group->lastDisposeAllTime ) == OS_LESS )
-        {
-            v_gid nullGID;
+    }
 
-            v_gidSetNil(nullGID);
-            disposeMsg = v_groupCreateInvalidMessage(v_objectKernel(group), nullGID, NULL, group->lastDisposeAllTime);
-            if (disposeMsg) {
-                v_stateSet(v_nodeState(disposeMsg), L_DISPOSED);
-            } else {
-                /* Error message already generated by v_groupCreateInvalidMessage. */
-                return V_WRITE_OUT_OF_RESOURCES;
-            }
-        }
-    } else {
-        instance = *instancePtr;
-        if (v_groupInstanceOwner(instance) != group) {
-            assert(FALSE);
-            return V_WRITE_PRE_NOT_MET;
-        }
-        if (!v_stateTestOr(v_nodeState(msg), L_WRITE | L_DISPOSED | L_UNREGISTER | L_TRANSACTION)) {
-            return V_WRITE_SUCCESS;
-        }
+    /* If msg is a pure register message then no more actions required. */
+    if (!v_stateTestOr(v_nodeState(msg), L_WRITE | L_DISPOSED | L_UNREGISTER | L_TRANSACTION)) {
+        v_groupInstanceFree(instance);
+        return V_WRITE_SUCCESS;
+    }
+
+    result = v_groupInstanceRegister(instance, msg);
+    if (result == V_WRITE_UNREGISTERED) {
+        bypassCache = TRUE;
         result = V_WRITE_SUCCESS;
     }
-    (void) result;
-
-    V_MESSAGE_STAMP(msg,groupLookupTime);
-
     /* At this point the group instance is either created, resolved
      * or verified if it was provided by the callee.
      */
-
     assert(instance != NULL);
 
+    if (result == V_WRITE_REGISTERED && !v_messageStateTest(msg, L_REGISTER)){
+        /* The Instance is registered but the message is not a register message.
+         * Therefore create an implicit register message and
+         * forward it to all local peers to establish the instance pipeline.
+         */
+        v_message regMsg = createRegisterMessage(group, msg);
+        if (regMsg) {
+            result = forwardRegisterMessage(instance, regMsg);
+            c_free(regMsg);
+        } else {
+            v_groupInstanceFree(instance);
+            return V_WRITE_OUT_OF_RESOURCES;
+        }
+    }
     /* For Unregister messages first unregister the instance to check
      * if it was registered, if not then no need to continue. */
     if (v_messageStateTest(msg,L_UNREGISTER)) {
         assert(!v_messageStateTest(msg,L_REGISTER));
-        /* When entry is set the msg is not meant for the instance, when
-         * msg is part of an transaction don't insert it just yet. */
-        if ((!entry) &&
-            (!v_message_isTransaction(msg))) {
+        /* When msg is part of an transaction don't insert it just yet.
+         */
+        if (!v_message_isTransaction(msg))
+        {
             result = v_groupInstanceUnregister(instance,msg, NULL);
             if (result != V_WRITE_UNREGISTERED) {
                 /* The message has no effect on the instance state.
@@ -2822,31 +2910,44 @@ groupWrite (
                  * Therefore readers will not be effected.
                  * So abort this method.
                  */
+                v_groupInstanceFree(instance);
                 return result;
             }
         }
     }
 
+    if (forwardMessage(instance,msg,writingNetworkId, bypassCache, resendScope) ==
+        V_WRITE_REJECTED) {
+        rejected = TRUE;
+        /* if forwardMessage rejects, it will have already set resendScope itself */
+    }
     /* Now forward the message to all networks. */
-    result = forwardMessageToNetwork(group, msg, writingNetworkId, entry);
+    result = forwardMessageToNetwork(group, msg, writingNetworkId);
     if (result == V_WRITE_REJECTED) {
         rejected = TRUE;
         *resendScope |= V_RESEND_REMOTE;
     }
 
-    /* Now forward the message to all subscribers.
-     * The resendScope is passed into this function so it can be set for the
-     * particular scope that is required.  This is because forwardMessage does
-     * the work for sending of both V_RESEND_VARIANT and V_RESEND_TOPIC
-     * functionality (which may be required independently).
+    /* When the message is delivered out-of-order and belongs to an instance that
+     * should have been covered by a newer dispose_all_data event that has already
+     * been processed, then make sure the a corresponding dispose message is inserted
+     * behind it in the readers. This dispose message is by definition an invalid
+     * sample, and so does not count towards the resource limits. It should therefore
+     * not be rejected by reason of resource limit exhaustion. If it is rejected
+     * because of a still missing connection, then the previous sample is rejected
+     * as well. So during its re-transmission this snippet of code will be touched
+     * again, thereby re-inserting the dispose message as well.
      */
-    result = forwardMessage(instance,msg,writingNetworkId, entry, bypassCache, resendScope);
-    if (result == V_WRITE_REJECTED) {
-        rejected = TRUE;
-        /* if forwardMessage rejects, it will have already set resendScope itself */
-    }
-    if (result == V_WRITE_SUCCESS && disposeMsg != NULL) {
-        result = forwardMessage(instance, disposeMsg, V_NETWORKID_LOCAL, NULL, 0, &disposeScope);
+    V_MESSAGE_STAMP(msg,groupLookupTime);
+    qos = v_topicQosRef(group->topic);
+    if ( qos->orderby.v.kind == V_ORDERBY_SOURCETIME &&
+         os_timeWCompare( msg->writeTime, group->lastDisposeAllTime ) == OS_LESS )
+    {
+        disposeMsg = createDisposeMessage(group);
+        if (!disposeMsg) {
+            v_groupInstanceFree(instance);
+            return V_WRITE_OUT_OF_RESOURCES;
+        }
     }
 
     /* In case the message contains non volatile data then check the
@@ -2857,56 +2958,69 @@ groupWrite (
      * qos is non-volatile.
      */
     if (v_message_isTransaction(msg) ||
-        (!entry && (qos->durability.v.kind != V_DURABILITY_VOLATILE) &&
-                   (!msg->qos || v_messageQos_durabilityKind(msg->qos) != V_DURABILITY_VOLATILE))) {
-        result = v_groupInstanceInsert(instance, msg, FALSE, NULL, stream);
-        if (result == V_WRITE_REJECTED) {
+        ((qos->durability.v.kind != V_DURABILITY_VOLATILE) &&
+         (!msg->qos || v_messageQos_durabilityKind(msg->qos) != V_DURABILITY_VOLATILE)))
+    {
+        result = v_groupInstanceInsert(instance, msg);
+        if (result == V_WRITE_SUCCESS) {
+            if (stream) {
+                forwardToStreams(instance, msg);
+            }
+            if (disposeMsg != NULL) {
+                /* When the message is delivered out-of-order and belongs to an instance that
+                 * should have been covered by a newer dispose_all_data event that has already
+                 * been processed, then make sure the a corresponding dispose message is inserted
+                 * behind it in the group and its streams.
+                 * This dispose message is by definition an invalid sample, and so does not count
+                 * towards the resource limits. It should therefore not be rejected by reason of
+                 * resource limit exhaustion. If it is rejected because of a still missing connection,
+                 * then the previous sample is rejected as well. So during its re-transmission this
+                 * snippet of code will be touched again, thereby re-inserting the dispose message
+                 * as well.
+                 */
+                result = v_groupInstanceInsert(instance, disposeMsg);
+                if (result == V_WRITE_SUCCESS) {
+                    forwardToStreams(instance, disposeMsg);
+                }
+            }
+        } else if (result == V_WRITE_REJECTED) {
             rejected = TRUE;
             *resendScope |= V_RESEND_DURABLE;
         }
-        if (result == V_WRITE_SUCCESS && disposeMsg != NULL)
-        {
-            /* When the message is delivered out-of-order and belongs to an instance that
-             * should have been covered by a newer dispose_all_data event that has already
-             * been processed, then make sure the a corresponding dispose message is inserted
-             * behind it in the group and its streams.
-             * This dispose message is by definition an invalid sample, and so does not count
-             * towards the resource limits. It should therefore not be rejected by reason of
-             * resource limit exhaustion. If it is rejected because of a still missing connection,
-             * then the previous sample is rejected as well. So during its re-transmission this
-             * snippet of code will be touched again, thereby re-inserting the dispose message
-             * as well.
-             */
-            result = v_groupInstanceInsert(instance, disposeMsg, FALSE, NULL, TRUE);
-            /* Make sure that a dispose that is processed correctly without error is treated as success. */
-        }
         if (result == V_WRITE_DUPLICATE || result == V_WRITE_SUCCESS_NOT_STORED) {
             result = V_WRITE_SUCCESS;
+        } else if (result == V_WRITE_REJECTED) {
+            *resendScope |= V_RESEND_DURABLE;
         }
-    } else {
+    }
+    if (!v_message_isTransaction(msg) &&
+        ((qos->durability.v.kind == V_DURABILITY_VOLATILE) ||
+         (msg->qos && v_messageQos_durabilityKind(msg->qos) == V_DURABILITY_VOLATILE)))
+    {
         /* The message is VOLATILE. Only if the message is an UNREGISTER message
          * we might need to add the instance to one of the 2 purgelists. As the
          * message is volatile we can ignore the WRITE and DISPOSE messages.
          */
-        if ((v_messageStateTest(msg,L_UNREGISTER) &&
-             v_groupInstanceStateTest(instance,L_NOWRITERS)))
+        if ((v_messageStateTest(msg,L_UNREGISTER) && v_groupInstanceStateTest(instance,L_NOWRITERS)))
         {
-            if ((qos->durability.v.kind != V_DURABILITY_VOLATILE) &&
-                v_groupInstanceStateTest(instance,L_DISPOSED))
+            if ((qos->durability.v.kind != V_DURABILITY_VOLATILE) && v_groupInstanceStateTest(instance,L_DISPOSED))
             {
                 _dispose_purgeList_insert(instance, now);
-            } else {
-                if (v_groupInstanceStateTest(instance,L_EMPTY)) {
-                    _empty_purgeList_insert(instance, now);
-                }
+            } else if (v_groupInstanceStateTest(instance,L_EMPTY)) {
+                _empty_purgeList_insert(instance, now);
             }
         }
     }
+
+    if (result == V_WRITE_SUCCESS && disposeMsg != NULL) {
+        result = forwardMessage(instance, disposeMsg, V_NETWORKID_LOCAL, 0, &disposeScope);
+    }
+    c_free(disposeMsg);
+    v_groupInstanceFree(instance);
+
     if (rejected) {
         result = V_WRITE_REJECTED;
     }
-
-    c_free(disposeMsg);
 
     return result;
 }
@@ -2919,53 +3033,60 @@ groupWriteEOT (
     v_resendScope *resendScope)
 {
     v_writeResult result = V_WRITE_SUCCESS;
-    v_resendScope inputScope = *resendScope;
-    c_bool complete = FALSE;
-    v_topicQos qos;
-    v_transactionAdmin transactionAdmin;
-
     /* cleanup resources,
      * do not delay this call until the data is inserted,
      * it will have undesired side-effects on the just inserted data.
      */
     updatePurgeList(group, msg->allocTime);
-
     /* Now forward the message to all networks. */
-    if (inputScope == V_RESEND_NONE || (inputScope & V_RESEND_REMOTE)) {
-        result = forwardMessageToNetwork(group, msg, writingNetworkId, NULL);
+    if (*resendScope == V_RESEND_NONE || (*resendScope & V_RESEND_REMOTE)) {
+        result = forwardMessageToNetwork(group, msg, writingNetworkId);
         if (result == V_WRITE_REJECTED) {
             *resendScope |= V_RESEND_REMOTE;
         }
     }
+    return result;
+}
 
-    /* Now forward the message to all subscribers and to the groups.
-     * EOT's will never be rejected by readers or groups since they
-     * represent an event, not a new sample. That means that it will
-     * only need to be sent to readers and groups initially (during
-     * the V_RESEND_NONE scope). There is no possible reason to retransmit
-     * the EOT for readers and groups, like there is for the network.
-     */
-    if (inputScope == V_RESEND_NONE) {
-        qos = v_topicQosRef(group->topic);
-        if (v_message_isTransaction(msg) ||
-            ((qos->durability.v.kind != V_DURABILITY_VOLATILE) &&
-             ((!msg->qos || v_messageQos_durabilityKind(msg->qos) != V_DURABILITY_VOLATILE)))) {
-            transactionAdmin = v__groupGetTransactionAdmin(group);
-            if (transactionAdmin) {
-                /* Now update the transaction administration in the group itself. */
-                (void)v_transactionAdminInsertMessage(transactionAdmin, msg, NULL, FALSE, &complete);
-                if (complete) {
-                    if (!v_kernelGroupTransactionLockAccess(v_objectKernel(group))) {
-                        v_kernelGroupTransactionFlush(v_objectKernel(group), transactionAdmin);
-                        v_kernelGroupTransactionUnlockAccess(v_objectKernel(group));
-                    }
-                }
-                c_free(transactionAdmin);
-            }
+static c_bool
+groupInsertTransactionMessage(
+    v_group _this,
+    v_message msg)
+{
+    c_bool flush = FALSE;
+    if (_this->transactionAdmin == NULL) {
+        _this->transactionAdmin = v_transactionAdminNew(v_object(_this),
+                                  v_kernelTransactionGroupAdmin(v_objectKernel(_this)),
+                                  _this->topic);
+    }
+    (void)v_transactionAdminInsertMessage(_this->transactionAdmin, msg, NULL, FALSE, &flush);
+    return flush;
+}
+
+void
+v_groupInsertTransactionMessage(
+    v_group _this,
+    v_message msg,
+    v_groupInstance instance)
+{
+    c_bool flush = FALSE;
+    v_instance inst = v_instance(instance);
+    if (_this->transactionAdmin == NULL) {
+        _this->transactionAdmin = v_transactionAdminNew(v_object(_this),
+                                  v_kernelTransactionGroupAdmin(v_objectKernel(_this)),
+                                  _this->topic);
+    }
+    /* For data only provide the instance when owner */
+    if (!v_messageStateTest(msg,L_UNREGISTER) && !v_messageStateTest(msg,L_REGISTER)) {
+        v_ownershipResult ownership = v_groupInstanceTestOwnership(instance, msg);
+        if (ownership == V_OWNERSHIP_INCOMPATIBLE_QOS || ownership == V_OWNERSHIP_NOT_OWNER) {
+            inst = NULL;
         }
     }
-
-    return result;
+    (void)v_transactionAdminInsertMessage(_this->transactionAdmin, msg, inst, FALSE, &flush);
+    if (flush) {
+        v_kernelGroupTransactionFlush(v_objectKernel(_this), _this->transactionAdmin);
+    }
 }
 
 v_writeResult
@@ -2977,16 +3098,158 @@ v_groupWrite (
     v_resendScope *resendScope)
 {
     v_writeResult result;
+    c_bool flush = FALSE;
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
+    V_MESSAGE_STAMP(msg,groupInsertTime);
+    if (v_messageStateTest(msg, L_ENDOFTRANSACTION)) {
+        /* Now forward the message to all subscribers and to the groups.
+         * EOT's will never be rejected by readers or groups since they
+         * represent an event, not a new sample. That means that it will
+         * only need to be sent to readers and groups initially (during
+         * the V_RESEND_NONE scope). There is no possible reason to retransmit
+         * the EOT for readers and groups, like there is for the network.
+         */
+        c_bool resend = (*resendScope != V_RESEND_NONE);
+        result = groupWriteEOT(group, msg, writingNetworkId, resendScope);
+        if (!resend) {
+            flush = groupInsertTransactionMessage(group, msg);
+        }
+    } else {
+        result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, FALSE, resendScope);
+        if (result == V_WRITE_SUCCESS_NOT_STORED) {
+            if (v_message_isTransaction(msg)) {
+                flush = groupInsertTransactionMessage(group, msg);
+            }
+            result = V_WRITE_SUCCESS;
+        }
+    }
+    OSPL_UNLOCK(group);
+    if (flush) {
+        v_kernelGroupTransactionFlush(v_objectKernel(group), NULL);
+    }
+    return result;
+}
+
+v_writeResult
+v_groupWriteHistoricalData (
+    v_group group,
+    v_message msg,
+    v_groupInstance *instancePtr,
+    v_networkId writingNetworkId)
+{
+    v_writeResult result;
+    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
+    c_bool flush = FALSE;
+
+    OSPL_LOCK(group);
 
     V_MESSAGE_STAMP(msg,groupInsertTime);
     if (v_messageStateTest(msg, L_ENDOFTRANSACTION)) {
-        result = groupWriteEOT(group, msg, writingNetworkId, resendScope);
+        result = groupWriteEOT(group, msg, writingNetworkId, &resendScope);
+        flush = groupInsertTransactionMessage(group, msg);
     } else {
-        result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, NULL, resendScope);
+        result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, TRUE, &resendScope);
+        if (result == V_WRITE_SUCCESS_NOT_STORED) {
+            if (v_message_isTransaction(msg)) {
+                flush = groupInsertTransactionMessage(group, msg);
+            }
+            result = V_WRITE_SUCCESS;
+        }
     }
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
+    if (flush) {
+        v_kernelGroupTransactionFlush(v_objectKernel(group), NULL);
+    }
+
+    return result;
+}
+
+v_writeResult
+v_groupWriteNoStream (
+    v_group group,
+    v_message msg,
+    v_groupInstance *instancePtr,
+    v_networkId writingNetworkId)
+{
+    v_writeResult result;
+    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
+    c_bool flush = FALSE;
+
+    OSPL_LOCK(group);
+    result = groupWrite(group, msg, instancePtr, writingNetworkId, FALSE, FALSE, &resendScope);
+    if (result == V_WRITE_SUCCESS_NOT_STORED) {
+        if (v_message_isTransaction(msg)) {
+            flush = groupInsertTransactionMessage(group, msg);
+        }
+        result = V_WRITE_SUCCESS;
+    }
+    OSPL_UNLOCK(group);
+    if (flush) {
+        v_kernelGroupTransactionFlush(v_objectKernel(group), NULL);
+    }
+
+    return result;
+}
+
+v_writeResult
+v_groupWriteHistoricalToReader (
+    v_group group,
+    v_message msg,
+    v_entry entry)
+{
+    v_writeResult result;
+    const os_timeE now = msg->allocTime;
+
+    assert(C_TYPECHECK(group,v_group));
+    assert(C_TYPECHECK(msg,v_message));
+
+    OSPL_LOCK(group);
+
+    /* Check if a key filter is set and filter out key values of no interest */
+    if ((group->filter) && (!v_filterEvalKey(group->filter, msg))) {
+        c_bool flush = FALSE;
+        if (v_message_isTransaction(msg)) {
+            flush = groupInsertTransactionMessage(group, msg);
+        }
+        OSPL_UNLOCK(group);
+        if (flush) {
+            v_kernelGroupTransactionFlush(v_objectKernel(group), NULL);
+        }
+        return V_WRITE_SUCCESS;
+    }
+    /* cleanup resources,
+     * do not delay this call until the data is inserted,
+     * it will have undesired side-effects on the just inserted data.
+     */
+    updatePurgeList(group, now);
+
+    if (!v_stateTestOr(v_nodeState(msg), L_WRITE | L_DISPOSED | L_UNREGISTER | L_TRANSACTION)) {
+        OSPL_UNLOCK(group);
+        return V_WRITE_SUCCESS;
+    }
+
+    V_MESSAGE_STAMP(msg,groupLookupTime);
+
+    result = v_dataReaderEntryWrite(v_dataReaderEntry(entry), msg, NULL, V_CONTEXT_GROUPWRITE);
+
+    /* In case the message contains non volatile data then check the
+     * durability resource limits and write the data into the Transient
+     * (and persistent) store.
+     * Be aware that a dispose message written by dispose_all_data has
+     * no inline qos, but should still be stored in the group if the topic
+     * qos is non-volatile.
+     */
+    if (v_message_isTransaction(msg)) {
+        v_groupInstance instance = v_groupStoreCreateInstance(group->store, msg);
+        v_groupInsertTransactionMessage(group, msg, instance);
+        if (result == V_WRITE_DUPLICATE || result == V_WRITE_SUCCESS_NOT_STORED) {
+            result = V_WRITE_SUCCESS;
+        }
+        v_groupInstanceFree(instance);
+    }
+
+    OSPL_UNLOCK(group);
 
     return result;
 }
@@ -3013,7 +3276,7 @@ v__groupDataReaderEntriesWriteEOTNoLock(
     struct WriteEOTArg arg;
 
 #ifndef NDEBUG
-    assert(os_threadIdToInteger(_this->mutex.owner) == os_threadIdToInteger(os_threadIdSelf()));
+//TODO: Need a replacement for: assert(os_threadIdToInteger(_this->mutex.owner) == os_threadIdToInteger(os_threadIdSelf()));
 #endif
     arg.msg = msg;
     arg.result = V_WRITE_SUCCESS;
@@ -3037,18 +3300,15 @@ v_groupFlushTransactionNoLock(
 
     if (v_messageStateTest(message, L_ENDOFTRANSACTION)) {
         /* Create a v_groupAction to notify durability that the
-         * transaction has completed. */
+         * transaction has completed.
+         */
         forwardMessageToStreams(a->group, NULL, message, message->allocTime, V_GROUP_ACTION_TRANSACTION_COMPLETE);
     } else {
         assert(instance);
 
         qos = v_topicQosRef(a->group->topic);
         if (v_messageStateTest(message, L_UNREGISTER)) {
-            v_writeResult result;
-            result = v_groupInstanceUnregister(v_groupInstance(instance), message, a->txn);
-            if (result == V_WRITE_UNREGISTERED) {
-                (void)v_groupInstanceInsert(v_groupInstance(instance), message, TRUE, a->txn, TRUE);
-            }
+            /* UNREGISTER messages are flush when received, so ignore it now */
         } else if (qos->durability.v.kind == V_DURABILITY_VOLATILE) {
             /* This is as far as a volatile sample goes */
             if (v_messageStateTest(message, L_WRITE)) {
@@ -3060,48 +3320,9 @@ v_groupFlushTransactionNoLock(
              * Since the sample already consumed resource limits in the transactional
              * administration, no additional resource claim is needed.
              */
-            (void)v_groupInstanceInsert(v_groupInstance(instance), message, TRUE, a->txn, TRUE);
+            (void)v_groupInstanceFlushTransaction(v_groupInstance(instance), message, a->txn);
         }
     }
-}
-
-v_writeResult
-v_groupWriteNoStream (
-    v_group group,
-    v_message msg,
-    v_groupInstance *instancePtr,
-    v_networkId writingNetworkId)
-{
-    v_writeResult result;
-    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
-
-    c_mutexLock(&group->mutex);
-    result = groupWrite(group, msg, instancePtr, writingNetworkId, FALSE, NULL, &resendScope);
-    c_mutexUnlock(&group->mutex);
-
-    return result;
-}
-
-v_writeResult
-v_groupWriteNoStreamWithEntry (
-    v_group group,
-    v_message msg,
-    v_groupInstance *instancePtr,
-    v_networkId writingNetworkId,
-    v_entry entry)
-{
-    v_writeResult result;
-    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
-
-    c_mutexLock(&group->mutex);
-    if (v_messageStateTest(msg, L_ENDOFTRANSACTION)) {
-        result = groupWriteEOT(group, msg, writingNetworkId, &resendScope);
-    } else {
-        result = groupWrite(group, msg, instancePtr, writingNetworkId, FALSE, entry, &resendScope);
-    }
-    c_mutexUnlock(&group->mutex);
-
-    return result;
 }
 
 v_writeResult
@@ -3113,8 +3334,9 @@ v_groupWriteCheckSampleLost(
     v_resendScope *resendScope)
 {
     v_writeResult result;
+    c_bool flush = FALSE;
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
 
     v_groupCheckForSampleLost(group, msg);
 
@@ -3125,16 +3347,36 @@ v_groupWriteCheckSampleLost(
      */
     if (c_baseMakeMemReservation(c_getBase(group), C_MM_RESERVATION_HIGH)) {
         if (v_messageStateTest(msg, L_ENDOFTRANSACTION)) {
+            c_bool processTransaction = (*resendScope == V_RESEND_NONE);
             result = groupWriteEOT(group, msg, writingNetworkId, resendScope);
+            if (processTransaction) {
+                flush = groupInsertTransactionMessage(group, msg);
+            }
         } else {
-            result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, NULL, resendScope);
+            /* Before delivering the message to the group, check whether the message
+             * contains an L_UNREGISTER flag while the writer has autodispose set to TRUE.
+             * In that case also raise the L_DISPOSE flag, so that the dispose/unregister
+             * combination will be treated atomically.
+             */
+            if (v_messageStateTest(msg, L_UNREGISTER) && v_messageQos_isAutoDispose(msg->qos)) {
+                v_stateSet(v_nodeState(msg), L_DISPOSED);
+            }
+            result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, FALSE, resendScope);
+            if (result == V_WRITE_SUCCESS_NOT_STORED) {
+                if (v_message_isTransaction(msg)) {
+                    flush = groupInsertTransactionMessage(group, msg);
+                }
+                result = V_WRITE_SUCCESS;
+            }
         }
         c_baseReleaseMemReservation(c_getBase(group), C_MM_RESERVATION_HIGH);
     } else {
         result = V_WRITE_OUT_OF_RESOURCES;
     }
-
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
+    if (flush) {
+        v_kernelGroupTransactionFlush(v_objectKernel(group), NULL);
+    }
 
     return result;
 }
@@ -3186,10 +3428,10 @@ v_groupDeleteHistoricalData(
 {
     /* Do not delete historical data in builtin groups*/
     if(isBuiltinGroup(group) == FALSE){
-        c_mutexLock(&group->mutex);
-        c_tableWalk(group->instances, purgeInstanceTimedAction, &t);
+        OSPL_LOCK(group);
+        v_groupStoreWalk(group->store, purgeInstanceTimedAction, &t);
         forwardMessageToStreams(group, NULL, NULL, t, V_GROUP_ACTION_DELETE_DATA);
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
     }
 
     return V_WRITE_SUCCESS;
@@ -3248,11 +3490,11 @@ v_groupResend (
 
     result = V_WRITE_SUCCESS;
 
-    c_mutexLock(&group->mutex);
+    OSPL_LOCK(group);
     updatePurgeList(group, os_timeEGet());
 
     if ((instancePtr == NULL) || (*instancePtr == NULL)) {
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
         return V_WRITE_ERROR;
     } else {
         instance = *instancePtr;
@@ -3263,9 +3505,13 @@ v_groupResend (
      */
     if (*resendScope & V_RESEND_DURABLE) {
         if ((v_messageQos_durabilityKind(msg->qos) != V_DURABILITY_VOLATILE) ||
-            (v_message_isTransaction(msg))) {
-            result = v_groupInstanceInsert(instance, msg, FALSE, NULL, TRUE);
-            if (result == V_WRITE_SUCCESS || result == V_WRITE_DUPLICATE) {
+            (v_message_isTransaction(msg)))
+        {
+            result = v_groupInstanceInsert(instance, msg);
+            if (result == V_WRITE_SUCCESS) {
+                forwardToStreams(instance, msg);
+                *resendScope = (v_resendScope) (*resendScope & ~V_RESEND_DURABLE);
+            } else if (result == V_WRITE_DUPLICATE) {
                 *resendScope = (v_resendScope) (*resendScope & ~V_RESEND_DURABLE);
             }
         } else {
@@ -3290,7 +3536,6 @@ v_groupResend (
             arg.networkId = writingNetworkId;
             arg.writeResult = V_WRITE_SUCCESS;
             arg.groupRoutingEnabled = group->routingEnabled;
-            arg.entry = NULL;
 
             v_groupEntrySetWalk(&group->networkEntrySet, nwEntryWrite, &arg);
 
@@ -3304,8 +3549,8 @@ v_groupResend (
 
     /* If the the resend scope includes user defined key interest
      * then write the message to the DataReader in the variant entry set.
-     */
-    /* Only forward the message when the WRITE bit is set!
+     *
+     * Only forward the message when the WRITE bit is set!
      * So only write and writedispose messages are forwarded to readers
      * with own storage spectrum.
      */
@@ -3355,7 +3600,7 @@ v_groupResend (
         c_iterFree(arg.deadCacheItems);
     }
 
-    c_mutexUnlock(&group->mutex);
+    OSPL_UNLOCK(group);
 
     return result;
 }
@@ -3370,44 +3615,73 @@ v_groupNwAttachedGet(
     return (g->networkEntrySet.firstEntry != NULL);
 }
 
-c_bool
-v_groupCompleteGet(
-    v_group g)
+//TODO: Need a replacement for: _Requires_lock_held_(g->mutex)
+v_alignState
+v__groupCompleteGet_nl(
+    _In_ v_group g)
 {
     assert(g != NULL);
     assert(C_TYPECHECK(g,v_group));
 
-    return g->complete;
+    return g->alignState;
 }
 
-void
-v_groupCompleteSet(
-    v_group g,
-    c_bool  complete)
+v_alignState
+v_groupCompleteGet(
+    _In_ v_group g)
 {
-    c_iter entrySet = NULL;
-    v_groupEntry proxy;
+    v_alignState alignState;
 
     assert(g != NULL);
     assert(C_TYPECHECK(g,v_group));
 
-    c_mutexLock(&g->mutex);
-    g->complete = complete;
-    proxy = g->topicEntrySet.firstEntry;
-    while (proxy) {
-        entrySet = c_iterAppend(entrySet, proxy);
-        proxy = proxy->next;
-    }
-    proxy = g->variantEntrySet.firstEntry;
-    while (proxy) {
-        entrySet = c_iterAppend(entrySet, proxy);
-        proxy = proxy->next;
-    }
-    c_mutexUnlock(&g->mutex);
-    while ((proxy = (v_groupEntry) c_iterTakeFirst(entrySet))) {
-        v_entryNotifyGroupStateChange(proxy->entry, g);
-    }
-    c_iterFree(entrySet);
+    OSPL_LOCK(g);
+    alignState = v__groupCompleteGet_nl(g);
+    OSPL_UNLOCK(g);
+
+    return alignState;
+}
+
+C_STRUCT(entryNotifyGroupStateChangeArg) {
+    v_handle groupHandle;
+    v_alignState alignState;
+};
+C_CLASS(entryNotifyGroupStateChangeArg);
+
+static c_bool
+entryNotifyGroupStateChange(
+    v_groupEntry proxy,
+    c_voidp arg)
+{
+    entryNotifyGroupStateChangeArg a = (entryNotifyGroupStateChangeArg)arg;
+
+    v_entryNotifyGroupStateChange(proxy->entry, a->groupHandle, a->alignState);
+    return TRUE;
+}
+
+v_alignState
+v_groupCompleteSet(
+    _Inout_ v_group g,
+    _In_ v_alignState alignState)
+{
+    v_alignState prev_state;
+    C_STRUCT(entryNotifyGroupStateChangeArg) alignArg;
+
+    assert(g != NULL);
+    assert(C_TYPECHECK(g,v_group));
+
+    OSPL_LOCK(g);
+
+    assert(v_groupIsDurable(g));
+    prev_state = g->alignState;
+    alignArg.alignState = g->alignState = alignState;
+    alignArg.groupHandle = v_publicHandle(v_public(g));
+    (void)v_groupEntrySetWalk(&g->topicEntrySet, entryNotifyGroupStateChange, &alignArg);
+    (void)v_groupEntrySetWalk(&g->variantEntrySet, entryNotifyGroupStateChange, &alignArg);
+
+    OSPL_UNLOCK(g);
+
+    return prev_state;
 }
 
 struct walkEntryActionArg {
@@ -3440,7 +3714,7 @@ v_groupWalkEntries(
 
     proxyAction.action = action;
     proxyAction.arg = arg;
-    c_mutexLock(&g->mutex);
+    OSPL_LOCK(g);
     result = v_groupEntrySetWalk(&g->networkEntrySet,
                                  walkEntryAction,&proxyAction);
     if (result == TRUE) {
@@ -3451,13 +3725,12 @@ v_groupWalkEntries(
         result = v_groupEntrySetWalk(&g->topicEntrySet,
                                      walkEntryAction,&proxyAction);
     }
-    c_mutexUnlock(&g->mutex);
+    OSPL_UNLOCK(g);
 
     return result;
 }
 
-/*
- * Provide a target walk function and corresponding arg for walking
+/* Provide a target walk function and corresponding arg for walking
  * through all groupInstances until a registration has been found that
  * matches the writerGID.
  */
@@ -3505,8 +3778,7 @@ removeWriterAdmin(
     }
 }
 
-/*
- * This function unregisters all instances that relate through the provided
+/* This function unregisters all instances that relate through the provided
  * predicate to the GID supplied in the template.
  * The argument 'isImplicit' indicates whether the request to unregister was
  * implicit (i.e., on conto of the splice daemon) or an explicit unregister.
@@ -3526,7 +3798,7 @@ v_groupUnregisterByGidTemplate(
     v_groupInstance grInst;
 
     /* Lock group. */
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
 
     /* Remove the writer admin for sample lost count */
     removeWriterAdmin(_this, tmplGid);
@@ -3547,9 +3819,9 @@ v_groupUnregisterByGidTemplate(
     arg.instanceList = c_iterNew(NULL);
     arg.registrationList = c_iterNew(NULL);
     arg.predicate = predicate;
-    c_tableWalk(_this->instances, groupCollectMatchingRegistrations, &arg);
+    v_groupStoreWalk(_this->store, groupCollectMatchingRegistrations, &arg);
     /* Unlock the group again to be able to forward the messages into the pipeline. */
-    c_mutexUnlock(&_this->mutex);
+    OSPL_UNLOCK(_this);
 
     registration = (v_registration)c_iterTakeFirst(arg.registrationList);
     grInst = v_groupInstance(c_iterTakeFirst(arg.instanceList));
@@ -3585,7 +3857,8 @@ v_groupDisconnectWriter(
 }
 
 /* This function provides a predicate for finding GIDs that originate on the
- * same node.  */
+ * same node.
+ */
 static c_equality
 v_systemIdCompare(
     v_gid id1,
@@ -3683,12 +3956,12 @@ v_groupStreamHistoricalData(
     assert(C_TYPECHECK(g,v_group));
     assert(C_TYPECHECK(stream,v_groupStream));
 
-    c_mutexLock(&g->mutex);
+    OSPL_LOCK(g);
     updatePurgeList(g, os_timeEGet());
     h.group = g;
     h.stream = stream;
-    c_tableWalk(g->instances, streamHistoricalData, &h);
-    c_mutexUnlock(&g->mutex);
+    v_groupStoreWalk(g->store, streamHistoricalData, &h);
+    OSPL_UNLOCK(g);
 }
 
 struct lookupReaderIntanceArg {
@@ -3741,6 +4014,9 @@ writeHistoricalSample(
          * through the pipeline first.
          */
         if (lriArg->prevGroupInst != gi) {
+            if (lriArg->prevGroupInst && v_objectKind(lriArg->trgtEntry->reader) == K_DATAREADER) {
+                v_dataReaderInstanceTransferGroupOwnership(v_dataReaderInstance(*readerInst), &gi->owner);
+            }
             lriArg->readerInst = NULL; /* Reset previous readerInstance first. */
             (void)v_groupCacheWalk(gi->targetCache, lookupReaderInstance, lriArg);
         }
@@ -3789,7 +4065,6 @@ struct getHistoricalDataArg {
     v_result result;
 };
 
-
 static c_bool
 writeHistoricalData(
     c_object o,
@@ -3812,61 +4087,32 @@ writeHistoricalData(
     return result;
 }
 
-
-struct writeTransactionArg {
-    v_dataReaderEntry entry;
-    v_groupInstance prevGroupInst;
-    v_dataReaderInstance readerInst;
-    c_bool includeEOT;
-};
-
-struct writeHistoricalTransactionArg {
-    v_dataReaderEntry entry;
-    c_bool includeEOT;
-};
-
 static void
 writeTransaction(
     v_instance instance,
     v_message message,
     c_voidp arg)
 {
-    struct writeTransactionArg *a = (struct writeTransactionArg *)arg;
-    v_groupInstance gi = v_groupInstance(instance);
-    v_instance *readerInst = (v_instance *) &a->readerInst;
-    c_base base = c_getBase(instance);
-    v_writeResult writeResult;
+    struct getHistoricalDataArg *a = (struct getHistoricalDataArg *)arg;
+    v_dataReaderEntry entry;
 
-    if (message && v_messageStateTest(message, L_ENDOFTRANSACTION)) {
-        if (a->includeEOT) {
-            v_dataReaderEntryWriteEOT(a->entry, message);
-         }
-    } else if (instance) {
-        if (a->prevGroupInst != gi) {
-            struct lookupReaderIntanceArg lriArg = {0};
-            lriArg.trgtEntry = v_entry(a->entry);
-            (void)v_groupCacheWalk(gi->targetCache, lookupReaderInstance, &lriArg);
-            a->readerInst = lriArg.readerInst;
-        }
+    assert(arg);
 
-        /* Keep track of the current groupInstance/readerInstance pair. */
-        a->prevGroupInst = gi;
+    /* The 'instance' attribute is part of the function signature because the function
+     * has to comply with the signature described by v_transactionAction in order to be
+     * able to pass it as a callback parameter to the v_transactionWalk function. However,
+     * the instance parameter has no use in the context of this particular callback.
+     */
+    OS_UNUSED_ARG(instance);
 
-        if (c_baseMakeMemReservation(base, C_MM_RESERVATION_ZERO)) {
-            writeResult = v_entryWrite(v_entry(a->entry), message, V_NETWORKID_LOCAL, FALSE, readerInst, V_CONTEXT_GROUPWRITE);
-            c_baseReleaseMemReservation(base, C_MM_RESERVATION_ZERO);
-
-            if (writeResult != V_WRITE_SUCCESS) {
-                 OS_REPORT(OS_CRITICAL,
-                           "v_group::writeHistoricalSample",0,
-                           "writeHistoricalSample(0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed with result %d.",
-                           (os_address)message, (os_address)arg, writeResult);
+    if (message) {
+        entry = v_dataReaderEntry(a->entry);
+        if (v_messageStateTest(message, L_ENDOFTRANSACTION)) {
+            if (a->includeEOT) {
+                (void)v_dataReaderEntryWriteEOT(entry, message);
             }
         } else {
-            OS_REPORT(OS_CRITICAL,
-                      "v_group::writeHistoricalSample",0,
-                      "writeHistoricalSample(0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed: out of memory.",
-                      (os_address)message, (os_address)arg);
+            (void)v_dataReaderEntryWrite(entry, message, NULL, V_CONTEXT_GROUPWRITE);
         }
     }
 }
@@ -3876,17 +4122,7 @@ writeHistoricalTransaction(
     c_object o,
     c_voidp arg)
 {
-    v_transaction transaction = v_transaction(o);
-    struct getHistoricalDataArg *histArgs = arg;
-    struct writeTransactionArg writeArg;
-
-    writeArg.entry = v_dataReaderEntry(histArgs->entry);
-    writeArg.prevGroupInst = NULL;
-    writeArg.readerInst = NULL;
-    writeArg.includeEOT = histArgs->includeEOT;
-
-    v_transactionWalk(transaction, writeTransaction, &writeArg);
-
+    v_transactionWalk(v_transaction(o), writeTransaction, arg);
     return TRUE;
 }
 
@@ -3894,32 +4130,56 @@ writeHistoricalTransaction(
 static v_result
 groupGetHistoricalData(
     v_group g,
-    v_entry e,
-    c_bool openTransactions)
+    v_entry e)
 {
-    c_bool success;
     struct getHistoricalDataArg histArgs;
-
-    OS_UNUSED_ARG(success);
 
     histArgs.entry = e;
     histArgs.includeEOT = FALSE;
     histArgs.result = V_RESULT_OK;
 
-    success = c_tableWalk(g->instances, writeHistoricalData, &histArgs);
-    assert((success && (histArgs.result == V_RESULT_OK)) ||
-           (!success && (histArgs.result != V_RESULT_OK)));
-    if (openTransactions && g->transactionAdmin) {
+    v_groupStoreWalk(g->store, writeHistoricalData, &histArgs);
+    return histArgs.result;
+}
+
+static void
+groupGetOpenTransactions(
+    v_group g,
+    v_entry e,
+    c_bool groupAdmin)
+{
+    struct getHistoricalDataArg histArgs;
+
+    histArgs.entry = e;
+    histArgs.includeEOT = FALSE;
+    histArgs.result = V_RESULT_OK;
+
+    if (g->transactionAdmin) {
         v_transactionGroupAdmin tgroupadm;
         v_transactionAdminWalkTransactions(g->transactionAdmin, writeHistoricalTransaction, &histArgs);
 
         tgroupadm = v_transactionGetGroupAdmin(g->transactionAdmin);
-        if (tgroupadm) {
+        if (groupAdmin && tgroupadm) {
             histArgs.includeEOT = TRUE;
             v_transactionGroupAdminWalkTransactions(tgroupadm, g, writeHistoricalTransaction, &histArgs);
         }
     }
-    return histArgs.result;
+}
+
+void
+v_groupGetOpenTransactions(
+    v_group g,
+    v_entry e,
+    c_bool groupAdmin)
+{
+    assert(g != NULL);
+    assert(C_TYPECHECK(g,v_group));
+    assert(e != NULL);
+    assert(C_TYPECHECK(e,v_entry));
+
+    OSPL_LOCK(g);
+    groupGetOpenTransactions(g,e,groupAdmin);
+    OSPL_UNLOCK(g);
 }
 
 v_result
@@ -3936,13 +4196,16 @@ v_groupGetHistoricalData(
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_entry));
 
-    c_mutexLock(&g->mutex);
+    OSPL_LOCK(g);
     qos = v_topicQosRef(g->topic);
     if (qos->durability.v.kind != V_DURABILITY_VOLATILE) {
         updatePurgeList(g, os_timeEGet());
-        result = groupGetHistoricalData(g, e, openTransactions);
+        result = groupGetHistoricalData(g, e);
+        if (openTransactions) {
+            groupGetOpenTransactions(g,e, TRUE);
+        }
     }
-    c_mutexUnlock(&g->mutex);
+    OSPL_UNLOCK(g);
 
     return result;
 }
@@ -3957,29 +4220,25 @@ resolveField(
     c_ulong i, length;
     q_list list;
     c_string str;
-    c_type instanceType;
     c_char *fieldName;
     q_expr expr;
 
-    instanceType = c_subType(_this->instances);
-    field = c_fieldNew(instanceType,name);
-
+    field = c_fieldNew(_this->instanceType,name);
     if (!field) {
         fieldName = os_alloca(strlen(name) + strlen("newest.message.userData.") + 1);
         os_sprintf(fieldName,"newest.%s",name);
-        field = c_fieldNew(instanceType,fieldName);
+        field = c_fieldNew(_this->instanceType,fieldName);
 
         if (!field) {
             os_sprintf(fieldName,"newest.message.%s",name);
-            field = c_fieldNew(instanceType,fieldName);
+            field = c_fieldNew(_this->instanceType,fieldName);
             if (!field) {
                 os_sprintf(fieldName,"newest.message.userData.%s",name);
-                field = c_fieldNew(instanceType,fieldName);
+                field = c_fieldNew(_this->instanceType,fieldName);
             }
         }
         os_freea(fieldName);
     }
-    c_free(instanceType);
     if(field){
         path = c_fieldPath(field);
         length = c_arraySize(path);
@@ -4059,22 +4318,6 @@ resolveFields (
     return TRUE;
 }
 
-static c_iter
-deOr(
-    q_expr e,
-    c_iter list)
-{
-    c_iter results;
-
-    if (q_getTag(e) == Q_EXPR_OR) {
-        results = deOr(q_takePar(e,0),deOr(q_takePar(e,0),list));
-        q_dispose(e);
-    } else {
-        results = c_iterInsert(list,e);
-    }
-    return results;
-}
-
 struct historicalCondition {
     c_array instanceQ;
     c_array sampleQ;
@@ -4090,7 +4333,10 @@ struct historicalCondition {
 
 #define PREFIX "newest.message"
 static c_array
-createKeyList(c_type instanceType, c_array keyList){
+createKeyList(
+    c_type instanceType,
+    c_array keyList)
+{
     c_ulong size, i;
     c_array newKeyList = NULL;
 
@@ -4137,7 +4383,6 @@ calculateCondition(
     c_iter list;
     c_type type;
     c_array keyList;
-    c_table instanceSet;
     c_value *params = NULL;
     c_ulong nparams;
 
@@ -4158,7 +4403,7 @@ calculateCondition(
                 q_disjunctify(e);
                 e = q_removeNots(e);
 
-                list = deOr(e,NULL);
+                list = q_exprDeOr(e,NULL);
                 len = c_iterLength(list);
 
                 type = c_resolve(c_getBase(c_object(v_objectKernel(g))),"c_query");
@@ -4179,7 +4424,6 @@ calculateCondition(
                         result = FALSE;
                     }
                 }
-                instanceSet = g->instances;
 
                 keyList = createKeyList(g->instanceType, v_topicMessageKeyList(g->topic));
 
@@ -4190,9 +4434,7 @@ calculateCondition(
 
                     if (keyExpr != NULL) {
                         progExpr = F1(Q_EXPR_PROGRAM,keyExpr);
-                        condition->instanceQ[i] = c_queryNew(instanceSet,
-                                                  progExpr,
-                                                  params);
+                        condition->instanceQ[i] = v_groupStore_create_query(g->store, progExpr, params);
                         q_dispose(progExpr);
 
                         if (condition->instanceQ[i] == NULL) {
@@ -4206,9 +4448,7 @@ calculateCondition(
                     }
                     if (subExpr != NULL) {
                         progExpr   = F1(Q_EXPR_PROGRAM,subExpr);
-                        condition->sampleQ[i] = c_queryNew(instanceSet,
-                                                progExpr,
-                                                params);
+                        condition->sampleQ[i] = v_groupStore_create_query(g->store, progExpr, params);
                         q_dispose(progExpr);
 
                         if (condition->sampleQ[i] == NULL) {
@@ -4354,7 +4594,8 @@ walkMatchingSamples(
                 if (pass) { /* instance matches query*/
                     /* Since history is 'replayed' here, the oldest sample should be
                      * processed first. We keep a reference to the first sample and
-                     * set the current sample to the tail of the instance (oldest). */
+                     * set the current sample to the tail of the instance (oldest).
+                     */
                     firstSample = v_groupInstanceHead(instance);
                     sample = v_groupInstanceTail(instance);
                     while ((sample != NULL) && proceed) {
@@ -4412,7 +4653,7 @@ walkMatchingSamples(
         }
 
         if (condition->insertedSamples > samplesBefore) {
-            /*In case the instance matches the condition, also check whether
+            /* In case the instance matches the condition, also check whether
              * unregister messages need to be forwarded
              */
             if (condition->handleUnregistrations) {
@@ -4435,12 +4676,9 @@ v_groupGetHistoricalDataWithCondition(
     v_entry entry,
     v_historicalDataRequest request)
 {
-    c_bool success;
     v_result result;
     struct historicalCondition condition;
     struct lookupReaderIntanceArg actionArgs;
-
-    OS_UNUSED_ARG(success);
 
     assert(g != NULL);
     assert(C_TYPECHECK(g,v_group));
@@ -4463,8 +4701,8 @@ v_groupGetHistoricalDataWithCondition(
     condition.handleUnregistrations = FALSE;
 
     if(calculateCondition(g, &condition)){
-        /*Get all matching data and send it to the reader*/
-        success = c_walk(g->instances, walkMatchingSamples, &condition);
+        /* Get all matching data and send it to the reader */
+        v_groupStoreWalk(g->store, walkMatchingSamples, &condition);
         result = actionArgs.result;
         c_free(condition.instanceQ);
         c_free(condition.sampleQ);
@@ -4510,8 +4748,20 @@ v_groupFlushActionWithCondition(
     if (request != NULL) {
         result = calculateCondition(g, &condition);
     }
-    if(result){
-        (void) c_walk(g->instances, walkMatchingSamples, &condition);
+    if (result) {
+        v_groupStoreWalk(g->store, walkMatchingSamples, &condition);
+        /* Do not apply conditions to open transactions. This way the
+         * collected data can always be used to reconstruct the transactions.
+         */
+        if (g->transactionAdmin) {
+            v_transactionGroupAdmin tgroupadm;
+            v_transactionAdminWalkTransactions(g->transactionAdmin, flushTransaction, &groupFlushArg);
+
+            tgroupadm = v_transactionGetGroupAdmin(g->transactionAdmin);
+            if (tgroupadm) {
+                v_transactionGroupAdminWalkTransactions(tgroupadm, g, flushTransaction, &groupFlushArg);
+            }
+        }
     }
     c_free(condition.instanceQ);
     c_free(condition.sampleQ);
@@ -4525,56 +4775,25 @@ v_groupUpdatePurgeList(
     assert(C_TYPECHECK(group,v_group));
 
     if(group){
-        c_mutexLock(&group->mutex);
+        OSPL_LOCK(group);
         updatePurgeList(group, os_timeEGet());
-        c_mutexUnlock(&group->mutex);
+        OSPL_UNLOCK(group);
     }
-}
-
-v_groupInstance
-v_groupLookupInstance(
-    v_group group,
-    c_value keyValue[])
-{
-    v_groupInstance result;
-
-    if(group && keyValue){
-        c_mutexLock(&group->mutex);
-        result = c_tableFind(group->instances, &keyValue[0]);
-        c_mutexUnlock(&group->mutex);
-    } else {
-        result = NULL;
-    }
-    return result;
-}
-
-v_groupInstance
-v_groupLookupInstanceAndRegistration(
-    v_group group,
-    c_value keyValue[],
-    v_gid gidTemplate,
-    v_matchIdentityAction predicate,
-    v_registration *registration)
-{
-    v_groupInstance result;
-
-    if(group && keyValue){
-        c_mutexLock(&group->mutex);
-        result = c_tableFind(group->instances, &keyValue[0]);
-        if (result) {
-            if (registration) {
-                *registration = v_groupInstanceGetRegistration(result, gidTemplate, predicate);
-            }
-        }
-        c_mutexUnlock(&group->mutex);
-    } else {
-        result = NULL;
-    }
-    return result;
 }
 
 void
-v_groupNotifyGroupCoherentPublication(
+v_groupWalkInstances(
+    v_group _this,
+    c_action action,
+    void *actionArg)
+{
+    OSPL_LOCK(_this);
+    v_groupStoreWalk(_this->store, action, actionArg);
+    OSPL_UNLOCK(_this);
+}
+
+void
+v_groupNotifyCoherentPublication(
     v_group _this,
     v_message msg)
 {
@@ -4582,14 +4801,14 @@ v_groupNotifyGroupCoherentPublication(
     c_bool dispose;
     c_bool isImplicit;
 
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
     if (_this->transactionAdmin) {
         info = v_builtinPublicationInfoData(msg);
         dispose = v_messageStateTest(msg, L_DISPOSED);
         isImplicit = v_messageStateTest(msg, L_IMPLICIT);
         (void)v_transactionAdminNotifyPublication(_this->transactionAdmin, info->key, dispose, info, isImplicit);
     }
-    c_mutexUnlock(&_this->mutex);
+    OSPL_UNLOCK(_this);
 }
 
 os_boolean
@@ -4599,36 +4818,14 @@ v_groupIsDurable(
     return (v_topicQosRef(v_groupTopic(_this))->durability.v.kind != V_DURABILITY_VOLATILE);
 }
 
-/**
- * \brief              This operation gets the transaction admin from the group
- *                     and lazy creates it if it does not exist yet.
- *
- * \pre              : The group is locked
- *
- * \param _this      : The v_group this operation operates on
- *
- * \return           : A kept reference to the v_transactionAdmin
- */
-v_transactionAdmin
-v__groupGetTransactionAdmin(
-    v_group _this)
-{
-    if (_this->transactionAdmin == NULL) {
-        _this->transactionAdmin = v_transactionAdminNew(v_object(_this),
-                                  v_kernelTransactionGroupAdmin(v_objectKernel(_this)),
-                                  _this->topic);
-    }
-    return c_keep(_this->transactionAdmin);
-}
-
 void
 v_groupSetOnRequest(
     v_group _this,
     c_bool value)
 {
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
     _this->onRequest = value;
-    c_mutexUnlock(&_this->mutex);
+    OSPL_UNLOCK(_this);
 }
 
 c_bool
@@ -4646,10 +4843,14 @@ v_groupNotifyWriter(
     v_kernel kernel;
     C_STRUCT(v_event) event;
 
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
     if (_this->pristine) {
         kernel = v_objectKernel(_this);
 
+        event.kind = V_EVENT_CONNECT_WRITER;
+        event.source = v_observable(w);
+        event.data = _this;
+        event.handled = TRUE;
         /* Connect writer event
          *
          * This event is introduced for durability to be able to act on a writer connecting to a group, which
@@ -4657,12 +4858,48 @@ v_groupNotifyWriter(
          * corresponding namespace with an infinite quality, which causes potential delayed alignment actions
          * of late-joining persistent sources to be discarded.
          */
-        event.kind = V_EVENT_CONNECT_WRITER;
-        event.source = v_observable(w);
-        event.data = _this;
-        v_observableNotify(v_observable(kernel),&event);
+        OSPL_THROW_EVENT(kernel, &event);
         _this->pristine = FALSE;
     }
-    c_mutexUnlock(&_this->mutex);
+    OSPL_UNLOCK(_this);
 }
 
+const char *
+v_alignStateImage(
+        _In_ v_alignState s)
+{
+    switch (s) {
+        case V_ALIGNSTATE_COMPLETE:
+            return "COMPLETE";
+        case V_ALIGNSTATE_INCOMPLETE:
+            return "INCOMPLETE";
+        case V_ALIGNSTATE_NO_INTEREST:
+            return "NO_INTEREST";
+        case V_ALIGNSTATE_COUNT:
+            break;
+    }
+
+    return "<invalid v_alignState>";
+}
+
+v_result
+v_groupSetFilter(
+    v_group _this,
+    q_expr condition,
+    const c_value params[],
+    os_uint32 nrOfParams)
+{
+    v_result result = V_RESULT_ILL_PARAM;
+    v_filter filter;
+
+    assert(_this);
+    assert(condition);
+    assert(C_TYPECHECK(_this, v_group));
+    filter = v_filterNew(v_topicMessageType(_this->topic), v_topicMessageKeyList(_this->topic), condition, params, nrOfParams);
+    if (filter) {
+        c_free(_this->filter);
+        _this->filter = filter;
+        result = V_RESULT_OK;
+    }
+    return result;
+}

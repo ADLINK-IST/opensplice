@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,18 +29,6 @@
  * describes the reason of notification.
  */
 
-#include "v_kernel.h"
-#include "v_observer.h"
-#include "v_event.h"
-#include "os_if.h"
-
-#ifdef OSPL_BUILD_CORE
-#define OS_API OS_API_EXPORT
-#else
-#define OS_API OS_API_IMPORT
-#endif
-/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-
 /**
  * \brief The <code>v_observable</code> cast method.
  *
@@ -49,50 +38,23 @@
  */
 #define v_observable(_this) (C_CAST(_this,v_observable))
 
-/**
- * Notifies all observers of the observable.
- *
- * \param _this the reference to an observable object.
- * \param event the event describes the reason of notification and
- *              is passed to the observers.
+/* Following is a temporary public declaration of v_observableAddObserver to support cmx legacy API.
+ * The dependency on this operation must be removed so it can be made private as intended.
  */
-OS_API void
-v_observableNotify(
-    v_observable _this,
-    v_event event);
+#include "kernelModuleI.h"
 
-/**
- * Add an observer to the observable.
- * By adding an observer to the observable, the observer is notified on
- * state changes of the observable. With this notification the given
- * userData is also sent.
- *
- * \param _this    the reference to an observable object.
- * \param observer the reference to the observer object to add.
- * \param userData this data also sent when notify the given observer.
- * \return         TRUE if the observer is added, otherwise FALSE.
- */
+#ifdef OSPL_BUILD_CORE
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+
 OS_API c_bool
 v_observableAddObserver(
     v_observable _this,
     v_observer observer,
+    v_eventMask mask,
     c_voidp userData);
-
-/**
- * Removes an observer from the observable.
- * By removing an observer from the observable, the observer is no longer
- * notified on state changes of the observable.
- *
- * \param _this    the reference to an observable object.
- * \param observer the reference to the observer object to remove.
- * \param userData the reference to the userdata belonging to the proxy of the observer object to remove.
- * \return         TRUE if the observer is removed, otherwise FALSE.
- */
-OS_API c_bool
-v_observableRemoveObserver (
-    v_observable _this,
-    v_observer observer,
-    void** userData);
 
 #undef OS_API
 

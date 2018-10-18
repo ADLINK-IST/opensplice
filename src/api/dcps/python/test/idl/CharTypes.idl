@@ -1,0 +1,19 @@
+module basic {
+	module module_CharTypes {
+		typedef string<5> string5;
+
+		struct CharTypes_struct {
+			long long1;
+			char char1;
+			char char_array[10];
+			sequence<char> char_seq1;
+			sequence<char,10> char_seq2;
+
+			octet octet1;
+			octet octet_array[10];
+			sequence<octet> octet_seq1;
+			sequence<octet,10> octet_seq2;
+		};
+		#pragma keylist CharTypes_struct long1
+	};
+};

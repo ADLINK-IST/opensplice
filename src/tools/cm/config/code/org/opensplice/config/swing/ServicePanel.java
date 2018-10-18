@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -61,7 +62,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     private DataElement serviceElement = null;
     private DataNodePopup popupController = null;
     private StatusPanel status = null;
-    
+
     /**
      * This is the default constructor
      */
@@ -72,11 +73,11 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
         this.status = status;
         initialize();
     }
-    
+
     public DataElement getService(){
         return this.serviceElement;
     }
-    
+
     public DataElementTable getConfigurationTable() {
         if (configurationTable == null) {
             configurationTable = new DataElementTable(this.popupController, serviceElement, this.status);
@@ -88,7 +89,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     @Override
     public void valueChanged(TreeSelectionEvent e) {
         TreePath selectionPath = e.getNewLeadSelectionPath();
-        
+
         if(selectionPath != null){
             this.getConfigurationTable().getSelectionModel().clearSelection();
             DataElement selection = (DataElement)(
@@ -104,7 +105,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     public void valueChanged(ListSelectionEvent e) {
         if(!e.getValueIsAdjusting()){
             int selectedRow = this.getConfigurationTable().getSelectedRow();
-            
+
             if(selectedRow != -1){
                 this.getConfigurationElementTree().getSelectionModel().clearSelection();
                 DataNode selection = this.getConfigurationTable().getDataNodeAt(selectedRow);
@@ -112,12 +113,12 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
             }
         }
     }
-    
+
     @Override
     public void setTransferHandler(TransferHandler t){
         super.setTransferHandler(t);
         int count = this.getComponentCount();
-        
+
         for(int i=0; i<count; i++){
             if(this.getComponent(i) instanceof JComponent){
                 ((JComponent)this.getComponent(i)).setTransferHandler(t);
@@ -130,7 +131,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
 
     /**
      * This method initializes this
-     * 
+     *
      * @return void
      */
     private void initialize() {
@@ -156,11 +157,11 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
             northSouthSplitPane.setDividerSize(5);
         }
         return northSouthSplitPane;
-    } 
+    }
     /**
-     * This method initializes mainSplitPane	
-     * 	
-     * @return javax.swing.JSplitPane	
+     * This method initializes mainSplitPane
+     *
+     * @return javax.swing.JSplitPane
      */
     private JSplitPane getEastWestSplitPane() {
         if (eastWestSplitPane == null) {
@@ -175,17 +176,17 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     }
 
     /**
-     * This method initializes elementTreeScrollPane	
-     * 	
-     * @return javax.swing.JScrollPane	
+     * This method initializes elementTreeScrollPane
+     *
+     * @return javax.swing.JScrollPane
      */
     private JScrollPane getElementTreeScrollPane() {
         if (elementTreeScrollPane == null) {
             elementTreeScrollPane = new JScrollPane();
             elementTreeScrollPane.setBorder(
-                    BorderFactory.createTitledBorder(null, "Elements", 
-                            TitledBorder.LEFT, TitledBorder.BOTTOM, 
-                            new Font("Dialog", Font.BOLD, 12), 
+                    BorderFactory.createTitledBorder(null, "Elements",
+                            TitledBorder.LEFT, TitledBorder.BOTTOM,
+                            new Font("Dialog", Font.BOLD, 12),
                             new Color(51, 51, 51)));
             elementTreeScrollPane.setViewportView(getConfigurationElementTree());
             elementTreeScrollPane.setBackground(Color.WHITE);
@@ -194,9 +195,9 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     }
 
     /**
-     * This method initializes configurationElementTree	
-     * 	
-     * @return javax.swing.JTree	
+     * This method initializes configurationElementTree
+     *
+     * @return javax.swing.JTree
      */
     private DataElementTree getConfigurationElementTree() {
         if (configurationElementTree == null) {
@@ -208,20 +209,19 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
     }
 
     /**
-     * This method initializes tableScrollPane	
-     * 	
-     * @return javax.swing.JScrollPane	
+     * This method initializes tableScrollPane
+     *
+     * @return javax.swing.JScrollPane
      */
     private JScrollPane getTableScrollPane() {
         if (tableScrollPane == null) {
             tableScrollPane = new JScrollPane();
             tableScrollPane.setViewportView(getConfigurationTable());
             tableScrollPane.setBorder(BorderFactory.createTitledBorder(null, "Attributes", TitledBorder.RIGHT, TitledBorder.BOTTOM, new Font("Dialog", Font.BOLD, 12), new Color(51, 51, 51)));
-            //tableScrollPane.setBackground(Color.WHITE);
         }
         return tableScrollPane;
     }
-    
+
     private JScrollPane getDocScrollPane() {
         if (docScrollPane == null) {
             docScrollPane = new JScrollPane();
@@ -231,42 +231,42 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
         }
         return docScrollPane;
     }
-    
+
     private MetaNodeDocPane getDocPane(){
         if (docPane == null) {
             docPane = new MetaNodeDocPane(false, false);
         }
         return docPane;
     }
-    
+
     private void updateDocument(DataNode node){
         MetaNode meta = null;
         DataNode parent;
-        
+
         if(node instanceof DataValue){
             parent = node.getParent();
-            
+
             if(parent != null){
                 meta = parent.getMetadata();
             }
         } else {
             meta = node.getMetadata();
         }
-        
-        
-        this.getDocScrollPane().setBorder(BorderFactory.createTitledBorder(null, 
-                "Documentation for '" + this.getXPath(node) + "'", 
-                TitledBorder.LEFT, TitledBorder.BOTTOM, 
+
+
+        this.getDocScrollPane().setBorder(BorderFactory.createTitledBorder(null,
+                "Documentation for '" + this.getXPath(node) + "'",
+                TitledBorder.LEFT, TitledBorder.BOTTOM,
                 new Font("Dialog", Font.BOLD, 12), new Color(51, 51, 51)));
         this.getDocPane().setNode(meta);
     }
-    
+
     private String getXPath(DataNode node){
         String result;
         DataNode curNode = node;
-        
+
         result = "";
-        
+
         while(curNode != null){
             if(curNode instanceof DataElement){
                 result = "/" + ((MetaElement)curNode.getMetadata()).getName() + result;

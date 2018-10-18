@@ -11,15 +11,15 @@
     <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
     <meta name="Date-Revision-yyyymmdd" content="20141002" />
     <meta http-equiv="Content-Language" content="en" />
-        
+
  </head>
  <body class="composite">
     <div id="banner">
-       <a href="http://www.prismtech.com" id="bannerLeft">
-          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       <a href="http://ist.adlinktech.com/" id="bannerLeft">
+          <img src="../images/logo_adlink_transparent.png" alt="ADLINK" />
        </a>
-       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
-          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       <a href="http://vortex.adlinktech.com/" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex OpenSplice" />
        </a>
        <div class="clear">
           <hr/>
@@ -27,8 +27,8 @@
     </div>
     <div id="breadcrumbs">
        <div class="xright">
-          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
-          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+          <a href="http://ist.adlinktech.com/" class="externalLink" title="ADLINK on the Web: http://ist.adlinktech.com/">ADLINK on the Web: http://ist.adlinktech.com/</a>
+          | <a href="http://vortex.adlinktech.com/" title="OpenSplice">Vortex OpenSplice</a>
        </div>
        <div class="clear">
          <hr/>
@@ -148,14 +148,11 @@ yet. </p>
     <td colspan="2"> Compliant, but see <a href="#Specification issues">Issues rooted in the standard</a> </td>
   </tr>
   <tr> <td> DURABILITY_SERVICE </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
-  <tr>
-    <td> PRESENTATION </td>
-    <td colspan="2"> All data treated as non-coherent, unordered INSTANCE. All presentation
-    settings are correctly advertised and are accounted for when matching DataReaders and DataWriters. </td>
-  </tr>
+  <tr> <td> PRESENTATION </td>          <td> Compliant </td>
+    <td> Compliant, access scope GROUP extensions not yet defined in the standard. </td> </tr>
   <tr> <td> DEADLINE </td>              <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr> <td> LATENCY_BUDGET </td>        <td> Compliant </td>     <td> Compliant </td> </tr>
-  <tr> <td> OWNERSHIP </td>             <td> Compliant </td>     <td> Shared ownership: 
+  <tr> <td> OWNERSHIP </td>             <td> Compliant </td>     <td> Shared ownership:
   fully supported; exclusive ownership: partially supported, a higher-strength writer
   can take ownership but failover to a lower-strength one may not occur. </td> </tr>
   <tr> <td> OWNERSHIP_STRENGTH </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
@@ -228,7 +225,7 @@ yet. </p>
   </table>
 
   <p> Once the specification is extended to cover transient data, the situation will
-  become much more straightforward. In the meantime it may be possible to make more 
+  become much more straightforward. In the meantime it may be possible to make more
   configurations work as expected. The specification process is currently actively
   exploring the alternatives. </p>
   </li>
@@ -306,19 +303,19 @@ yet. </p>
     in DCPS partition A.
 <pre>
 &lt;DDSI2EService name="ddsi2e">
-    &lt;Discovery> 
-        &lt;DefaultMulticastAddress>232.3.1.3</DefaultMulticastAddress> 
+    &lt;Discovery>
+        &lt;DefaultMulticastAddress>232.3.1.3</DefaultMulticastAddress>
     &lt;/Discovery>
     &lt;!-- this ensures that readers for data in partitions A and B will favour
     SSM, and that writers for data in partitions A and B will provide data via
-    SSM, via addresses 232.3.1.4 and 232.3.1.5, respectively --&gt; 
+    SSM, via addresses 232.3.1.4 and 232.3.1.5, respectively --&gt;
     &lt;Partitioning&gt;
         &lt;NetworkPartitions&gt;
-            &lt;NetworkPartition name="ssmA" address="232.3.1.4"/&gt; 
+            &lt;NetworkPartition name="ssmA" address="232.3.1.4"/&gt;
         &lt/NetworkPartitions&gt;
         &ltPartitionMappings&gt;
-            &ltPartitionMapping DCPSPartitionTopic="A.*" NetworkPartition="ssmA" /&gt; 
-        &lt/PartitionMappings&gt; 
+            &ltPartitionMapping DCPSPartitionTopic="A.*" NetworkPartition="ssmA" /&gt;
+        &lt/PartitionMappings&gt;
     &lt/Partitioning&gt;
 &lt/DDSI2EService&gt;
 </pre>
@@ -329,7 +326,7 @@ yet. </p>
     </div>
     <div id="footer">
       <div class="xright">
-       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+       Copyright &#169; 2017 <a href="http://ist.adlinktech.com/">ADLINK</a>. All Rights Reserved.
       </div>
      <div class="clear">
      <hr/>

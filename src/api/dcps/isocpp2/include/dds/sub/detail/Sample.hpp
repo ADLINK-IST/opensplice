@@ -36,7 +36,6 @@ class Sample;
 }}}
 
 #include <dds/sub/SampleInfo.hpp>
-//#include <dds/sub/detail/TSampleImpl.hpp>
 
 namespace dds
 {

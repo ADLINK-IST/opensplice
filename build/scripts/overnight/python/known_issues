@@ -2,10 +2,8 @@
 <TR><TD>Known Issues </TD><br></TR>
 <TR<br></TR>
 <TR><a HREF=https://jira.prismtech.com/browse/OSPL-6901>OSPL-6901 Finding builtin readers doesn't work with gcc <= 4.4.5</a><br></TR>
-<TR><a HREF=https://jira.prismtech.com/browse/OSPL-7869>OSPL-7869 dcpsPingPongjava5SA example appears to trigger without data available</a><br></TR>
 <TR><a HREF=https://jira.prismtech.com/browse/OSPL-8209>OSPL-8209 Inconsistency handling stop_subscriber flag in Ownership example</a><br></TR>
 <TR><a HREF=https://jira.prismtech.com/browse/OSPL-8811>OSPL-8811 dcpsBuiltInTopicsisocpp2 example error</a><br></TR>
-<TR><a HREF=https://jira.prismtech.com/browse/OSPL-9143>OSPL-9143 Durability examples failing</a><br></TR>
 <TR><a HREF=https://jira.prismtech.com/browse/OSPL-9168>OSPL-9168 dbmsconnect reported as passed when it didn't run correctly - windows - V6.7 branch</a><br></TR>
-<TR><a HREF=https://jira.prismtech.com/browse/OSPL-9371>OSPL-9371 SPIKE: Example dbmsConnect fails with an abort (signal 6)</a><br></TR>
-<TR><a HREF=https://jira.prismtech.com/browse/OSPL-9405>OSPL-9405 QueryCondition and ContentFilteredTopics IsoCpp(2) examples fail intermittently</a><br></TR>
+<TR><a HREF=https://jira.prismtech.com/browse/OSPL-10834>OSPL-10834 isocpp2 BuiltInTopics example fails to build on winxp13-new</a><br></TR>
+<TR><a HREF=https://jira.prismtech.com/browse/OSPL-10971>OSPL-10971 C# compilation failure in pinger.cs prior to .NET 4.0</a><br></TR>

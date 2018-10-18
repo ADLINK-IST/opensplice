@@ -7,27 +7,27 @@ call %FUNCTIONS% :startOSPL
 
 ECHO Starting MessageBoard
 SET LEVEL=Starting MessageBoard
-start CMD /C java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar;classes" chatroom.MessageBoard ^> messageBoard.log
+start CMD /C java -jar messageboard/java5_Messageboard.jar ^> messageBoard.log
 if %ERRORLEVEL% NEQ 0 GOTO error
 
 %SLEEP4% >NUL
 
 ECHO Starting UserLoad
 SET LEVEL=Starting UserLoad
-start CMD /C java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar;classes" chatroom.UserLoad ^> userLoad.log
+start CMD /C java -jar userload/java5_UserLoad.jar ^> userLoad.log
 if %ERRORLEVEL% NEQ 0 ECHO An error occurred starting UserLoad %ERRORLEVEL%
 
 %SLEEP4% >NUL
 
 ECHO Starting Chatter
 SET LEVEL=Starting Chatter
-java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar;classes" chatroom.Chatter >> %LOGFILE%
+java -jar chatter/java5_Chatter.jar >> %LOGFILE%
 if %ERRORLEVEL% NEQ 0 GOTO error
 
 %SLEEP4% >NUL
 
 ECHO Starting Chatter with terminate message>> %LOGFILE%
-java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar;classes" chatroom.Chatter -1 >> %LOGFILE%
+java -jar chatter/java5_Chatter.jar -1 >> %LOGFILE%
 if %ERRORLEVEL% NEQ 0 GOTO error
 
 GOTO end

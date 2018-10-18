@@ -75,8 +75,8 @@ ChatterApplication.cpp, Linux Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    ChatterApplication.cpp
@@ -233,8 +233,8 @@ ChatterApplication.cpp, Windows Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    ChatterApplication.cpp
@@ -391,8 +391,8 @@ MessageBoardApplication.cpp, Linux Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    MessageBoardApplication.cpp
@@ -539,8 +539,8 @@ MessageBoardApplication.cpp, Windows Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    MessageBoardApplication.cpp
@@ -679,8 +679,8 @@ ChatMessageDataReaderListenerImpl.h, Linux version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.h
@@ -785,8 +785,8 @@ ChatMessageDataReaderListenerImpl.h, Windows version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.h
@@ -888,8 +888,8 @@ ChatMessageDataReaderListenerImpl.cpp
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.cpp
@@ -1067,8 +1067,8 @@ NamedMessageDataReaderListenerImpl.h, Linux Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.h
@@ -1154,8 +1154,8 @@ NamedMessageDataReaderListenerImpl.h, Windows Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.h
@@ -1240,8 +1240,8 @@ NamedMessageDataReaderListenerImpl.cpp
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.cpp
@@ -1319,8 +1319,8 @@ UserLoadApplication.cpp, Linux Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    UserLoadApplication.cpp
@@ -1535,8 +1535,8 @@ UserLoadApplication.cpp, Windows Version
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    UserLoadApplication.cpp
@@ -1755,8 +1755,8 @@ CheckStatus.h
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    CheckStatus.h
@@ -1804,8 +1804,8 @@ CheckStatus.cpp
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    CheckStatus.cpp

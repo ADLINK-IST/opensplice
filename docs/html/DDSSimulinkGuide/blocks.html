@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Vortex DDS Blocks &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="4. Simulink Bus to DDS Topic Mapping" href="bus-dds.html" />
+    <link rel="prev" title="2. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="bus-dds.html" title="4. Simulink Bus to DDS Topic Mapping"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vortex-dds-blocks">
+<span id="id1"></span><h1>3. Vortex DDS Blocks<a class="headerlink" href="#vortex-dds-blocks" title="Permalink to this headline">¶</a></h1>
+<p>The DDS Simulink Integration provides a block library with custom blocks to model reading and writing data with DDS.</p>
+<p>The Vortex DDS Simulink block library provides blocks which correspond to DDS entities.   (Each DDS block is covered in its own section in this user guide.)</p>
+<p>The following DDS block types are provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Topic</li>
+<li>Domain</li>
+<li>Publisher</li>
+<li>Subscriber</li>
+<li>Writer</li>
+<li>Reader</li>
+</ul>
+</div></blockquote>
+<div class="section" id="optional-dds-blocks-and-ports">
+<h2>3.1. Optional DDS Blocks and Ports<a class="headerlink" href="#optional-dds-blocks-and-ports" title="Permalink to this headline">¶</a></h2>
+<p>Some of the DDS blocks are optional. (Domain, Publisher and Subscriber)</p>
+<p>When the optional blocks are not added to model diagrams, defaults are used.     This allows for simpler model diagrams.
+If the model requires block parameter customization, the optional blocks can be added to a model to use non-default settings.</p>
+<p>Many of the ports for the DDS blocks are also optional.   They can be toggled on or off in the <strong>Block Parameters</strong> dialog, in the <strong>Ports</strong> tab.</p>
+</div>
+<div class="section" id="qos-profiles">
+<h2>3.2. QoS Profiles<a class="headerlink" href="#qos-profiles" title="Permalink to this headline">¶</a></h2>
+<p>In DDS - “The Data-Distribution Service (DDS) relies on the usage of QoS.  A QoS (Quality of Service) is a set of characteristics that controls some aspect of the behavior of the DDS Service.&#8221;</p>
+<p>Each DDS block has an associated QoS profile.   By default, the OSPL default profile is used.  An XML file that specifies QoS profiles can be used to set the QoS of a DDS block.</p>
+<p>The QoS profile of a block is set in the <strong>QoS</strong> tab of the <strong>Block Parameters</strong> dialog.  (This dialog is opened by double clicking on a selected block.)</p>
+<p>Please see section <a class="reference internal" href="qos_provider.html#qos-provider"><em>QoS Provider</em></a> for more information.</p>
+</div>
+<div class="section" id="simulink-block-sample-time">
+<h2>3.3. Simulink Block Sample Time<a class="headerlink" href="#simulink-block-sample-time" title="Permalink to this headline">¶</a></h2>
+<p><strong>&#8220;What is sample time?&#8221;</strong></p>
+<p><strong>&#8220;The sample time of a block is a parameter that indicates when, during simulation, the block produces outputs and if appropriate, updates its internal state.&#8221;
+-Simulink documentation</strong></p>
+<p>The DDS blocks have different sample times set.  The only DDS block that allows for the user specification of a sample time is the <strong>Reader</strong> block.
+A reader&#8217;s sample time can be set in the <strong>Block Parameters</strong> <strong>Data</strong> tab.</p>
+<p>A sample time of 0 means that the block step will only execute once.</p>
+<p>A sample time of -1 means that the block will inherit its sample time from its inputs or from the parent model.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="36%" />
+<col width="64%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DDS Block Type</th>
+<th class="head">Sample Time</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Topic</td>
+<td>-1 (inherits) uneditable</td>
+</tr>
+<tr class="row-odd"><td>Domain</td>
+<td>-1 (inherits) uneditable</td>
+</tr>
+<tr class="row-even"><td>Publisher</td>
+<td>-1 (inherits) uneditable</td>
+</tr>
+<tr class="row-odd"><td>Subscriber</td>
+<td>-1 (inherits) uneditable</td>
+</tr>
+<tr class="row-even"><td>Writer</td>
+<td>-1 (inherits) uneditable</td>
+</tr>
+<tr class="row-odd"><td>Reader</td>
+<td><ul class="first last simple">
+<li>default -1 (inherits) editable</li>
+<li>Inherits from inputs or model</li>
+<li>Valid values: -1 and Numeric &gt; 0</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Vortex DDS Blocks</a><ul>
+<li><a class="reference internal" href="#optional-dds-blocks-and-ports">3.1. Optional DDS Blocks and Ports</a></li>
+<li><a class="reference internal" href="#qos-profiles">3.2. QoS Profiles</a></li>
+<li><a class="reference internal" href="#simulink-block-sample-time">3.3. Simulink Block Sample Time</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">2. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bus-dds.html"
+                        title="next chapter">4. Simulink Bus to DDS Topic Mapping</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/blocks.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="bus-dds.html" title="4. Simulink Bus to DDS Topic Mapping"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

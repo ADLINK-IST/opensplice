@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -40,10 +41,6 @@ struct getChildrenArg {
     c_bool     attribNegate;
     c_iter     children;
 };
-
-/**************************************************************
- * Private functions
- **************************************************************/
 
 static c_bool
 attributesToIterator(
@@ -123,9 +120,6 @@ getChildren(
     return TRUE; /* always finish the walk */
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_cfElement
 v_cfElementNew (
     v_configuration config,
@@ -151,7 +145,7 @@ v_cfElementInit (
     c_type attrType;
     c_type nodeType;
     const c_char *keyList;
-    
+
     assert(C_TYPECHECK(element, v_cfElement));
     assert(tagName != NULL);
 
@@ -165,13 +159,6 @@ v_cfElementInit (
     element->children = c_setNew(nodeType);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 v_cfAttribute
 v_cfElementAddAttribute (
     v_cfElement element,
@@ -259,7 +246,7 @@ v_cfElementAttributeValue(
     assert(attributeName != NULL);
 
     attr = v_cfElementAttribute(element, attributeName);
-    
+
     if (attr != NULL) {
         value = v_cfAttributeValue(attr);
     } else {
@@ -284,7 +271,7 @@ v_cfElementXPath(
 
     assert(C_TYPECHECK(element, v_cfElement));
     assert(xpathExpr != NULL);
- 
+
     result = c_iterNew(element);
     nrToProcess = 1;
     posInExpr = xpathExpr;
@@ -303,10 +290,11 @@ v_cfElementXPath(
             arg.tagName = (c_char *)os_malloc(length + 1U);
             os_strncpy(arg.tagName, posInExpr, length);
             arg.tagName[length] = 0;
-            
+
             /* Look for selection criteria based on attribute value
              * Example XPath expression:
-             * /aaa/bbb[@name='value']/ccc or /aaa/bbb[@name!='value']/ccc */
+             * /aaa/bbb[@name='value']/ccc or /aaa/bbb[@name!='value']/ccc
+             */
             arg.attribName = strchr(arg.tagName, '[');
             if (arg.attribName != NULL) {
                 *arg.attribName = '\0';
@@ -333,10 +321,10 @@ v_cfElementXPath(
                 *attribEnd = '\0';
                 assert(attribEnd[1] == ']');
             }
-        
+
             c_walk(v_cfElement(node)->children, getChildren, &arg);
             os_free(arg.tagName);
-            if (slash) { 
+            if (slash) {
                 nrToProcess += c_iterLength(arg.children);
             }
             /* now append */

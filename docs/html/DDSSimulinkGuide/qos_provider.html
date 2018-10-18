@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. QoS Provider &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="6. Topic Block" href="topic.html" />
+    <link rel="prev" title="4. Simulink Bus to DDS Topic Mapping" href="bus-dds.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topic.html" title="6. Topic Block"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bus-dds.html" title="4. Simulink Bus to DDS Topic Mapping"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="qos-provider">
+<span id="id1"></span><h1>5. QoS Provider<a class="headerlink" href="#qos-provider" title="Permalink to this headline">¶</a></h1>
+<p>Each Vortex DDS block has a QoS that can be set using the <strong>Block Parameters</strong>.</p>
+<p>The following section explains how the QoS is set for a DDS entity using the QoS Provider.</p>
+<div class="section" id="qos-provider-file">
+<h2>5.1. QoS Provider File<a class="headerlink" href="#qos-provider-file" title="Permalink to this headline">¶</a></h2>
+<p>Quality of Service for DDS entities is set using XML files based on the XML schema file DDS_QoSProfile.xsd.
+These XML files contain one or more QoS profiles for DDS entities. An example with a default QoS profile
+for all entity types can be found at <a class="reference external" href="http://www.omg.org/spec/dds4ccm/20110201/DDS_DefaultQoS.xml">DDS_DefaultQoS.xml</a>.</p>
+<p><strong>Note:</strong> Sample QoS Profile XML files can be found in the examples directories.</p>
+</div>
+<div class="section" id="qos-profile">
+<h2>5.2. QoS Profile<a class="headerlink" href="#qos-profile" title="Permalink to this headline">¶</a></h2>
+<p>A QoS profile consists of a name. The file contains QoS
+elements for one or more DDS entities. A skeleton file without any QoS values is displayed below to show
+the structure of the file.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;dds</span> <span class="na">xmlns=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span> <span class="na">xmlns:xsi=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+            <span class="na">xsi:schemaLocation=</span><span class="s">&quot;file:DDS_QoSProfile.xsd&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;qos_profile</span> <span class="na">name=</span><span class="s">&quot;DDS QoS Profile Name&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;datareader_qos&gt;&lt;/datareader_qos&gt;</span>
+        <span class="nt">&lt;datawriter_qos&gt;&lt;/datawriter_qos&gt;</span>
+        <span class="nt">&lt;domainparticipant_qos&gt;&lt;/domainparticipant_qos&gt;</span>
+        <span class="nt">&lt;subscriber_qos&gt;&lt;/subscriber_qos&gt;</span>
+        <span class="nt">&lt;publisher_qos&gt;&lt;/publisher_qos&gt;</span>
+        <span class="nt">&lt;topic_qos&gt;&lt;/topic_qos&gt;</span>
+    <span class="nt">&lt;/qos_profile&gt;</span>
+<span class="nt">&lt;/dds&gt;</span>
+</pre></div>
+</div>
+<p><strong>Example: Specify Publisher Partition</strong></p>
+<p>The example below specifies the publisher&#8217;s partitions as A and B.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;publisher_qos&gt;</span>
+    <span class="nt">&lt;partition&gt;</span>
+        <span class="nt">&lt;name&gt;</span>
+            <span class="nt">&lt;element&gt;</span>A<span class="nt">&lt;/element&gt;</span>
+            <span class="nt">&lt;element&gt;</span>B<span class="nt">&lt;/element&gt;</span>
+        <span class="nt">&lt;/name&gt;</span>
+    <span class="nt">&lt;/partition&gt;</span>
+<span class="nt">&lt;/publisher_qos&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setting-qos-profile-in-simulink">
+<h2>5.3. Setting QoS Profile in Simulink<a class="headerlink" href="#setting-qos-profile-in-simulink" title="Permalink to this headline">¶</a></h2>
+<p>QoS profiles are set using the Simulink block&#8217;s parameters dialog under the QoS tab. If the
+QoS File parameter is set to None the default QoS settings will be used. The Reset button sets
+the parameters to the default values.</p>
+<div class="figure">
+<img alt="Default QoS Provider Parameters" src="_images/default_qos_params.png" />
+</div>
+<p>A QoS Provider file can be selected by browsing to the XML file. Once the file is chosen the
+file name is displayed and the user is presented with a drop down list of all QoS Providers in
+the file.</p>
+<div class="figure">
+<img alt="DDS User Selected QoS Provider Parameters" src="_images/persistent_qos_params.png" />
+</div>
+<p><strong>Note:</strong> Seeing the QoS Profile in the drop down list only guarantees the QoS Profile exists in the file.
+It does not mean the qos tag exists for the entity. The user is responsible for verifying the entity qos
+tag exists in the file.</p>
+<p>Simulink block annotations are visible by default to display the QoS File Name and the QoS Profile settings.</p>
+<div class="figure">
+<img alt="QoS File and Profile annotations" src="_images/sub_annotations_qos.png" />
+</div>
+</div>
+<div class="section" id="known-limitations">
+<h2>5.4. Known Limitations<a class="headerlink" href="#known-limitations" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference external" href="../qos_provider.html#KnownLimitations">QoS Provider Known Limitations</a> for a list of limitations
+on QoS Provider support.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. QoS Provider</a><ul>
+<li><a class="reference internal" href="#qos-provider-file">5.1. QoS Provider File</a></li>
+<li><a class="reference internal" href="#qos-profile">5.2. QoS Profile</a></li>
+<li><a class="reference internal" href="#setting-qos-profile-in-simulink">5.3. Setting QoS Profile in Simulink</a></li>
+<li><a class="reference internal" href="#known-limitations">5.4. Known Limitations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bus-dds.html"
+                        title="previous chapter">4. Simulink Bus to DDS Topic Mapping</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topic.html"
+                        title="next chapter">6. Topic Block</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qos_provider.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topic.html" title="6. Topic Block"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bus-dds.html" title="4. Simulink Bus to DDS Topic Mapping"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

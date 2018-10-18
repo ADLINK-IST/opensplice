@@ -91,6 +91,7 @@ else
     VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
     VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib"
 else
+ ifneq (,$(or $(findstring 17,$(VS_VER)),$(findstring 18,$(VS_VER))))
 # VS2012 onwards
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/shared" -I"$(WINDOWSSDKDIR)/Include/um"
@@ -99,8 +100,19 @@ else
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/win8/um/x86"
 
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/winv6.3/um/x86"
+else
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/$(WIN_BUILD_VER)/ucrt"
+
+   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/$(WIN_BUILD_VER)/um/x86"
 endif
 endif
+endif
+endif
+
+ifeq ($(OSPL_USE_CXX11), yes)
+	CXXFLAGS += -DOSPL_USE_CXX11
 endif
 
 # We have to target at least Windows XP SP2. This currently is hardcoded for all build-machines.
@@ -145,6 +157,7 @@ LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
+DURABILITY_PLUGIN_LIBS = -lws2_32
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj

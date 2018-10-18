@@ -15,10 +15,10 @@ The Vortex OpenSplice IDL Pre-processor generates IDL code for the specialized
 *TypeSupport*, *DataReader* and *DataWriter*, as well as C++ implementations
 and support code. The ORB pre-processor generates from the generated IDL
 interfaces the C++ specialized interfaces for that specific ORB. These interfaces 
-are included by the application C++ code as well as the OpenSplice DDS generated
+are included by the application C++ code as well as the Vortex OpenSplice generated
 specialized C++ implementation code. The application C++ code as well as the
 specialized C++ implementation code (with the support functions) is compiled into
-object code and linked together with the applicable OpenSplice libraries and the
+object code and linked together with the applicable Vortex OpenSplice libraries and the
 ORB libraries.
 
 |info|
@@ -38,19 +38,19 @@ ORB libraries.
 
 
 The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
-`Integrated C++ ORB OpenSplice IDL Pre-processor Details`_.
+`Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details`_.
 It shows in more detail which files are generated, given an input file (in
 this example ``foo.idl``).
 
 
-.. _`Integrated C++ ORB OpenSplice IDL Pre-processor Details`:
+.. _`Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details`:
 
-.. centered:: **Integrated C++ ORB OpenSplice IDL Pre-processor Details**
+.. centered:: **Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details**
 
 .. image:: /images/IntegratedCppORB_detail.png
    :width: 150mm
    :align: center
-   :alt: Integrated C++ ORB OpenSplice IDL Pre-processor Details
+   :alt: Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details
 
 The file ``foo.h`` is the only file that needs to be included by the application.
 It includes all files needed by the application to interact with the DCPS interface.
@@ -61,9 +61,9 @@ C++ interface files.
 
 The ``fooDcps_impl.*`` files contain the specialized *TypeSupport*, *DataReader*
 and *DataWriter* implementation classes needed to communicate the type *via*
-OpenSplice DDS.
+Vortex OpenSplice.
 
-The ``fooSplDcps.*`` files contain support functions required by OpenSplice DDS
+The ``fooSplDcps.*`` files contain support functions required by Vortex OpenSplice
 in order to be able to handle the specific data types.
 
 
@@ -83,7 +83,7 @@ The diagram `C Standalone`_ is an overview of the artifacts and
 processing stages related to the C standalone context. 
 For C++ the different stages are equal to the C standalone context. 
 Because there is no ORB involved, all pre-processing is performed by the
-OpenSplice DDS IDL Pre-processor. The generated specialized implementations
+Vortex OpenSplice IDL Pre-processor. The generated specialized implementations
 and the application’s C++ code must be compiled into object code, plus all objects
 must be linked with the appropriate Vortex OpenSplice libraries.
 
@@ -111,7 +111,7 @@ scope is not used but ``C99`` types are used in place of
 C Standalone
 ************
 
-The *C standalone* mode provides an OpenSplice DDS context which does not need
+The *C standalone* mode provides an Vortex OpenSplice context which does not need
 an ORB. Vortex OpenSplice resolves all implied IDL to C language mapping
 functions and requirements. The only difference when using the standalone 
 mode is that DDS is used as the naming scope for definitions and functions.
@@ -135,19 +135,19 @@ plus all objects must be linked with the appropriate Vortex OpenSplice libraries
 
 
 The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
-the diagram `C Standalone OpenSplice IDL Pre-processor Details`_,
+the diagram `C Standalone Vortex OpenSplice IDL Pre-processor Details`_,
 providing more detail about the files generated when provided with an
 input file (``foo.idl`` this example).
 
 
-.. _`C Standalone OpenSplice IDL Pre-processor Details`:
+.. _`C Standalone Vortex OpenSplice IDL Pre-processor Details`:
 
-.. centered:: **C Standalone OpenSplice IDL Pre-processor Details**
+.. centered:: **C Standalone Vortex OpenSplice IDL Pre-processor Details**
 
 .. image:: /images/CStandalone_detail.png
    :width: 150mm
    :align: center
-   :alt: C Standalone OpenSplice IDL Pre-processor Details
+   :alt: C Standalone Vortex OpenSplice IDL Pre-processor Details
 
 The file ``foo.h`` is the only file that needs to be included by the application. 
 It itself includes all necessary files needed by the application in order to 
@@ -158,9 +158,9 @@ accordance with the
 :ref:`OMG's IDL-to-C language mapping specification <OMG C Language 1999>`.
 
 The ``fooSacDcps.*`` files contain the specialized *TypeSupport*, *DataReader*
-and *DataWriter* classes needed to communicate the type *via* OpenSplice DDS.
+and *DataWriter* classes needed to communicate the type *via* Vortex OpenSplice.
 
-The ``fooSplDcps.*`` files contain support functions required by OpenSplice DDS in
+The ``fooSplDcps.*`` files contain support functions required by Vortex OpenSplice in
 order to be able to handle the specific data types.
 
 C99 Standalone
@@ -178,7 +178,7 @@ with a upperboundone larger than specified in the idl to allow for the terminati
 0 character.
 
 Further an additional file ``fooDcps.c`` is generated which contains the information
-to register the type information with OpenSplice DDS.
+to register the type information with Vortex OpenSplice.
 
 Java Standalone
 ***************
@@ -230,11 +230,11 @@ ORB. The Vortex OpenSplice IDL Pre-processor generates IDL code for the
 specialized *TypeSupport*, *DataReader* and *DataWriter*, as well as Java
 implementations and support code. The ORB pre-processor generates the 
 Java ``‘Foo’`` classes, which must be done manually. These classes are 
-included with the application Java code as well as the OpenSplice DDS 
+included with the application Java code as well as the Vortex OpenSplice
 generated specialized Java implementation code. 
 The application Java code as well as the specialized Java implementation code 
 (with the support functions) is compiled into class files and can be used 
-together with the applicable OpenSplice libraries and the ORB libraries.
+together with the applicable Vortex OpenSplice libraries and the ORB libraries.
 
 The artifacts and processing stages related to the Java CORBA cohabitation context
 are similar to those of the standalone mode, with one exception: 

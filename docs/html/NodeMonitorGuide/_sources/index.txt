@@ -9,7 +9,7 @@ OpenSplice NodeMonitor User Guide
 .. toctree::
    :maxdepth: 2
    :numbered:
-      
+
    preface
    introduction
    startstop
@@ -17,8 +17,8 @@ OpenSplice NodeMonitor User Guide
    dataavailable
    biblio
 
-   contacts   
-   
+   contacts
+
 
 Indices and tables
 ==================

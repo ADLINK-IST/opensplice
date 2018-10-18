@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -49,7 +50,7 @@
 #include "v__listener.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
-#include "v_dataViewInstance.h"
+#include "v__dataViewInstance.h"
 #include "v_statusCondition.h"
 
 c_bool
@@ -106,6 +107,7 @@ v_publicDispose(
     case K_NWBRIDGE:
     case K_CMSOAP:
     case K_RNR:
+    case K_DBMSCONNECT:
     case K_SERVICE:        v_serviceDeinit(v_service(o));               break;
     case K_SERVICESTATE:   /* Is never freed! */                        break;
     case K_CONFIGURATION:                                               break;

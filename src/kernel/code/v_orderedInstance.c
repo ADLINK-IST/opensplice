@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,7 +25,8 @@
 #include "v_public.h"
 #include "v_instance.h"
 #include "v_state.h"
-#include "v_dataViewInstance.h"
+#include "v_dataView.h"
+#include "v__dataViewInstance.h"
 #include "v__dataReaderInstance.h"
 #include "v__dataReaderSample.h"
 #include "v__orderedInstance.h"
@@ -85,9 +87,10 @@ v__orderedInstanceSampleNew (
 }
 
 /* v_dataViewInstance objects are created only when a sample with the key
-   value is available. Since a v_orderedInstance might be created by the
-   subscriber (when a v_dataReader is created), the creation of a
-   v_orderedViewInstance cannot be delayed until a sample is available. */
+ * value is available. Since a v_orderedInstance might be created by the
+ * subscriber (when a v_dataReader is created), the creation of a
+ * v_orderedViewInstance cannot be delayed until a sample is available.
+ */
 v_orderedInstance
 v_orderedInstanceNew (
     v_entity entity, /* Subscriber or DataReader based on access_scope */
@@ -105,24 +108,17 @@ v_orderedInstanceNew (
         assert (C_TYPECHECK (entity, v_dataReader));
     }
 #endif
-
     kernel = v_objectKernel (entity);
     _this = v_orderedInstance (v_objectNew (kernel, K_ORDEREDINSTANCE));
-    if (_this != NULL) {
-        _this->samples = NULL;
-        _this->bookmark = NULL;
-        _this->presentation = presentation;
-        _this->orderby = orderby;
-        _this->mask = V_MASK_ANY;
-        _this->lazynew = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
-        v_instanceInit (v_instance(_this), entity);
-		v_dataViewInstance(_this)->sampleCount = 0;
-		v_dataViewInstanceTemplate(_this)->sample = NULL;
-    } else {
-        OS_REPORT (OS_FATAL, OS_FUNCTION, V_RESULT_INTERNAL_ERROR,
-            "Failed to create v_orderedInstance");
-        assert(_this != NULL);
-    }
+    _this->samples = NULL;
+    _this->bookmark = NULL;
+    _this->presentation = presentation;
+    _this->orderby = orderby;
+    _this->mask = V_MASK_ANY;
+    _this->lazynew = c_listNew(v_kernelType(kernel, K_TRANSACTIONGROUP));
+    v_instanceInit (v_instance(_this), entity);
+    v_dataViewInstance(_this)->sampleCount = 0;
+    v_dataViewInstanceTemplate(_this)->sample = NULL;
 
     return _this;
 }
@@ -175,8 +171,9 @@ v_orderedInstanceRemove (
         assert (C_TYPECHECK (_this, v_orderedInstance));
 
         /* Wipe and free v_orderedInstance if the entity that owns it invokes
-           this function, otherwise only the reference count needs to be
-           lowered, but that happens automatically. */
+         * this function, otherwise only the reference count needs to be
+         * lowered, but that happens automatically.
+         */
         if (v_instance(_this)->entity == entity) {
             assert (c_refCount (_this) > 0);
             v__orderedInstanceReset (_this);
@@ -257,15 +254,17 @@ v_orderedInstanceGetDataReaders (
         v_orderedInstanceSample next;
 
         /* First complete list of samples for v_orderedInstance, then iterate
-           over that list to generate the list of readers. Only destroy the
-           (possibly) already created current list of samples to ensure the
-           list that is already there remains valid even if creation of new
-           list fails. */
+         * over that list to generate the list of readers. Only destroy the
+         * (possibly) already created current list of samples to ensure the
+         * list that is already there remains valid even if creation of new
+         * list fails.
+         */
         proceed = v_dataViewInstanceReadSamples (v_dataViewInstance (_this), NULL, V_MASK_ANY,
                                                  &v__orderedInstanceGetDataReaders,
                                                  (c_voidp)&argument);
         /* c_iterAppend returns the c_iter whether the operation was successful
-           or not, so proceed must test positive for the V_PROCEED flag. */
+         * or not, so proceed must test positive for the V_PROCEED flag.
+         */
         assert (v_actionResultTest (proceed, V_PROCEED));
         OS_UNUSED_ARG(proceed);
         iterator = c_iterIterGet (argument.samples);
@@ -306,7 +305,6 @@ v__orderedInstanceWrite (
             c_equality eq = C_NE;
 
             next = tail = head->next; /* head->next is tail */
-
             msgPrev = v_dataReaderSampleTemplate(v_dataReaderSample(v_dataViewSampleTemplate(previous)->sample))->message;
             do {
                 msgNext = v_dataReaderSampleTemplate(v_dataReaderSample(v_dataViewSampleTemplate(next)->sample))->message;
@@ -323,7 +321,7 @@ v__orderedInstanceWrite (
         }
     }
 
-    v__dataViewInstanceWrite (v_dataViewInstance (_this), previous, position);
+    v_dataViewInstanceWrite (v_dataViewInstance (_this), previous, position);
     v_dataReaderSampleAddViewSample (sample, previous);
 
     return (v_orderedInstanceSample)previous;
@@ -343,12 +341,13 @@ v_orderedInstanceWrite(
         current = v_dataViewSample (v__orderedInstanceWrite (_this, sample));
         assert (current != NULL);
         /* For instance and topic scopes updates are not blocked, because
-           begin_access and end_access are optional. Samples older than last
-           read sample should be read in a second pass. Samples that are newer
-           must be offered to the user in the first pass though. The bookmark
-           points to the sample that should be read next. If the newly inserted
-           sample is inserted just before the bookmark, the bookmark must
-           updated to point to the newly inserted sample. */
+         * begin_access and end_access are optional. Samples older than last
+         * read sample should be read in a second pass. Samples that are newer
+         * must be offered to the user in the first pass though. The bookmark
+         * points to the sample that should be read next. If the newly inserted
+         * sample is inserted just before the bookmark, the bookmark must
+         * updated to point to the newly inserted sample.
+         */
         if (_this->bookmark == current->prev) {
             _this->bookmark = (c_voidp)current;
         }
@@ -391,8 +390,9 @@ v__orderedInstanceReadSample (
     assert (_this->samples == NULL);
 
     /* Bookmark is the sample to read next (if the mask matches), because the
-       the sample that is currently operated upon might be taken, which would
-       then also invalidate the bookmark. */
+     * the sample that is currently operated upon might be taken, which would
+     * then also invalidate the bookmark.
+     */
 
     current = _this->bookmark;
     if (current != NULL) {
@@ -416,9 +416,10 @@ v__orderedInstanceListReadSample(
 }
 
 /* This function treats the sample list in the view as a circular buffer. Only
-   one sample per invocation is read, which means that the piece of code that
-   invokes this function should check if the sample that is returned was not
-   read before. */
+ * one sample per invocation is read, which means that the piece of code that
+ * invokes this function should check if the sample that is returned was not
+ * read before.
+ */
 v_dataReaderSample
 v_orderedInstanceReadSample (
     v_orderedInstance _this,
@@ -429,16 +430,16 @@ v_orderedInstanceReadSample (
 
     assert (_this != NULL && C_TYPECHECK (_this, v_orderedInstance));
 
-    /* Read must be circular, therefore v_dataViewInstanceReadSamples cannot
-       be used. */
+    /* Read must be circular, therefore v_dataViewInstanceReadSamples cannot be used. */
 
     if (v_dataViewInstance(_this)->sampleCount > 0) {
         if (_this->presentation == V_PRESENTATION_GROUP) {
             next = v__orderedInstanceListReadSample (_this);
         } else {
             /* Bookmark must be reset for topic and instance scopes, because
-               using a different mask is interpreted as the start of a new
-               read batch. */
+             * using a different mask is interpreted as the start of a new
+             * read batch.
+             */
             if (mask != _this->mask) {
                 v__orderedInstanceReset (_this);
                 _this->mask = mask;
@@ -460,85 +461,6 @@ v_orderedInstanceReadSample (
 
     return sample;
 }
-
-#if 0
-static void
-v__orderedInstanceUnreadSample (
-    v_orderedInstance _this,
-    v_dataReaderSample sample)
-{
-    v_dataViewSample bookmark, next;
-
-    assert (_this != NULL && C_TYPECHECK (_this, v_orderedInstance));
-    assert (sample != NULL && C_TYPECHECK (sample, v_dataReaderSample));
-
-    bookmark = _this->bookmark;
-    if (bookmark != NULL) {
-        /* Something is seriously broken if bookmark is the sample that was
-           just operated upon. */
-        assert (sample != v__orderedInstanceSampleDataReaderSample (bookmark));
-    } else {
-        bookmark = v_dataViewInstanceTemplate(_this)->sample;
-    }
-
-    /* Quickest mode of operation is to iterate the list in opposite
-       read order. */
-    for (next  = bookmark->next;
-         next != bookmark &&
-             v__orderedInstanceSampleDataReaderSample (next) != sample;
-         next  = next->next)
-    {
-        /* do nothing */
-    }
-
-    /* Something is seriously broken if sample cannot be unread! */
-    assert (v__orderedInstanceSampleDataReaderSample (next) == sample);
-    _this->bookmark = next;
-}
-
-/* Rewinding the bookmark for group scope access is expensive and although it
-   can easily be optimized, it is not worth the trouble because the code is
-   never used in normal use cases (only one sample is read during a read
-   operation). */
-static void
-v__orderedInstanceListUnreadSample (
-    v_orderedInstance _this,
-    v_dataReaderSample sample)
-{
-    v_dataViewSample previous;
-
-    assert (_this != NULL && C_TYPECHECK (_this, v_orderedInstance));
-    assert (sample != NULL && C_TYPECHECK (sample, v_dataReaderSample));
-
-    previous = v_dataViewSample (v_dataViewInstanceTemplate (_this)->sample);
-    /* First should never be a null pointer. */
-    assert (previous != NULL);
-    while (sample != v__orderedInstanceSampleDataReaderSample (previous)) {
-        previous = previous->prev;
-    }
-
-    /* Something is seriously broken if sample is not in the list. */
-    assert (previous != NULL);
-
-    c_iterInsert (_this->samples, (c_voidp)previous);
-}
-
-void
-v_orderedInstanceUnreadSample (
-    v_orderedInstance _this,
-    v_dataReaderSample sample)
-{
-    assert (_this != NULL && C_TYPECHECK (_this, v_orderedInstance));
-    assert (sample != NULL && C_TYPECHECK (sample, v_dataReaderSample));
-    assert (v_dataViewInstance(_this)->sampleCount > 0);
-
-    if (_this->presentation == V_PRESENTATION_GROUP) {
-        v__orderedInstanceListUnreadSample (_this, sample);
-    } else {
-        v__orderedInstanceUnreadSample (_this, sample);
-    }
-}
-#endif
 
 c_bool
 v_orderedInstanceIsAligned (

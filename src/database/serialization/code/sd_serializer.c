@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -67,7 +68,7 @@
  *                  translated into a big endian in the header of the
  *                  serialized data.
  *  \param formatVersion The version number of the serialization used. This
- *                  will be translated into big endian in the header of the 
+ *                  will be translated into big endian in the header of the
  *                  serialized data.
  *  \param dataSize The size of the data when serialized. This amount of bytes
  *                  will be allocated by the constructor.
@@ -285,11 +286,11 @@ sd_serializerCheckDataFormat(
 {
     c_bool idOK, versionOK;
     c_bool result;
-    
+
     idOK = (c_bool)((int)serializer->formatID == (int)sd_serializedDataGetFormatID(serData));
     versionOK = (c_bool)((int)serializer->formatVersion == (int)sd_serializedDataGetFormatVersion(serData));
     result = idOK && versionOK;
-    
+
     return result;
 }
 
@@ -373,7 +374,7 @@ sd_serializerInitialize(
     sd_validationInfoInit(&serializer->validationInfo);
     serializer->VMT = VMT;
 }
-                               
+
 
 /** \brief Protected function used by \b sd_serializer descendants for
  *  indicating if they want to do validation during deserialization
@@ -383,7 +384,7 @@ sd_serializerInitialize(
  *  stores some internal information. This protected function offers the
  *  possibility for descendants to indicate that they indeed want to use the
  *  internal information for validation.
- * 
+ *
  *  \param  serializer   The serializer object (self)
  *  \param  doValidation Boolean value indicating whether validation information
  *                       is to be maintained or not
@@ -393,7 +394,7 @@ sd_serializerResetValidationState(
     sd_serializer serializer)
 {
     sd_validationInfoReset(&serializer->validationInfo);
-}    
+}
 
 /** \brief Protected function used by \b sd_serializer descendants for setting
  *  validation information in case of an error.
@@ -403,7 +404,7 @@ sd_serializerResetValidationState(
  *  encapsulated validation state. The error numbers used are supposed to be
  *  unique over all serializing classes and are to be interpreted by the class
  *  itself only.
- * 
+ *
  *  \param  serializer  The serializer object (self)
  *  \param  errorNumber Numeric representation of the error encountered
  *  \param  message     Readable message explaining the error encountered
@@ -451,13 +452,13 @@ sd_serializerSerialize(
     c_object object)
 {
     sd_serializedData result = NULL;
-    
+
     SD_CONFIDENCE(sd_serializerCheckBase(serializer, object));
-    
+
     if (serializer->VMT.serialize) {
         result = serializer->VMT.serialize(serializer, object);
     }
-    
+
     return result;
 }
 
@@ -470,7 +471,7 @@ sd_serializerSerialize(
  *  Before deserialization, the serialized data is checked for format ID
  *  and version. This has to correspond with the serializer format ID and
  *  version.
- * 
+ *
  *  Use the serializer's lastValidationResult function in order to check on
  *  encountered errors.
  *
@@ -487,9 +488,9 @@ sd_serializerDeserialize(
    sd_serializedData serData)
 {
     c_object result = NULL;
-    
+
     SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
-    
+
     if (serializer->VMT.deserialize) {
         result = serializer->VMT.deserialize(serializer, serData);
         if (result == NULL && serializer->validationInfo.errorNumber == SD_SUCCESS) {
@@ -497,7 +498,7 @@ sd_serializerDeserialize(
             sd_serializerSetValidationInfo(serializer, SD_ERRNO_ERROR, os_strdup(SD_MESSAGE_ERROR), NULL);
         }
     }
-    
+
     return result;
 }
 
@@ -510,7 +511,7 @@ sd_serializerDeserialize(
  *  Before deserialization, the serialized data is checked for format ID
  *  and version. This has to correspond with the serializer format ID and
  *  version.
- * 
+ *
  *  Use the serializer's lastValidationResult function in order to check on
  *  encountered errors.
  *
@@ -530,7 +531,7 @@ sd_serializerDeserializeInto(
     c_object object)
 {
     SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
-    
+
     if (serializer->VMT.deserializeInto) {
         c_bool result = serializer->VMT.deserializeInto(serializer, serData, object);
         if (!result && serializer->validationInfo.errorNumber == SD_SUCCESS) {
@@ -564,13 +565,13 @@ sd_serializerToString(
     sd_serializedData serData)
 {
     c_char *result = NULL;
-    
+
     SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
-    
+
     if (serializer->VMT.toString) {
         result =  serializer->VMT.toString(serializer, serData);
     }
-    
+
     return result;
 }
 
@@ -591,11 +592,11 @@ sd_serializerFromString(
     const c_char *str)
 {
     sd_serializedData result = NULL;
-    
+
     if (serializer->VMT.fromString) {
         result = serializer->VMT.fromString(serializer, str);
     }
-    
+
     return result;
 }
 
@@ -631,8 +632,8 @@ sd_serializerLastValidationMessage(
 {
     return serializer->validationInfo.message;
 }
-   
-    
+
+
 /** \brief Query a character pointer to the first error encountered during
  *         deserialization.
  *

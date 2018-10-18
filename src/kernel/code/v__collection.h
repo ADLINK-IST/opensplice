@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,9 +30,8 @@ extern "C" {
 
 void
 v_collectionInit (
-    v_collection _this,
-    const c_char *name,
-    c_bool enable);
+    _Inout_ v_collection _this,
+    _In_opt_z_ const c_char *name);
 
 void
 v_collectionDeinit (

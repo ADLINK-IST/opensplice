@@ -129,7 +129,7 @@ A script `release.bat` is provided. It exports a value of `OSPL_URI` to indicate
 the file `%%OSPL_HOME%\etc\config\ospl.xml` and also makes the OpenSplice
 executables and dynamic-link libraries available on the `PATH`.
 
-A shortcut within the OpenSplice HDE folder on the Start Menu: **OpenSplice DDS
+A shortcut within the OpenSplice HDE folder on the Start Menu: **Vortex OpenSplice
 command prompt** creates a `cmd.exe` console session with this environment ready
 set.
 

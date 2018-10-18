@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,17 +23,17 @@ package org.opensplice.dds.domain;
 import org.omg.dds.core.policy.EntityFactory;
 import org.omg.dds.core.policy.QosPolicy;
 import org.omg.dds.core.policy.QosPolicy.ForDomainParticipant;
-import org.omg.dds.core.policy.UserData;
-import org.opensplice.dds.domain.DomainParticipantQos;
 import org.opensplice.dds.core.EntityQosImpl;
 import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
 import org.opensplice.dds.core.OsplServiceEnvironment;
 import org.opensplice.dds.core.policy.EntityFactoryImpl;
 import org.opensplice.dds.core.policy.PolicyConverter;
-import org.opensplice.dds.core.policy.Scheduling.ListenerScheduling;
-import org.opensplice.dds.core.policy.Scheduling.WatchdogScheduling;
 import org.opensplice.dds.core.policy.SchedulingImpl;
 import org.opensplice.dds.core.policy.UserDataImpl;
+import org.opensplice.dds.core.policy.Scheduling.ListenerScheduling;
+import org.opensplice.dds.core.policy.Scheduling.WatchdogScheduling;
+import org.opensplice.dds.domain.DomainParticipantQos;
+import org.omg.dds.core.policy.UserData;
 
 public class DomainParticipantQosImpl extends
 EntityQosImpl<ForDomainParticipant> implements DomainParticipantQos {
@@ -56,42 +57,52 @@ EntityQosImpl<ForDomainParticipant> implements DomainParticipantQos {
 
     @Override
     protected void setupMissingPolicies() {
-        if (!this.policies.containsKey(EntityFactory.class)) {
-            this.policies.put(EntityFactory.class, new EntityFactoryImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(UserData.class)) {
-            this.policies.put(UserData.class,
-                    new UserDataImpl(this.environment));
-        }
-        if (!this.policies.containsKey(ListenerScheduling.class)) {
-            this.policies.put(ListenerScheduling.class, new SchedulingImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(WatchdogScheduling.class)) {
-            this.policies.put(WatchdogScheduling.class, new SchedulingImpl(
-                    this.environment));
+        synchronized (this.policies) {
+            if (!this.policies.containsKey(EntityFactory.class)) {
+                this.policies.put(EntityFactory.class, new EntityFactoryImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(UserData.class)) {
+                this.policies.put(UserData.class,
+                        new UserDataImpl(this.environment));
+            }
+            if (!this.policies.containsKey(ListenerScheduling.class)) {
+                this.policies.put(ListenerScheduling.class, new SchedulingImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(WatchdogScheduling.class)) {
+                this.policies.put(WatchdogScheduling.class, new SchedulingImpl(
+                        this.environment));
+            }
         }
     }
 
     @Override
     public UserData getUserData() {
-        return (UserData) this.policies.get(UserData.class);
+        synchronized (this.policies) {
+            return (UserData) this.policies.get(UserData.class);
+        }
     }
 
     @Override
     public EntityFactory getEntityFactory() {
-        return (EntityFactory) this.policies.get(EntityFactory.class);
+        synchronized (this.policies) {
+            return (EntityFactory) this.policies.get(EntityFactory.class);
+        }
     }
 
     @Override
     public ListenerScheduling getListenerScheduling() {
-        return (ListenerScheduling) this.policies.get(ListenerScheduling.class);
+        synchronized (this.policies) {
+            return (ListenerScheduling) this.policies.get(ListenerScheduling.class);
+        }
     }
 
     @Override
     public WatchdogScheduling getWatchdogScheduling() {
-        return (WatchdogScheduling) this.policies.get(WatchdogScheduling.class);
+        synchronized (this.policies) {
+            return (WatchdogScheduling) this.policies.get(WatchdogScheduling.class);
+        }
     }
 
     @Override
@@ -102,7 +113,9 @@ EntityQosImpl<ForDomainParticipant> implements DomainParticipantQos {
     @Override
     public DomainParticipantQos withPolicies(
             QosPolicy.ForDomainParticipant... policy) {
-        return new DomainParticipantQosImpl(this, policy);
+        synchronized (this.policies) {
+            return new DomainParticipantQosImpl(this, policy);
+        }
     }
 
     public static DomainParticipantQosImpl convert(OsplServiceEnvironment env,

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -210,13 +211,56 @@ v_entityWalkDependantEntities(
     v_entityAction action,
     c_voidp arg);
 
+/**
+ * \brief Tries to enable the entity.
+ *
+ * An entity has state V_ENTITYSTATE_DISABLED after creation. Calling v_entityEnable
+ * will try to transition the entity to V_ENTITYSTATE_ENABLED. The state diagram
+ * for an entity is as follows.
+ *
+ *  --> V_ENTITYSTATE_DISABLED --> v_entityEnable(...) --> V_ENTITYSTATE_ENABLING -->
+ *           V_RESULT_OK: --> V_ENTITYSTATE_ENABLED
+ *          !V_RESULT_OK: --> V_ENTITYSTATE_DISABLED
+ *
+ *  --> V_ENTITYSTATE_ENABLING --> v_entityEnable(...) -->
+ *           V_RESULT_OK: --> V_ENTITYSTATE_ENABLED
+ *          !V_RESULT_OK: --> V_ENTITYSTATE_DISABLED
+ *
+ *  --> V_ENTITYSTATE_ENABLED --> v_entityEnable(...) --> V_ENTITYSTATE_ENABLED
+ *
+ *  So calling v_entityEnable on an already enabled entity will be a no-op.
+ *
+ *  \return V_RESULT_OK if successfully enabled.
+ */
 OS_API v_result
 v_entityEnable (
-    v_entity _this);
+    _Inout_ v_entity _this);
 
+/**
+ * \brief Returns true if the entity is enabled
+ *
+ * Once this function returns true, it will always be true for that entity.
+ *
+ * Use this function to check whether the entity is neither disabled nor enabling.
+ *
+ * \param _this The entity to check the state for
+ * \return true if the entity is enabled (so neither disabled or enabling)
+ */
 OS_API c_bool
 v_entityEnabled (
-    v_entity _this);
+    _In_ v_entity _this);
+
+/**
+ * \brief Returns true if the entity is in disabled state
+ *
+ * Use this function to check whether the entity is neither enabled nor enabling.
+ *
+ * \param _this The entity to check the state for
+ * \return true if the entity is disabled (so neither enabled or enabling)
+ */
+OS_API c_bool
+v_entityDisabled (
+    _In_ v_entity _this);
 
 /**
  * \brief The Entity getName method.
@@ -277,6 +321,22 @@ OS_API
 c_longlong
 v_entityGetProcessId(
     v_entity _this);
+
+OS_API v_state
+v_entityGetStatusFlags(
+    v_entity e);
+
+OS_API v_result
+v_entityGetProperty(
+        const v_entity _this,
+        const os_char * property,
+        os_char ** value);
+
+OS_API v_result
+v_entitySetProperty(
+        const v_entity _this,
+        const os_char * property,
+        const os_char * value);
 
 #undef OS_API
 

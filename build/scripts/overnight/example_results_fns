@@ -102,7 +102,9 @@ check_example_result()
                NWINTERFACE=`grep -i "using network interface" ./ospl-info.log | grep -c "selected arbitrarily from"`
                DURABLITYRESEND=`grep -i "Already tried to resend .* message" ./ospl-info.log | grep -c "times"`
                DURABILITYFSEND=`grep -i "Failed to send d_sampleChain message with result 'U_RESULT_TIMEOUT'" ./ospl-info.log | grep -c "Failed to send"`
-               CONCESSIONED=`expr $NONRESP + $SENDKILL + $TIMEJUMP + $NWINTERFACE + $DURABLITYRESEND + $DURABILITYFSEND`
+               THREADNOPROGRESS=`grep -i "thread .* failed to make progress" ./ospl-info.log | grep -c "thread"`
+               THREADPROGRESS=`grep -i "thread .* once again made progress" ./ospl-info.log | grep -c "thread"`
+               CONCESSIONED=`expr $NONRESP + $SENDKILL + $TIMEJUMP + $NWINTERFACE + $DURABLITYRESEND + $DURABILITYFSEND + $THREADNOPROGRESS + $THREADPROGRESS`
                if [ "$WARNINGS" = "$CONCESSIONED" ]
                then
                    MESSAGE="$MESSAGE $WARNINGS WARNINGS in ospl-info.log - all are concessioned - OK"

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,8 +35,8 @@ namespace DDS.OpenSplice.User
          *         const os_char *name,
          *         const q_expr OQLexpr,
          *         const c_value params[],
-         *         const u_readerQos qos,
-         *         u_bool enable);
+         *         os_uint32 nrOfParams,
+         *         const u_readerQos qos);
          */
         [DllImport("ddskernel", EntryPoint = "u_dataReaderNew", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr New(
@@ -43,8 +44,8 @@ namespace DDS.OpenSplice.User
             string name,
             IntPtr OQLexpr,
             IntPtr _params,
-            IntPtr qos,
-            byte enable);
+            uint nrOfParams,
+            IntPtr qos);
 
         /*
          *     u_dataReader
@@ -62,8 +63,8 @@ namespace DDS.OpenSplice.User
             string name,
             string expr,
             IntPtr _params,
-            IntPtr qos,
-            byte enable);
+            uint nrOfParams,
+            IntPtr qos);
 
         /*
          *     u_result

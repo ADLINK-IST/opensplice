@@ -33,10 +33,10 @@ which must match the Vortex OpenSplice build you are working with.
 
 |caution|
   The *SMP* option must *only* be checked for SMP builds of OpenSplice.
-  
+
 On the *Configuration Profile* dialog choose ``PROFILE_DEVELOPMENT`` from
 the drop-down list.
-  
+
 Once the kernel configuration project has been generated, the additional required
 functionality can be enabled:
 
@@ -71,7 +71,7 @@ OpenSplice Examples
 
 .. note: xref to install-configure.rst
 
-PrismTech provides the *pingpong* example both for C and C++ that are described
+ADLINK provides the *pingpong* example both for C and C++ that are described
 in the :ref:`Examples` section. These example are provided in the form of
 Workbench projects which can be easily built and then deployed on to the target
 hardware in a similar process to that described above.
@@ -204,8 +204,8 @@ Open a target shell connection to each board and in the C mode shell run:
 
   ld 1,0,"/tgtsvr/sacpp_pingpong_kernel.out"
   ospl_spliced
-  
-**Step 5**  
+
+**Step 5**
 
 Open another target shell connection to one board and run:
 
@@ -310,7 +310,7 @@ Open a target shell connection and in the C mode shell run:
 
   ld 1,0,"/tgtsvr/sacpp_pingpong_kernel.out"
   ospl_spliced
-  
+
 Open another target shell connection and run:
 pong "PongRead PongWrite"
 
@@ -353,7 +353,7 @@ Running the Examples (Alternative scenario, with multiple DKMs – ‘AppOnly’
 *********************************************************************************
 
 |caution|
-  Loading separate DKMs is not recommended by PrismTech.
+  Loading separate DKMs is not recommended by ADLINK.
 
 |info| |cpp|
   *NOTE:* There are no C++ examples provided for the AppOnly style and there is no
@@ -555,7 +555,7 @@ The osplconf2c command
 .. code-block:: bash
 
   osplconf2c -h
-  
+
   osplconf2c [-u <URI>] [-e <env=var> ]... [-o <file>]
 
 
@@ -564,13 +564,13 @@ The osplconf2c command
 ``-h, -?``
   List available command line arguments and give brief reminders of
   their functions.
-  
+
 ``-u <URI>``
   Identifies the configuration file to use (default: ``${OSPL_URI}``).
-  
+
 ``-o <file>``
   Name of the generated file.
-  
+
 ``-e <env=var>``
   Environment setting for configuration of OpenSplice
   e.g. ``-e "OSPL_LOGPATH=/xxx/yyy"``

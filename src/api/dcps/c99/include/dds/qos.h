@@ -248,8 +248,7 @@ DDS_EXPORT void dds_get_default_writer_qos (dds_qos_t * restrict qos);
  */
 DDS_EXPORT void dds_get_default_reader_qos (dds_qos_t * restrict qos);
 
-/* return values represent the Error codes if set call is unsuccessful
-*/
+/* return values represent the Error codes if set call is unsuccessful */
 
 /**
  * Description : Set the userdata policy in the qos structure. This value will be validated and applied
@@ -481,13 +480,12 @@ DDS_EXPORT void dds_qset_durability_service
   int32_t max_samples_per_instance
 );
 
-/*
-   Getters: return false if not set, true if set; userdata, topicdata,
-   groupdata, partition are all aliased into the qos data, NULL
-   pointers indicate the value is of no interest, so
-   dds_qget_deadline (&qos,NULL) is a simple way of testing whether the
-   deadline qos is set at all.
-*/
+/* Getters: return false if not set, true if set; userdata, topicdata,
+ * groupdata, partition are all aliased into the qos data, NULL
+ * pointers indicate the value is of no interest, so
+ * dds_qget_deadline (&qos,NULL) is a simple way of testing whether the
+ * deadline qos is set at all.
+ */
 
 /**
  * Description : Get the userdata policy.

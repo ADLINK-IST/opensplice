@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -76,8 +77,7 @@ void dds::core::Duration::sec(int64_t s)
     if(s < 0) {
         ISOCPP_THROW_EXCEPTION(ISOCPP_ERROR, "dds::core::Duration::sec out of bounds");
     } else {
-        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
-        @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue */
         sec_ = static_cast<int32_t>(s);
     }
 }
@@ -300,7 +300,8 @@ const dds::core::Duration operator /(const dds::core::Duration& rhs, uint64_t lh
 
     org::opensplice::core::timehelper::validate<dds::core::Duration>(rhs, "dds::core::Duration", " operator /");
     /* cast below is safe because rhs.nanosec() < NS which is 32 bit.
-    Any truncation of an lhs > 32 bit will still > NS and result correctly in 0 */
+     * Any truncation of an lhs > 32 bit will still > NS and result correctly in 0
+     */
     return dds::core::Duration(static_cast<int64_t>(rhs.sec() / lhs), static_cast<uint32_t>(rhs.nanosec() / lhs));
 }
 

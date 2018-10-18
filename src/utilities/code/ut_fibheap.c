@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,10 +25,11 @@
 #include "ut_fibheap.h"
 
 /* max degree: n >= F_{d+2} >= \phi^d ==> d <= log_\phi n, where \phi
-   (as usual) is the golden ratio ~= 1.618.  We know n <= (size of
-   address space) / sizeof (fh_node), log_\phi 2 ~= 1.44, sizeof
-   (fh_node) >= 4, therefore max degree < log_2 (size of address
-   space). */
+ * (as usual) is the golden ratio ~= 1.618.  We know n <= (size of
+ * address space) / sizeof (fh_node), log_\phi 2 ~= 1.44, sizeof
+ * (fh_node) >= 4, therefore max degree < log_2 (size of address
+ * space).
+ */
 #define MAX_DEGREE ((unsigned) (sizeof (void *) * CHAR_BIT - 1))
 
 static int cmp (const ut_fibheapDef_t *fhdef, const ut_fibheapNode_t *a, const ut_fibheapNode_t *b)
@@ -97,8 +99,9 @@ void ut_fibheapMerge (const ut_fibheapDef_t *fhdef, ut_fibheap_t *a, ut_fibheap_
 void ut_fibheapInsert (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh, const void *vnode)
 {
     /* fibheap node is opaque => nothing in node changes as far as
-     caller is concerned => declare as const argument, then drop the
-     const qualifier */
+     * caller is concerned => declare as const argument, then drop the
+     * const qualifier
+     */
     ut_fibheapNode_t *node = (ut_fibheapNode_t *) ((char *) vnode + fhdef->offset);
 
     /* new heap of degree 0 (i.e., only containing NODE) */
@@ -141,8 +144,9 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
     unsigned min_degree_noninit = 0;
 
     /* empty heap => return that, alternative would be to require the
-       heap to contain at least one element, but this is probably nicer
-       in practice */
+     * heap to contain at least one element, but this is probably nicer
+     * in practice
+     */
     if (min == NULL) {
         return NULL;
     }
@@ -160,7 +164,8 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
        locality of reference by scanning lists only once */
 
     /* insert min'schildren as new roots -- must fix parent pointers,
-       and reset marks because roots are always unmarked */
+     * and reset marks because roots are always unmarked
+     */
     if (min->children) {
         ut_fibheapNode_t * const mark = min->children;
         ut_fibheapNode_t *n = mark;
@@ -173,8 +178,7 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
         ut_fibheap_merge_nonempty_list (&fh->roots, min->children);
     }
 
-    /* iteratively merge roots of equal degree, completely messing up
-       fh->roots, ... */
+    /* iteratively merge roots of equal degree, completely messing up fh->roots, ... */
     {
         ut_fibheapNode_t *const mark = fh->roots;
         ut_fibheapNode_t *n = mark;
@@ -182,7 +186,8 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
             ut_fibheapNode_t * const n1 = n->next;
 
             /* if n is first root with this high a degree, there's certainly
-               not going to be another root to merge with yet */
+             * not going to be another root to merge with yet
+             */
             while (n->degree < min_degree_noninit && roots[n->degree]) {
                 unsigned const degree = n->degree;
                 ut_fibheapNode_t *u, *v;
@@ -198,8 +203,9 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
             }
 
             /* n may have changed, hence need to retest whether or not
-               enough of roots has been initialised -- note that
-               initialising roots[n->degree] is unnecessary, but easier */
+             * enough of roots has been initialised -- note that
+             * initialising roots[n->degree] is unnecessary, but easier
+             */
             assert (n->degree <= MAX_DEGREE);
             while (min_degree_noninit <= n->degree) {
                 roots[min_degree_noninit++] = NULL;
@@ -210,8 +216,9 @@ void *ut_fibheapExtractMin (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh)
     }
 
     /* ... but we don't mind because we have roots[], we can scan linear
-       memory at an astonishing rate, and we need to compare the root
-       keys anyway to find the minimum */
+     * memory at an astonishing rate, and we need to compare the root
+     * keys anyway to find the minimum
+     */
     {
         ut_fibheapNode_t *mark, *cursor, *newmin;
         unsigned i;
@@ -258,14 +265,14 @@ static void ut_fibheap_cutnode (ut_fibheap_t *fh, ut_fibheapNode_t *node)
         node->next = node->prev = node;
 
         /* we assume heap properties haven't been violated, and therefore
-           none of the nodes we cut can become the new minimum */
+         * none of the nodes we cut can become the new minimum
+         */
         ut_fibheap_merge_nonempty_list (&fh->roots, node);
 
         node = parent;
     }
 
-    /* if we stopped because we hit an unmarked interior node, we must
-       mark it */
+    /* if we stopped because we hit an unmarked interior node, we must mark it */
     if (node->parent) {
         node->mark = 1;
     }
@@ -274,8 +281,9 @@ static void ut_fibheap_cutnode (ut_fibheap_t *fh, ut_fibheapNode_t *node)
 void ut_fibheapDecreaseKey (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh, const void *vnode)
 {
     /* fibheap node is opaque => nothing in node changes as far as
-       caller is concerned => declare as const argument, then drop the
-       const qualifier */
+     * caller is concerned => declare as const argument, then drop the
+     * const qualifier
+     */
     ut_fibheapNode_t *node = (ut_fibheapNode_t *) ((char *) vnode + fhdef->offset);
 
     if (node->parent && cmp (fhdef, node->parent, node) <= 0) {
@@ -283,8 +291,9 @@ void ut_fibheapDecreaseKey (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh, cons
     } else {
         if (node->parent) {
             /* heap property violated by decreasing the key, but we cut it
-               pretending nothing has happened yet, then fix up the minimum if
-               this node is the new minimum */
+             * pretending nothing has happened yet, then fix up the minimum if
+             * this node is the new minimum
+             */
             ut_fibheap_cutnode (fh, node);
         }
         if (cmp (fhdef, node, fh->roots) < 0) {
@@ -296,13 +305,15 @@ void ut_fibheapDecreaseKey (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh, cons
 void ut_fibheapDelete (const ut_fibheapDef_t *fhdef, ut_fibheap_t *fh, const void *vnode)
 {
     /* fibheap node is opaque => nothing in node changes as far as
-       caller is concerned => declare as const argument, then drop the
-       const qualifier */
+     * caller is concerned => declare as const argument, then drop the
+     * const qualifier
+     */
     ut_fibheapNode_t *node = (ut_fibheapNode_t *) ((char *) vnode + fhdef->offset);
-    
+
     /* essentially decreasekey(node);extractmin while pretending the
-       node key is -infinity.  That means we can't directly call
-       decreasekey, because it considers the actual value of the key. */
+     * node key is -infinity.  That means we can't directly call
+     * decreasekey, because it considers the actual value of the key.
+     */
     if (node->parent != NULL) {
         ut_fibheap_cutnode (fh, node);
     }

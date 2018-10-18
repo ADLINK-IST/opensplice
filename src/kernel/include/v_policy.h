@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -222,7 +223,10 @@ extern "C" {
      (((p).max_instances == V_LENGTH_UNLIMITED) ||\
       ((p).max_instances > 0)) &&\
      (((p).max_samples_per_instance == V_LENGTH_UNLIMITED) ||\
-      ((p).max_samples_per_instance > 0)))
+      ((p).max_samples_per_instance > 0)) &&\
+     (((p).max_samples == V_LENGTH_UNLIMITED) ||\
+      ((p).max_samples_per_instance == V_LENGTH_UNLIMITED) ||\
+      ((p).max_samples >= (p).max_samples_per_instance)))
 
 #define v_resourcePolicyIsUnlimited(p)\
     (((p).max_samples == V_LENGTH_UNLIMITED) &&\

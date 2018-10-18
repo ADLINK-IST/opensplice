@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ssh -oIdentitiesOnly=yes -i /home/jenkins/.ssh/id_rsa_jenkins_ospl_docs_write $@

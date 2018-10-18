@@ -159,6 +159,16 @@ can be declared in the RMI services description file.</p>
 </tr>
 </tbody>
 </table>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></dt>
+<dd>Please be aware that the RMI middleware assumes ownership of any
+<tt class="docutils literal"><span class="pre">DDS::String</span></tt> that is provided to it (either by an in/inout argument
+or return value). This also means that it&#8217;ll free the given string. This
+can cause issues when the application keeps using the provided string after
+the RMI call or if RMI is called with a const string literal. It is advised
+to apply <tt class="docutils literal"><span class="pre">DDS::string_dup(str)</span></tt> when using strings in conjunction with
+RMI. This is also applicable to sequences of strings.</dd>
+</dl>
 </div>
 </div>
 
@@ -225,7 +235,7 @@ can be declared in the RMI services description file.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

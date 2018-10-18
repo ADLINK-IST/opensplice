@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -271,6 +272,7 @@ signalHandlerThreadNotify(
     * Due to the compile-time constraint enforced through the
     * struct atomic_write_constraint, the write of info is ensured to be atomic. */
     do {
+	assert(_this->pipeIn[1]);
         r = write(_this->pipeIn[1], &sigInfo, sizeof(sigInfo));
         if (r == -1 && os_getErrno() != EINTR){
             /* We understand that EINTR may have occurred, the rest of the
@@ -342,6 +344,7 @@ signalHandler(
 {
     struct sig_context sync;
     struct sig_context sigInfo;
+    os_signalHandlerCallbackInfo *cbInfo = os__signalHandlerGetCallbackInfo();
 
     /* info can be NULL on Solaris */
     if (info == NULL) {
@@ -374,11 +377,34 @@ signalHandler(
             /* This line will not be reached anymore */
         }
 
-        /* We have an exception (synchronous) here. The assumption is
-         * that exception don't occur in middleware-code, so we can
-         * synchronously call the signalHandlerThread in order to detach user-
-         * layer from all Domains (kernels). */
-        signalHandlerThreadNotify(sigInfo, &sync);
+        /* Grab the Mutex for the ExceptionHandler stack and hold it during
+         * the processing of the exception. This way you avoid handlers
+         * being added or removed right in between writing the exception
+         * context into the pipe and the signal handler thread reading it
+         * and handling it from the pipe. Also you avoid another signal from
+         * another thread overwriting our context.
+         * To visualize the the duration for this mutex claim, the resulting
+         * handler code has been placed in its own (indented) scope.
+         */
+        {
+            os_mutexLock(&cbInfo->exceptionMtx);
+
+            /* Obtain the context of the thread that called the signalHandler.
+             * This information will be needed by the callback invoked by the
+             * signalHandlerThread, to decide what kind of action needs to
+             * be taken.
+             */
+            os__signalHandlerExceptionGetThreadContextCallbackInvoke(cbInfo);
+
+            /* We have an exception (synchronous) here. The assumption is
+             * that exception don't occur in middleware-code, so we can
+             * synchronously call the signalHandlerThread in order to detach user-
+             * layer from all Domains (kernels). */
+            signalHandlerThreadNotify(sigInfo, &sync);
+
+            os_mutexUnlock(&cbInfo->exceptionMtx);
+        }
+
         /* BEWARE: This may be an interleaved handling of an exception, so use
          * sync from now on instead of sigInfo.*/
 
@@ -397,6 +423,8 @@ signalHandler(
         }
     } else {
         /* Pass signal to signal-handler thread for asynchronous handling */
+        os_uint32 index = pa_inc32_nv(&cbInfo->exitRequestInsertionIndex) % EXIT_REQUEST_BUFFER_SIZE;
+        os__signalHandlerExitRequestGetThreadContextCallbackInvoke(cbInfo, index);
         signalHandlerThreadNotify(sigInfo, NULL);
     }
 }
@@ -470,6 +498,29 @@ os_signalHandlerFinishExitRequest(
     return r;
 }
 
+#include <ucontext.h>
+#ifdef __APPLE__
+#include <sys/ucontext.h>
+#endif
+
+static void *pc_from_ucontext(const ucontext_t *uc)
+{
+#if defined REG_PC /* SPARC, must precede REG_RIP cos it has that one too */
+ return (void*) uc->uc_mcontext.gregs[REG_PC];
+#elif defined REG_RIP
+ return (void*) uc->uc_mcontext.gregs[REG_RIP];
+#elif defined REG_EIP
+ return (void*) uc->uc_mcontext.gregs[REG_EIP];
+#elif defined PT_NIP
+ return (void*) uc->uc_mcontext.uc_regs->gregs[PT_NIP];
+#elif defined __APPLE__ && defined _LP64
+ return (void*) uc->uc_mcontext->__ss.__rip;
+#else
+ (void)uc;
+ return 0;
+#endif
+}
+
 
 static void *
 signalHandlerThread(
@@ -485,6 +536,7 @@ signalHandlerThread(
     if (_this == NULL) return NULL;
 
     while (cont) {
+        os_report_stack_open(NULL, 0, NULL, NULL);
         nread = 0;
         r = 0;
         while(nread < sizeof(info) && ((r = read(_this->pipeIn[0], &info + nread, sizeof(info) - nread)) > 0)){
@@ -503,7 +555,7 @@ signalHandlerThread(
         }
         if(sig != SIGNAL_THREAD_STOP){
             if (sig < 1 || sig >= OS_NSIG) {
-                OS_REPORT_WID(OS_WARNING,
+                OS_REPORT_NOW(OS_WARNING,
                             "os_signalHandlerThread", 0, info.domainId,
                             "Unexpected signal, value out of range 1-%d: signal = %d",
                             OS_NSIG, sig);
@@ -512,7 +564,7 @@ signalHandlerThread(
                     if(info.info.si_code == SI_USER || info.info.si_code == SI_QUEUE){
                         /* Sent by kill or sigqueue, so we can report the origin
                          * of the asynchronous delivery. */
-                        OS_REPORT_WID(OS_INFO, "signalHandlerThread", 0, info.domainId,
+                        OS_REPORT_NOW(OS_INFO, "signalHandlerThread", 0, info.domainId,
                             "Synchronous exception (signal %d) asynchronously received from PID %d%s, UID %d",
                             sig,
                             info.info.si_pid,
@@ -520,8 +572,10 @@ signalHandlerThread(
                             info.info.si_uid);
                     } else {
                         OS_REPORT_WID(OS_ERROR, "signalHandlerThread", 0, info.domainId,
-                            "Exception (signal %d) %s in process",
+                            "Exception (signal %d; 0x%" PA_PRIxADDR "; 0x%" PA_PRIxADDR ") %s in process",
                             sig,
+                            (sig == SIGSEGV) ? (os_address)info.info.si_addr : (os_address)0,
+                            (os_address)pc_from_ucontext(&info.uc),
                             /* Positive values for si_code are reserved for kernel-
                              * generated signals. This report allows to distinguish
                              * an actual kernel-signal and signals within the process
@@ -532,12 +586,7 @@ signalHandlerThread(
                     /* If an exceptionCallback was set, this should always be invoked. The main
                      * goal is to protect SHM in case of an exception, even if a customer
                      * installed a handler as well. */
-                    {
-                        os_callbackArg cbarg;
-                        cbarg.sig = (void*)(os_address)sig;
-                        cbarg.ThreadId = info.ThreadIdSignalRaised;
-                        os__signalHandlerExceptionCallbackInvoke(&_this->callbackInfo, cbarg);
-                    }
+                    os__signalHandlerExceptionCallbackInvoke(&_this->callbackInfo);
                     if(info.info.si_code == SI_USER){
                         /* Mimic an exception by re-raising it. A random thread received the signal
                          * asynchronously, so when we raise it again another random thread will
@@ -557,7 +606,7 @@ signalHandlerThread(
                            as that would cause a dead lock. */
                         pid = getpid();
                         /* Don't think it's possible to not send the signal */
-                        OS_REPORT_WID (OS_DEBUG, "os_signalHandlerThread", 0, info.domainId,
+                        OS_REPORT_NOW (OS_DEBUG, "os_signalHandlerThread", 0, info.domainId,
                             "Invoking kill (signal %d) on PID %d (self)",
                             info.info.si_signo, pid);
                         (void)kill (pid, info.info.si_signo);
@@ -575,7 +624,7 @@ signalHandlerThread(
                     }
                 } else if (sigismember(&quitsMask, sig) == 1){
                     os_callbackArg cbarg;
-                    OS_REPORT_WID(OS_INFO, "signalHandlerThread", 0, info.domainId,
+                    OS_REPORT_NOW(OS_INFO, "signalHandlerThread", 0, info.domainId,
                         "Termination request (signal %d) received from PID %d%s, UID %d",
                         sig,
                         (info.info.si_code == SI_USER) ? info.info.si_pid : getpid(),
@@ -583,7 +632,6 @@ signalHandlerThread(
                         (info.info.si_code == SI_USER) ? info.info.si_uid : getuid());
 
                     cbarg.sig = (void*)(os_address)sig;
-                    cbarg.ThreadId = info.ThreadIdSignalRaised;
 
                     /* Quit-signals which were set to SIG_IGN shouldn't have our signal-handler
                      * set at all. */
@@ -603,11 +651,13 @@ signalHandlerThread(
                             old_signalHandler[sig].sa_handler(sig);
                         }
                     }
+                    os_signalHandlerDeleteDeregisteredExitRequestCallbacks(&_this->callbackInfo);
                 } /* Else do nothing */
             }
         } else {
             cont = 0;
         }
+        os_report_flush((os_report_stack_size() > 0), "os_signalHandler", __FILE__, __LINE__, -1);
     }
     return NULL;
 }
@@ -935,7 +985,9 @@ os__signalHandlerThreadStop(
 
     memset (&info, 0, sizeof(info));
     info.info.si_signo = SIGNAL_THREAD_STOP;
-    (void) write(_this->pipeIn[1], &info, sizeof(info));
+    if (write(_this->pipeIn[1], &info, sizeof(info)) < 0) {
+        /* ignore result */
+    }
     /* When the signalHandlerThread itself is the exiting thread (this can happen
      * when an exit call is done in a signalHandler installed by a customer for
      * example), we should not invoke os_threadWaitExit but just let this call
@@ -966,6 +1018,17 @@ os_signalHandlerFree(
                             sig, (os_address)&old_signalHandler[sig], r);
                     assert(OS_FALSE);
                 }
+            }
+        }
+        for (i=0; i<lengthof(quits); i++) {
+            const int sig = quits[i];
+            r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+            if (r<0) {
+                OS_REPORT(OS_ERROR,
+                        "os_signalHandlerFree", 0,
+                        "os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %"PA_PRIdSIZE,
+                        sig, (os_address)&old_signalHandler[sig], r);
+                assert(OS_FALSE);
             }
         }
         os__signalHandlerThreadStop(_this);

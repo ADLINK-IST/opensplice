@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,9 +38,6 @@ C_STRUCT(serviceMonitor)
     u_serviceManager serviceManager;
 };
 
-/**************************************************************
- * Private functions
- **************************************************************/
 static c_ulong
 serviceMonitorMain(
     u_observable o,
@@ -119,9 +117,9 @@ waitForDiedService(
      * up to 10 seconds.
      */
     sleepTime = 100*OS_DURATION_MILLISECOND;
-    while (((result = os_procCheckStatus(info->procId, &dummy) == os_resultBusy)) && (count < 100)) {
+    while (((result = os_procCheckStatus(info->procId, &dummy)) == os_resultBusy) && (count < 100)) {
         count++;
-        os_sleep(sleepTime);
+        ospl_os_sleep(sleepTime);
     }
 
 #if !defined OS_WIN32_DEFS_H
@@ -131,7 +129,7 @@ waitForDiedService(
         count = 0;
         while (((result = os_procCheckStatus(info->procId, &dummy) == os_resultBusy)) && (count < 100)) {
             count++;
-            os_sleep(sleepTime);
+            ospl_os_sleep(sleepTime);
         }
     }
 #endif
@@ -185,7 +183,8 @@ serviceMonitorProcessDiedservice(
         } else {
             OS_REPORT(OS_INFO, "os_procServiceDestroy", 0, "Service %s (%d) is about to die, executing died script '%s' succeeded", info->name, info->procId, diedscript);
             /* wait until the script has finished or wait max. 5 sec
-             * before actually killing the process */
+             * before actually killing the process
+             */
             now = os_timeMGet();
             endTime = os_timeMAdd(now, 5*OS_DURATION_SECOND);
             while (os_timeMCompare(now, endTime) == OS_LESS) {
@@ -193,7 +192,7 @@ serviceMonitorProcessDiedservice(
                 if (result != os_resultBusy) {
                     break;
                 }
-                os_sleep(100*OS_DURATION_MILLISECOND);
+                ospl_os_sleep(100*OS_DURATION_MILLISECOND);
                 now = os_timeMGet();
             }
         }
@@ -218,7 +217,8 @@ serviceMonitorProcessDiedservice(
         waitForDiedService(info);
 
         /* Only restart the service when shm is clean, when unclean the
-         * domain will terminate. */
+         * domain will terminate.
+         */
         if ((s_shmMonitorIsClean(splicedGetShmMonitor(monitor->spliceDaemon))) &&
             (!splicedIsDoingSystemHalt(monitor->spliceDaemon))) {
             result = os_procCreate(info->command, info->name, args, &info->procAttr, &info->procId);
@@ -262,9 +262,6 @@ serviceMonitorProcessDiedservice(
     }
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 serviceMonitor
 serviceMonitorNew(
     spliced spliceDaemon)
@@ -276,9 +273,8 @@ serviceMonitorNew(
     if (this != NULL) {
         this->spliceDaemon = spliceDaemon;
         this->serviceManager = splicedGetServiceManager(this->spliceDaemon);
-        u_observableSetListenerMask(u_observable(this->serviceManager),
-                                    V_EVENT_SERVICESTATE_CHANGED);
         u_observableAddListener(u_observable(this->serviceManager),
+                                V_EVENT_SERVICESTATE_CHANGED,
                                 serviceMonitorMain,
                                 (c_voidp)this);
     }
@@ -292,26 +288,17 @@ serviceMonitorFree(
 {
     if (this != NULL) {
         /* stop listening for services */
-        u_observableSetListenerMask(u_observable(this->serviceManager), 0);
         u_observableRemoveListener(u_observable(this->serviceManager), serviceMonitorMain);
         os_free(this);
     }
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 void
 serviceMonitorStop(
     serviceMonitor this)
 {
     if (this != NULL) {
-        u_observableSetListenerMask(u_observable(this->serviceManager), 0);
         u_observableRemoveListener(u_observable(this->serviceManager), serviceMonitorMain);
+        ut_threadAwake(ut_threadLookupSelf(splicedGetThreads(this->spliceDaemon)));
     }
-    ut_threadAwake(ut_threadLookupSelf(splicedGetThreads(this->spliceDaemon)));
 }

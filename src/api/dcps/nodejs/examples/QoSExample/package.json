@@ -1,0 +1,11 @@
+{
+  "name": "durability",
+  "version": "1.0.0",
+  "description": "",
+  "main": "QoSSubscriber.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "vortexdds": "file:../../vortexdds-0.1.0.tgz"
+  }
+}

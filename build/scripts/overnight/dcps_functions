@@ -202,12 +202,12 @@ test_perform_dbt_tests ()
     XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     CORES=`grep 'DBT Core dumps' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
-    if [ $FAIL = 0 -a $XPASS = 0 -a $MISSING = 0 ]
+    if [ $FAIL = 0 -a $XPASS = 0 -a $MISSING = 0 -a $CORES = 0 ]
     then
         test_configure $2
         T_PERFORM_DBT_1=$?
         if [ "$3" = 0 -a "$T_PERFORM_DBT_1" != 0 ]
-    then
+        then
            return 0
         else
            DBT_INFO="RUN/DBT=FAIL"

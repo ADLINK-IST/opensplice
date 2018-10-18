@@ -1,15 +1,15 @@
 parseconditions:
      desc: QueryCondition LogParser Conditions
- 
+
      file: run.log
      parsecontents: yes
      type: local
- 
+
      product: Vortex OpenSplice
- 
-     conditions: 
+
+     conditions:
          - name: pub_send
            type: line
            inst: All
            required: yes
-           line: "GE : * MSFT : *"
+           line: "*GE*:*MSFT*:*"

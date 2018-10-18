@@ -1,0 +1,6 @@
+JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.7.0_80
+export JAVA_HOME
+M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+export M2_HOME
+PATH=$M2_HOME/bin:$PATH
+export PATH

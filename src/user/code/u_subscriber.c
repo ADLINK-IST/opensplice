@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -71,8 +72,7 @@ u_subscriber
 u_subscriberNew(
     const u_participant participant,
     const os_char *name,
-    const u_subscriberQos qos,
-    u_bool enable)
+    const u_subscriberQos qos)
 {
     u_subscriber _this = NULL;
     v_subscriber ks;
@@ -88,7 +88,7 @@ u_subscriberNew(
     result = u_observableWriteClaim(u_observable(participant),(v_public*)(&kp), C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
         assert(kp);
-        ks = v_subscriberNew(kp, name, qos, enable);
+        ks = v_subscriberNew(kp, name, qos);
         if (ks != NULL) {
             _this = u_objectAlloc(sizeof(*_this), U_SUBSCRIBER, u__subscriberDeinitW, u__subscriberFreeW);
             if (_this != NULL) {
@@ -203,11 +203,11 @@ u_subscriberCreateDataReader (
     const os_char *name,
     const os_char *expression,
     const c_value params[],
-    const u_readerQos qos,
-    u_bool enable)
+    os_uint32 nrOfParams,
+    const u_readerQos qos)
 {
     assert(_this);
-    return u_dataReaderNew(_this, name, expression, params, qos, enable);
+    return u_dataReaderNew(_this, name, expression, params, nrOfParams, qos);
 }
 
 static c_bool

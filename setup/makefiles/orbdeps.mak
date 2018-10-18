@@ -26,22 +26,24 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_TOP_SRC2:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_API_SRC2:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(IDLPP_ORB_SRC2:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     #TODO determine if correct
     STREAMS_API_OBJ = $(STREAMS_API_IDL:%.idl=%C$(OBJ_POSTFIX))
     STREAMS_API_SRC = $(STREAMS_API_IDL:%.idl=%C.cpp) $(STREAMS_API_IDL:%.idl=%S.cpp)
     STREAMS_API_HDR = $(STREAMS_API_SRC:%.cpp=%.h) $(STREAMS_API_SRC:%.cpp=%.inl)
+    
+    ORB_DEP_RULES    = %C.h %C.cpp %C$(INLINESRC_POSTFIX)
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_2)
     ORB_MK_INCLUDE_NAME = tao15-OF
@@ -62,22 +64,24 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%.h)
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h)
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%.h)
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h)
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%.h)
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h)
 
     #TODO determine if correct
     STREAMS_API_OBJ = $(STREAMS_API_IDL:%.idl=%C$(OBJ_POSTFIX))
     STREAMS_API_SRC = $(STREAMS_API_IDL:%.idl=%C.cpp) $(STREAMS_API_IDL:%.idl=%S.cpp)
     STREAMS_API_HDR = $(STREAMS_API_SRC:%.cpp=%.h)
+    
+    ORB_DEP_RULES    = %C.h %C.cpp
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_6_1)
     ORB_MK_INCLUDE_NAME = tao15-OF
@@ -98,20 +102,22 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_TOP_SRC2:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) 
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_API_SRC2:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(IDLPP_ORB_SRC2:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
-    STREAMS_API_OBJ = $(STREAMS_API_IDL:%.idl=%C$(OBJ_POSTFIX))
-    STREAMS_API_SRC = $(STREAMS_API_IDL:%.idl=%C.cpp) $(STREAMS_API_IDL:%.idl=%S.cpp)
-    STREAMS_API_HDR = $(STREAMS_API_SRC:%.cpp=%.h) $(STREAMS_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+    STREAMS_API_OBJ  = $(STREAMS_API_IDL:%.idl=%C$(OBJ_POSTFIX))
+    STREAMS_API_SRC  = $(STREAMS_API_IDL:%.idl=%C.cpp) $(STREAMS_API_IDL:%.idl=%S.cpp)
+    STREAMS_API_HDR  = $(STREAMS_API_SRC:%.cpp=%.h) $(STREAMS_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+
+    ORB_DEP_RULES    = %C.h %C.cpp %C$(INLINESRC_POSTFIX)
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_MK_INCLUDE_NAME = tao15-OF
@@ -132,18 +138,19 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_TOP_SRC2:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_API_SRC2:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(IDLPP_ORB_SRC2:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
+	ORB_DEP_RULES    = %C.h %C.cpp %C$(INLINESRC_POSTFIX)
     #TODO determine if correct
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
@@ -165,18 +172,19 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_TOP_SRC2:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_API_SRC2:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(IDLPP_ORB_SRC2:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
+    ORB_DEP_RULES    = %C.h %C.cpp %C$(INLINESRC_POSTFIX)
 endif
 ifeq ($(SPLICE_ORB), DDS_Mico_2_3_11)
     ORB_MK_INCLUDE_NAME = Mico
@@ -190,7 +198,7 @@ ifeq ($(SPLICE_ORB), DDS_Mico_2_3_11)
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%$(OBJ_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%$(OBJ_POSTFIX))
     ORB_TOP_SRC      = $(ORB_TOP_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h)
 
@@ -198,10 +206,11 @@ ifeq ($(SPLICE_ORB), DDS_Mico_2_3_11)
     ORB_API_SRC      = $(ORB_API_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h)
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%Dcps$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%Dcps$(OBJ_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%Dcps$(OBJ_POSTFIX))
     IDLPP_ORB_SRC    = $(IDLPP_ORB_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     IDLPP_ORB_HDR    = $(IDLPP_ORB_OBJ:%$(OBJ_POSTFIX)=%.h)
 
+    ORB_DEP_RULES    = %.h %.cpp
 endif
 ifeq ($(SPLICE_ORB), DDS_Mico_2_3_13)
     ORB_MK_INCLUDE_NAME = Mico
@@ -219,7 +228,7 @@ endif
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%$(OBJ_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%$(OBJ_POSTFIX))
     ORB_TOP_SRC      = $(ORB_TOP_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h)
 
@@ -227,10 +236,11 @@ endif
     ORB_API_SRC      = $(ORB_API_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h)
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%Dcps$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%Dcps$(OBJ_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%Dcps$(OBJ_POSTFIX))
     IDLPP_ORB_SRC    = $(IDLPP_ORB_OBJ:%$(OBJ_POSTFIX)=%.cpp)
     IDLPP_ORB_HDR    = $(IDLPP_ORB_OBJ:%$(OBJ_POSTFIX)=%.h)
 
+    ORB_DEP_RULES    = %.h %.cpp
 endif
 ifeq ($(SPLICE_ORB), DDS_ACE_TAO_1_4_1)
     ORB_MK_INCLUDE_NAME = TAO
@@ -246,18 +256,19 @@ ifdef IF_OSPLENV_IS_WIN
 endif
 
 # various rules to define ORB specific source and object files
-    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%C$(OBJ_POSTFIX))
-    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp) $(TOPIC_IDL2:%.idl=%C.cpp) $(TOPIC_IDL2:%.idl=%S.cpp)
-    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_TOP_SRC2:%.cpp=%.h) $(ORB_TOP_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
     ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX)) $(INT_IDL:%.idl=%C$(OBJ_POSTFIX))
-    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp) $(INT_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%S.cpp)
-    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(ORB_API_SRC2:%.cpp=%.h) $(ORB_API_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(INT_IDL:%.idl=%C.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
-    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX)) $(TOPIC_IDL2:%.idl=%DcpsC$(OBJ_POSTFIX))
-    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp) $(TOPIC_IDL2:%.idl=%DcpsC.cpp) $(TOPIC_IDL2:%.idl=%DcpsS.cpp)
-    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX)) $(IDLPP_ORB_SRC2:%.cpp=%.h) $(IDLPP_ORB_SRC2:%.cpp=%$(INLINESRC_POSTFIX))
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 
+    ORB_DEP_RULES    = %C.h %C.cpp %C$(INLINESRC_POSTFIX)
 endif
 ifeq ($(SPLICE_ORB), DDS_Eorb_3_0)
     ORB_MK_INCLUDE_NAME = Eorb
@@ -282,4 +293,6 @@ ifeq ($(SPLICE_ORB), DDS_Eorb_3_0)
     IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%Dcps$(OBJ_POSTFIX))
     IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%Dcps.cpp)
     IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h)
+    
+    ORB_DEP_RULES    = %.h %.cpp
 endif

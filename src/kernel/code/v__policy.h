@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -56,7 +57,7 @@ v_ownershipResult
 v_determineOwnershipByStrength (
     struct v_owner *owner,
     const struct v_owner *candidate,
-    c_bool claim); /* Workaround for dds1784, see v_policy.c for details. */
+    v_state messageState);
 
 #if defined (__cplusplus)
 }

@@ -1,0 +1,27 @@
+module basic{
+
+	module enumZ {
+	
+    	enum Color { Red, Green, Blue };
+
+	};
+
+	module module_Enum2{
+	    
+	    enum Color { Red, Green, Blue };
+    	typedef Color AColor;
+    	typedef enumZ::Color ZColor;
+		
+		struct Enum2_struct{
+			long long1;
+			AColor color1;
+			ZColor color2;
+			ZColor array[2];
+		};
+		
+		#pragma keylist Enum2_struct long1
+	};
+	
+	
+};
+

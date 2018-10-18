@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -95,6 +96,7 @@ abstract class CommonHandler extends DefaultHandler {
      *            used for collections within collections.
      * @return A String representation of the current indices of the collection.
      */
+    
     protected String getIndexFieldElement(String fieldName, int depth) {
         ArrayList<String> indices = (fieldElementIndices.get(fieldName));
         String result = "";
@@ -111,7 +113,7 @@ abstract class CommonHandler extends DefaultHandler {
             }
             result = buf.toString();
             fieldElementIndices.put(fieldName, newList);
-        } else {
+        } else if (colType != null){
             int index, subDepth;
             String strIndex;
             boolean prevAdd = true;
@@ -140,6 +142,7 @@ abstract class CommonHandler extends DefaultHandler {
         return result;
     }
 
+    
     protected void fillUserData(UserData data, ArrayList<FlatElement> flatElements) {
         MetaField[] fields = data.getUserDataType().getFields();
 

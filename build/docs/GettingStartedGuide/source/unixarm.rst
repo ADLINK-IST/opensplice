@@ -38,7 +38,7 @@ When the installer is provided as an tar file follow the procedure described bel
 
   where, some being optional,
 
-  *<code>* - PrismTech's code for the platform
+  *<code>* - ADLINK's code for the platform
   *<version>* - the Vortex OpenSplice version number,
   for example ``V6.0``
 
@@ -57,7 +57,7 @@ When the installer is provided as an tar file follow the procedure described bel
   *<target>* - the target architecture for host/target builds.
 
 **Step 2**
-  
+
   *Configure the Vortex OpenSplice environment.*
 
   Go to the *<install_dir>/<E>/<platform>* directory, where *<E>* is ``HDE`` of ``RTS``

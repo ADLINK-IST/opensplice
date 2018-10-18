@@ -65,13 +65,13 @@ distribution of individual DDS samples.</p>
 <h2>2.2. Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
 <p>The Vortex OpenSplice Streams API is divided in two main components:</p>
 <ul class="simple">
-<li>type-specific code that can be generated using the OpenSplice
+<li>type-specific code that can be generated using the Vortex OpenSplice
 IDL Pre-Processor</li>
 <li>a Streams library.</li>
 </ul>
 <p>Applications that wish to use the Streams API are required to do two things:</p>
 <ol class="arabic simple">
-<li>Link against <em>one</em> of the OpenSplice Streams libraries available
+<li>Link against <em>one</em> of the Vortex OpenSplice Streams libraries available
 within the Vortex OpenSplice distribution. There are separate libraries for
 either <em>CORBA-Cohabitation</em> mode or <em>Standalone C++</em> mode.</li>
 <li>Annotate the data-model IDL file with <tt class="docutils literal"><span class="pre">#pragma</span></tt> stream directives for
@@ -114,7 +114,7 @@ Space::FooStreamBuf
 <p>It is recommended to use smart references to the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt> and
 <tt class="docutils literal"><span class="pre">StreamDataReader</span></tt> classes in applications. The regular Vortex OpenSplice C++
 smart-pointer <tt class="docutils literal"><span class="pre">&lt;class&gt;_var</span></tt> types are available for this purpose. See
-the section on <em>Memory Management</em> in the Vortex OpenSplice DDS <em>C++ Reference
+the section on <em>Memory Management</em> in the Vortex OpenSplice <em>C++ Reference
 Guide</em> for more information.</p>
 <div class="section" id="corba-cohabitation-mode">
 <h3>2.2.1. CORBA Cohabitation Mode<a class="headerlink" href="#corba-cohabitation-mode" title="Permalink to this headline">¶</a></h3>
@@ -124,7 +124,7 @@ with any of the supported ORB compilers (OpenFusion TAO, Mico, <em>etc.</em>).</
 <div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -C Space.idl
 </pre></div>
 </div>
-<p>The standard Vortex OpenSplice DDS IDL directory is referenced as <tt class="docutils literal"><span class="pre">include-path</span></tt>,
+<p>The standard Vortex OpenSplice IDL directory is referenced as <tt class="docutils literal"><span class="pre">include-path</span></tt>,
 since it contains definitions of some basic data-types and interfaces
 that are required if DDS Topics are created for any of the types in the
 IDL file. The other parameters are used to put <tt class="docutils literal"><span class="pre">idlpp</span></tt> in C++
@@ -147,7 +147,7 @@ to start using the Streams API in application code.</p>
 <h3>2.2.2. Standalone Mode<a class="headerlink" href="#standalone-mode" title="Permalink to this headline">¶</a></h3>
 <p>In <em>Standalone C++</em> mode, the generated interfaces are <em>not</em> required to be
 processed by an IDL compiler. Instead, <tt class="docutils literal"><span class="pre">idlpp</span></tt> will use the <tt class="docutils literal"><span class="pre">cppgen</span></tt>
-code-generator that is part of the Vortex OpenSplice DDS distribution. <tt class="docutils literal"><span class="pre">idlpp</span></tt>
+code-generator that is part of the Vortex OpenSplice distribution. <tt class="docutils literal"><span class="pre">idlpp</span></tt>
 will automatically call <tt class="docutils literal"><span class="pre">cppgen</span></tt> to process certain files; the user is
 only required to execute <tt class="docutils literal"><span class="pre">idlpp</span></tt>, first on the original IDL file:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -S Space.idl
@@ -231,7 +231,7 @@ streams, interfaces should not be ignored.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,25 +34,21 @@ extern "C" {
 #define v_dataViewReader(_this) \
         v_dataReader(v_dataView(_this)->reader)
 
-#define v_dataViewLock(_this) \
-        v_observerLock(v_dataViewReader(_this))
-
-#define v_dataViewUnlock(_this) \
-        v_observerUnlock(v_dataViewReader(_this))
-
 /* The trigger-value stores a sample but needs access to the unreferenced
  * instance-pointer of the sample, which thus needs to be explicitly kept and
  * freed.
  *
  * This macro returns the parameter sample
  *
- * @return sample */
+ * @return sample
+ */
 #define v_dataViewTriggerValueKeep(sample) \
         (c_keep(v_readerSample(sample)->instance), \
          c_keep(sample))
 
 /* The sample stored in the trigger-value has its (otherwise unreferenced)
- * instance-pointer explicitly kept, so it has to be freed. */
+ * instance-pointer explicitly kept, so it has to be freed.
+ */
 #define v_dataViewTriggerValueFree(triggerValue)            \
     {                                                       \
         v_dataViewInstance instance;                        \
@@ -65,7 +62,7 @@ extern "C" {
 void
 v_dataViewDeinit(
     v_dataView _this);
-                     
+
 void
 v_dataViewFreeUnsafe(
     v_dataView _this);

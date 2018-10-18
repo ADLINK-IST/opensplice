@@ -14,7 +14,7 @@
       "excluded_examples": ["dbmsconnect"],
       "partial_examples": ""
    },
-    
+
    "bone6":
    {
       "examples": ["AllStandalone"],
@@ -30,13 +30,14 @@
       "excluded_examples": ["dbmsconnect"],
       "partial_examples": ""
    },
-    
+
    "dds1-win2k3":
    {
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": ["PingPong"],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "True"
    },
 
    "dds2-win2k3":
@@ -44,24 +45,42 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "True"
    },
-    
+
    "dds3-win2k3":
    {
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "True"
    },
-    
+
    "debian6a-32":
    {
       "examples": ["AllStandalone"],
       "excluded_langs": [""],
-      "excluded_examples": ["protobuf", "dbmsconnect"],
+       "excluded_examples": ["protobuf", "dbmsconnect"],
       "partial_examples": ""
    },
+
+   "debian9-32-a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+
+   "debian9-64-p":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },    
 
    "jetson1":
    {
@@ -70,22 +89,22 @@
       "excluded_examples": ["dbmsconnect"],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           },
 
-          "protobuf": 
+          "protobuf":
           {
               "langs": ["isocpp2"]
           }
@@ -115,12 +134,12 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "protobuf": 
+          "protobuf":
           {
               "langs": ["cpp"]
           },
 
-          "faceHelloWorld": 
+          "faceHelloWorld":
           {
               "langs": ["cpp"]
           }
@@ -134,12 +153,12 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "protobuf": 
+          "protobuf":
           {
               "langs": ["cpp"]
           },
 
-          "faceHelloWorld": 
+          "faceHelloWorld":
           {
               "langs": ["cpp"]
           }
@@ -153,12 +172,12 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "protobuf": 
+          "protobuf":
           {
               "langs": ["cpp"]
           },
 
-          "faceHelloWorld": 
+          "faceHelloWorld":
           {
               "langs": ["cpp"]
           }
@@ -276,17 +295,17 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
@@ -327,7 +346,7 @@
 
    "ubuntu1404-64a":
    {
-      "examples": ["All"],
+      "examples": ["AllStandalone"],
       "excluded_langs": [""],
       "excluded_examples": [""],
       "partial_examples": ""
@@ -339,17 +358,9 @@
       "excluded_langs": [""],
       "excluded_examples": ["dbmsconnect"],
       "partial_examples": ""
-   },    
-
-   "ubuntu1604-64a":
-   {
-      "examples": ["AllStandalone"],
-      "excluded_langs": [""],
-      "excluded_examples": ["dbmsconnect"],
-      "partial_examples": ""
    },
 
-   "ubuntu1804-64a":
+   "ubuntu1604-64a":
    {
       "examples": ["AllStandalone"],
       "excluded_langs": [""],
@@ -364,27 +375,29 @@
       "excluded_examples": ["protobuf"],
       "partial_examples":
       {
-          "faceHelloWorld": 
+          "faceHelloWorld":
           {
               "langs": ["cpp"]
           }
       }
    },
-    
+
    "win2008-64a":
    {
       "examples": ["AllStandalone"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
-    
+
    "win7-32-ospl-1":
    {
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-32-ospl-2":
@@ -392,7 +405,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-32-ospl-3":
@@ -400,7 +414,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-32-ospl-4":
@@ -408,7 +423,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-64-ospl-1":
@@ -416,7 +432,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-64-ospl-2":
@@ -424,7 +441,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-64-ospl-3":
@@ -432,7 +450,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7-64-ospl-4":
@@ -440,7 +459,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7a-64":
@@ -448,7 +468,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7a":
@@ -456,7 +477,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "False"
    },
 
    "win7b":
@@ -466,21 +488,23 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win7c":
@@ -490,21 +514,23 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win7d":
@@ -514,21 +540,23 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win7e":
@@ -538,21 +566,101 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+       
+      "use_psutil": "False"
+   },
+
+   "win7g":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": ["c99"],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld":
+          {
+              "langs": ["ccpp"]
+          }
+      },
+       
+      "use_psutil": "False"
+   },
+
+   "win7h":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": ["c99"],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld":
+          {
+              "langs": ["ccpp"]
+          }
+      },
+       
+      "use_psutil": "False"
+   },    
+
+   "win10-32-ospl-1":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld":
+          {
+              "langs": ["ccpp"]
+          }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win10-64-vor-a":
@@ -562,45 +670,23 @@
       "excluded_examples": [""],
       "partial_examples":
       {
-          "dcpsPingPong": 
+          "dcpsPingPong":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsTutorial": 
+          "dcpsTutorial":
           {
               "langs": ["ccpp"]
           },
 
-          "dcpsHelloWorld": 
+          "dcpsHelloWorld":
           {
               "langs": ["ccpp"]
           }
-      }
-   },
-
-   "win10-64-vor-b":
-   {
-      "examples": ["AllStandalone"],
-      "excluded_langs": [""],
-      "excluded_examples": [""],
-      "partial_examples":
-      {
-          "dcpsPingPong": 
-          {
-              "langs": ["ccpp"]
-          },
-
-          "dcpsTutorial": 
-          {
-              "langs": ["ccpp"]
-          },
-
-          "dcpsHelloWorld": 
-          {
-              "langs": ["ccpp"]
-          }
-      }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win10-64-vor-c":
@@ -624,7 +710,9 @@
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+       
+      "use_psutil": "False"
    },
 
    "win10-64-vor-d":
@@ -648,13 +736,15 @@
           {
               "langs": ["ccpp"]
           }
-      }
-   },
+      },
 
-   "win10-64-ospl-vs17":
+      "use_psutil": "False"       
+   },    
+
+   "win10-64-ospl-7":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": ["c99"],
+      "excluded_langs": [""],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -672,15 +762,19 @@
           {
               "langs": ["ccpp"]
           }
-      }
+      },
+
+      "use_psutil": "False"
    },
+
 
    "winxp12":
    {
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "True"       
    },
 
    "winxp13":
@@ -688,7 +782,8 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
+      "partial_examples": "",
+      "use_psutil": "True"
    },
 
    "winxp13-new":
@@ -696,9 +791,16 @@
       "examples": ["All"],
       "excluded_langs": ["c99"],
       "excluded_examples": [""],
-      "partial_examples": ""
-   }     
-}   
+       "partial_examples": "",
+      "use_psutil": "True"       
+   },
 
-  
-      
+   "default":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": ["c99"],
+      "excluded_examples": [""],
+      "partial_examples": "",
+      "use_psutil": "False"       
+   }
+}

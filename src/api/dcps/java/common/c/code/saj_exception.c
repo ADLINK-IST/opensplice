@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@ saj_exceptionThrow (
     jthrowable jexception;
 
     va_start (valist, format);
-    os_vsnprintf (memo, sizeof(memo), format, valist);
+    (void)os_vsnprintf (memo, sizeof(memo), format, valist);
     va_end (valist);
     jmemo = NEW_STRING_UTF(env, memo);
     if (jmemo) {

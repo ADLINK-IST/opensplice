@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 #include "u_subscriber.h"
 #include "u_writer.h"
 #include "u__participant.h"
+#include "u__instanceHandle.h"
 #include "u__topic.h"
 #include "u__types.h"
 #include "u__object.h"
@@ -126,7 +128,7 @@ u__participantFreeW (
 
     while (pa_ld32(&p->useCount) > 0) {
         os_duration t = OS_DURATION_INIT(0, 100000000);
-        os_sleep(t);
+        ospl_os_sleep(t);
     }
 
     u__entityFreeW(_this);
@@ -150,8 +152,10 @@ u__participantDeinitW (
         r = u_participantDetach(p);
         if (r == U_RESULT_OK) {
             u__entityDeinitW(_this);
-            (void) u_domainRemoveParticipant(domain, p);
-            r = u_domainClose(domain);
+            r = u_domainRemoveParticipant(domain, p);
+            if (r == U_RESULT_OK) {
+                r = u_domainClose(domain);
+            }
         } else if (r == U_RESULT_ALREADY_DELETED) {
             r = U_RESULT_OK;
         }
@@ -217,43 +221,19 @@ u_participantNew(
            (void)u_domainClose(domain);
         }
     } else {
-        const c_char *uri_string;
-        if (uri) {
-            uri_string = uri;
+        char idstr[16];
+        if (id == U_DOMAIN_ID_ANY) {
+            sprintf(idstr, "<ANY>");
         } else {
-            uri_string = "<NULL>";
+            sprintf(idstr, "%d", id);
         }
         OS_REPORT(OS_ERROR,"u_participantNew",r,
-                    "Failure to open the domain, domain id = %d and URI=\"%s\" "
-                    "The most common cause of this error is that OpenSpliceDDS "
-                    "is not running (when using shared memory mode). "
-                    "Please make sure to start OpenSplice before creating a "
-                    "DomainParticipant.",
-                    id, uri_string);
+                  "Unable to connect to domain id = %s.\n              "
+                  "The most common causes of this error are an incorrect configuration file or\n              "
+                  "that OpenSpliceDDS is not running (when using shared memory mode).",
+                  idstr);
     }
     return p;
-}
-
-static c_ulong
-u_participantNewGroupListener(
-    u_observable _this,
-    c_ulong event,
-    c_voidp usrData)
-{
-    u_result r;
-    v_participant kp;
-
-    OS_UNUSED_ARG(event);
-    OS_UNUSED_ARG(usrData);
-
-    r = u_observableWriteClaim(_this, (v_public*)(&kp),C_MM_RESERVATION_HIGH);
-    if(r == U_RESULT_OK)
-    {
-        assert(kp);
-        v_participantConnectNewGroup(kp,NULL);
-        u_observableRelease(_this, C_MM_RESERVATION_HIGH);
-    }
-    return r;
 }
 
 u_result
@@ -267,7 +247,6 @@ u_participantInit (
     os_mutexAttr mutexAttr;
     os_condAttr condAttr;
     os_result osr;
-    c_ulong mask;
 
     assert(_this != NULL);
     assert(domain != NULL);
@@ -323,12 +302,6 @@ u_participantInit (
                     OS_REPORT(OS_CRITICAL, "u_participantInit", osr,
                               "Watchdog thread could not be started.\n");
                 }
-
-                (void)u_observableGetListenerMask(u_observable(_this), &mask);
-                (void)u_observableAddListener(u_observable(_this), u_participantNewGroupListener, NULL);
-                mask |= V_EVENT_NEW_GROUP;
-                mask |= V_EVENT_CONNECT_WRITER;
-                (void)u_observableSetListenerMask(u_observable(_this), mask);
 
                 while (_this->threadWaitCount > 0) {
                     os_condWait(&_this->cv, &_this->mutex);
@@ -564,7 +537,7 @@ u_participantFindTopic(
                 retry = 0; /* topic found or error */
             }
             if (retry) {
-                os_sleep(tryPeriod);
+                ospl_os_sleep(tryPeriod);
             }
         } else {
             retry = 0;
@@ -645,7 +618,7 @@ u_participantRegisterTypeRepresentation (
     assert(tr->metaData != NULL);
     assert(tr->metaDataLen != 0);
 
-    result = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_LOW);
+    result = u_participantWriteClaim(_this, &kp, C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
         ktr = v_typeRepresentationNew(kp,
                 tr->typeName,
@@ -694,14 +667,100 @@ u_participantFederationSpecificPartitionName (
 {
     u_result result;
     u_domain domain;
-#if 0
-    if ((result = u_entityLock (u_entity(_this))) == U_RESULT_OK) {
-#endif
-        domain = u_observableDomain(u_observable(_this));
-        result = u_domainFederationSpecificPartitionName(domain, buf, bufsize);
-#if 0
-        u_entityUnlock (u_entity (_this));
-    }
-#endif
+
+    domain = u_observableDomain(u_observable(_this));
+    result = u_domainFederationSpecificPartitionName(domain, buf, bufsize);
     return result;
+}
+
+u_result
+u_participantIgnoreParticipant(
+    const u_participant _this,
+    const u_instanceHandle handle)
+{
+    u_result r;
+    v_participant kp;
+    v_gid gid = {V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID};
+
+    assert(_this != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK) {
+        assert(kp);
+        gid = u_instanceHandleToGID(handle);
+        r = v_participantIgnoreParticipant(kp,gid);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_participantIgnoreParticipant", r, "Failed to claim Participant.");
+    }
+    return r;
+}
+
+u_result
+u_participantIgnoreTopic(
+    const u_participant _this,
+    const u_instanceHandle handle)
+{
+    u_result r;
+    v_participant kp;
+    v_gid gid = {V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID};
+
+    assert(_this != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK) {
+        assert(kp);
+        gid = u_instanceHandleToGID(handle);
+        r = v_participantIgnoreTopic(kp,gid);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_participantIgnoreTopic", r, "Failed to claim Participant.");
+    }
+    return r;
+}
+
+u_result
+u_participantIgnoreSubscription(
+    const u_participant _this,
+    const u_instanceHandle handle)
+{
+    u_result r;
+    v_participant kp;
+    v_gid gid = {V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID};
+
+    assert(_this != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK) {
+        assert(kp);
+        gid = u_instanceHandleToGID(handle);
+        r = v_participantIgnoreSubscription(kp,gid);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_participantIgnoreSubscription", r, "Failed to claim Participant.");
+    }
+    return r;
+}
+
+u_result
+u_participantIgnorePublication(
+    const u_participant _this,
+    const u_instanceHandle handle)
+{
+    u_result r;
+    v_participant kp;
+    v_gid gid = {V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID, V_PUBLIC_ILLEGAL_GID};
+
+    assert(_this != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK) {
+        assert(kp);
+        gid = u_instanceHandleToGID(handle);
+        r = v_participantIgnorePublication(kp,gid);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_participantIgnorePublication", r, "Failed to claim Participant.");
+    }
+    return r;
 }

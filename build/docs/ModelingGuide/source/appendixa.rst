@@ -38,7 +38,7 @@ Chatter Application
    ChatterApplication.java
 
    /*******************************************************************************
-    * Copyright (c) 2012 to 2016 PrismTech Ltd. All rights Reserved.
+    * Copyright (c) 2012 to 2018 ADLINK Technology Limited. All rights Reserved.
     * LOGICAL_NAME: ChatterApplication.java
     * FUNCTION:     Vortex OpenSplice Modeler Tutorial example code. 
     * MODULE:       Tutorial for the Java programming language. 
@@ -205,8 +205,8 @@ MessageBoard Application
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    MessageBoardApplication.java
@@ -396,7 +396,7 @@ ChatMessageDataReaderListenerImpl.java
    ChatMessageDataReaderListenerImpl.java
 
    /************************************************************************
-    * Copyright (c) 2012 to 2016 PrismTech Ltd. All rights Reserved.
+    * Copyright (c) 2012 to 2018 ADLINK Technology Limited. All rights Reserved.
     * LOGICAL_NAME: ChatMessageDataReaderListenerImpl.java
     * FUNCTION:     Vortex OpenSplice Modeler Tutorial example code
     * MODULE:       Tutorial for the Java programming language
@@ -625,8 +625,8 @@ NamedMessageDataReaderListenerImpl.java
 
    /************************************************************************
     *
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.java
@@ -719,8 +719,8 @@ UserLoad Application
 
    /*******************************************************************************
 
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     *
     * LOGICAL_NAME: UserLoadApplication.java
@@ -972,8 +972,8 @@ Error Handler
 
    /************************************************************************
     * 
-    * Copyright (c) 2012 to 2016
-    * PrismTech Ltd. 
+    * Copyright (c) 2012 to 2018
+    * ADLINK Technology Limited 
     * All rights Reserved.
     * 
     * LOGICAL_NAME: ErrorHandler.java 

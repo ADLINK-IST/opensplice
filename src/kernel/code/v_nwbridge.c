@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,6 +27,7 @@
 #include "v__groupInstance.h"
 #include "v_group.h"
 #include "v__kernel.h"
+#include "v__observable.h"
 #include "v_participant.h"
 #include "os_report.h"
 
@@ -51,18 +53,13 @@ v_nwbridgeNew(
     } else {
         s = v_nwbridge(v_objectNew(kernel, K_NWBRIDGE));
 
-#if 0
-        if (v_isEnabledStatistics(kernel, V_STATCAT_NWBRIDGE)) {
-            s->statistics = v_nwbridgeStatisticsNew(kernel);
-        } else {
-            s->statistics = NULL;
-        }
-#endif
         v_serviceInit(v_service(s), name, extStateName, V_SERVICETYPE_NWBRIDGE, q, enable);
         c_free(q);
         if (v_service(s)->state == NULL) {
             v_serviceFree(v_service(s));
             s = NULL;
+        } else {
+            OSPL_ADD_OBSERVER(kernel, s, V_EVENT_NEW_GROUP, NULL);
         }
     }
     return s;

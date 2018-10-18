@@ -9,3 +9,6 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 unset QTDIR
 unset TAO_ROOT
 export OVERRIDE_STRICT_CHECKS=no
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+export SQLITE_HOME=/home/dds/INSTALLED_FOR_DDS/sqlite-amalgamation-3071602
+export LEVELDB_HOME=/home/dds/INSTALLED_FOR_DDS/leveldb-1.9.0

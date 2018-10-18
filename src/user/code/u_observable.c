@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -48,6 +49,7 @@
 #include "v_nwbridge.h"
 #include "v_cmsoap.h"
 #include "v_rnr.h"
+#include "v_dbmsconnect.h"
 #include "v_dataReader.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
@@ -117,6 +119,7 @@ u_observableCreateProxy (
             case K_NWBRIDGE:        kind = U_SERVICE;         sz = sizeof(struct u_service_s); break;
             case K_CMSOAP:          kind = U_SERVICE;         sz = sizeof(struct u_service_s); break;
             case K_RNR:             kind = U_SERVICE;         sz = sizeof(struct u_service_s); break;
+            case K_DBMSCONNECT:     kind = U_SERVICE;         sz = sizeof(struct u_service_s); break;
             case K_SERVICE:         kind = U_SERVICE;         sz = sizeof(struct u_service_s); break;
             case K_SPLICED:         kind = U_SPLICED;         sz = sizeof(struct u_spliced_s); break;
             case K_WAITSET:         kind = U_WAITSETENTRY;    sz = sizeof(struct u_waitsetEntry_s); break;
@@ -200,6 +203,7 @@ publicFree(
     case K_NWBRIDGE:         _FREE_(v_nwbridge);
     case K_CMSOAP:           _FREE_(v_cmsoap);
     case K_RNR:              _FREE_(v_rnr);
+    case K_DBMSCONNECT:      _FREE_(v_dbmsconnect);
     case K_WRITERSTATUS:     _FREE_(v_status);
     case K_DATAVIEWQUERY:    _FREE_(v_dataViewQuery);
     case K_DATAREADERQUERY:  _FREE_(v_dataReaderQuery);
@@ -307,9 +311,6 @@ u_observableClaimCommon(
     const os_uint32 checks,
     os_address memoryClaim)
 {
-#if 0
-    static os_boolean serviceWarningGiven = OS_FALSE;
-#endif
     static os_boolean appWarningGiven = OS_FALSE;
     u_result r;
     u_kind kind;
@@ -344,8 +345,7 @@ u_observableClaimCommon(
         }
     } else if (r == U_RESULT_ALREADY_DELETED) {
         os_reportType verbosity = OS_WARNING;
-        /*
-         * This return value is quite valid when considering the next situation:
+        /* This return value is quite valid when considering the next situation:
          *    - The last participant of a domain is deinitted
          *    - Causing the domain to be freed
          *    - Causing a call to u_objectFree with that domain
@@ -360,7 +360,7 @@ u_observableClaimCommon(
         if (kind == U_DOMAIN) {
             verbosity = OS_INFO;
         }
-        /* OSPL-6199 : For the Java ListenerDispatcher it is perfectly
+        /* For the Java ListenerDispatcher it is perfectly
          * valid that the claim of the listener can return ALREADY_DELETED,
          * returning a WARNING is in that case incorrect.
          * For a listener the report is suppressed when the domain has been
@@ -607,6 +607,7 @@ u_observableHandle (
 u_result
 u_observableAddListener(
     const u_observable _this,
+    const u_eventMask eventMask,
     const u_observableListener listener,
     void *userData)
 {
@@ -616,7 +617,7 @@ u_observableAddListener(
     if (_this->dispatcher == NULL) {
         _this->dispatcher = u_dispatcherNew(_this);
     }
-    return u_dispatcherInsertListener(_this->dispatcher, listener, userData);
+    return u_dispatcherInsertListener(_this->dispatcher, eventMask, listener, userData);
 }
 
 u_result
@@ -637,7 +638,7 @@ u_observableRemoveListener(
 }
 
 u_result
-u_observableNotifyListener(
+u_observableNotify(
     const u_observable _this)
 {
     u_result result;

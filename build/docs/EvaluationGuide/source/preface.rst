@@ -10,8 +10,8 @@ Preface
 About the Evaluation & Benchmarking Guide
 *****************************************
 
-The *Evaluation & Benchmarking Guide* is the starting point 
-for anyone who wants to evaluate OpenSplice DDS.
+The *Evaluation & Benchmarking Guide* is the starting point
+for anyone who wants to evaluate Vortex OpenSplice.
 
 *This Evaluation Guide contains:*
 
@@ -27,24 +27,24 @@ for anyone who wants to evaluate OpenSplice DDS.
 Conventions
 ***********
 
-The icons shown below are used in PrismTech product documentation 
-to help readers to quickly identify information relevant to their 
+The icons shown below are used in ADLINK product documentation
+to help readers to quickly identify information relevant to their
 specific use of OpenSplice.
 
 
- ========= ================================================================== 
- *Icon*    *Meaning*  
- ========= ================================================================== 
- |caution| Item of special significance or where caution needs to be taken.  
- |info|    Item contains helpful hint or special information.                
- |windows| Information applies to Windows (*e.g.* XP, 2003, Windows 7) only. 
- |unix|    Information applies to Unix-based systems (*e.g.* Solaris) only.  
- |linux|   Information applies to Linux-based systems (*e.g.* Ubuntu) only.  
- |c|       C language specific.                                              
- |cpp|     C++ language specific.                                            
- |csharp|  C# language specific.                                             
- |java|    Java language specific.                                           
- ========= ================================================================== 
+ ========= ==================================================================
+ *Icon*    *Meaning*
+ ========= ==================================================================
+ |caution| Item of special significance or where caution needs to be taken.
+ |info|    Item contains helpful hint or special information.
+ |windows| Information applies to Windows (*e.g.* XP, 2003, Windows 7) only.
+ |unix|    Information applies to Unix-based systems (*e.g.* Solaris) only.
+ |linux|   Information applies to Linux-based systems (*e.g.* Ubuntu) only.
+ |c|       C language specific.
+ |cpp|     C++ language specific.
+ |csharp|  C# language specific.
+ |java|    Java language specific.
+ ========= ==================================================================
 
 
 
@@ -68,4 +68,3 @@ specific use of OpenSplice.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         

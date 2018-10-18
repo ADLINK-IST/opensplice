@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -234,9 +235,6 @@ v_projectionNew(
     }
     assert(resultType != NULL);
 
-    /*
-    p = v_projection(v_objectNew(kernel,K_PROJECTION));
-    */
     p = c_new(v_kernelType(kernel, K_PROJECTION));
     p->rules = (c_array)rules;
     p->resultType = resultType; /* transfer refcount */

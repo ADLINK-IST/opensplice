@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -245,8 +246,8 @@ DDS_DataReaderViewFree (
 }
 
 
-/*  From Entity
- *     get_statuscondition
+/* From Entity
+ *      get_statuscondition
  */
 DDS_StatusCondition
 DDS_DataReaderView_get_statuscondition(
@@ -257,7 +258,7 @@ DDS_DataReaderView_get_statuscondition(
     return DDS_StatusCondition(DDS_HANDLE_NIL);
 }
 
-/*  From Entity
+/* From Entity
  *      DDS_DataReaderView_get_status_changes
  */
 DDS_StatusMask
@@ -278,9 +279,9 @@ DDS_DataReaderView_get_status_changes(
     return mask;
 }
 
-/*     ReturnCode_t
- *     set_qos(
- *         in DataReaderViewQos qos);
+/* ReturnCode_t
+ * set_qos(
+ *      in DataReaderViewQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_set_qos(
@@ -331,9 +332,9 @@ DDS_DataReaderView_set_qos(
     return result;
 }
 
-/*     ReturnCode_t
- *     get_qos(
- *         inout DataReaderViewQos qos);
+/* ReturnCode_t
+ * get_qos(
+ *      inout DataReaderViewQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_get_qos (
@@ -370,8 +371,8 @@ DDS_DataReaderView_get_qos (
     return result;
 }
 
-/*     DataReader
- *     get_datareader();
+/* DataReader
+ * get_datareader();
  */
 DDS_DataReader
 DDS_DataReaderView_get_datareader(
@@ -391,11 +392,11 @@ DDS_DataReaderView_get_datareader(
     return reader;
 }
 
-/*     ReadCondition
- *     create_readcondition(
- *         in SampleStateMask sample_states,
- *         in ViewStateMask view_states,
- *         in InstanceStateMask instance_states);
+/* ReadCondition
+ * create_readcondition(
+ *      in SampleStateMask sample_states,
+ *      in ViewStateMask view_states,
+ *      in InstanceStateMask instance_states);
  */
 DDS_ReadCondition
 DDS_DataReaderView_create_readcondition(
@@ -422,13 +423,13 @@ DDS_DataReaderView_create_readcondition(
     return rc;
 }
 
-/*     QueryCondition
- *     create_querycondition(
- *         in SampleStateMask sample_states,
- *         in ViewStateMask view_states,
- *         in InstanceStateMask instance_states,
- *         in string query_expression,
- *         in StringSeq query_parameters);
+/* QueryCondition
+ * create_querycondition(
+ *      in SampleStateMask sample_states,
+ *      in ViewStateMask view_states,
+ *      in InstanceStateMask instance_states,
+ *      in string query_expression,
+ *      in StringSeq query_parameters);
  */
 DDS_QueryCondition
 DDS_DataReaderView_create_querycondition(
@@ -458,9 +459,9 @@ DDS_DataReaderView_create_querycondition(
     return qc;
 }
 
-/*     ReturnCode_t
- *     delete_readcondition(
- *         in ReadCondition a_condition);
+/* ReturnCode_t
+ * delete_readcondition(
+ *      in ReadCondition a_condition);
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_delete_readcondition(
@@ -507,8 +508,8 @@ DDS_DataReaderView_delete_readcondition(
     return result;
 }
 
-/*     ReturnCode_t
- *     delete_contained_entities();
+/* ReturnCode_t
+ * delete_contained_entities();
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_delete_contained_entities(
@@ -906,7 +907,7 @@ DDS_DataReaderView_return_loan (
     _DDS_sequence data_seq,
     DDS_SampleInfoSeq *info_seq)
 {
-    DDS_ReturnCode_t result;
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
     _DataReaderView view;
 
     SAC_REPORT_STACK();
@@ -916,20 +917,30 @@ DDS_DataReaderView_return_loan (
     {
         result = DDS_RETCODE_BAD_PARAMETER;
     } else {
-        if (data_seq->_release == info_seq->_release) {
+        if (data_seq->_release != info_seq->_release) {
+            result = DDS_RETCODE_PRECONDITION_NOT_MET;
+            SAC_REPORT(result, "Data_seq->_release (%s) != info_seq->_release (%s)",
+                        data_seq->_release?"TRUE":"FALSE", info_seq->_release?"TRUE":"FALSE");
+        }
+        if (data_seq->_length != info_seq->_length) {
+            result = DDS_RETCODE_PRECONDITION_NOT_MET;
+            SAC_REPORT(result, "Data_seq->_length (%d) != info_seq->_length (%d)",
+                        data_seq->_length, info_seq->_length);
+        }
+        if (data_seq->_maximum != info_seq->_maximum) {
+            result = DDS_RETCODE_PRECONDITION_NOT_MET;
+            SAC_REPORT(result, "Data_seq->_maximum (%d) != info_seq->_maximum (%d)",
+                        data_seq->_maximum, info_seq->_maximum);
+        }
+
+        if (result == DDS_RETCODE_OK) {
             if (!data_seq->_release) {
                 result = DDS_DataReaderViewClaim(_this, &view);
                 if (result == DDS_RETCODE_OK) {
                     result = DDS_LoanRegistry_deregister(view->loanRegistry, data_seq, info_seq);
                     DDS_DataReaderViewRelease(_this);
                 }
-            } else {
-                result = DDS_RETCODE_OK;
             }
-        } else {
-            result = DDS_RETCODE_PRECONDITION_NOT_MET;
-            SAC_REPORT(result, "Data_seq->_release (%s) != info_seq->_release (%s)",
-                        data_seq->_release?"TRUE":"FALSE", info_seq->_release?"TRUE":"FALSE");
         }
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
@@ -938,10 +949,10 @@ DDS_DataReaderView_return_loan (
 
 /* ReturnCode_t
  * read_w_condition(
- *     inout DataSeq data_seq,
- *     inout SampleInfoSeq info_seq,
- *     in long max_samples,
- *     in ReadCondition a_condition);
+ *      inout DataSeq data_seq,
+ *      inout SampleInfoSeq info_seq,
+ *      in long max_samples,
+ *      in ReadCondition a_condition);
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_read_w_condition (
@@ -962,10 +973,10 @@ DDS_DataReaderView_read_w_condition (
 
 /* ReturnCode_t
  * take_w_condition(
- *     inout DataSeq data_seq,
- *     inout SampleInfoSeq info_seq,
- *     in long max_samples,
- *     in ReadCondition a_condition);
+ *      inout DataSeq data_seq,
+ *      inout SampleInfoSeq info_seq,
+ *      in long max_samples,
+ *      in ReadCondition a_condition);
  */
 DDS_ReturnCode_t
 DDS_DataReaderView_take_w_condition (
@@ -1087,7 +1098,7 @@ _DataReaderViewCopyIn (
 
 /* InstanceHandle_t
  * lookup_instance(
- *     in Data instance);
+ *      in Data instance);
  */
 DDS_InstanceHandle_t
 DDS_DataReaderView_lookup_instance (

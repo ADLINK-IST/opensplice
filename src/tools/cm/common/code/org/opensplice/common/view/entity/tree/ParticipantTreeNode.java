@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@ package org.opensplice.common.view.entity.tree;
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.Entity;
 import org.opensplice.cm.Participant;
+import org.opensplice.cm.Topic;
 import org.opensplice.common.CommonException;
 
 /**
@@ -65,12 +67,14 @@ public class ParticipantTreeNode extends RootTreeNode{
         int childCount = entities.length;
         
         for(int i=0; i<childCount; i++){
-            OwnedEntityTreeNode child = (OwnedEntityTreeNode)(this.resolveChildNode(entities[i]));
+            
+            Entity childEntity = entities[i];
+            OwnedEntityTreeNode child = (OwnedEntityTreeNode)(this.resolveChildNode(childEntity));
             
             if(child != null){
-                entities[i].free();
+                childEntity.free();
             } else {
-                child = new OwnedEntityTreeNode(entities[i], tree);
+                child = new OwnedEntityTreeNode(childEntity, tree);
                 tree.addNode(child, this);
             }
             if(this.isExpanded()){

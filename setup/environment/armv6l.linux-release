@@ -27,6 +27,7 @@ then
 fi
 protoc_check || ERRS=1
 c99_check || ERRS=1
+maven_check_inner || ERRS=1
 
 if [ -z $REPORT ]
 then

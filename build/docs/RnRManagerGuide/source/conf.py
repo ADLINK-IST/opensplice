@@ -63,9 +63,8 @@ master_doc = u'index'
 # General information about the project.
 project = u'RnR Manager User Guide'
 
-#copyright = u'2015, PrismTech'
 this_year = time.strftime( '%Y' )
-copyright = u'{y}, PrismTech'.format( y = this_year )
+copyright = u'{y}, ADLINK Technology Limited'.format( y = this_year )
 print 'Copyright string is:', copyright
 
 
@@ -74,7 +73,7 @@ print 'Copyright string is:', copyright
 # built documents.
 #
 # The short X.Y version.
-version = u'6.7.0'
+version = u'6.8.3'
 
 # The full version, including alpha/beta/rc tags.
 release = version
@@ -230,14 +229,14 @@ latex_documents = [('index', 'OpenSplice_RnRManagerGuide.tex', u'RnR Manager Use
 # Added 'True' to end of generated line to suppress 'Index & Tables'
 
 
-# A dictionary that contains LaTeX snippets that override those Sphinx usually 
+# A dictionary that contains LaTeX snippets that override those Sphinx usually
 # puts into the generated .tex files.
 latex_elements = { 'babel': '\\usepackage[english]{babel}' }
 
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-latex_logo = './images/Vortex-OpenSplice-Cover.png'
+latex_logo = './images/Vortex_UserGuide_Cover_OpenSplice.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
@@ -271,7 +270,7 @@ latex_elements = {
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'RnR_Manager_User_Guide', u'RnR_Manager_User_Guide', [u'PrismTech'], 1)]
+man_pages = [('index', 'RnR_Manager_User_Guide', u'RnR_Manager_User_Guide', [u'ADLINK Technology Limited'], 1)]
 
 
 # -- Additional options --------------------------------------------------------

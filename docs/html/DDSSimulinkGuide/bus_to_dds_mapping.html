@@ -1,0 +1,417 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>15. Appendix A &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="16. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="14. Troubleshooting" href="troubleshooting.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="16. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="14. Troubleshooting"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="appendix-a">
+<span id="id1"></span><h1>15. Appendix A<a class="headerlink" href="#appendix-a" title="Permalink to this headline">¶</a></h1>
+<p>Appendix A provides a description of the Simulink Bus to DDS Mapping implementation.</p>
+<div class="section" id="simulink-bus-to-dds-mapping">
+<h2>15.1. Simulink Bus to DDS Mapping<a class="headerlink" href="#simulink-bus-to-dds-mapping" title="Permalink to this headline">¶</a></h2>
+<p>Simulink data is represented in buses whose types are not compatable with DDS types.
+Therfore sending Simulink data to DDS requires a conversion from Simulink types to DDS types.
+Conversly sending DDS data to Simulink requires a conversion from DDS types to Simulink types.
+This document describes the mapping between these types, the type descriptors generated for Topic
+registration and any annotations needed to describe keys, namespaces, ... for two different workflows.</p>
+<div class="section" id="workflow-1-using-idlpp-to-generate-simulink-bus-and-type-descriptor">
+<h3>15.1.1. Workflow 1: Using idlpp to Generate Simulink Bus and Type Descriptor<a class="headerlink" href="#workflow-1-using-idlpp-to-generate-simulink-bus-and-type-descriptor" title="Permalink to this headline">¶</a></h3>
+<p>DDS Topic Types are described in IDL. To be compatible with DDS, these types must be
+represented in Sumlink as Bus Types. On writes, these Simulink Bus types are converted
+to DDS types and on read DDS types are converted to Simulink Bus types.</p>
+<p>IDL can be defined in an IDL file and the corresponding Simulink Bus Types can be created
+by <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt> at the MATLAB command line. This will create the necessary Simulink Bus
+Types and Elements in a Simulink dictionary. It also creates the XML type descriptor for
+the Simulink Bus types that is used to create the Topic. The type descriptor is a Simulink variable
+of the form &lt;bus-name&gt;TypeDescriptor. The type descriptor is necessary for the block set to work correctly,
+but you will not directly address this when creating Simulink blocks.</p>
+<p><strong>DDS IDL to Simulink Bus Mapping</strong></p>
+<p>The table below describes the generated Simulink artifacts when <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt> is invoked from MATLAB.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="27%" />
+<col width="16%" />
+<col width="31%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>DDS IDL</strong></th>
+<th class="head"><strong>Simulink Type</strong></th>
+<th class="head"><strong>Annotation</strong></th>
+<th class="head"><strong>Comments</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>struct B</td>
+<td>Simulink.Bus B</td>
+<td>&nbsp;</td>
+<td>Creates Simulink Bus</td>
+</tr>
+<tr class="row-odd"><td>enum E</td>
+<td>Simulink Enum E</td>
+<td>&nbsp;</td>
+<td>Creates Simulink Enum type</td>
+</tr>
+<tr class="row-even"><td>module A</td>
+<td>&nbsp;</td>
+<td>&#64;Scope(A)</td>
+<td>Added to each enum or struct
+contained in the module.</td>
+</tr>
+<tr class="row-odd"><td>#pragma keylist</td>
+<td>&nbsp;</td>
+<td>&#64;Key</td>
+<td>Every topic bus has &#64;Key in its
+description.</td>
+</tr>
+<tr class="row-even"><td>boolean</td>
+<td>boolean</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>char</td>
+<td>int8</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>octet</td>
+<td>uint8</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>int16</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>unsigned short</td>
+<td>uint16</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>int32</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>unsigned long</td>
+<td>uint32</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>double</td>
+<td>&nbsp;</td>
+<td>No int64 in Simulink. Copied
+into the memory allocated for
+a double.</td>
+</tr>
+<tr class="row-even"><td>unsigned long long</td>
+<td>double</td>
+<td>&nbsp;</td>
+<td>No int64 in Simulink. Copied
+into the memory allocated for
+a double.</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>single</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>double</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>int8</td>
+<td>&#64;String</td>
+<td>Default dimension is 256</td>
+</tr>
+<tr class="row-even"><td>string&lt;N&gt;</td>
+<td>int8
+Dimension N</td>
+<td>&#64;BString</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>T field[N]</td>
+<td>Mapped type for T.
+Dimension N</td>
+<td>&nbsp;</td>
+<td>Multidimensional arrays are
+supported.</td>
+</tr>
+<tr class="row-even"><td>sequence&lt;T,N&gt;</td>
+<td>Bus: seqN_T.
+Dimension: N</td>
+<td>&nbsp;</td>
+<td>E.g. sequence&lt;long,3&gt; becomes
+&#8220;Bus: seq3_int32&#8221;</td>
+</tr>
+<tr class="row-odd"><td>sequence&lt;T&gt;</td>
+<td>Bus: seq_T
+Dimension: 16</td>
+<td>&nbsp;</td>
+<td>E.g. sequence&lt;long&gt; becomes
+&#8220;Bus: seq_int32&#8221; with default
+dimension of 16</td>
+</tr>
+<tr class="row-even"><td>typedef</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>expanded in place</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>Unsupported DDS data types</strong></td>
+</tr>
+<tr class="row-even"><td>wchar</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>wstring</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>any</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>long double</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>union</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>inheritance</td>
+<td><em>not supported</em></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="workflow-2-manually-modeling-dds-data-in-the-simulink-bus-editor">
+<h3>15.1.2. Workflow 2: Manually Modeling DDS data in the Simulink Bus Editor<a class="headerlink" href="#workflow-2-manually-modeling-dds-data-in-the-simulink-bus-editor" title="Permalink to this headline">¶</a></h3>
+<p>DDS IDL is not necessary to interact with DDS applicatoins.
+You can also model the Simulink buses directly.
+In this case, the block set will infer the DDS data types from the Simulink types.</p>
+<p>Defining Simulink busses without first defining the IDL is not recommended; it has the following limitations:</p>
+<ul class="simple">
+<li>fewer IDL concepts are supported. In particular, sequences are unsupported.</li>
+<li>it will be difficult for your Simulink application to interact with applications written in other languages, as those languages will required IDL to define the topic data.</li>
+</ul>
+<p><strong>IDL-less mapping of Simulink bus IDL concepts</strong></p>
+<p>The table below describes how a Simulink bus that was not created from an IDL file
+is mapped to IDL concepts.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="22%" />
+<col width="40%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>Simulink Type</strong></th>
+<th class="head"><strong>IDL equivalent</strong></th>
+<th class="head"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Simulink.Bus B</td>
+<td>struct B</td>
+<td>Defines DDS topic type B</td>
+</tr>
+<tr class="row-odd"><td>bus annotation: &#64;Scope(A::B)</td>
+<td>module</td>
+<td>Creates DDS namespace for struct</td>
+</tr>
+<tr class="row-even"><td>bus annotation: &#64;Key(f1,f2)</td>
+<td>#pragma keylist</td>
+<td>Defines topic key field(s)</td>
+</tr>
+<tr class="row-odd"><td>boolean</td>
+<td>boolean</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-even"><td>int8</td>
+<td>char</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-odd"><td>uint8</td>
+<td>octet</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-even"><td>int16</td>
+<td>short</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-odd"><td>uint16</td>
+<td>unsigned short</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-even"><td>int32</td>
+<td>long</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-odd"><td>uint32</td>
+<td>unsigned long</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-even"><td>single</td>
+<td>float</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-odd"><td>double</td>
+<td>double</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+<tr class="row-even"><td><div class="first last line-block">
+<div class="line">int8, annotated &#64;String</div>
+<div class="line">uint8, annotated &#64;String</div>
+</div>
+</td>
+<td>string</td>
+<td><div class="first last line-block">
+<div class="line">max length of read strings is</div>
+<div class="line">determined by field dimension</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><div class="first last line-block">
+<div class="line">int8, annotated &#64;BString</div>
+<div class="line">uint8, annotated &#64;BString</div>
+<div class="line">Dimension N</div>
+</div>
+</td>
+<td>string&lt;N&gt;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Simulink enumeration, E</td>
+<td>enum E</td>
+<td>IDL array if Dimensions &gt; 1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">15. Appendix A</a><ul>
+<li><a class="reference internal" href="#simulink-bus-to-dds-mapping">15.1. Simulink Bus to DDS Mapping</a><ul>
+<li><a class="reference internal" href="#workflow-1-using-idlpp-to-generate-simulink-bus-and-type-descriptor">15.1.1. Workflow 1: Using idlpp to Generate Simulink Bus and Type Descriptor</a></li>
+<li><a class="reference internal" href="#workflow-2-manually-modeling-dds-data-in-the-simulink-bus-editor">15.1.2. Workflow 2: Manually Modeling DDS data in the Simulink Bus Editor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="troubleshooting.html"
+                        title="previous chapter">14. Troubleshooting</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">16. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bus_to_dds_mapping.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="16. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="14. Troubleshooting"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

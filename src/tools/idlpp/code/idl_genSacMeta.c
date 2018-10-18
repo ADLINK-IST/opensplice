@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -64,7 +65,7 @@ idl_genMeta(
     c_ulong nrElements;
     size_t descrLength;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
@@ -80,7 +81,7 @@ idl_genMeta(
 
     idlpp_macroSet = idl_macroSetNew();
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type_name", idl_scopeStackC(meta->scope, "_", meta->name)));
-    metaXML = idl_genXMLmeta(meta->type);
+    metaXML = idl_genXMLmeta(meta->type, TRUE);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptor", idl_cutXMLmeta(metaXML, &nrElements, &descrLength)));
     snprintf(intToStr, MAX_ULONG_STRLENGTH, "%u", nrElements);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptorArrLength", intToStr));

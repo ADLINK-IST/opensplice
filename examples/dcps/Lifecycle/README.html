@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - Lifecycle</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic</a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition</a></li>
   <li>Lifecycle</li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -54,8 +55,8 @@ invocation of unregister_instance on this publisher will cause the instance to b
 <p>It consists of 4 units:</p>
         <ul><li> CheckStatus: provides return status checking
         </li><li> DDSEntitiesManager: implements a class providing operations to setup DCPS entities (creation, deletion)
-        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_pub" data-langcpp="sacpp_lifecycle_pub" data-langjava="LifecycleDataPublisher" data-langisocpp="publisher" data-langcs="sacs_lifecycle_pub" data-langjava5="LifecycleDataPublisher" data-langisocpp2="publisher">LifecyclePublisher</span>: <span class="ex-unit-desc">implements the publisher's main</span> (uses DDSEntitiesManager)
-        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_sub" data-langcpp="sacpp_lifecycle_sub" data-langjava="LifecycleDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_lifecycle_sub" data-langjava5="LifecycleDataSubscriber" data-langisocpp2="subscriber">LifecycleSubscriber</span>: <span class="ex-unit-desc">implements the subscriber's main</span> (uses DDSEntitiesManager)
+        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_pub" data-langcpp="sacpp_lifecycle_pub" data-langjava="LifecycleDataPublisher" data-langisocpp="publisher" data-langcs="sacs_lifecycle_pub" data-langjava5="pub/target/classes/LifecycleDataPublisher" data-langisocpp2="publisher">LifecyclePublisher</span>: <span class="ex-unit-desc">implements the publisher's main</span> (uses DDSEntitiesManager)
+        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_sub" data-langcpp="sacpp_lifecycle_sub" data-langjava="LifecycleDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_lifecycle_sub" data-langjava5="sub/target/classes/LifecycleDataSubscriber" data-langisocpp2="subscriber">LifecycleSubscriber</span>: <span class="ex-unit-desc">implements the subscriber's main</span> (uses DDSEntitiesManager)
 
 </li></ul><h3>3) Scenario</h3>
 
@@ -183,9 +184,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_lifecycle_sub.jar </li>
-                        <li>saj5_lifecycle_pub.jar </li>
-                        <li>saj5_lifecycle_types.jar </li>
+                <ul><li>java5_Lifecycle_sub.jar </li>
+                        <li>java5_Lifecycle_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
@@ -223,7 +223,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_lifecycle_sub</i></b> for C </li>
           <li><b><i>sacpp_lifecycle_sub</i></b> for C++ </li>
           <li><b><i>java -jar saj_lifecycle_sub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_lifecycle_sub.jar</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/java5_Lifecycle_sub.jar</i></b> for Java5 </li>
           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
@@ -232,7 +232,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_lifecycle_pub  [autodispose_flag] [writer_action]</i></b> for C </li>
           <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ </li>
           <li><b><i>java -jar saj_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java </li>
-          <li><b><i>java -jar saj5_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_Lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
           <li><b><i>publisher  [autodispose_flag] [writer_action]</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>
@@ -285,9 +285,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_lifecycle_sub.jar </li>
-                        <li>saj5_lifecycle_pub.jar </li>
-                        <li>saj5_lifecycle_types.jar </li>
+                <ul><li>java5_Lifecycle_sub.jar </li>
+                        <li>java5_Lifecycle_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
@@ -326,8 +325,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_lifecycle_sub</i></b> for C++ </li>
           <li><b><i>sacs_lifecycle_sub</i></b> for C# </li>
           <li><b><i>java -jar saj_lifecycle_sub.jar</i></b> for Java </li>
-          <li><b><i>java -jar saj5_lifecycle_sub.jar</i></b> for Java5 </li>   
-           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>      
+          <li><b><i>java -jar sub/java5_Lifecycle_sub.jar</i></b> for Java5 </li>
+           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
      <li> In the second terminal start the publisher by running either
@@ -336,8 +335,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ </li>
           <li><b><i>sacs_lifecycle_pub [autodispose_flag] [writer_action]</i></b> for C# </li>
           <li><b><i>java -jar saj_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java </li>
-          <li><b><i>java -jar saj5_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
-          <li><b><i>publisher [autodispose_flag] [writer_action]</i></b> for ISO C++ 2 </li>     
+          <li><b><i>java -jar pub/java5_Lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
+          <li><b><i>publisher [autodispose_flag] [writer_action]</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>
          <pre>

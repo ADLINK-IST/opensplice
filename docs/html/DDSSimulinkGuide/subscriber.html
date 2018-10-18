@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>9. Subscriber Block &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="10. Writer Block" href="writer.html" />
+    <link rel="prev" title="8. Publisher Block" href="publisher.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="writer.html" title="10. Writer Block"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="publisher.html" title="8. Publisher Block"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="subscriber-block">
+<span id="id1"></span><h1>9. Subscriber Block<a class="headerlink" href="#subscriber-block" title="Permalink to this headline">¶</a></h1>
+<p>The Subscriber block represents a DDS subscriber entity.</p>
+<p>In DDS, a subscriber is &#8220;an object responsible for receiving published data and making it available to the receiving application.  It may receive and dispatch data of different specified types.&#8221;</p>
+<p>This block is optional on a DDS Simulink model diagram.    If it is not present on a model diagram, each reader will create its own default subscriber.</p>
+<div class="figure">
+<img alt="DDS Subscriber Block" src="_images/subscriber_block.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="12%" />
+<col width="9%" />
+<col width="36%" />
+<col width="27%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Port Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>pp</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>psub</td>
+<td>DDS Subscriber entity
+instance</td>
+<td>Reader</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="subscriber-block-parameters">
+<h2>9.1. Subscriber Block Parameters<a class="headerlink" href="#subscriber-block-parameters" title="Permalink to this headline">¶</a></h2>
+<div class="figure">
+<img alt="Subscriber Block Parameters" src="_images/subscriber_block_parameters.png" />
+</div>
+<div class="section" id="ports-tab">
+<h3>9.1.1. Ports Tab<a class="headerlink" href="#ports-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>Ports</strong> tab allows the user to toggle on or off optional ports.</p>
+</div>
+<div class="section" id="qos-tab">
+<h3>9.1.2. QoS Tab<a class="headerlink" href="#qos-tab" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>QoS</strong> tab is used to set the QoS profile.   By default, the OSPL default profile is used.</p>
+<p>In DDS - The Data-Distribution Service (DDS) relies on the usage of QoS.  A QoS (Quality of Service) is a set of characteristics that controls some aspect of the behavior of the DDS Service.</p>
+<p>Each DDS block has an associated QoS profile.   By default, the OSPL default profile is used.  An XML file that specifies QoS profiles can be used to set the QoS of a DDS block.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">9. Subscriber Block</a><ul>
+<li><a class="reference internal" href="#subscriber-block-parameters">9.1. Subscriber Block Parameters</a><ul>
+<li><a class="reference internal" href="#ports-tab">9.1.1. Ports Tab</a></li>
+<li><a class="reference internal" href="#qos-tab">9.1.2. QoS Tab</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="publisher.html"
+                        title="previous chapter">8. Publisher Block</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="writer.html"
+                        title="next chapter">10. Writer Block</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/subscriber.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="writer.html" title="10. Writer Block"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="publisher.html" title="8. Publisher Block"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

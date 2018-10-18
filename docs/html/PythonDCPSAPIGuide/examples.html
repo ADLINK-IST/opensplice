@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Examples &mdash; Python DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Python DCPS API Guide" href="index.html" />
+    <link rel="next" title="5. Python API for Vortex DDS" href="dds_entities.html" />
+    <link rel="prev" title="3. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Python API for Vortex DDS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="examples">
+<span id="id1"></span><h1>4. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>Several examples are provided to demonstrate the Python DCPS features.</p>
+<p>The examples can be found in the following directory:</p>
+<blockquote>
+<div><ul class="simple">
+<li><em>$OSPL_HOME/tools/python/examples</em></li>
+</ul>
+</div></blockquote>
+<div class="section" id="example-files">
+<h2>4.1. Example Files<a class="headerlink" href="#example-files" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="file-types">
+<h3>4.1.1. File Types<a class="headerlink" href="#file-types" title="Permalink to this headline">¶</a></h3>
+<p>The examples directory contains files of different types.  The runnable python script files reference the xml and idl files.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="87%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>File Type</strong></th>
+<th class="head"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>py</td>
+<td>A program file or script written in Python</td>
+</tr>
+<tr class="row-odd"><td>xml</td>
+<td>An XML file that contains one or more Quality of Service (QoS) profiles for DDS entities.</td>
+</tr>
+<tr class="row-even"><td>idl</td>
+<td>An interface description language file used to define topic(s).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id2">
+<h3>4.1.2. Examples<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="74%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>Example</strong></th>
+<th class="head"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>qos_example.py</td>
+<td>An example that demonstrates how to specify QoS
+settings using Python DCPS APIs.   Also shows
+usage of a waitset.</td>
+</tr>
+<tr class="row-odd"><td>example1.py</td>
+<td>Dynamic generation of Python Topic classes
+using IDL file and name.  Uses a topic with a
+sequence.</td>
+</tr>
+<tr class="row-even"><td>example2.py</td>
+<td>Dynamic generation of Python Topic classes
+using Enumeration and nested modules.</td>
+</tr>
+<tr class="row-odd"><td>example4.py</td>
+<td>Demonstrate finding DDS topics over-the-wire.
+Find topics registered by other processes, and
+read and write samples to those topics.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="running-examples">
+<h2>4.2. Running Examples<a class="headerlink" href="#running-examples" title="Permalink to this headline">¶</a></h2>
+<p>To run an example python script:</p>
+<ol class="arabic">
+<li><p class="first">Setup OSPL environment variables.</p>
+<p><strong>Linux</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li>source release.com</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt><strong>Windows</strong></dt>
+<dd><ul class="first last simple">
+<li>release.bat</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Run an example python script</p>
+<blockquote>
+<div><ul class="simple">
+<li>&gt; python3 example1.py</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Examples</a><ul>
+<li><a class="reference internal" href="#example-files">4.1. Example Files</a><ul>
+<li><a class="reference internal" href="#file-types">4.1.1. File Types</a></li>
+<li><a class="reference internal" href="#id2">4.1.2. Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-examples">4.2. Running Examples</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">3. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dds_entities.html"
+                        title="next chapter">5. Python API for Vortex DDS</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/examples.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Python API for Vortex DDS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

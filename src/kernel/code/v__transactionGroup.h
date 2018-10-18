@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -39,7 +40,7 @@
  * - A v_transactionPublisher class  : Internal class implementing an administration record
  *                                     for each discovered matching coherent Publisher which
  *                                     will hold all active transaction groups.
- * - A v_transactionGroup class      : Internal class implementing an administration record 
+ * - A v_transactionGroup class      : Internal class implementing an administration record
  *                                     for each active transaction group which will hold all
  *                                     completed DataWriter transactions.
  */
@@ -58,6 +59,7 @@ extern "C" {
  * return a NULL reference.
  */
 #define v_transactionGroup(o) (C_CAST(o,v_transactionGroup))
+#define v_transactionGroupAdmin(o) (C_CAST(o,v_transactionGroupAdmin))
 
 /**
  * \brief             The <code>v_transactionGroupAdmin</code> constructor.
@@ -65,12 +67,14 @@ extern "C" {
  * \param owner       : this is the object that will be the owner of the administration,
  *                      this is either a v_subscriber or a v_kernel for durable data.
  *
- * \return            : <code>NULL</code> if this operation fails, otherwise
- *                      a reference to a newly created v_transactionGroupAdmin.
+ * \return            : a reference to a newly created v_transactionGroupAdmin.
  */
+_Check_return_
+_Ret_notnull_
+_Pre_satisfies_(v_objectKind(owner) == K_KERNEL || v_objectKind(owner) == K_SUBSCRIBER)
 v_transactionGroupAdmin
 v_transactionGroupAdminNew(
-    v_object owner);
+    _In_ v_object owner);
 
 /**
  * \brief             This operation inserts a completed transaction belonging to a
@@ -100,16 +104,11 @@ v_transactionGroupAdminRemoveReader(
     v_reader reader);
 
 void
-v_transactionGroupAdminUpdateReader(
-    v_transactionGroupAdmin _this,
-    v_reader reader);
-
-void
 v_transactionGroupAdminFlush(
     v_transactionGroupAdmin _this);
 
 c_bool
-v_transactionGroupAdminNotifyGroupCoherentPublication(
+v_transactionGroupAdminNotifyPublication(
     v_transactionGroupAdmin _this,
     v_transactionWriter writer,
     c_bool dispose,
@@ -126,11 +125,6 @@ void
 v_transactionGroupAdminFlushPending(
     v_transactionGroupAdmin _this,
     v_transactionAdmin admin);
-
-void
-v_transactionGroupAdminTrigger(
-    v_transactionGroupAdmin _this,
-    v_reader owner);
 
 /**
  * \brief              This operation checks if the transaction group admin does
@@ -155,8 +149,12 @@ v_transactionGroupAdminNoMessageFromWriterExist(
     v_gid writerGid);
 
 void
-v_transactionGroupAdminPurgeHistory(
-    v_transactionGroupAdmin _this);
+v_transactionGroupLink(
+    v_transactionGroup _this);
+
+void
+v_transactionGroupUnlink(
+    v_transactionGroup _this);
 
 #if defined (__cplusplus)
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,12 +28,14 @@
 extern "C" {
 #endif
 
+_Success_(return == V_RESULT_OK)
 v_result
 v_readerQosCompare(
-    v_readerQos _this,
-    v_readerQos tmpl,
-    c_bool enabled,
-    v_qosChangeMask *changeMask);
+    _In_ v_readerQos q,
+    _In_ v_readerQos tmpl,
+    _In_ c_bool enabled,
+    _In_ c_bool groupCoherent,
+    _Out_ v_qosChangeMask *changeMask);
 
 #if defined (__cplusplus)
 }

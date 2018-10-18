@@ -20,8 +20,6 @@
  */
 
 #include <dds/domain/detail/TDomainParticipantImpl.hpp>
-//#include <dds/domain/TDomainParticipant.hpp>
-//#include <org/opensplice/domain/DomainParticipantDelegate.hpp>
 
 /**
  * @cond

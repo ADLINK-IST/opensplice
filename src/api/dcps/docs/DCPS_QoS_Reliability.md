@@ -106,5 +106,7 @@ If the RELIABILITY kind is set to BEST_EFFORT, the service will not re-transmit 
 The value offered is considered compatible with the value requested if and only if the inequality "offered kind >= requested kind" evaluates to 'TRUE'
 For the purposes of this inequality, the values of RELIABILITY kind are considered ordered such that BEST_EFFORT < RELIABLE.
 
+This QoS plays a role within the scope of \ref DCPS_Eventual_Consistency "Eventual Consistency"
+
 
 

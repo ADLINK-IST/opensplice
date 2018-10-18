@@ -1,0 +1,114 @@
+
+ifeq ($(INCLUDE_SQLITE), yes)
+all link: sqlite
+clean: clean_sqlite
+endif
+
+ifeq ($(INCLUDE_LEVELDB), yes)
+all link: leveldb
+clean: clean_leveldb
+endif
+
+SQLITE_TARGET = $(DLIB_PREFIX)sqlite3-ospl$(DLIB_POSTFIX)
+SQLITE_BUILD_DIR = bld/$(SPLICE_TARGET)/sqlite
+
+SQLITE_CFLAGS  = $(filter-out -D%, $(CFLAGS))
+SQLITE_LDFLAGS = $(LDFLAGS)
+
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET))))
+WIN_SQLITE_LIB = sqlite3-ospl.lib
+WIN_SQLITE_PDB = sqlite3-ospl.pdb
+SQLITE_CFLAGS += -D"SQLITE_API=__declspec(dllexport)"
+SQLITE_LDFLAGS += -dll
+endif
+
+ifeq "$(GCC_HAS_NO_MAYBE_UNINITIALIZED)" "yes"
+SQLITE_CFLAGS += -Wno-maybe-uninitialized
+SQLITE_LDFLAGS += -Wno-maybe-uninitialized
+endif
+
+ifneq (,$(findstring linux,$(SPLICE_TARGET)))
+SQLITE_CFLAGS += -fPIC
+SQLITE_LDFLAGS += -shared
+GCCVERSION := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 4)
+ifeq (x86_64,$(and $(findstring x86.linux, $(SPLICE_TARGET)), $(findstring x86_64,$(shell uname -m))))
+LEVELDB_CROSS_COMPILE=yes
+endif
+else
+GCCVERSION := 1
+SQLITE_CFLAGS += $(SHCFLAGS)
+SQLITE_LDFLAGS += $(SHLDFLAGS)
+endif
+
+ifneq (,$(findstring darwin,$(SPLICE_TARGET)))
+SQLITE_LDFLAGS += -install_name @rpath/$(SQLITE_TARGET)
+LEVELDB_INSTALL_PATH = @rpath
+endif
+
+ifneq (,$(and $(findstring solaris,$(SPLICE_TARGET)), $(findstring studio,$(SPLICE_TARGET))))
+SQLITE_LDFLAGS += -G -xcode=pic32 -Bdynamic
+endif
+ifneq (,$(findstring solaris,$(SPLICE_TARGET)))
+SQLITE_CFLAGS := $(filter-out -xc99, $(SQLITE_CFLAGS))
+SQLITE_CFLAGS := $(filter-out -std=c99, $(SQLITE_CFLAGS))
+SQLITE_CFLAGS := $(filter-out -std=gnu99, $(SQLITE_CFLAGS))
+endif
+
+sqlite: $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(SQLITE_TARGET)
+
+clean_sqlite:
+	@rm -rf bld/$(SPLICE_TARGET)/sqlite
+	@rm -f $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(SQLITE_TARGET)
+
+$(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(SQLITE_TARGET): $(SQLITE_BUILD_DIR)/sqlite3-ospl$(OBJ_POSTFIX)
+	$(LD_SO) $(SQLITE_LDFLAGS) $(SQLITE_BUILD_DIR)/sqlite3-ospl$(OBJ_POSTFIX) -o $(SQLITE_BUILD_DIR)/$(SQLITE_TARGET)
+	cp $(SQLITE_BUILD_DIR)/$(SQLITE_TARGET) $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(SQLITE_TARGET)
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET))))
+	ospl_wincmd mt -manifest $(addsuffix .manifest, $(SQLITE_BUILD_DIR)/$(SQLITE_TARGET)) "-outputresource:$@;#2"
+	cp $(SQLITE_BUILD_DIR)/$(WIN_SQLITE_LIB) $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(WIN_SQLITE_LIB)
+endif
+
+$(SQLITE_BUILD_DIR)/sqlite3-ospl$(OBJ_POSTFIX): $(SQLITE_HOME)/sqlite3.c $(SQLITE_BUILD_DIR)/.STAMP
+	$(CC) -c $(SQLITE_CFLAGS) -I$(SQLITE_HOME) $< -o $@
+
+$(SQLITE_BUILD_DIR)/.STAMP: bld/$(SPLICE_TARGET)/.STAMP
+	mkdir $(SQLITE_BUILD_DIR)
+	touch $(SQLITE_BUILD_DIR)/.STAMP
+
+
+LEVELDB_TARGET = $(DLIB_PREFIX)leveldb-ospl$(DLIB_POSTFIX)
+LEVELDB_BUILD_DIR = bld/$(SPLICE_TARGET)/leveldb
+
+FILTER           := -D% -W% -pedantic% $(CFLAGS_DEBUG) $(CFLAGS_OPT)
+LEVELDB_CFLAGS   := $(filter-out $(FILTER), $(CFLAGS))
+LEVELDB_CXXFLAGS := $(filter-out $(FILTER), $(CXXFLAGS))
+LEVELDB_CFLAGS_OPT := $(CFLAGS_OPT) $(filter-out -D%, $(CFLAGS_DEBUG))
+
+leveldb: $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(LEVELDB_TARGET)
+
+clean_leveldb:
+	@rm -rf bld/$(SPLICE_TARGET)/leveldb
+	@rm -f $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(LEVELDB_TARGET)
+
+$(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(LEVELDB_TARGET): $(LEVELDB_BUILD_DIR)/.STAMP
+	@CC="$(CC)" CFLAGS="$(LEVELDB_CFLAGS)" CXX="$(CXX)" CXXFLAGS="$(LEVELDB_CXXFLAGS)" OPT="$(LEVELDB_CFLAGS_OPT)" INSTALL_PATH="$(LEVELDB_INSTALL_PATH)" $(MAKE) -C bld/$(SPLICE_TARGET)/leveldb
+	cp $(LEVELDB_BUILD_DIR)/$(LEVELDB_TARGET) $(OSPL_HOME)/lib/$(SPLICE_TARGET)/$(LEVELDB_TARGET)
+
+$(LEVELDB_BUILD_DIR)/.STAMP: bld/$(SPLICE_TARGET)/.STAMP
+	mkdir $(LEVELDB_BUILD_DIR)
+	touch $(LEVELDB_BUILD_DIR)/.STAMP
+	cp -r $(LEVELDB_HOME)/* $(LEVELDB_BUILD_DIR)
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak '/PLATFORM_SHARED_VERSIONED/s/true/false/' build_detect_platform)
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak '/^SHARED1/s/= .*/= $(LEVELDB_TARGET)/' Makefile)
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak '/^SHARED2/s/= .(SHARED1)/= $(LEVELDB_TARGET)/' Makefile)
+	echo '.NOTPARALLEL:' >> $(LEVELDB_BUILD_DIR)/Makefile
+ifneq "$(GCCVERSION)" "1"
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak 's/\(DOS_LINUX\)/\1 -fno-access-control/' build_detect_platform)
+endif
+ifeq ($(LEVELDB_CROSS_COMPILE), yes)
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak '/^PLATFORM_CCFLAGS=.*PLATFORM/s/="/="-m32 /' build_detect_platform)
+	(cd $(LEVELDB_BUILD_DIR); sed -i.bak '/^PLATFORM_CXXFLAGS=.*PLATFORM/s/="/="-m32 /' build_detect_platform)
+endif
+
+
+.PHONY: sqlite clean_sqlite leveldb clean_leveldb

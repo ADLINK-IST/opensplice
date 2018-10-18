@@ -1,5 +1,4 @@
 // -*- MPC -*-
-// $Id$
 
 project (Build*) : ospl_qt4, ospl_dcpsisocpp2, isosacpp2_typesupport, ospl_build_lib {
   TypeSupport_Files {

@@ -1,0 +1,435 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "
+http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>OpenSplice examples - Durability</title>
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
+</head>
+
+<body>
+<h1> EXAMPLES </h1>
+<ul>
+  <li><a href ="../README.html">Summary</a></li>
+  <li><a href ="../PingPong/README.html">PingPong </a></li>
+  <li><a href ="../Tutorial/README.html">Tutorial </a></li>
+  <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
+  <li><a href ="../WaitSet/README.html">WaitSet </a></li>
+  <li><a href ="../Listener/README.html">Listener </a></li>
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic</a></li>
+  <li><a href ="../QueryCondition/README.html">QueryCondition</a></li>
+  <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li>Durability</li>
+  <li><a href ="../Ownership/README.html">Ownership</a></li>
+  <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+  <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
+  <li><a href ="../RoundTrip/README.html">RoundTrip</a></li>
+  <li><a href ="../Throughput/README.html">Throughput</a></li>
+</ul>
+<h2> Durability</h2>
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
+<ul>
+  <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
+</ul>
+
+<h3>1) Description</h3>
+
+<p>The durability example illustrates the ability of late joining readers to obtain
+data that has already been published before these readers were created.</p>
+
+<h3>2) Design</h3>
+<p>It consists of 4 units : </p>
+<ul><li>CheckStatus : provides return status checking</li>
+    <li> DDSEntityManager : implements a class providing operations to set up DCPS entities (creation, deletion)</li>
+    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_durability_pub" data-langcpp="sacpp_durability_pub" data-langjava="DurabilityDataPublisher" data-langisocpp="publisher" data-langcs="sacs_durability_pub" data-langjava5="pub/target/classes/DurabilityDataPublisher" data-langisocpp2="publisher">DurabilityDataPublisher</span> <span class="ex-unit-desc">application implements the publisher.</span></li>
+    <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_durability_sub" data-langcpp="sacpp_durability_sub" data-langjava="DurabilityDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_durability_sub" data-langjava5="sub/target/classes/DurabilityDataSubscriber" data-langisocpp2="subscriber">DurabilityDataSubscriber </span> <span class="ex-unit-desc">implements the subscriber.</span></li>
+</ul><h3>3) Scenario</h3>
+
+<p>The DurabilityDataPublisher application write 10 samples and wait for user input
+to terminate the application. Three possibilities are offered (configurable via
+arguments passed by command line cf.5):</p>
+
+        <ul><li>3.1 Memory transient & auto_dispose set to true : terminating the
+                DurabilityDataPublsiher will cause its transient data to become disposed
+                and therefore not readable for any subsequent late joining
+                DurabilityDataSubscriber. Therefore the user should not terminate the DurabilityDataPublisher
+                application until the DurabilityDataSubscriber has been started .
+        </li><li>3.2 Memory transient & auto_dispose set to false : terminating the
+                DurabilityDataPublsiher will NOT cause its transient data to becomes disposed
+                and therefore it will remain available to subsequent late joining
+                DurabilityDataSubscribers as long as the infrastructure is up and running.
+                So the user can terminate the DurabilityDataPublisher before the DurabilityDataSubscriber
+                has been started.
+        </li><li>3.3 Persistent & auto_dispose set to false : terminating the DurabilityDataPublisher
+will
+                NOT cause its persistent data to becomes disposed and therefore it will remain
+                available to subsequent late joining DurabilityDataSubscribers even when the
+                infrastructure has been completely shut down in the mean time. It does this by
+                storing the data on disk, and reinserting the data when the infrastructure is
+                restarted.</li></ul>
+                <p><font color="#E20E0E">IMPORTANT : for persistence to work correctly, the configuration file should define a store type and a store location (use the configurator tool to do that).</font></p>
+
+<p>Run the DurabilityDataSubscriber Application. It will receive the 10 samples written by
+the DurabilityDataPublisher and display their content.</p>
+<ul><li>For 3.1 case : any number of instances of the DurabilityDataSubscriber will receive
+the samples as long as the Publisher application is not terminated.
+</li><li>For 3.2 and 3.3 : any number of instances of the DurabilityDataSubscriber will still
+receive the samples even when the Publisher application is terminated.
+</li><li>For 3.3 : any number of instances of the DurabilityDataSubscriber will still
+receive the samples even when the Publisher application is terminated
+and the middleware OpenSplice stopped and restarted.</li></ul>
+
+<h4>Configurable:</h4>
+<ul>
+    <li class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="">durability_kind</span> : <span class="ex-param-desc">specify the persistence of the publisher</span></span></li>
+    <li class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="DurabilityDataPublisher">autodispose_flag</span> : <span class="ex-param-desc">specify whether the publisher will automatically dispose instances each time they are unregistered</span></li>
+    <li class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="DurabilityDataPublisher">automatic_flag</span> : <span class="ex-param-desc">indicates if the publisher is run in interactive or automatic mode</span></li>
+</ul>
+<p>durability_kind allows one of two values </p>
+<ul>
+    <li class="ex-param-option" data-paramkey="durability_kind"><span class="ex-value">transient</span> : <span class="ex-value-desc">keep some samples so that they can be delivered to any potential late joining subscribers</span></li>
+    <li class="ex-param-option" data-paramkey="durability_kind"><span class="ex-value">persistent</span> : <span class="ex-value-desc">data is kept on permanent storage, so that they can outlive a system session</span></li>
+</ul>
+<p>autodispose_flag allows one of two values </p>
+<ul>
+    <li class="ex-param-option" data-paramkey="autodispose_flag"><span class="ex-value">true</span></li>
+    <li class="ex-param-option" data-paramkey="autodispose_flag"><span class="ex-value">false</span></li>
+</ul>
+<p>automatic_flag allows one of two values </p>
+<ul>
+    <li class="ex-param-option" data-paramkey="automatic_flag"><span class="ex-value">true</span></li>
+    <li class="ex-param-option" data-paramkey="automatic_flag"><span class="ex-value">false</span></li>
+</ul>
+
+<h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
+<ul>
+  <li><a href ="#Posix">Running examples in Posix </a></li>
+  <li><a href ="#VS">Running examples in Visual Studio</a></li>
+</ul>
+
+        <h3>Usage</h3>
+        <pre>DurabilityDataPublisher usage:
+          <span class="ex-unit-detail" data-unitkey="DurabilityDataPublisher">DurabilityDataPublisher [<span class="ex-unit-param">durability_kind</span>] [<span class="ex-unit-param">autodispose_flag</span>] [<span class="ex-unit-param">automatic_flag</span>]</span>
+        </pre>
+
+        <pre>DurabilityDataSubscriber usage:
+          <span class="ex-unit-detail" data-unitkey="DurabilityDataSubscriber">DurabilityDataSubscriber [<span class="ex-unit-param">durability_kind</span>]</span>
+        </pre>
+
+<h3><balise id="Posix">Running the examples in a Posix environment</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
+
+<ul>
+  <li><a href ="#C_C++">C/C++ Examples </a></li>
+  <li><a href ="#Java">Java examples</a></li>
+  <li><a href ="#ISOCPP2">ISO C++ 2 examples</a></li>
+</ul>
+
+<h4><balise id="C_C++">C and C++ Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables and a library are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>For C++</p>
+                <ul><li>sacpp_durability_pub </li>
+                        <li>sacpp_durability_sub </li>
+                        <li>libsacpp_durability_types.so</li>
+                </ul>
+
+<p>For C</p>
+                <ul><li>sac_durability_pub </li>
+                        <li>sac_durability_sub </li>
+                        <li>libsac_durability_types.so</li>
+                </ul>
+
+<h4><balise id = "Java">Java executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a>
+<p>Three jars are generated in the <b>java/standalone</b> or <b>java5</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_durability_pub.jar </li>
+                        <li>saj_durability_sub.jar </li>
+                        <li>saj_durability_types.jar </li>
+                </ul>
+
+<p>For Java5</p>
+                <ul><li>java5_Durability_pub.jar </li>
+                        <li>java5_Durability_sub.jar </li>
+                </ul>
+
+<h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>isocpp2</b> directory when the example is built:</p>
+                <ul><li>publisher </li>
+                        <li>subscriber </li>
+                </ul>
+
+<h4>Running the example</h4>
+ <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new terminal used.</p>
+ <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
+   <ul>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 terminals. Set up the environment and go to the example directory as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+    <ul>
+          <li>Open 2 terminals.  In each terminal:</li>
+          <li>Setup the environment and go to the example directory as described above</li>
+          <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+   <p><b>Running the subscriber and publisher</b></p>
+
+        <h5>Scenario 3.1 :</h5>
+        <ul>
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_sub.jar transient </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar transient </i></b> for Java5</li>
+             <li><b><i>subscriber transient </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub transient true false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient true false</i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_pub.jar transient true false </i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar transient true false </i></b> for Java5</li>
+             <li><b><i>publisher transient true false</i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+        <li> Check that the Subscriber receives the samples</li>
+        <li> Stop the Publisher and the subscriber</li></ul>
+        <h5>Scenario 3.2 :</h5>
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_sub.jar transient </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar transient </i></b> for Java5</li>
+             <li><b><i>subscriber transient </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub transient false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient false false</i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_pub.jar transient false false</i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar transient false false</i></b> for Java5</li>
+             <li><b><i>publisher transient false false</i></b> for ISO C++ 2</li>
+          </ul>
+    </li>
+        </li><li> Stop the Publisher Application
+        </li><li> Run another instance of Subscriber Application as described above and check that it
+          receives the samples.
+        </li><li> Stop the subscribers</li></ul>
+        <h5>Scenario 3.3 :</h5>
+
+        <p>(If running in Shared Memory deployment we need to stop/start openSplice as we will change the topic durability
+         kind from Transient (in scenario 3.2) to Persistent. Otherwise we won't be
+         able to create the topic)</p>
+        <ul><li> Stop OpenSplice if running in Shared Memory deployment
+        </li><li> Start OpenSplice if running in Shared Memory deployment
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub persistent </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub persistent </i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_sub.jar persistent </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar persistent </i></b> for Java5</li>
+             <li><b><i>subscriber persistent </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub persistent false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub persistent false false</i></b> for C++</li>
+             <li><b><i>java -jar saj_durability_pub.jar persistent true false</i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar persistent true false</i></b> for Java5</li>
+             <li><b><i>publisher persistent false false</i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+        </li><li> Stop the Publisher Application
+        </li><li> Stop OpenSplice if running in Shared Memory deployment
+        </li><li> Start OpenSplice if running in Shared Memory deployment
+        </li><li> Run a new instance of the Subscriber Application as described above and check that
+          it receives the samples.</li>
+        </ul>
+
+<h3><balise id="VS">Running C/C++/C#/ISO C++ 2/Java examples on Windows</balise></h3>
+
+<h4>Environment Set up</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSplice Command Prompt</i> which will set up the environment variables for OpenSplice automatically.  The <i>OpenSplice Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+
+<ul>
+  <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
+  <li><a href ="#Java_Win">Java examples</a></li>
+  <li><a href ="#ISOCPP_Win">ISO C++ 2 examples</a></li>
+</ul>
+
+<h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>standalone</b> directory when the example is built:
+<p>For C</p>
+                <ul><li>sac_durability_sub.exe </li>
+                        <li>sac_durability_pub.exe </li>
+                </ul>
+
+<p>For C++</p>
+                <ul><li>sacpp_durability_sub.exe </li>
+                        <li>sacpp_durability_pub.exe </li>
+                </ul>
+
+<p>For C#</p>
+                <ul><li>sacs_durability_sub.exe </li>
+                        <li>sacs_durability_pub.exe </li>
+                </ul>
+
+
+<h4><balise id="Java_Win">Java Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Three jars are generated in the <b>java\standalone</b> or <b>java5</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_durability_pub.jar </li>
+                        <li>saj_durability_sub.jar </li>
+                        <li>saj_durability_types.jar </li>
+                </ul>
+
+<p>For Java5</p>
+                <ul><li>java5_Durability_pub.jar </li>
+                        <li>java5_Durability_sub.jar </li>
+                </ul>
+
+<h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>isocpp2</b> directory when the example is built:</p>
+                <ul><li>publisher.exe </li>
+                        <li>subscriber.exe </li>
+                </ul>
+
+<h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/ISO C++ 2/Java Examples</balise></h4>
+   <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
+   <p>The following steps describe how to run the examples:</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
+   <ul>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSplice Command Prompts and go to the example directory as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+    <ul>
+          <li>Open 2 OpenSplice Command Prompts.  In each window:</li>
+          <li>Go to the example directory as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+
+  <p><b>Running the subscriber and publisher</b></p>
+
+        <h5>Usage :</h5>
+        <ul><li>The publisher takes 3 input parameters - durability_kind autodispose_flag automatic_flag, where
+            <ul><li>durability_kind = transient | persistent </li>
+                <li>autodispose_flag = false | true</li>
+                <li>automatic_flag = false | true  <br/>indicates if the publisher is run in interactive or automatic mode</li></ul></li>
+        <li>The subscriber takes 1 parameter - durability_kind, where
+            <ul><li>durability_kind = transient | persistent </li></ul></li>
+        </ul>
+        <h5>Scenario 3.1 :</h5>
+        <ul>
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>sacs_durability_sub transient </i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_sub.jar transient </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar transient </i></b> for Java5</li>
+             <li><b><i>subscriber transient </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub transient true false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient true false</i></b> for C++</li>
+             <li><b><i>sacs_durability_pub transient true false</i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_pub.jar transient true false </i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar transient true false </i></b> for Java5</li>
+             <li><b><i>publisher transient true false</i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+        <li> Check that the Subscriber receives the samples</li>
+        <li> Stop the Publisher and the subscriber</li></ul>
+        <h5>Scenario 3.2 :</h5>
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>sacs_durability_sub transient </i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_sub.jar transient </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar transient </i></b> for Java5</li>
+              <li><b><i>subscriber transient </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub transient false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient false false</i></b> for C++</li>
+             <li><b><i>sacs_durability_pub transient false false</i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_pub.jar transient false false </i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar transient false false </i></b> for Java5</li>
+             <li><b><i>publisher transient false false</i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+        </li><li> Stop the Publisher Application
+        </li><li> Run another instance of Subscriber Application as described above and check that it
+          receives the samples.
+        </li><li> Stop the subscribers</li></ul>
+        <h5>Scenario 3.3 :</h5>
+
+        <p>(If running in Shared Memory deployment we need to stop/start OpenSplice as we will change the topic durability
+         kind from Transient (in scenario 3.2) to Persistent. Otherwise we won't be
+         able to create the topic)</p>
+        <ul><li> Stop OpenSplice if running in Shared Memory deployment
+        </li><li> Start OpenSplice if running in Shared Memory deployment
+        <li> Run the Subscriber Application, in a console go to the example directory as described above and start the subscriber
+          <ul>
+             <li><b><i>sac_durability_sub persistent </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub persistent </i></b> for C++</li>
+             <li><b><i>sacs_durability_sub persistent </i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_sub.jar persistent </i></b> for Java</li>
+             <li><b><i>java -jar sub/java5_Durability_sub.jar persistent </i></b> for Java5</li>
+             <li><b><i>subscriber persistent </i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the example directory as described above and start the publisher
+         <ul>
+             <li><b><i>sac_durability_pub persistent false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub persistent false false</i></b> for C++</li>
+             <li><b><i>sacs_durability_pub persistent false false</i></b> for C#</li>
+             <li><b><i>java -jar saj_durability_pub.jar persistent true false </i></b> for Java</li>
+             <li><b><i>java -jar pub/java5_Durability_pub.jar persistent true false </i></b> for Java5</li>
+             <li><b><i>publisher persistent false false</i></b> for ISO C++ 2 </li>
+          </ul>
+    </li>
+        </li><li> Stop the Publisher Application
+        </li><li> Stop OpenSplice if running in Shared Memory deployment
+        </li><li> Start OpenSplice if running in Shared Memory deployment
+        </li><li> Run a new instance of the Subscriber Application as described above and check that
+          it receives the samples.</li>
+        </ul>
+</body>
+</html>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -575,7 +576,7 @@ v_statusResetCounters(
 
 c_ulong
 v_statusGetMask(
-    v_status s)
+    _In_ v_status s)
 {
     c_ulong mask;
 
@@ -628,7 +629,8 @@ v_statusCopyOut(
     case K_PUBLISHERSTATUS:
         copy = v_status(v_objectNew(kernel,K_PUBLISHERSTATUS));
         /* These status are just instantations of v_status and have no
-         * addition attributes! */
+         * addition attributes!
+         */
         memcpy(copy, s, sizeof(C_STRUCT(v_status)));
     break;
     default:

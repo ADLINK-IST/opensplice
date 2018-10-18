@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -39,7 +40,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
     private DataElement element;
     private ArrayList<DataNode> nodes;
     private DataConfiguration configuration;
-    
+
     public DataElementTableModel(){
         super();
         this.element = null;
@@ -47,7 +48,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         this.nodes = new ArrayList<DataNode>();
         this.addColumn("Name");
         this.addColumn("Value");
-        
+
     }
 
     public void setElement(DataElement element){
@@ -57,7 +58,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         if(element != null){
             this.element = element;
             this.initElement();
-            
+
             if(!this.element.getOwner().equals(this.configuration)){
                 if(this.configuration != null){
                     this.configuration.removeDataConfigurationListener(this);
@@ -67,17 +68,17 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
             }
         }
     }
-    
+
     @Override
     public void nodeAdded(DataElement parent, DataNode nodeAdded) {
         DataNode parentParent;
-        
+
         if(parent.equals(this.element)){
             this.clear();
             this.initElement();
         } else {
             parentParent = parent.getParent();
-            
+
             if(this.element.equals(parentParent)){
                 this.clear();
                 this.initElement();
@@ -97,7 +98,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
             this.initElement();
         }
     }
-    
+
     private boolean containsNodeAsParent(DataNode node){
         for(DataNode n: this.nodes){
             if(n.getParent().equals(node)){
@@ -109,12 +110,10 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
 
     @Override
     public void valueChanged(DataValue data, Object oldValue, Object newValue) {
-        final int index = this.nodes.indexOf(data); 
+        final int index = this.nodes.indexOf(data);
         final Object v = newValue;
-        
+
         if(index != -1){
-            /*System.out.println("Value changed: data: " + data + ", oldValue: " + oldValue + " newValue: " + newValue + "(row=" + index +", col=1)");*/
-            
             SwingUtilities.invokeLater(new Runnable(){
                 @Override
                 public void run() {
@@ -123,10 +122,10 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
             });
         }
     }
-    
+
     public DataNode getNodeAt(int index){
         DataNode result;
-        
+
         if(this.nodes.size() >= (index-1)){
             result = this.nodes.get(index);
         } else {
@@ -134,11 +133,11 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         }
         return result;
     }
-    
+
     @Override
     public boolean isCellEditable(int row, int column) {
         boolean result;
-                
+
         if(column == 1 && ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
             result = true;
         } else if (column == 1 && !element.getMetadata().getVersion().equals(ConfigModeIntializer.COMMERCIAL)) {
@@ -148,11 +147,11 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         }
         return result;
     }
-    
+
     private void initElement(){
         String elName;
         Object[] values = new Object[2];
-        
+
         for(DataNode dn: this.element.getChildren()){
             if(dn instanceof DataAttribute){
                 values[0] = "@" + ((MetaAttribute)dn.getMetadata()).getName();
@@ -175,7 +174,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
                    ((MetaElement)dn.getMetadata()).hasValueChildren())
                 {
                     elName = ((MetaElement)dn.getMetadata()).getName();
-                    
+
                     for(DataNode elNode: ((DataElement)dn).getChildren()){
                         if(elNode instanceof DataValue){
                             values[0] = elName;
@@ -193,15 +192,15 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
             }
         }
     }
-    
+
     private void clear(){
         int rows = super.getRowCount();
-        
+
         for(int i=0; i<rows; i++){
             super.removeRow(0);
         }
         this.nodes.clear();
-        
+
         return;
     }
 }

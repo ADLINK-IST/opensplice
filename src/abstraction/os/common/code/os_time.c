@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -776,7 +777,7 @@ os_timeGetPowerEvents(
         mtn = os_timeMSub(mt, mt_el_offset);
         delta = (os_duration)(el.et - mtn.mt);
         if (delta > maxPowerEventDiffTime) {
-            pa_inc32_nv(&state.resumeCount);
+            (void)pa_inc32_nv(&state.resumeCount);
             /* Updating state.resumeLastDetected is NOT thread-safe! Consequently,
              * these could be assigned an incorrect time value that does not
              * reflect the actual time of occurrence of a power event when
@@ -806,12 +807,12 @@ os_timeGetPowerEvents(
                 timeoutDetected = OS_TRUE;
             } else if (delay < toBlock) {
                 /* It is safe to sleep for delay */
-                os_sleep(delay);
+                ospl_os_sleep(delay);
                 /* Set the new max blocking time and redo the loop. */
                 toBlock -= delay;
             } else {
                 /* The time to block is less than delay. */
-                os_sleep(toBlock);
+                ospl_os_sleep(toBlock);
                 /* Set the resulting max blocking time zero to check for power
                  * events one more time. */
                 toBlock = 0;
@@ -871,6 +872,12 @@ os_timeGet (
     t.tv_nsec = (os_int32)OS_TIMEW_GET_NANOSECONDS(w);
 
     return t;
+}
+
+os_timeW
+os_timeWGetDefault(void)
+{
+    return os__timeWGet();
 }
 
 os_timeW
@@ -945,7 +952,7 @@ os_result
 os_nanoSleep(
     os_time delay)
 {
-    return os_sleep(OS_DURATION_INIT(delay.tv_sec, delay.tv_nsec));
+    return ospl_os_sleep(OS_DURATION_INIT(delay.tv_sec, delay.tv_nsec));
 }
 
 os_timeW
@@ -1057,3 +1064,4 @@ os_timeEImage (
 {
     return timeImage(t.et, buf, bufsz);
 }
+

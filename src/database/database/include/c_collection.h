@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -128,7 +129,7 @@ C_CLASS(c_collection);
 #define C_UNLIMITED (0)
 
 typedef c_bool (*c_action)
-               (c_object o, c_voidp arg);
+               (_Inout_ c_object o, _Inout_ c_voidp arg);
 
 typedef c_bool (*c_removeCondition)
                (c_object found, c_object requested, c_voidp arg);
@@ -142,11 +143,16 @@ typedef c_collection c_bag;
 typedef c_collection c_table;
 typedef c_collection c_query;
 
+struct c__setImplIter_s {
+    c_voidp opaque[4 + (12 * sizeof(void *))]; /* same size as ut_avlCIter_t */
+};
+
 struct c_collectionIter {
     void * (*next) (struct c_collectionIter *it);
     c_collection source;
     union {
         struct c__listImplIter_s list;
+        struct c__setImplIter_s set;
     } u;
 };
 
@@ -254,9 +260,9 @@ c_tableNew (
  */
 OS_API c_query
 c_queryNew (
-    c_collection source,
-    q_expr predicate,
-    c_value params[]);
+    const c_collection source,
+    const q_expr predicate,
+    const c_value params[]);
 
 /**
  * \brief This operation returns the element type of the given collection type.
@@ -747,7 +753,7 @@ c_queryEval (
  */
 OS_API c_qPred
 c_queryGetPred(
-		c_query _this);
+        c_query _this);
 
 /**
  * \brief This operation sets the predicate of the given query to the given predicate.
@@ -757,8 +763,8 @@ c_queryGetPred(
  */
 OS_API void
 c_querySetPred(
-		c_query _this,
-		c_qPred p);
+        c_query _this,
+        c_qPred p);
 
 /**
  * \brief This table operation inspects the specified object and fills a
@@ -815,13 +821,17 @@ c_tableRemove (
     c_removeCondition condition,
     c_voidp arg);
 
-#define _NIL_
-#ifdef _NIL_
 OS_API c_object
 c_tableFind (
     c_table _this,
-    c_value *keyValues);
-#endif
+    c_value *keyValues,
+    c_ulong nrOfKeys);
+
+OS_API c_object
+c_tableFindWeakRef (
+    c_table _this,
+    c_value *keyValues,
+    c_ulong nrOfKeys);
 
 OS_API c_bool
 c_tableWalk(
@@ -835,6 +845,11 @@ c_setCount(
 
 OS_API c_object
 c_setInsert(
+    c_set _this,
+    c_object o);
+
+OS_API c_bool
+c_setContains (
     c_set _this,
     c_object o);
 

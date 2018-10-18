@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -70,7 +71,6 @@ public abstract class CoherentPublishControllerCommon
     @Override
     public void actionPerformed(ActionEvent e){
         String command = e.getActionCommand();
-//        logger.logp(Level.INFO, "CoherentSetPublisher", "actionPerformed", command);
 
         try{
             if(command.equals("cancel")){
@@ -204,7 +204,7 @@ public abstract class CoherentPublishControllerCommon
                 if (selectionIndex > -1) {
                     Writer selected = (Writer) writerList.getModel().getElementAt(selectionIndex);
                     writerList.setSelectedValue(selected, false);
-                    view.getWriterListPopup(lastPopup).show(writerList, e.getX(), e.getY()); 
+                    view.getWriterListPopup(lastPopup).show(writerList, e.getX(), e.getY());
                 }
             } else if(source.equals(view.getCoherentSetTable())){
                 JTable coherentSetTable = (JTable)source;

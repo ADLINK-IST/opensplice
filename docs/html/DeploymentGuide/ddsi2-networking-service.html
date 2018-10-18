@@ -92,14 +92,14 @@ section fully-detailed descriptions of:</p>
 </ul>
 <div class="section" id="ddsi-concepts">
 <span id="id2"></span><h2>7.1. DDSI Concepts<a class="headerlink" href="#ddsi-concepts" title="Permalink to this headline">¶</a></h2>
-<p>The DDSI 2.1 standard is very intimately related to the DDS 1.2 standard, with a
-clear correspondence between the entities in DDSI and those in DCPS. However,
-this correspondence is not one-to-one.</p>
+<p>Both DDSI 2.1 and 2.2 standards are very intimately related to the DDS 1.2 and 1.4
+standards, with a clear correspondence between the entities in DDSI and those in DCPS.
+However, this correspondence is not one-to-one.</p>
 <p>In this section we give a high-level description of the concepts of the DDSI
-specification, with hardly any reference to the specifics of the OpenSplice
+specification, with hardly any reference to the specifics of the Vortex OpenSplice
 implementation, DDSI2, which are addressed in subsequent sections. This
 division was chosen to aid readers interested in interoperability to understand
-where the specification ends and the OpenSplice implementation begins.</p>
+where the specification ends and the Vortex OpenSplice implementation begins.</p>
 <div class="section" id="mapping-of-dcps-domains-to-ddsi-domains">
 <span id="id3"></span><h3>7.1.1. Mapping of DCPS domains to DDSI domains<a class="headerlink" href="#mapping-of-dcps-domains-to-ddsi-domains" title="Permalink to this headline">¶</a></h3>
 <p>In DCPS, a domain is uniquely identified by a non-negative integer, the domain id.
@@ -183,10 +183,10 @@ when all readers have acknowledged them. With the default history setting of
 can still obtain the latest sample for each existing instance.</p>
 <p>Naturally, once the DCPS writer is deleted (or disappears for whatever reason), the
 DDSI writer disappears as well, and with it, its history. For this reason, transient
-data is generally much to be preferred over transient-local data. In OpenSplice the
+data is generally much to be preferred over transient-local data. In Vortex OpenSplice the
 durability service implements all three durability kinds without requiring any
 special support from the networking services, ensuring that the full set of
-durability features is always available between OpenSplice nodes.</p>
+durability features is always available between Vortex OpenSplice nodes.</p>
 </div>
 <div class="section" id="discovery-of-participants-endpoints">
 <span id="id7"></span><h3>7.1.5. Discovery of participants &amp; endpoints<a class="headerlink" href="#discovery-of-participants-endpoints" title="Permalink to this headline">¶</a></h3>
@@ -225,22 +225,22 @@ a participant is added to the system: <em>all</em> existing participants respond
 SPDP message, following which all start exchanging SEDP data.</div></blockquote>
 </div>
 </div>
-<div class="section" id="opensplice-ddsi2-specifics">
-<span id="id8"></span><h2>7.2. OpenSplice DDSI2 specifics<a class="headerlink" href="#opensplice-ddsi2-specifics" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="translating-between-opensplice-and-ddsi">
-<span id="id9"></span><h3>7.2.1. Translating between OpenSplice and DDSI<a class="headerlink" href="#translating-between-opensplice-and-ddsi" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="vortex-opensplice-ddsi2-specifics">
+<span id="id8"></span><h2>7.2. Vortex OpenSplice DDSI2 specifics<a class="headerlink" href="#vortex-opensplice-ddsi2-specifics" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="translating-between-vortex-opensplice-and-ddsi">
+<span id="id9"></span><h3>7.2.1. Translating between Vortex OpenSplice and DDSI<a class="headerlink" href="#translating-between-vortex-opensplice-and-ddsi" title="Permalink to this headline">¶</a></h3>
 <p>Given that DDSI is the DDS interoperability specification, that the mapping
-between DCPS entities and DDSI entities is straightforward, and that OpenSplice is
+between DCPS entities and DDSI entities is straightforward, and that Vortex OpenSplice is
 a full implementation of the DDS specification, one might expect that relationship
-between OpenSplice and its DDSI implementation, DDSI2, is trivial. Unfortunately,
+between Vortex OpenSplice and its DDSI implementation, DDSI2, is trivial. Unfortunately,
 this is not the case, and it does show in a number of areas. A high-level overview
 such as this paragraph is not the place for the details of these cases, but they
 will be described in due course.</p>
 <p>The root cause of these complexities is a difference in design philosophy between
-OpenSplice and the more recent DDSI.</p>
+Vortex OpenSplice and the more recent DDSI.</p>
 <p>DDSI is very strictly a <em>peer-to-peer</em> protocol at the level of individual endpoints,
 requiring lots of discovery traffic, and (at least when implemented naively) very bad
-scalability. It is exactly these three problems that OpenSplice was designed to avoid,
+scalability. It is exactly these three problems that Vortex OpenSplice was designed to avoid,
 and it does so successfully with its native <em>RTNetworking</em> service.</p>
 <p>Because of this design for scalability and the consequent use of service processes
 rather than forcing everything into self-contained application processes, there are
@@ -248,7 +248,7 @@ various ways in which DDSI2 has to translate between the two worlds. For example
 queuing and buffering and, consequently, blocking behaviour are subtly different;
 DDSI2 needs to also perform local discovery of DCPS endpoints to gather enough
 information for faithfully representing the system in terms of DDSI, it needs to
-translate between completely different namespaces (native OpenSplice identifiers
+translate between completely different namespaces (native Vortex OpenSplice identifiers
 are very different from the GUIDs used by DDSI), and it needs to work around
 receiving asynchronous notifications for events one would expect to be synchronous
 in DDSI.</p>
@@ -258,14 +258,14 @@ in understanding the trade-offs involved.</p>
 <div class="section" id="federated-versus-standalone-deployment">
 <span id="id10"></span><h3>7.2.2. Federated versus Standalone deployment<a class="headerlink" href="#federated-versus-standalone-deployment" title="Permalink to this headline">¶</a></h3>
 <p>As has been described elsewhere (see the <a class="reference internal" href="overview.html#overview"><em>Overview</em></a> in this
-<em>Guide</em> and also the <em>Getting Started Guide</em>), OpenSplice has multiple
+<em>Guide</em> and also the <em>Getting Started Guide</em>), Vortex OpenSplice has multiple
 deployment models selectable in the configuration file (some of these require
 a license).</p>
 <p>For DDSI2, there is no difference between the various models: it simply serves
 whatever DCPS participants are in the same ‘instance’, whether that instance be a
 federation of processes on a single node, all attached to a shared memory segment
-managed by a set of OpenSplice service processes on that node, or a standalone one
-in which a single process incorporates the OpenSplice services as libraries.</p>
+managed by a set of Vortex OpenSplice service processes on that node, or a standalone one
+in which a single process incorporates the Vortex OpenSplice services as libraries.</p>
 <p>This <em>Guide</em> ignores the various deployment modes, using the terminology
 associated with the federated deployment mode because that mode is the driving
 force behind several of the user-visible design decisions in DDSI2. In consequence,
@@ -286,10 +286,10 @@ in the <a class="reference internal" href="guide.html#configuration"><em>Configu
 is to instruct DDSI2 to completely ignore them using the DCPS topic/partition to
 network partition mapping available in the enhanced version, DDSI2E.</p>
 <p>A separate issue is that of the DCPS built-in topics when interoperating with other
-implementations. In OpenSplice the built-in topics are first-class topics, <em>i.e.</em> the
-only difference between application topics and the built-in topics in OpenSplice is
+implementations. In Vortex OpenSplice the built-in topics are first-class topics, <em>i.e.</em> the
+only difference between application topics and the built-in topics in Vortex OpenSplice is
 that the built-in topics are pre-defined and that they are published and used by the
-OpenSplice services. This in turn allows the RTNetworking service to avoid
+Vortex OpenSplice services. This in turn allows the RTNetworking service to avoid
 discovery of individual domain participants and endpoints, enabling its excellent
 scalability.</p>
 <p>Conversely, DDSI defines a different and slightly extended representation for the
@@ -299,7 +299,7 @@ this also means that the DCPS built-in topics become a special case.</p>
 <p>Taken together, DDSI2 is in the unfortunate situation of having to straddle two very
 different approaches. While local reconstruction of the DCPS built-in topics by
 DDSI2 is clearly possible, it would negatively impact the handling of transient data.
-Since handling transient data is one of the true strengths of OpenSplice, DDSI2
+Since handling transient data is one of the true strengths of Vortex OpenSplice, DDSI2
 currently does not perform this reconstruction, with the unfortunate implication that
 loss of liveliness will not be handled fully when interoperating with another DDSI
 implementation.</p>
@@ -350,7 +350,7 @@ simulate that with DDSI2. It will not actually perform the discovery for each
 participant independently, but it will generate the network traffic <em>as if</em> it does.</p>
 <p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for detailed descriptions of:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">//OOpenSplice/DDSI2Service/Internal/BuiltinEndpointSet</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/BuiltinEndpointSet</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/ConservativeBuiltinReaderStartup</span></tt></li>
 </ul>
 <p>However, please note that at the time of writing, we are not aware of any
@@ -422,7 +422,7 @@ where the application starts immediately and discovery times may be long.</p>
 <span id="id17"></span><h3>7.2.4. Writer history QoS and throttling<a class="headerlink" href="#writer-history-qos-and-throttling" title="Permalink to this headline">¶</a></h3>
 <p>The DDSI specification heavily relies on the notion of a writer history cache (WHC)
 within which a sequence number uniquely identifies each sample. The original
-OpenSplice design has a different division of responsibilities between various
+Vortex OpenSplice design has a different division of responsibilities between various
 components than what is assumed by the DDSI specification and this includes the
 WHC. Despite the different division, the resulting behaviour is the same.</p>
 <p>DDSI2 bridges this divide by constructing its own WHC when needed. This WHC
@@ -446,7 +446,7 @@ Once the WHC contains <tt class="docutils literal"><span class="pre">Internal/Wa
 unacknowledged samples, it stalls the writer until the number of bytes in
 unacknowledged samples drops below <tt class="docutils literal"><span class="pre">Internal/Watermarks/WhcLow</span></tt>.</p>
 <p>While ideally only the one writer would be stalled, the interface between the
-OpenSplice kernel and DDSI2 is such that other outgoing traffic may be stalled as
+Vortex OpenSplice kernel and DDSI2 is such that other outgoing traffic may be stalled as
 well. See <a class="reference internal" href="#unresponsive-readers-head-of-stream-blocking">Unresponsive readers &amp; head-of-stream blocking</a>.</p>
 <p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
 detailed descriptions of:</p>
@@ -465,7 +465,7 @@ instances (<tt class="docutils literal"><span class="pre">Internal/AggressiveKee
 the samples timely will cause the WHC to run into resource limits.</p>
 <p>The correct treatment suggested by the DDS specification is to simply take the
 writer history QoS setting, apply this to the DDSI2 WHC, and block the writer up to
-its ‘max_blocking_time’ QoS setting. However, the scalable architecture of
+its ‘max_blocking_time’ QoS setting. However, the scalable architecture of Vortex
 OpenSplice renders this simple approach infeasible because of the division of labour
 between the application processes and the various services. Of course, even if it
 were a possible approach, the problem would still not be gone entirely, as one
@@ -510,13 +510,13 @@ detailed descriptions of:</p>
 <span id="id19"></span><h3>7.2.6. Handling of multiple partitions and wildcards<a class="headerlink" href="#handling-of-multiple-partitions-and-wildcards" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="publishing-in-multiple-partitions">
 <span id="id20"></span><h4>7.2.6.1. Publishing in multiple partitions<a class="headerlink" href="#publishing-in-multiple-partitions" title="Permalink to this headline">¶</a></h4>
-<p>A variety of design choices allow OpenSplice in combination with its
+<p>A variety of design choices allow Vortex OpenSplice in combination with its
 RTNetworking service to be fully dynamically discovered, yet without requiring an
 expensive discovery protocol. A side effect of these choices is that a DCPS writer
 publishing a single sample in multiple partitions simultaneously will be translated
 by the current version of DDSI2 as a writer publishing multiple identical samples in
 all these partitions, but with unique sequence numbers.</p>
-<p>When DDSI2 is used to communicate between OpenSplice nodes, this is not an
+<p>When DDSI2 is used to communicate between Vortex OpenSplice nodes, this is not an
 application-visible issue, but it is visible when interoperating with other
 implementations. Fortunately, publishing in multiple partitions is rarely a wise
 choice in a system design.</p>
@@ -531,7 +531,7 @@ depending on many (deployment time and application design) details, the use of
 partition wildcards for publishing data can easily lead to the replication of data as
 mentioned in the previous subsection (<a class="reference internal" href="#publishing-in-multiple-partitions">Publishing in multiple partitions</a>).</p>
 <p>Secondly, because DDSI2 implements transient-local data internally in a different
-way from the way the OpenSplice durability service does, it is strongly
+way from the way the Vortex OpenSplice durability service does, it is strongly
 recommended that the combination of transient-local data and publishing using
 partition wildcards be avoided completely.</p>
 </div>
@@ -690,7 +690,7 @@ network disconnections.</p>
 <div class="section" id="endpoint-discovery">
 <span id="id29"></span><h5>7.3.1.2.4. Endpoint discovery<a class="headerlink" href="#endpoint-discovery" title="Permalink to this headline">¶</a></h5>
 <p>Although the SEDP protocol never requires any configuration, the network
-partitioning of OpenSplice DDSI2E does interact with it: so-called ‘ignored
+partitioning of Vortex OpenSplice DDSI2E does interact with it: so-called ‘ignored
 partitions’ can be used to instruct DDSI2 to completely ignore certain DCPS topic
 and partition combinations, which will prevent DDSI2 from forwarding data for
 these topic/partition combinations to and from the network.</p>
@@ -703,7 +703,7 @@ DDSI2.</p>
 </div>
 <div class="section" id="combining-multiple-participants">
 <span id="id30"></span><h3>7.3.2. Combining multiple participants<a class="headerlink" href="#combining-multiple-participants" title="Permalink to this headline">¶</a></h3>
-<p>In an OpenSplice standalone deployment the various configured services, such as
+<p>In a Vortex OpenSplice standalone deployment the various configured services, such as
 spliced and DDSI2, still retain their identity by creating their own DCPS domain
 participants. DDSI2 faithfully mirrors all these participants in DDSI, and it will
 appear at the DDSI level as if there is a large system with many participants,
@@ -714,16 +714,16 @@ that node. This reduces the background messages because far fewer liveliness
 assertions need to be sent.</p>
 <p>Clearly, the liveliness monitoring features that are related to domain participants
 will be affected if multiple DCPS domain participants are combined into a single
-DDSI domain participant. The OpenSplice services all use a liveliness QoS setting
+DDSI domain participant. The Vortex OpenSplice services all use a liveliness QoS setting
 of AUTOMATIC, which works fine.</p>
 <p>In a federated deployment, the effect of this option is to have only a single DDSI
 domain participant per node. This is of course much more scalable, but in no way
 resembles the actual structure of the system if there are in fact multiple application
 processes running on that node.</p>
-<p>However, in OpenSplice the built-in topics are not derived from the DDSI
-discovery, and hence in an OpenSplice-only network the use of the
+<p>However, in Vortex OpenSplice the built-in topics are not derived from the DDSI
+discovery, and hence in a Vortex OpenSplice-only network the use of the
 <tt class="docutils literal"><span class="pre">Internal/SquashParticipants</span></tt> setting will not result in any loss of information
-in the DCPS API or in the OpenSplice tools such as the Tester.</p>
+in the DCPS API or in the Vortex OpenSplice tools such as the Tester.</p>
 <p>When interoperability with another vendor is not needed, enabling the
 <tt class="docutils literal"><span class="pre">SquashParticipants</span></tt> option is often a good choice.</p>
 <p>Please refer to the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
@@ -754,7 +754,7 @@ from the anonymous ports, <em>i.e.</em> &gt;= 32768</li>
 <p>The default values, taken from the DDSI specification, are in parentheses. There are
 actually even more parameters, here simply turned into constants as there is
 absolutely no point in ever changing these values; however, they <em>are</em> configurable
-and the interested reader is referred to the DDSI 2.1 specification, section 9.6.1.</p>
+and the interested reader is referred to the DDSI 2.1 or 2.2 specification, section 9.6.1.</p>
 <p>PI is the most interesting, as it relates to having multiple instances of DDSI2 in the
 same domain on a single node. In a federated deployment, this never happens
 (exceptional cases excluded). Its configured value is either <em>‘auto’</em>, <em>‘none’</em> or a
@@ -807,12 +807,12 @@ detailed descriptions of:</p>
 <li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/ManySocketsMode</span></tt></li>
 </ul>
 </div>
-<div class="section" id="coexistence-with-opensplice-rtnetworking">
-<span id="id32"></span><h3>7.3.4. Coexistence with OpenSplice RTNetworking<a class="headerlink" href="#coexistence-with-opensplice-rtnetworking" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="coexistence-with-vortex-opensplice-rtnetworking">
+<span id="id32"></span><h3>7.3.4. Coexistence with Vortex OpenSplice RTNetworking<a class="headerlink" href="#coexistence-with-vortex-opensplice-rtnetworking" title="Permalink to this headline">¶</a></h3>
 <p>DDSI2 has a special mode, configured using <tt class="docutils literal"><span class="pre">General/CoexistWithNativeNetworking</span></tt>,
-to allow it to operate in conjunction with OpenSplice RTNetworking: in this mode
+to allow it to operate in conjunction with Vortex OpenSplice RTNetworking: in this mode
 DDSI2 only handles packets sent by other vendors’ implementations, allowing all
-intra-OpenSplice traffic to be handled by the RTNetworking service while still
+intra-Vortex OpenSplice traffic to be handled by the RTNetworking service while still
 providing interoperability with other vendors.</p>
 <p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
 a detailed description of:</p>
@@ -826,7 +826,7 @@ a detailed description of:</p>
 <div class="section" id="data-path-architecture">
 <span id="id34"></span><h3>7.4.1. Data path architecture<a class="headerlink" href="#data-path-architecture" title="Permalink to this headline">¶</a></h3>
 <p>The data path in DDSI2 consists of a transmitting and a receiving side. The main
-path in the transmit side accepts data to be transmitted from the OpenSplice kernel
+path in the transmit side accepts data to be transmitted from the Vortex OpenSplice kernel
 <em>via</em> a network queue and administrates and formats the data for transmission over
 the network.</p>
 <p>The secondary path handles asynchronous events such as the periodic generation of
@@ -852,7 +852,7 @@ multiple channels is limited to DDSI2E, DDSI2 uses the same mechanisms but is
 restricted to what in DDSI2E is the default channel if none are configured explicitly.
 For details on configuring channels, see <a class="reference internal" href="#channel-configuration">Channel configuration</a>.</p>
 <p>Each channel has its own transmit thread, draining a queue with samples to be
-transmitted from the OpenSplice kernel. The maximum size of the queue can be
+transmitted from the Vortex OpenSplice kernel. The maximum size of the queue can be
 configured per channel, and the default for the individual channels is configured
 using the <tt class="docutils literal"><span class="pre">Sizing/NetworkQueueSize</span></tt> setting. In DDSI2, this setting simply controls
 the queue size, as the default channel of DDSI2E has the default queue size. A larger
@@ -1046,9 +1046,9 @@ the (CDR) serialised payload, and the limit holds both for built-in data and for
 application data. The (CDR) serialised payload is never larger than the in-memory
 representation of the data.</p>
 <p>On the transmitting side, samples larger than <tt class="docutils literal"><span class="pre">MaxSampleSize</span></tt> are dropped with a
-warning in the OpenSplice info log. DDSI2 behaves as if the sample never existed.
-The current structure of the interface between the OpenSplice kernel and the
-OpenSplice networking services unfortunately prevents DDSI2 from properly
+warning in the Vortex OpenSplice info log. DDSI2 behaves as if the sample never existed.
+The current structure of the interface between the Vortex OpenSplice kernel and the
+Vortex OpenSplice networking services unfortunately prevents DDSI2 from properly
 reporting this back to the application that wrote the sample, so the only guaranteed
 way of detecting the dropping of the sample is by checking the info log.</p>
 <p>Similarly, on the receiving side, samples large than <tt class="docutils literal"><span class="pre">MaxSampleSize</span></tt> are dropped,
@@ -1099,7 +1099,7 @@ This section provides details on the configuration of these three features.</li>
 <div class="section" id="channel-configuration-overview">
 <span id="id48"></span><h4>7.5.2.1. Channel configuration overview<a class="headerlink" href="#channel-configuration-overview" title="Permalink to this headline">¶</a></h4>
 <p>DDSI2E allows defining <em>channels</em>, which are independent data paths within the
-DDSI service. OpenSplice chooses a channel based by matching the transport
+DDSI service. Vortex OpenSplice chooses a channel based by matching the transport
 priority QoS setting of the data writer with the threshold specified for the various
 channels. Because each channel has a set of dedicated threads to perform the
 processing and the thread priorities can all be configured, it is straightforward to
@@ -1117,7 +1117,7 @@ demultiplexes incoming packets and implements the protocol state machine. The
 receive thread only performs minimal work on each incoming packet, and never has
 to wait for the processing of user data.</p>
 <p>The existence of the receive thread is the only major difference between DDSI2E
-channels and those of the OpenSplice RTNetworking service: in the RTNetworking
+channels and those of the Vortex OpenSplice RTNetworking service: in the RTNetworking
 service, each thread is truly independent. This change is the consequence of
 DDSI2E interoperating with implementations that are not aware of channels and
 with DDSI2E nodes that have differently configured channels, unlike the
@@ -1136,7 +1136,7 @@ is the channel with the lowest threshold priority of all channels that have a th
 priority that is higher than the writer’s transport priority. If there is no such channel,
 <em>i.e.</em> the writer has a transport priority higher than the highest channel threshold, the
 channel with the highest threshold is used.</p>
-<p>Each channel has its own network queue into which the OpenSplice kernel writes
+<p>Each channel has its own network queue into which the Vortex OpenSplice kernel writes
 samples to be transmitted and that DDSI2E reads. The size of this queue can be set
 for each channel independently by using <tt class="docutils literal"><span class="pre">Channels/Channel/QueueSize</span></tt>, with the
 default taken from the global <tt class="docutils literal"><span class="pre">Sizing/NetworkQueueSize</span></tt>.</p>
@@ -1326,7 +1326,7 @@ cases, delivers it directly to the data readers.</li>
 processes all discovery data coming in from the network.</li>
 <li><em>lease</em>:
 performs internal liveliness monitoring of DDSI2 and renews the
-OpenSplice kernel lease if the status is satisfactory.</li>
+Vortex OpenSplice kernel lease if the status is satisfactory.</li>
 <li><em>tev</em>:
 timed-event handling, used for all kinds of things, such as: periodic
 transmission of participant discovery and liveliness messages, transmission
@@ -1338,7 +1338,7 @@ start-up mode to normal mode transition.</li>
 <p>and, for each defined channel:</p>
 <ul class="simple">
 <li><em>xmit.channel-name</em>:
-takes data from the OpenSplice kernel’s queue for this channel, serialises
+takes data from the Vortex OpenSplice kernel’s queue for this channel, serialises
 it and forwards it to the network.</li>
 <li><em>dq.channel-name</em>:
 deserialisation and asynchronous delivery of all user data.</li>
@@ -1356,7 +1356,7 @@ channel named <em>‘user’</em>.</p>
 <p>DDSI2 can produce highly detailed traces of all traffic and internal activities.
 It enables individual categories of information, as well as having a simple
 verbosity level that enables fixed sets of categories and of which the definition
-corresponds to that of the other OpenSplice services.</p>
+corresponds to that of the other Vortex OpenSplice services.</p>
 <p>The categorisation of tracing output is incomplete and hence most of the verbosity
 levels and categories are not of much use in the current release. This is an ongoing
 process and here we describe the target situation rather than the current situation.</p>
@@ -1423,12 +1423,12 @@ The default is <em>lax</em>.</p>
 a detailed description of
 <tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/StandardsConformance</span></tt>.)</p>
 <p>In <em>pedantic</em> mode, it strives very hard to strictly conform to the DDSI 2.1
-standard. It even uses a vendor-specific extension for an essential element
+and 2.2 standards. It even uses a vendor-specific extension for an essential element
 missing in the specification, used for specifying the GUID of a DCPS data reader
 or data writer in the discovery protocol; and it adheres to the specified
 encoding of the reliability QoS. This mode is of interest for compliancy
 testing but not for practical use, even though there is no application-level
-observable difference between an all-OpenSplice system using the DDSI2
+observable difference between an all-Vortex OpenSplice system using the DDSI2
 service in pedantic mode and one operating in any of the other modes.</p>
 <p>The second mode, <em>strict</em>, instead attempts to follow the <em>intent</em> of the
 specification while staying close to the letter of it. The points in which
@@ -1436,19 +1436,19 @@ it deviates from the standard are in all probability editing errors that
 will be rectified in the next update. When operated in this mode, one
 would expect it to be fully interoperable with other vendors’ implementations,
 but this is not the case. The deviations in other vendors’ implementations
-are not required to implement DDSI 2.1, as is proven by the OpenSplice DDSI2
+are not required to implement DDSI 2.1 (or 2.2), as is proven by the Vortex OpenSplice DDSI2
 service, and they cannot rightly be considered ‘true’ implementations of
-the DDSI 2.1 standard.</p>
+the DDSI 2.1 (or 2.2) standard.</p>
 <p>The default mode, <em>lax</em>, attempts to work around (most of) the deviations
 of other implementations, and provides interoperability with (at least) RTI
 DDS and InterCOM/Gallium DDS. (For compatibility with TwinOaks CoreDX DDS,
 additional settings are needed. See
 <a class="reference internal" href="#compatibility-issues-with-twinoaks"><em>the next section</em></a>
 for more information.)
-In lax mode, the OpenSplice DDSI2 service not only accepts some invalid
+In lax mode, the Vortex OpenSplice DDSI2 service not only accepts some invalid
 messages, but will even transmit them. The consequences for interoperability
 of not doing this are simply too severe.
-It should be noted that if one configures two OpenSplice nodes with DDSI2 in
+It should be noted that if one configures two Vortex OpenSplice nodes with DDSI2 in
 different compliancy modes, the one in the stricter mode will complain about
 messages sent by the one in the less strict mode. Pedantic mode will complain about
 invalid encodings used in strict mode, strict mode will complain about illegal
@@ -1459,7 +1459,7 @@ between strict and lax.</p>
 <p>In <em>lax</em> mode, there should be no major issues with most topic types when working
 across a network, but within a single host there is a known problem with the way
 RTI DDS uses, or attempts to use, its shared memory transport to communicate with
-OpenSplice, which clearly advertises only UDP/IP addresses at which it is
+Vortex OpenSplice, which clearly advertises only UDP/IP addresses at which it is
 reachable. The result is an inability to reliably establish bidirectional
 communication between the two.</p>
 <p>Disposing data may also cause problems, as RTI DDS leaves out the serialised key
@@ -1473,8 +1473,8 @@ practice, the most likely cause is using a key as string, either unbounded, or w
 maximum length larger than 11 bytes. See the DDSI specification for details.</p>
 <p>In <em>strict</em> mode, there is interoperation with RTI DDS, but at the cost of incredibly
 high CPU and network load, caused by a Heartbeats and AckNacks going
-back-and-forth between a reliable RTI DDS data writer and a reliable OpenSplice
-DCPS data reader. The problem is that once the OpenSplice reader informs the RTI
+back-and-forth between a reliable RTI DDS data writer and a reliable Vortex OpenSplice
+DCPS data reader. The problem is that once the Vortex OpenSplice reader informs the RTI
 writer that it has received all data (using a valid AckNack message), the RTI writer
 immediately publishes a message listing the range of available sequence numbers
 and requesting an acknowledgement, which becomes an endless loop.</p>
@@ -1542,8 +1542,8 @@ detailed descriptions of:</p>
 <li><a class="reference internal" href="#discovery-of-participants-endpoints">7.1.5. Discovery of participants &amp; endpoints</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#opensplice-ddsi2-specifics">7.2. OpenSplice DDSI2 specifics</a><ul>
-<li><a class="reference internal" href="#translating-between-opensplice-and-ddsi">7.2.1. Translating between OpenSplice and DDSI</a></li>
+<li><a class="reference internal" href="#vortex-opensplice-ddsi2-specifics">7.2. Vortex OpenSplice DDSI2 specifics</a><ul>
+<li><a class="reference internal" href="#translating-between-vortex-opensplice-and-ddsi">7.2.1. Translating between Vortex OpenSplice and DDSI</a></li>
 <li><a class="reference internal" href="#federated-versus-standalone-deployment">7.2.2. Federated versus Standalone deployment</a></li>
 <li><a class="reference internal" href="#discovery-behaviour">7.2.3. Discovery behaviour</a><ul>
 <li><a class="reference internal" href="#local-discovery-and-built-in-topics">7.2.3.1. Local discovery and built-in topics</a></li>
@@ -1576,7 +1576,7 @@ detailed descriptions of:</p>
 </li>
 <li><a class="reference internal" href="#combining-multiple-participants">7.3.2. Combining multiple participants</a></li>
 <li><a class="reference internal" href="#controlling-port-numbers">7.3.3. Controlling port numbers</a></li>
-<li><a class="reference internal" href="#coexistence-with-opensplice-rtnetworking">7.3.4. Coexistence with OpenSplice RTNetworking</a></li>
+<li><a class="reference internal" href="#coexistence-with-vortex-opensplice-rtnetworking">7.3.4. Coexistence with Vortex OpenSplice RTNetworking</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#data-path-configuration">7.4. Data path configuration</a><ul>
@@ -1681,7 +1681,7 @@ detailed descriptions of:</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,8 +21,9 @@
 #include "v__dataReaderSample.h"
 #include "v_dataReaderEntry.h"
 #include "v__dataReaderInstance.h"
-#include "v_dataViewInstance.h"
-#include "v_dataViewSample.h"
+#include "v__dataView.h"
+#include "v__dataViewInstance.h"
+#include "v__dataViewSample.h"
 #include "v_messageQos.h"
 #include "v__reader.h"
 #include "v_state.h"
@@ -60,7 +62,6 @@ v_dataReaderSampleNew(
         /* The expiry time calculation is dependent on the DestinationOrderQos(readerQos->orderby.v.kind):
          * In case of the by_reception_timestamp kind the expiry time is determined based on insertion time(sample->insertTime).
          * In case of the by_source_timestamp kind the expiry time is determined based on source time (message->writeTime).
-         * see OSPL-871
          */
 
         msgEpoch = os_timeEGet();

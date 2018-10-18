@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,6 +26,7 @@
 #include "v__observable.h"
 #include "v__entity.h"
 #include "v__participant.h"
+#include "v__service.h"
 #include "v_partition.h"
 #include "v_publisher.h"
 #include "v_subscriber.h"
@@ -35,10 +37,12 @@
 #include "v_dataReaderEntry.h"
 #include "v_serviceManager.h"
 #include "v_groupSet.h"
+#include "v__groupStore.h"
 #include "v__group.h"
 #include "v_status.h"
 #include "v_handle.h"
 #include "v_dataReader.h"
+#include "v_dataView.h"
 #include "v__topic.h"
 #include "v_topicQos.h"
 #include "v_publisherQos.h"
@@ -60,7 +64,7 @@
 #include "v__policy.h"
 #include "v__partition.h"
 #include "v_instance.h"
-#include "v_dataViewSample.h"
+#include "v__dataViewSample.h"
 #include "v_typeRepresentation.h"
 #include "sd_serializer.h"
 #include "sd_serializerXMLTypeinfo.h"
@@ -68,6 +72,7 @@
 #include "v__processInfo.h"
 #include "v__threadInfo.h"
 #include "v_service.h"
+#include "v_networking.h"
 #include "v_messageQos.h"
 #include "ut_trace.h"
 #include "os_atomics.h"
@@ -136,11 +141,13 @@ v_new(
     return o;
 }
 
-
+_Check_return_
+_Ret_notnull_
+_Pre_satisfies_(kind >= K_KERNEL && kind < K_TYPECOUNT)
 v_object
 v_objectNew(
-    v_kernel kernel,
-    v_kind kind)
+    _In_ v_kernel kernel,
+    _In_ v_kind kind)
 {
     v_object o;
 
@@ -153,10 +160,12 @@ v_objectNew(
     return o;
 }
 
+_Check_return_
+_Ret_maybenull_
 v_object
 v_objectNew_s(
-    v_kernel kernel,
-    v_kind kind)
+    _In_ v_kernel kernel,
+    _In_ v_kind kind)
 {
     v_object o;
 
@@ -171,93 +180,136 @@ v_objectNew_s(
     return o;
 }
 
-char *
+_Ret_z_
+const char *
 v_objectKindImage(
-    v_object _this)
+    _In_ v_object _this)
 {
+#define _CASE_(o) case o: return #o; break;
     switch (v_objectKind(_this)) {
-    case K_DATAREADER:
-        return "K_DATAREADER";
-    break;
-    case K_WRITER:
-        return "K_WRITER";
-    break;
-    case K_PUBLISHER:
-        return "K_PUBLISHER";
-    break;
-    case K_SUBSCRIBER:
-        return "K_SUBSCRIBER";
-    break;
-    case K_PARTICIPANT:
-        return "K_PARTICIPANT";
-    break;
-    case K_SPLICED:
-        return "K_SPLICED";
-    break;
-    case K_TOPIC:
-        return "K_TOPIC";
-    break;
-    case K_TOPIC_ADAPTER:
-        return "K_TOPIC_ADAPTER";
-    break;
-    case K_TYPEREPRESENTATION:
-        return "K_TYPEREPRESENTATION";
-    break;
-    case K_STATUSCONDITION:
-        return "STATUSCONDITION";
-    break;
-    case K_KERNEL:
-        return "K_KERNEL";
-    break;
-    case K_WAITSET:
-        return "K_WAITSET";
-    break;
-    case K_LISTENER:
-        return "K_LISTENER";
-    break;
-    case K_DATAREADERQUERY:
-        return "K_DATAREADERQUERY";
-    break;
-    case K_DATAVIEW:
-        return "K_DATAVIEW";
-    break;
-    case K_DOMAIN:
-        return "K_DOMAIN";
-    break;
-    case K_SERVICE:
-        return "K_SERVICE";
-    break;
-    case K_CMSOAP:
-        return "K_CMSOAP";
-    break;
-    case K_NETWORKING:
-        return "K_NETWORKING";
-    break;
-    case K_DURABILITY:
-        return "K_DURABILITY";
-    break;
-    case K_NWBRIDGE:
-        return "K_NWBRIDGE";
-    break;
-    case K_NETWORKREADER:
-        return "K_NETWORKREADER";
-    break;
-    case K_GROUPQUEUE:
-        return "K_GROUPQUEUE";
-    break;
-    case K_GROUP:
-        return "K_GROUP";
-    break;
-    case K_ORDEREDINSTANCE:
-        return "K_ORDEREDINSTANCE";
-    break;
-    case K_ORDEREDINSTANCESAMPLE:
-        return "K_ORDEREDINSTANCESAMPLE";
-    break;
-    default:
-    break;
+        _CASE_(K_KERNEL);
+        _CASE_(K_OBJECT);
+        _CASE_(K_ENTITY);
+        _CASE_(K_GROUPSET);
+        _CASE_(K_STATUSCONDITION);
+        _CASE_(K_OBJECTLOAN);
+        _CASE_(K_OBJECTBUFFER);
+        _CASE_(K_WAITSET);
+        _CASE_(K_LISTENER);
+        _CASE_(K_CONDITION);
+        _CASE_(K_QUERY);
+        _CASE_(K_DATAREADERQUERY);
+        _CASE_(K_DATAVIEW);
+        _CASE_(K_PROJECTION);
+        _CASE_(K_MAPPING);
+        _CASE_(K_FILTER);
+        _CASE_(K_DEADLINEINSTANCE);
+        _CASE_(K_DEADLINEINSTANCELIST);
+        _CASE_(K_MESSAGE);
+        _CASE_(K_MESSAGEEOT);
+        _CASE_(K_EOTLISTELEMENT);
+        _CASE_(K_TRANSACTIONADMIN);
+        _CASE_(K_TRANSACTION);
+        _CASE_(K_TRANSACTIONELEMENT);
+        _CASE_(K_TRANSACTIONGROUPADMIN);
+        _CASE_(K_TRANSACTIONGROUP);
+        _CASE_(K_TRANSACTIONPUBLISHER);
+        _CASE_(K_TRANSACTIONWRITER);
+        _CASE_(K_TRANSACTIONGROUPWRITER);
+        _CASE_(K_TRANSACTIONGROUPREADER);
+        _CASE_(K_TRANSACTIONPENDING);
+        _CASE_(K_WRITERINSTANCE);
+        _CASE_(K_WRITERSAMPLE);
+        _CASE_(K_WRITERCACHEITEM);
+        _CASE_(K_GROUPINSTANCE);
+        _CASE_(K_GROUPSAMPLE);
+        _CASE_(K_GROUPCACHEITEM);
+        _CASE_(K_DATAREADERINSTANCE);
+        _CASE_(K_READERSAMPLE);
+        _CASE_(K_DATAVIEWINSTANCE);
+        _CASE_(K_DATAVIEWQUERY);
+        _CASE_(K_DATAVIEWSAMPLE);
+        _CASE_(K_ORDEREDINSTANCE);
+        _CASE_(K_ORDEREDINSTANCESAMPLE);
+        _CASE_(K_WRITERINSTANCETEMPLATE);
+        _CASE_(K_TOPIC);
+        _CASE_(K_TOPIC_ADAPTER);
+        _CASE_(K_TYPEREPRESENTATION);
+        _CASE_(K_PUBLISHER);
+        _CASE_(K_SUBSCRIBER);
+        _CASE_(K_DOMAIN);
+        _CASE_(K_DOMAININTEREST);
+        _CASE_(K_DOMAINADMIN);
+        _CASE_(K_READER);
+        _CASE_(K_WRITER);
+        _CASE_(K_ENTRY);
+        _CASE_(K_DATAREADERENTRY);
+        _CASE_(K_DELIVERYSERVICEENTRY);
+        _CASE_(K_GROUP);
+        _CASE_(K_GROUPSTORE);
+        _CASE_(K_WRITERGROUP);
+        _CASE_(K_CACHE);
+        _CASE_(K_GROUPACTION);
+        _CASE_(K_GROUPSTREAM);
+        _CASE_(K_GROUPQUEUE);
+        _CASE_(K_GROUPQUEUESAMPLE);
+        _CASE_(K_DATAREADER);
+        _CASE_(K_DELIVERYSERVICE);
+        _CASE_(K_PARTICIPANT);
+        _CASE_(K_PURGELISTITEM);
+        _CASE_(K_GROUPPURGEITEM);
+        _CASE_(K_INDEX);
+        _CASE_(K_READERSTATUS);
+        _CASE_(K_WRITERSTATUS);
+        _CASE_(K_PUBLISHERSTATUS);
+        _CASE_(K_SUBSCRIBERSTATUS);
+        _CASE_(K_DOMAINSTATUS);
+        _CASE_(K_TOPICSTATUS);
+        _CASE_(K_PARTICIPANTSTATUS);
+        _CASE_(K_KERNELSTATUS);
+        _CASE_(K_WRITERSTATISTICS);
+        _CASE_(K_QUERYSTATISTICS);
+        _CASE_(K_DATAREADERSTATISTICS);
+        _CASE_(K_PROXY);
+        _CASE_(K_WAITSETEVENT);
+        _CASE_(K_LISTENEREVENT);
+        _CASE_(K_WAITSETEVENTHISTORYDELETE);
+        _CASE_(K_WAITSETEVENTHISTORYREQUEST);
+        _CASE_(K_WAITSETEVENTPERSISTENTSNAPSHOT);
+        _CASE_(K_WAITSETEVENTCONNECTWRITER);
+        _CASE_(K_SERVICEMANAGER);
+        _CASE_(K_SERVICE);
+        _CASE_(K_SERVICESTATE);
+        _CASE_(K_NETWORKING);
+        _CASE_(K_DURABILITY);
+        _CASE_(K_CMSOAP);
+        _CASE_(K_RNR);
+        _CASE_(K_NWBRIDGE);
+        _CASE_(K_DBMSCONNECT);
+        _CASE_(K_LEASEMANAGER);
+        _CASE_(K_LEASE);
+        _CASE_(K_LEASEACTION);
+        _CASE_(K_SPLICED);
+        _CASE_(K_CONFIGURATION);
+        _CASE_(K_REGISTRATION);
+        _CASE_(K_NETWORKREADER);
+        _CASE_(K_NETWORKREADERENTRY);
+        _CASE_(K_NETWORKMESSAGE);
+        _CASE_(K_NETWORKMAPENTRY);
+        _CASE_(K_HISTORICALDELETEREQUEST);
+        _CASE_(K_HISTORICALDATAREQUEST);
+        _CASE_(K_PERSISTENTSNAPSHOTREQUEST);
+        _CASE_(K_PENDINGDISPOSEELEMENT);
+        _CASE_(K_WRITEREOTSAMPLE);
+        _CASE_(K_GID);
+        _CASE_(K_TID);
+        _CASE_(K_RXODATA);
+        _CASE_(K_DURABILITYCLIENT);
+        _CASE_(K_DURABILITYCLIENTEVENT);
+        _CASE_(K_DURABILITYCLIENTSERVER);
+        default: return "UNDEFINED"; break;
     }
-    return "UNDEFINED";
+#undef _CASE_
 }
 
 c_iter
@@ -276,10 +328,25 @@ v_kernelGetAttachedProcesses(
 _Ret_notnull_
 _Must_inspect_result_
 v_processInfo
-v_kernelGetOwnProcessInfo(
+v_kernelGetOwnProcessInfoWeakRef (
     _Inout_ v_kernel _this)
 {
-    return v_kernelGetProcessInfo(_this, os_procIdSelf());
+    c_value keyValue;
+    v_processInfo own;
+
+    /* os_procId is modeled in the kernel odl as c_longlong */
+    keyValue = c_longlongValue(os_procIdSelf());
+    
+    c_lockRead(&_this->lock);
+    own = c_tableFindWeakRef(_this->attachedProcesses, &keyValue, 1);
+    c_lockUnlock(&_this->lock);
+
+    /* The process info for this process has to be available. It is needed to
+     * in the kernel for a process to get access to the kernel and is retrieved
+     * from the kernel too.
+     */
+    assert(own);
+    return own;
 }
 
 _Ret_maybenull_
@@ -296,7 +363,7 @@ v_kernelGetProcessInfo(
     keyValue = c_longlongValue(pid);
 
     c_lockRead(&_this->lock);
-    info = c_tableFind(_this->attachedProcesses, &keyValue);
+    info = c_tableFind(_this->attachedProcesses, &keyValue, 1);
     c_lockUnlock(&_this->lock);
 
     return info;
@@ -324,16 +391,29 @@ v_kernel
 v_kernelAttach(
     c_base base,
     const c_char *name,
+    os_duration timeout,
     v_processInfo* procInfo)
 {
-    v_kernel kernel;
+    v_kernel kernel = NULL;
     v_processInfo procInfoSelf;
+    os_timeM expiryTime;
+    os_duration sleepTime = OS_DURATION_INIT(0,0);
 
     assert(base);
     assert(name);
     assert(procInfo);
 
-    if ((kernel = c_lookup(base, name)) == NULL){
+    if (timeout > 0) {
+        sleepTime = OS_DURATION_INIT(0, 100 * 1000 * 1000); /*100ms*/
+        if(os_durationCompare(timeout, sleepTime) == OS_LESS){
+            sleepTime = timeout;
+        }
+    }
+    expiryTime = os_timeMAdd(os_timeMGet(), timeout);
+    while ((kernel = c_lookup(base, name)) == NULL && os_timeMCompare(expiryTime, os_timeMGet()) == OS_MORE) {
+        ospl_os_sleep(sleepTime);
+    }
+    if (kernel == NULL) {
         OS_REPORT(OS_ERROR, "v_kernelAttach", V_RESULT_ILL_PARAM, "Failed to lookup kernel with name '%s'", name);
         goto err_lookup;
     }
@@ -346,15 +426,31 @@ v_kernelAttach(
         goto err_processInfoNew;
     }
 
+    while (((kernel->spliced == NULL) || v_serviceGetState((v_service)kernel->spliced) == STATE_INITIALISING) &&
+            os_timeMCompare(expiryTime, os_timeMGet()) == OS_MORE)
+    {
+        ospl_os_sleep(sleepTime);
+    }
+    if (kernel->spliced == NULL || v_serviceGetState(v_service(kernel->spliced)) != STATE_OPERATIONAL) {
+        if (os_timeMCompare(expiryTime, os_timeMGet()) == OS_MORE) {
+            OS_REPORT(OS_ERROR, "v_kernelAttach",V_RESULT_ALREADY_DELETED,
+                      "Attach process to Domain failed because Spliced is not running (anymore).");
+        } else {
+            OS_REPORT(OS_ERROR, "v_kernelAttach",V_RESULT_TIMEOUT,
+                      "Attach process to Domain failed because Spliced did not become operational within the specified timeout.");
+        }
+        goto err_spliced_operational;
+    }
     c_lockWrite(&kernel->lock);
     *procInfo = ospl_c_insert(kernel->attachedProcesses, procInfoSelf);
     c_lockUnlock(&kernel->lock);
-
     c_free(procInfoSelf);
 
     return kernel;
 
 /* Error handling */
+err_spliced_operational:
+    c_free(procInfoSelf);
 err_processInfoNew:
 err_kernelType:
     c_free(kernel);
@@ -381,7 +477,8 @@ collectParticipants(
 }
 
 /* this is needed so that the group attachedServices and notInterestedServices list count
- * will be in sync with the v_kernelNetworkCount see OSPL-2219*/
+ * will be in sync with the v_kernelNetworkCount
+ */
 static c_bool
 removeServiceFromGroup(
     c_object o,
@@ -413,7 +510,8 @@ v_kernelMyProtectCount(
          * be increased anymore and the value is checked to be equal to
          * zero (which is the terminal state for the counter). Only then
          * is it a safe conclusion that there are no threads in SHM any-
-         * more. */
+         * more.
+         */
         protectCount = pa_ld32 (&procInfo->protectCount) - pa_ld32 (&procInfo->blockedCount);
 
         if (protectCount != 0) {
@@ -464,12 +562,14 @@ v_kernelDetach(
              * be increased anymore and the value is checked to be equal to
              * zero (which is the terminal state for the counter). Only then
              * is it a safe conclusion that there are no threads in SHM any-
-             * more. */
+             * more.
+             */
             protectCount = pa_ld32 (&procInfo->protectCount) - pa_ld32 (&procInfo->blockedCount);
         } else {
             /* If the process is detaching a process that isn't running any-
              * more, the waiting threads don't have to be counted, since
-             * these were sleeping (and thus not modifying SHM). */
+             * these were sleeping (and thus not modifying SHM).
+             */
             protectCount = pa_ld32 (&procInfo->protectCount) - (pa_ld32 (&procInfo->waitCount) + pa_ld32 (&procInfo->blockedCount));
         }
 
@@ -486,7 +586,8 @@ v_kernelDetach(
                    pa_ld32 (&procInfo->blockedCount));
             /* When the process did not cleanup it's resources then let the
              * shared memory monitor remove the process info of the terminated
-             * process. */
+             * process.
+             */
             if(procId != procIntSelf) {
                 removed = v__kernelRemoveProcessInfo(k, procInfo);
                 assert(removed == procInfo);
@@ -513,6 +614,7 @@ v_kernelDetach(
             case K_NWBRIDGE:
             case K_CMSOAP:
             case K_RNR:
+            case K_DBMSCONNECT:
                 name = c_keep((c_object)v_serviceGetName(v_service(p)));
                 if (name == NULL) {
                     name = c_keep(v_entityName(v_entity(p)));
@@ -521,7 +623,8 @@ v_kernelDetach(
                     v_groupSetWalk(k->groupSet, removeServiceFromGroup, name);
                 }
                 /* If the service has no name, it can't be in the group
-                 * administration of attached/interested services either. */
+                 * administration of attached/interested services either.
+                 */
 
                 (void)v_serviceChangeState(v_service(p),STATE_DIED);
                 v_publicFree(v_public(p)); /* Deregister handle. */
@@ -554,7 +657,8 @@ v_kernelDetach(
              * that the disappeared process was waiting, we explicitly leak
              * our local reference.
              * NOTE: found->waitCount also includes threads that were just
-             * sleeping, so we may leak more often than strictly needed. */
+             * sleeping, so we may leak more often than strictly needed.
+             */
             if(procId == procIntSelf || pa_ld32 (&procInfo->waitCount) == 0){
                 c_free(p);
             }
@@ -593,8 +697,7 @@ v_kernelUserCount(
     return count;
 }
 
-/*
- * v_kernelNetworkCount is used to request the number of network services
+/* v_kernelNetworkCount is used to request the number of network services
  * that the kernel's configuration expects.  Currently this value is
  * determined once during kernel initialisation, but could be extended to
  * support the concept of dynamically started/stopped/restarted services,
@@ -822,9 +925,7 @@ v_kernelWaitForDurabilityAvailability(
     durabilityServices = getDurabilityServiceNames(_this);
     serviceName = (c_string)c_iterTakeFirst(durabilityServices);
 
-    /* If no durability services have been configured, return pre-condition
-     * not met.
-     */
+    /* If no durability services have been configured, return pre-condition not met. */
     if(!serviceName){
         result = V_RESULT_PRECONDITION_NOT_MET;
     } else {
@@ -840,7 +941,7 @@ v_kernelWaitForDurabilityAvailability(
         case STATE_INITIALISING:
             /* Wait some time if still within timeout. */
             if(os_timeMCompare(expiryTime, os_timeMGet()) == OS_MORE){
-                os_sleep(sleepTime);
+                ospl_os_sleep(sleepTime);
             } else {
                 result = V_RESULT_TIMEOUT;
             }
@@ -930,6 +1031,7 @@ static void init_kernel_type_cache (v_kernel kernel)
         { K_WRITER,                    "v_writer" },
         { K_WRITERGROUP,               "v_writerGroup" },
         { K_GROUP,                     "v_group" },
+        { K_GROUPSTORE,                "v_groupStore" },
         { K_GROUPINSTANCE,             "v_groupInstance" },
         { K_GROUPSAMPLE,               "v_groupSample" },
         { K_GROUPCACHEITEM,            "v_groupCacheItem" },
@@ -967,6 +1069,7 @@ static void init_kernel_type_cache (v_kernel kernel)
         { K_NWBRIDGE,                  "v_nwbridge" },
         { K_CMSOAP,                    "v_cmsoap" },
         { K_RNR,                       "v_rnr" },
+        { K_DBMSCONNECT,               "v_dbmsconnect" },
         { K_LEASEMANAGER,              "v_leaseManager" },
         { K_GROUPSET,                  "v_groupSet" },
         { K_PROXY,                     "v_proxy" },
@@ -1008,12 +1111,16 @@ static void init_kernel_type_cache (v_kernel kernel)
 }
 
 
+#define MILLION 1000000
+_Check_return_
+_Ret_maybenull_
+_Success_(return != NULL)
 v_kernel
 v_kernelNew(
-    c_base base,
-    const c_char *name,
-    v_kernelQos qos,
-    v_processInfo* procInfo)
+    _In_ c_base base,
+    _In_z_ const c_char *name,
+    _In_ v_kernelQos qos,
+    _Outptr_ v_processInfo* procInfo)
 {
     v_kernel kernel;
     os_duration retPeriod;
@@ -1072,9 +1179,9 @@ v_kernelNew(
     c_free(*procInfo); /* procInfo should be returned to the caller without a refcount */
 
     kernel->pendingDisposeList = c_listNew(v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ));
-    c_mutexInit(c_getBase(kernel), &kernel->pendingDisposeListMutex);
+    (void)c_mutexInit(c_getBase(kernel), &kernel->pendingDisposeListMutex);
 
-    v_entityInit(v_entity(kernel), V_KERNEL_VERSION, TRUE);
+    v_entityInit(v_entity(kernel), name);
     c_lockInit(c_getBase(kernel), &kernel->lock);
     {
         /* Fill GID with 'random' value */
@@ -1083,6 +1190,7 @@ v_kernelNew(
     }
     kernel->qos = v_kernelQosNew(kernel, qos);
     kernel->statistics = v_kernelStatisticsNew(kernel);
+    kernel->spliced = NULL;
     kernel->participants = c_setNew(v_kernelType(kernel,K_PARTICIPANT));
     kernel->partitions = c_tableNew(v_kernelType(kernel,K_DOMAIN),"name");
     kernel->topics = c_tableNew(v_kernelType(kernel,K_TOPIC),"name");
@@ -1095,9 +1203,9 @@ v_kernelNew(
     pa_st32 (&kernel->transactionCount, 0);
     kernel->transactionGroupAdmin = NULL;
 
-    kernel->accessCount = 0;
+    pa_st32(&kernel->accessCount, 0);
     kernel->accessBusy = FALSE;
-    c_mutexInit(c_getBase(kernel), &kernel->accessLock);
+    (void)c_mutexInit(c_getBase(kernel), &kernel->accessLock);
     c_condInit(c_getBase(kernel), &kernel->accessCond, &kernel->accessLock);
 
     kernel->splicedRunning = TRUE;
@@ -1111,28 +1219,25 @@ v_kernelNew(
 
     retPeriod = V_KERNEL_RETENTION_PERIOD_DEF * OS_DURATION_MILLISECOND;
     kernel->retentionPeriod = retPeriod;
-
-    c_mutexInit(c_getBase(kernel), &kernel->sharesMutex);
     kernel->shares = c_tableNew(v_kernelType(kernel,K_SUBSCRIBER), "qos.share.v.name");
-
     kernel->deliveryService = NULL;
 
     kernel->durabilitySupport = FALSE;
+    kernel->hasDurabilityService = FALSE;
+    kernel->durabilityAligned = FALSE;
+    pa_st32 (&kernel->purgeSuppressCount, 0);
+    pa_st32 (&kernel->isolate, 0);
 
     return kernel;
 }
 
 void
 v_kernelEnable(
-    v_kernel kernel,
-    const c_char *name)
+    _Inout_ v_kernel kernel)
 {
-    v_spliced sd;
-
     kernel->builtin = v_builtinNew(kernel);
-    sd = v_splicedNew(kernel, TRUE);
-    c_free(sd);
-    ospl_c_bind(kernel,name);
+    kernel->spliced = v_service(v_splicedNew(kernel));
+    ospl_c_bind(kernel, v_entityName(v_entity(kernel)));
 }
 
 v_partition
@@ -1339,84 +1444,55 @@ v__lookupTypeRepresentation (
     dummy.typeHash = typeHash;
 
     c_lockRead(&kernel->lock);
-    /* This does not remove anything because the alwaysFalse function always
-     * returns false */
+    /* This does not remove anything because the alwaysFalse function always returns false */
     c_remove(kernel->typeRepresentations, &dummy, alwaysFalseTypeRepresentation, &found);
     c_lockUnlock(&kernel->lock);
 
     return found;
 }
 
-void
-v_lockShares(
-    v_kernel kernel)
-{
-    c_mutexLock(&kernel->sharesMutex);
-}
-void
-v_unlockShares(
-    v_kernel kernel)
-{
-    c_mutexUnlock(&kernel->sharesMutex);
-}
-
-v_entity
-v_addShareUnsafe(
+v_subscriber
+v_kernelAddSharedSubscriber(
     v_kernel kernel,
-    v_entity e)
+    v_subscriber subscriber)
 {
-    v_entity found;
+    v_subscriber found;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entity));
+    assert(subscriber != NULL);
+    assert(C_TYPECHECK(subscriber,v_subscriber));
 
-    found = ospl_c_insert(kernel->shares,e);
-
+    OSPL_LOCK(kernel);
+    found = ospl_c_insert(kernel->shares,subscriber);
+    if (found != subscriber) {
+        found->shareCount++;
+    }
+    OSPL_UNLOCK(kernel);
     return found;
 }
 
-v_entity
-v_removeShareUnsafe(
+c_ulong
+v_kernelRemoveSharedSubscriber(
     v_kernel kernel,
-    v_entity e)
+    v_subscriber subscriber)
 {
-    v_entity found;
+    c_ulong count;
+    v_subscriber found;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entity));
+    assert(subscriber != NULL);
+    assert(C_TYPECHECK(subscriber,v_subscriber));
 
-    found = c_remove(kernel->shares,e,NULL,NULL);
-
-    return found;
-}
-
-
-c_iter
-v_resolveShare(
-    v_kernel kernel,
-    const c_char *name)
-{
-    c_iter list;
-    c_collection q;
-    q_expr expr;
-    c_value params[1];
-
-    assert(kernel != NULL);
-    assert(C_TYPECHECK(kernel,v_kernel));
-
-    expr = (q_expr)q_parse("name like %0");
-    params[0] = c_stringValue((char *)name);
-    q = c_queryNew(kernel->shares,expr,params);
-    q_dispose(expr);
-    v_lockShares(kernel);
-    list = ospl_c_select(q,0);
-    v_unlockShares(kernel);
-    c_free(q);
-    return list;
+    OSPL_LOCK(kernel);
+    count = --subscriber->shareCount;
+    if (count == 0) {
+        found = c_remove(kernel->shares,subscriber,NULL,NULL);
+        c_free(found);
+    }
+    OSPL_UNLOCK(kernel);
+    return count;
 }
 
 
@@ -1451,7 +1527,7 @@ v_resolveServiceByServiceType(
     c_lockRead(&kernel->lock);
     (void)c_setWalk(kernel->participants, v_resolveServiceByTypeHelper, &arg);
     c_lockUnlock(&kernel->lock);
-     return arg.iter;
+    return arg.iter;
 }
 
 c_iter
@@ -1558,8 +1634,7 @@ v_lookupTopic(
     ((v_entity)(&dummyTopic))->name = c_stringNew(base,name);
     topicFound = NULL;
     c_lockRead(&kernel->lock);
-    /* This does not remove anything because the alwaysFalse function always
-     * returns false */
+    /* This does not remove anything because the alwaysFalse function always returns false */
     c_remove(kernel->topics, &dummyTopic, alwaysFalse, &topicFound);
     c_lockUnlock(&kernel->lock);
     c_free(((v_entity)(&dummyTopic))->name);
@@ -1686,7 +1761,7 @@ v_loadDurabilitySupport(
             attr_val = v_cfElementAttributeValue(elem, "name");
             assert(attr_val.kind == V_STRING);
             if (isServiceRequestedServiceKind("DurabilityService", attr_val.is.String, kernel->configuration)) {
-                kernel->durabilitySupport = TRUE;
+                kernel->hasDurabilityService = kernel->durabilitySupport = TRUE;
                 break;
             }
         }
@@ -1897,6 +1972,7 @@ v_writeBuiltinTopic(
     if (msg != NULL) {
         if (k->builtin != NULL) {
             writer = v_builtinWriterLookup(k->builtin,id);
+
             if (writer != NULL) {
                 /* No need to fill writerGID, this is done by the writer */
                 (void)v_writerWrite(writer,msg,os_timeWGet(),NULL);
@@ -2016,7 +2092,7 @@ v_disableStatistics(
     const char *categoryName)
 {
     /* Not yet implemented */
-    /* Here, we will have to walk over all entities and forward the disable
+    /* TODO: we will have to walk over all entities and forward the disable
      * request. The entity itself has to switch off the corresponding
      * statistics admin */
     OS_UNUSED_ARG(k);
@@ -2061,7 +2137,9 @@ v_kernelCreatePersistentSnapshot(
         event.kind = V_EVENT_PERSISTENT_SNAPSHOT;
         event.source = v_observable(_this);
         event.data = request;
-        v_observableNotify(v_observable(_this),&event);
+        event.handled = TRUE;
+
+        OSPL_THROW_EVENT(_this, &event);
         c_free(request);
     } else {
         result = V_RESULT_OUT_OF_MEMORY;
@@ -2073,8 +2151,7 @@ v_kernelCreatePersistentSnapshot(
     return result;
 }
 
-/*
- * ES, dds1576: This method consults the configuration info stored in the kernel
+/* ES, dds1576: This method consults the configuration info stored in the kernel
  * to determine the access policy for this partition
  */
 v_accessMode
@@ -2196,7 +2273,7 @@ v_kernelTransactionGroupAdmin(
 {
     v_transactionGroupAdmin admin = NULL;
 
-    (void)c_lockWrite(&_this->lock);
+    c_lockWrite(&_this->lock);
     if (_this->transactionGroupAdmin == NULL) {
         _this->transactionGroupAdmin = v_transactionGroupAdminNew(v_object(_this));
         assert(_this->transactionGroupAdmin);
@@ -2214,32 +2291,48 @@ v_kernelGroupTransactionFlush(
     v_transactionGroupAdmin transactionGroupAdmin;
     assert(_this);
 
-    (void)c_lockRead(&_this->lock);
+    c_lockRead(&_this->lock);
     transactionGroupAdmin = c_keep(_this->transactionGroupAdmin);
     c_lockUnlock(&_this->lock);
 
     if (transactionGroupAdmin) {
-        v_transactionGroupAdminFlushPending(transactionGroupAdmin, admin);
+        if (v_kernelGroupTransactionTryLockAccess(_this)) {
+            v_transactionGroupAdminFlushPending(transactionGroupAdmin, admin);
+            v_kernelGroupTransactionUnlockAccess(_this);
+        }
         c_free(transactionGroupAdmin);
     }
 }
 
+/**
+ * \brief              This operation tries to obtain the access lock which
+ *                     is used for group transactions
+ *
+ * \param _this      : The kernel this operation operates on.
+ *
+ * \return           : TRUE when access locked as result of this operation
+ *                     FALSE operation was unable to lock access
+ */
 c_bool
-v_kernelGroupTransactionLockAccess(
+v_kernelGroupTransactionTryLockAccess(
     v_kernel _this)
 {
-    c_bool accessBusy = FALSE;
+    c_bool result = FALSE;
 
     assert(v_objectKind(_this) == K_KERNEL);
 
     c_mutexLock(&_this->accessLock);
-    if (_this->accessCount > 0 || _this->accessBusy) {
-       accessBusy = TRUE;
+    if (pa_ld32(&_this->accessCount) > 0 || _this->accessBusy) {
+        /* Unable to get lock */
     } else {
-       _this->accessBusy = TRUE;
+       result = _this->accessBusy = TRUE;
+#ifndef NDEBUG
+       _this->accessOwner = os_threadIdToInteger(os_threadIdSelf());
+#endif
     }
     c_mutexUnlock(&_this->accessLock);
-    return accessBusy;
+
+    return result;
 }
 
 void
@@ -2251,16 +2344,18 @@ v_kernelGroupTransactionUnlockAccess(
     c_mutexLock(&_this->accessLock);
     if (_this->accessBusy) {
         _this->accessBusy = FALSE;
+#ifndef NDEBUG
+        _this->accessOwner = 0;
+#endif
         c_condBroadcast(&_this->accessCond);
     }
     c_mutexUnlock(&_this->accessLock);
 }
 
-v_result
+void
 v_kernelGroupTransactionBeginAccess(
-    v_kernel _this)
+    _Inout_ v_kernel _this)
 {
-    v_result result = V_RESULT_OK;
     c_bool flush = FALSE;
     v_transactionGroupAdmin transactionGroupAdmin;
 
@@ -2268,11 +2363,11 @@ v_kernelGroupTransactionBeginAccess(
     while (_this->accessBusy) {
         c_condWait(&_this->accessCond, &_this->accessLock);
     }
-    if (_this->accessCount == 0) {
+    if (pa_ld32(&_this->accessCount) == 0) {
         _this->accessBusy = TRUE;
         flush = _this->accessBusy;
     }
-    _this->accessCount++;
+    (void)pa_inc32_nv(&_this->accessCount);
     c_mutexUnlock(&_this->accessLock);
 
     if (flush) {
@@ -2289,30 +2384,22 @@ v_kernelGroupTransactionBeginAccess(
         c_condBroadcast(&_this->accessCond);
         c_mutexUnlock(&_this->accessLock);
     }
-
-    return result;
 }
 
-v_result
+void
 v_kernelGroupTransactionEndAccess(
-    v_kernel _this)
+    _Inout_ v_kernel _this)
 {
-    c_bool flush = FALSE;
-    v_result result = V_RESULT_OK;
+    c_bool flush;
     v_transactionGroupAdmin transactionGroupAdmin;
 
     /* To update access counts, the access lock must be acquired. */
     c_mutexLock(&_this->accessLock);
 
-    if (_this->accessCount > 0) {
-        _this->accessCount--;
-        flush = (_this->accessCount == 0);
-        if (flush) {
-            _this->accessBusy = TRUE; /* must set to hold off others until after the flush. */
-        }
-    } else {
-        result = V_RESULT_PRECONDITION_NOT_MET;
-        assert(FALSE);
+    assert(pa_ld32(&_this->accessCount) > 0);
+    flush = (pa_dec32_nv(&_this->accessCount) == 0);
+    if (flush) {
+        _this->accessBusy = TRUE; /* must set to hold off others until after the flush. */
     }
     c_mutexUnlock(&_this->accessLock);
 
@@ -2330,8 +2417,6 @@ v_kernelGroupTransactionEndAccess(
         c_condBroadcast(&_this->accessCond);
         c_mutexUnlock(&_this->accessLock);
     }
-
-    return result;
 }
 
 static c_bool
@@ -2344,8 +2429,54 @@ collectAllParticipants(
     return TRUE;
 }
 
+/* This operation will update the kernel according to a newly discovered publication and
+ * notify matching local subscriptions (synchronously).
+ * The given message holds the builtin publication data describing the discovered writer.
+ */
 void
-v_kernelNotifyGroupCoherentPublication(
+v_kernelNotifyPublication(
+    v_kernel _this,
+    v_message msg)
+{
+    c_iter list;
+    v_participant participant;
+
+    c_lockRead(&_this->lock);
+    list = c_iterNew(NULL);
+    (void)c_walk(_this->participants, collectAllParticipants, list);
+    c_lockUnlock(&_this->lock);
+    while ((participant = c_iterTakeFirst(list)) != NULL) {
+        v_participantNotifyPublication(participant, msg);
+        c_free(participant);
+    }
+    c_iterFree(list);
+}
+
+/* This operation will update the kernel according to a newly discovered subscription and
+ * notify matching local publications (synchronously).
+ * The given message holds the builtin subscription data describing the discovered reader.
+ */
+void
+v_kernelNotifySubscription(
+    v_kernel _this,
+    v_message msg)
+{
+    c_iter list;
+    v_participant participant;
+
+    c_lockRead(&_this->lock);
+    list = c_iterNew(NULL);
+    (void)c_walk(_this->participants, collectAllParticipants, list);
+    c_lockUnlock(&_this->lock);
+    while ((participant = c_iterTakeFirst(list)) != NULL) {
+        v_participantNotifySubscription(participant, msg);
+        c_free(participant);
+    }
+    c_iterFree(list);
+}
+
+void
+v_kernelNotifyCoherentPublication(
     v_kernel _this,
     v_message msg)
 {
@@ -2366,21 +2497,23 @@ v_kernelNotifyGroupCoherentPublication(
         for (i=0; i<nrOfPartitions; i++) {
             list = v_groupSetLookup(_this->groupSet, info->partition.name[i], info->topic_name);
             while ((group = c_iterTakeFirst(list)) != NULL) {
-                v_groupNotifyGroupCoherentPublication(group, msg);
+                v_groupNotifyCoherentPublication(group, msg);
             }
             c_iterFree(list);
         }
     }
 
-    c_lockRead(&_this->lock);
-    list = c_iterNew(NULL);
-    (void)c_walk(_this->participants, collectAllParticipants, list);
-    c_lockUnlock(&_this->lock);
-    while ((participant = c_iterTakeFirst(list)) != NULL) {
-        v_participantNotifyGroupCoherentPublication(participant, msg);
-        c_free(participant);
+    if (info->presentation.access_scope == V_PRESENTATION_GROUP) {
+        c_lockRead(&_this->lock);
+        list = c_iterNew(NULL);
+        (void)c_walk(_this->participants, collectAllParticipants, list);
+        c_lockUnlock(&_this->lock);
+        while ((participant = c_iterTakeFirst(list)) != NULL) {
+            v_participantNotifyGroupCoherentPublication(participant, msg);
+            c_free(participant);
+        }
+        c_iterFree(list);
     }
-    c_iterFree(list);
 }
 
 v_result
@@ -2526,9 +2659,10 @@ v_sampleMaskPass(
     return pass;
 }
 
+_Ret_z_
 const os_char *
 v_resultImage(
-    const v_result result)
+    _In_ v_result result)
 {
     const os_char *image;
 
@@ -2871,6 +3005,19 @@ v_kernelThreadProtectCount (
     }
 }
 
+c_bool
+v_kernelThreadInProtectedArea()
+{
+    c_bool result = FALSE;
+    struct v__kernelThreadInfo *threadMemInfo;
+
+    threadMemInfo = os_threadMemGet(OS_THREAD_PROCESS_INFO);
+    if (threadMemInfo) {
+        result = (threadMemInfo->myProtectCount > 0);
+    }
+    return result;
+}
+
 _Check_return_
 v_result
 v_kernelProtect(
@@ -2890,7 +3037,8 @@ v_kernelProtect(
 
     if(threadMemInfo->myProtectCount) {
         /* If the thread already has a protectCount set, then this MUST be for
-         * the same domain. */
+         * the same domain.
+         */
         assert(threadMemInfo->pinfo == info);
         assert(threadMemInfo->tinfo == v_processInfoGetThreadInfo(info, os_threadIdToInteger(os_threadIdSelf())));
         assert(threadMemInfo->serial == info->serial);
@@ -2902,7 +3050,8 @@ v_kernelProtect(
         assert((threadMemInfo->flags & V_KERNEL_THREAD_FLAG_DOMAINID) == (info->serial & V_KERNEL_THREAD_FLAG_DOMAINID));
     } else {
         /* Always cache info so it can be used in v_kernelUnprotect(),
-         * v__kernelProtectWaitEnter() and v__kernelProtectWaitExit(). */
+         * v__kernelProtectWaitEnter() and v__kernelProtectWaitExit().
+         */
         if(threadMemInfo->serial == 0 || threadMemInfo->serial != info->serial) {
             threadMemInfo->serial = info->serial;
             threadMemInfo->pinfo = info;
@@ -3019,6 +3168,14 @@ v_kernelProtectStrictReadOnlyExit(void)
     v__kernelProtectTrace(threadMemInfo->pinfo, count + 1, "CopyOutEnter");
 }
 
+/*
+ * This function unprotects the kernel
+ *
+ * return: NULL in case the protect count is lowered but has not yet reached 0
+ *         other protect count has reached 0, v_kernelUnprotectFinalize should now
+ *               be called to finalize the unprotect.
+ */
+_Ret_maybenull_
 void *
 v_kernelUnprotect(void)
 {
@@ -3029,17 +3186,40 @@ v_kernelUnprotect(void)
 
     threadMemInfo = v__kernelThreadInfoGet();
 
-    count = pa_dec32_nv(&threadMemInfo->pinfo->protectCount);
     threadMemInfo->myProtectCount--;
     threadMemInfo->tinfo->protectCount--;
     assert(threadMemInfo->myProtectCount == threadMemInfo->tinfo->protectCount);
-    v__kernelProtectTrace(threadMemInfo->pinfo, count + 1, "Unprotect");
 
     if(threadMemInfo->myProtectCount == 0) {
         v__kernelThreadInfoFlags(threadMemInfo, V_KERNEL_THREAD_FLAG_DOMAINID, (os_uint32)-1);
         return threadMemInfo->usrData;
     } else {
+        count = pa_dec32_nv(&threadMemInfo->pinfo->protectCount);
+        v__kernelProtectTrace(threadMemInfo->pinfo, count + 1, "Unprotect");
         return NULL;
+    }
+}
+
+/*
+ * This function finalizes the kernel unprotect, it should only be called after the
+ * v_kernelUnprotect function
+ */
+void
+v_kernelUnprotectFinalize(
+    void * usrData)
+{
+    struct v__kernelThreadInfo *threadMemInfo;
+    os_uint32 count;
+
+    if (usrData) {
+        assert(os_threadMemGet(OS_THREAD_PROCESS_INFO));
+
+        threadMemInfo = v__kernelThreadInfoGet();
+        assert(threadMemInfo->usrData == usrData);
+        assert(threadMemInfo->myProtectCount == threadMemInfo->tinfo->protectCount);
+
+        count = pa_dec32_nv(&threadMemInfo->pinfo->protectCount);
+        v__kernelProtectTrace(threadMemInfo->pinfo, count + 1, "Unprotect final");
     }
 }
 
@@ -3060,11 +3240,9 @@ v_kernelGetSpliced(
     v_kernel _this)
 {
     v_spliced spliced;
-    c_iter list;
-
-    list = v_resolveParticipants(_this, V_SPLICED_NAME);
-    spliced = v_spliced(c_iterTakeFirst(list));
-    c_iterFree(list);
+    c_lockRead(&_this->lock);
+    spliced = c_keep(_this->spliced);
+    c_lockUnlock(&_this->lock);
     return spliced;
 }
 
@@ -3113,9 +3291,7 @@ v_kernelDisposeAllData(
                       topicList = c_iterAppend(topicList, c_keep(topic));
                   }
               } else {
-                  v_observerLock( v_observer(topic) );
                   v_topicNotifyAllDataDisposed( topic );
-                  v_observerUnlock( v_observer(topic) );
               }
 
               c_free(group);
@@ -3124,9 +3300,7 @@ v_kernelDisposeAllData(
            if (topicList) {
                topic = c_iterTakeFirst(topicList);
                while (topic) {
-                   v_observerLock( v_observer(topic) );
                    v_topicNotifyAllDataDisposed( topic );
-                   v_observerUnlock( v_observer(topic) );
                    c_free(topic);
                    topic = c_iterTakeFirst(topicList);
                }
@@ -3135,8 +3309,7 @@ v_kernelDisposeAllData(
         }
         else
         {
-           /* Group does not exist yet, store the timestamp etc for when the group is
-              created */
+           /* Group does not exist yet, store the timestamp etc for when the group is created */
            v_pendingDisposeElement element = NULL;
            c_base base = c_getBase(c_object(kernel));
            int found = 0;
@@ -3154,7 +3327,8 @@ v_kernelDisposeAllData(
                  if ( os_timeWCompare( element->disposeTimestamp, timestamp ) == OS_LESS )
                  {
                     /* Already an older existing record for this partition
-                       and topic combination - update timestamp */
+                     * and topic combination - update timestamp
+                     */
                     element->disposeTimestamp = timestamp;
                  }
                  break;
@@ -3270,7 +3444,7 @@ v_rxoDataCompatible(
 
 c_bool
 v_kernelGetDurabilitySupport(
-    v_kernel kernel)
+    _In_ _Const_ v_kernel kernel)
 {
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
@@ -3278,3 +3452,265 @@ v_kernelGetDurabilitySupport(
     return kernel->durabilitySupport;
 }
 
+c_bool
+v_kernelHasDurabilityService(
+    _In_ _Const_ v_kernel kernel)
+{
+    assert(kernel != NULL);
+    assert(C_TYPECHECK(kernel,v_kernel));
+
+    return kernel->hasDurabilityService;
+}
+
+c_bool
+v_kernelGetAlignedState(
+    v_kernel _this)
+{
+    c_bool result;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_kernel));
+
+    c_lockRead(&_this->lock);
+    result = _this->durabilityAligned;
+    c_lockUnlock(&_this->lock);
+
+    return result;
+}
+
+void
+v_kernelSetAlignedState(
+    v_kernel _this,
+    c_bool aligned)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_kernel));
+
+    c_lockWrite(&_this->lock);
+    _this->durabilityAligned = aligned;
+    c_lockUnlock(&_this->lock);
+}
+
+void
+v_kernelTransactionsPurge(
+    v_kernel _this)
+{
+    c_iter list;
+    v_participant participant;
+
+    /* A transaction flush purges and flushes the obsolete groups,
+     * flushing is required in case the obsolete group contains samples
+     * which cannot be discarded.
+     */
+    v_kernelGroupTransactionFlush(_this, NULL);
+
+    list = c_iterNew(NULL);
+    c_lockRead(&_this->lock);
+    (void)c_walk(_this->participants, collectAllParticipants, list);
+    c_lockUnlock(&_this->lock);
+    while ((participant = c_iterTakeFirst(list)) != NULL) {
+        v_participantTransactionsPurge(participant);
+        c_free(participant);
+    }
+    c_iterFree(list);
+}
+
+void
+v_kernelConnectGroup(
+    v_kernel k,
+    v_group g)
+{
+    c_iter list;
+    v_participant p;
+    assert(k);
+    assert(g);
+    assert(C_TYPECHECK(k,v_kernel));
+    c_lockRead(&k->lock);
+    list = ospl_c_select(k->participants, 0);
+    c_lockUnlock(&k->lock);
+    while ((p = c_iterTakeFirst(list)) != NULL) {
+        v_participantConnectGroup(p, g);
+        c_free(p);
+    }
+    c_iterFree(list);
+}
+
+/* The operation WalkPublications will visit all discovered publication messages and
+ * invoke the given publication action function on each publication message.
+ * The given argument arg is passed as context information to the invoked action function.
+ * The walk will stop when all messages are processed or when the action function returns FALSE.
+ */
+v_result
+v_kernelWalkPublications(
+    v_kernel _this,
+    v_publication_action action, /* signature: os_boolean (*action)(const v_message publication, void *arg) */
+    c_voidp arg)
+{
+    /* The implementation of the system info storage is currently owned by
+     * the spliced but should move to the kernel.
+     */
+    v_spliced spliced;
+    v_result result;
+    spliced = v_kernelGetSpliced(_this);
+    result = v_splicedWalkPublications(spliced, action, arg);
+    c_free(spliced);
+    return result;
+}
+
+/* The operation WalkSubscriptions will visit all discovered subscription messages and
+ * invoke the given subscription action function on each subscription message.
+ * The given argument arg is passed as context information to the invoked action function.
+ * The walk will stop when all messages are processed or when the action function returns FALSE.
+ */
+v_result
+v_kernelWalkSubscriptions(
+    v_kernel _this,
+    v_subscription_action action, /* signature: os_boolean (*action)(const v_message subscription, void *arg) */
+    c_voidp arg)
+{
+    /* The implementation of the system info storage is currently owned by
+     * the spliced but should move to the kernel.
+     */
+    v_spliced spliced;
+    v_result result;
+    spliced = v_kernelGetSpliced(_this);
+    result = v_splicedWalkSubscriptions(spliced, action, arg);
+    c_free(spliced);
+    return result;
+}
+
+struct lookupPublicationArg {
+    v_gid wgid;
+    v_message msg;
+};
+
+static os_boolean
+lookupPublication(
+    const v_message msg,
+    c_voidp arg)
+{
+    struct lookupPublicationArg *a = (struct lookupPublicationArg *)arg;
+    struct v_publicationInfo *info;
+
+    info = v_builtinPublicationInfoData(msg);
+    if (v_gidEqual(info->key, a->wgid)) {
+        a->msg = c_keep(msg);
+        return OS_FALSE;
+    }
+    return OS_TRUE;
+}
+
+/* This operation will lookup the publication message identified by the given gid.
+ * If found the message will be returned and must be freed after use.
+ */
+v_message
+v_kernelLookupPublication(
+    v_kernel _this,
+    v_gid gid)
+{
+    struct lookupPublicationArg lpa;
+
+    lpa.wgid = gid;
+    lpa.msg = NULL;
+    (void)v_kernelWalkPublications(_this, lookupPublication, &lpa);
+    return lpa.msg;
+}
+
+struct kernelReadActionArg {
+    v_domainReadAction action;
+    const void *actionArg;
+    v_result result;
+};
+
+static os_boolean
+kernelReadAction(
+    v_groupSample sample,
+    const void *arg)
+{
+    struct kernelReadActionArg *a = (struct kernelReadActionArg *)arg;
+    v_groupInstance instance = sample->instance;
+
+    a->result = a->action(instance->group, instance, v_groupSampleTemplate(sample)->message, a->actionArg);
+    return (a->result == V_RESULT_OK);
+}
+
+v_result
+v_kernelRead(
+    const v_kernel _this,
+    const os_char *partition,
+    const os_char *topic,
+    const os_char *query,
+    const v_domainReadAction action,
+    const void *actionArg)
+{
+    v_result result = V_RESULT_OK;
+    v_groupStoreQuery store_query = NULL;
+    v_group group;
+    c_iter list;
+    c_value params[2];
+    struct kernelReadActionArg arg;
+
+    arg.action = action;
+    arg.actionArg = actionArg;
+    arg.result = V_RESULT_OK;
+
+    params[0]  = c_stringValue((c_string)partition);
+    params[1]  = c_stringValue((c_string)topic);
+
+    list = v_groupSetSelect(_this->groupSet, "partition.name like %0 AND topic.name like %1", params);
+    while ((result == V_RESULT_OK) && (group = c_iterTakeFirst(list)) != NULL) {
+        store_query = v_groupStoreQueryNew(group->store, query, NULL, 0);
+        result = v_groupStoreRead(group->store, store_query, kernelReadAction, &arg);
+        if (store_query) {
+            v_groupStoreQueryFree(store_query);
+        }
+    }
+    c_iterFree(list);
+    return result;
+}
+
+v_result
+v_kernelGroupRead(
+    const v_kernel _this,
+    const os_char *partition,
+    const os_char *topic,
+    const v_domainGroupReadAction action,
+    const void *actionArg)
+{
+    v_result result = V_RESULT_OK;
+    v_group group;
+    c_iter list;
+    c_value params[2];
+
+    params[0]  = c_stringValue((c_string)partition);
+    params[1]  = c_stringValue((c_string)topic);
+
+    list = v_groupSetSelect(_this->groupSet, "partition.name like %0 AND topic.name like %1", params);
+    while ((group = c_iterTakeFirst(list)) != NULL) {
+        result = action(group, actionArg);
+        c_free(group);
+    }
+    result = action(NULL, actionArg);
+    c_iterFree(list);
+    return result;
+}
+
+v_result
+v_kernelSetIsolate(
+    const v_kernel _this,
+    const os_uint32 isolate)
+{
+    v_result result = V_RESULT_OK;
+    pa_st32(&_this->isolate, (os_uint32)isolate);
+    return result;
+}
+
+v_result
+v_kernelGetIsolate(
+    const v_kernel _this,
+    os_uint32 *isolate)
+{
+    v_result result = V_RESULT_OK;
+    *isolate = pa_ld32(&_this->isolate);
+    return result;
+}

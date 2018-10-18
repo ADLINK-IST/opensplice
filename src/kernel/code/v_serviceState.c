@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,9 +34,6 @@
 #include "v_public.h"
 #include "os_report.h"
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_serviceState
 v_serviceStateNew(
     v_kernel k,
@@ -111,18 +109,9 @@ v_serviceStateInit(
 
     serviceState->name = c_stringNew(c_getBase(serviceState),name);
 
-    c_lockInit(c_getBase(serviceState), &serviceState->lock);
     serviceState->stateKind = STATE_NONE;
 }
 
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 c_bool
 v_serviceStateChangeState(
     v_serviceState serviceState,
@@ -133,7 +122,7 @@ v_serviceStateChangeState(
 
     assert(C_TYPECHECK(serviceState, v_serviceState));
 
-    c_lockWrite(&serviceState->lock);
+    OSPL_LOCK(serviceState);
 
     switch (stateKind) {
     case STATE_NONE:
@@ -184,12 +173,14 @@ v_serviceStateChangeState(
     } else {
         changed = FALSE;
     }
-    c_lockUnlock(&serviceState->lock);
 
     event.kind = V_EVENT_SERVICESTATE_CHANGED;
     event.source = v_observable(serviceState);
     event.data = NULL;
-    v_observableNotify(v_observable(serviceState),&event);
+    event.handled = TRUE;
+
+    OSPL_THROW_EVENT(serviceState, &event);
+    OSPL_UNLOCK(serviceState);
 
     return changed;
 }
@@ -202,9 +193,9 @@ v_serviceStateGetKind(
 
     assert(C_TYPECHECK(serviceState, v_serviceState));
 
-    c_lockRead(&serviceState->lock);
+    OSPL_LOCK(serviceState);
     kind = serviceState->stateKind;
-    c_lockUnlock(&serviceState->lock);
+    OSPL_UNLOCK(serviceState);
 
     return kind;
 }
@@ -217,17 +208,9 @@ v_serviceStateGetName(
 
     assert(C_TYPECHECK(serviceState, v_serviceState));
 
-    c_lockRead(&serviceState->lock);
+    OSPL_LOCK(serviceState);
     name = serviceState->name;
-    c_lockUnlock(&serviceState->lock);
+    OSPL_UNLOCK(serviceState);
 
     return (const c_char *)name;
-}
-
-void
-v_serviceStateNotify(
-    v_serviceState serviceState,
-    v_serviceStateKind kind)
-{
-    v_serviceStateChangeState(serviceState, kind);
 }

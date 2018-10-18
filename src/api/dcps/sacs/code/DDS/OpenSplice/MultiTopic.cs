@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@ using DDS.OpenSplice.OS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{    
+{
     internal class MultiTopic : SacsSuperClass, ITopicDescriptionImpl, IMultiTopic
     {
         private DomainParticipant domainParticipant;
@@ -35,13 +36,13 @@ namespace DDS.OpenSplice
         private string[] subscriptionParameters;
         private uint nrUsers = 0;
         private ITopicDescriptionImpl[] relatedTopics = new ITopicDescriptionImpl[0];
-        
+
         internal MultiTopic(
                 string typeName,
                 string topicName,
                 DomainParticipant domainParticipant,
                 TypeSupport typeSupport,
-                string subscriptionExpression, 
+                string subscriptionExpression,
                 string[] subscriptionParameters)
         {
             this.typeName = typeName;
@@ -52,14 +53,13 @@ namespace DDS.OpenSplice
             this.subscriptionParameters = subscriptionParameters;
             MyDomainId = domainParticipant.MyDomainId;
         }
-        
+
         internal ReturnCode init()
         {
             ReturnCode result;
-            
+
             result = DDS.ReturnCode.Unsupported;
             // Try to obtain the list of related topics.
-            //relatedTopics = getRelatedTopics();
             for (int i = 0; i < relatedTopics.Length && result == DDS.ReturnCode.Ok; i++)
             {
                 ITopicDescriptionImpl t = relatedTopics[i];
@@ -90,14 +90,14 @@ namespace DDS.OpenSplice
                 {
                     result = DDS.ReturnCode.Error;
                 }
-            } 
+            }
             return result;
         }
-        
+
         internal override ReturnCode wlReq_deinit()
         {
             ReturnCode result;
-            
+
             if (nrUsers > 0)
             {
                 result = DDS.ReturnCode.PreconditionNotMet;
@@ -113,9 +113,9 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-        
+
         /// <summary>
-        /// This property returns the registered name of the data type associated with the TopicDescription 
+        /// This property returns the registered name of the data type associated with the TopicDescription
         /// (inherited from TopicDescription)
         /// </summary>
         public string TypeName
@@ -167,7 +167,7 @@ namespace DDS.OpenSplice
         }
 
         /// <summary>
-        /// This property returns the DomainParticipant associated with the TopicDescription or 
+        /// This property returns the DomainParticipant associated with the TopicDescription or
         /// a null DomainParticipant.
         /// (inherited from TopicDescription)
         /// </summary>
@@ -192,7 +192,7 @@ namespace DDS.OpenSplice
                 return participant;
             }
         }
-        
+
         public string SubscriptionExpression
         {
             get
@@ -214,7 +214,7 @@ namespace DDS.OpenSplice
                 return sexpr;
             }
         }
-        
+
         public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
             expressionParameters = null;
@@ -233,11 +233,11 @@ namespace DDS.OpenSplice
 
             return result;
         }
-        
+
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
             ReturnCode result = DDS.ReturnCode.Unsupported;
-            
+
 //            using (SequenceStringToArrMarshaler marshaler = new SequenceStringToArrMarshaler())
 //            {
 //                result = WriteLock();
@@ -259,7 +259,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-        
+
         string ITopicDescriptionImpl.rlReq_TopicExpression
         {
             get
@@ -267,7 +267,7 @@ namespace DDS.OpenSplice
                 return subscriptionExpression;
             }
         }
-        
+
         string[] ITopicDescriptionImpl.rlReq_TopicExpressionParameters
         {
             get
@@ -275,7 +275,7 @@ namespace DDS.OpenSplice
                 return subscriptionParameters;
             }
         }
-        
+
         void ITopicDescriptionImpl.wlReq_IncrNrUsers()
         {
             nrUsers++;

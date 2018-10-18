@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -213,11 +214,6 @@ org::opensplice::sub::QueryDelegate::state_filter(
 {
     this->lock();
     if (this->state_filter_ != s) {
-#if 0
-    if ((s.sample_state()   != this->state_filter_.sample_state()) ||
-        (s.view_state()     != this->state_filter_.view_state())   ||
-        (s.instance_state() != this->state_filter_.instance_state())) {
-#endif
         this->state_filter_ = s;
         this->modified_ = true;
     }
@@ -240,13 +236,6 @@ org::opensplice::sub::QueryDelegate::state_filter_equal(
 {
     bool equal = false;
     this->lock();
-#if 0
-    if ((s.sample_state()   == this->state_filter_.sample_state()) &&
-        (s.view_state()     == this->state_filter_.view_state())   &&
-        (s.instance_state() == this->state_filter_.instance_state())) {
-        equal = true;
-    }
-#endif
     equal = this->state_filter_ == s;
     this->unlock();
 

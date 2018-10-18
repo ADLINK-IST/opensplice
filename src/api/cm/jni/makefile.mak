@@ -9,7 +9,12 @@ CINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CINCS		+= -I$(OSPL_HOME)/src/user/include
 CINCS		+= -I$(OSPL_HOME)/src/api/cm/xml/include
 CINCS		+= -I$(OSPL_HOME)/src/database/serialization/include
-CINCS		+= $(JAVA_INCLUDE)
+
+ifeq ($(JAVA_IS_PERC),yes)
+CINCS          += $(PERC_INCLUDE)
+else
+CINCS          += $(JAVA_INCLUDE)
+endif
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)

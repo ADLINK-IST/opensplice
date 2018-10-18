@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -288,7 +289,8 @@ DDS::OpenSplice::Publisher::create_datawriter (
             if (result == DDS::RETCODE_OK) {
                 result = writer->init (
                         this, this->participant, *writerQosPtr, topic, name,
-                        tsMetaHolder->get_copy_in(), tsMetaHolder->get_copy_out());
+                        tsMetaHolder->get_copy_in(), tsMetaHolder->get_copy_out(),
+                        tsMetaHolder->get_writerCopy(), tsMetaHolder->get_cdrMarshaler());
                 if (result == DDS::RETCODE_OK) {
                     /* Duplicate and store the created DataWriter object. */
                     if (!this->wlReq_insertWriter (writer)) {

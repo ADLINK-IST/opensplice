@@ -6,11 +6,12 @@ startOSPL
 
 echo "=== Launching BuiltInTopics "
 
-./subscriber > subResult.txt
+./subscriber > subResult.txt &
+cmd_pid=$!
 sleep 1
 
 echo === Waiting for processes to terminate
-waitForProcessTermination subscriber 30
+waitForProcessTermination $cmd_pid 30
 
 builtintopicsCheckResult
 

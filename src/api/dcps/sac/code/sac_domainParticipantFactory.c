@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -30,9 +31,7 @@
 
 #include "os_atomics.h"
 
-static C_STRUCT(_DomainParticipantFactory) *TheFactory = NULL;
-static pa_uint32_t TheFactoryInitializingCount = PA_UINT32_INIT (0);
-static DDS_boolean TheFactoryOperational = FALSE;
+static pa_voidp_t g_factory = PA_VOIDP_INIT(NULL);
 
 #define DDS_DomainParticipantFactoryClaim(_this, factory) \
         DDS_Object_claim(DDS_Object(_this), DDS_DOMAINFACTORY, (_Object *)factory)
@@ -94,6 +93,24 @@ C_STRUCT(_TypeSupportBinding) {
     DDS_TypeSupport *typeSupport;
 };
 
+static DDS_ReturnCode_t
+_DomainParticipantFactory_deinit (
+    _Object _this)
+{
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
+
+    C_STRUCT(_DomainParticipantFactory) *factory = (C_STRUCT(_DomainParticipantFactory) *)_this;
+
+    c_iterFree(factory->participantList);
+    c_iterFree(factory->domainList);
+    factory->participantList = NULL;
+    factory->domainList = NULL;
+
+    os_osExit();
+
+    return result;
+}
+
 /*
  * From Specification
  *
@@ -102,45 +119,33 @@ C_STRUCT(_TypeSupportBinding) {
 DDS_DomainParticipantFactory
 DDS_DomainParticipantFactory_get_instance(void)
 {
+    C_STRUCT(_DomainParticipantFactory) *factory = NULL;
     DDS_ReturnCode_t result;
-    os_uint safecount;
-    os_time delay = {1,0};
-    os_uint count;
 
-
-    safecount = pa_inc32_nv(&TheFactoryInitializingCount);
-    if ((safecount == 1) && (TheFactoryOperational == FALSE)) {
+    factory = pa_ldvoidp(&g_factory);
+    if (factory == NULL) {
         if (u_userInitialise() == U_RESULT_OK) {
             SAC_REPORT_STACK();
-            result = DDS_Object_new(DDS_DOMAINFACTORY, NULL, (_Object *)&TheFactory);
+            result = DDS_Object_new(DDS_DOMAINFACTORY, _DomainParticipantFactory_deinit, (_Object *)&factory);
             if (result == DDS_RETCODE_OK) {
-                TheFactory->participantList = NULL;
-                TheFactory->domainList = NULL;
+                factory->participantList = NULL;
+                factory->domainList = NULL;
 
                 /* Can't fail with defaults */
-                (void)DDS_DomainParticipantFactoryQos_init(&TheFactory->qos, DDS_PARTICIPANTFACTORY_QOS_DEFAULT);
-                (void)DDS_DomainParticipantQos_init(&TheFactory->defaultQos, DDS_PARTICIPANT_QOS_DEFAULT);
-
-                os_procAtExit(factoryCleanup);
-                TheFactoryOperational = TRUE;
+                (void)DDS_DomainParticipantFactoryQos_init(&factory->qos, DDS_PARTICIPANTFACTORY_QOS_DEFAULT);
+                (void)DDS_DomainParticipantQos_init(&factory->defaultQos, DDS_PARTICIPANT_QOS_DEFAULT);
             }
             SAC_REPORT_FLUSH(NULL, result != DDS_RETCODE_OK);
         }
-    } else { /* wait for the factory to become initialized */
-        count = 0;
-        while ((count < 5) && (TheFactoryOperational == FALSE)) {
-            count++;
-            os_nanoSleep(delay);
-        }
-        if (TheFactoryOperational == FALSE) {
-            result = DDS_RETCODE_ERROR;
-            SAC_REPORT(result, "The factory initialization failed.");
+
+        if (pa_casvoidp(&g_factory, NULL, factory)) {
+            os_procAtExit(factoryCleanup);
         } else {
-            result = DDS_RETCODE_OK;
+            DDS_free(factory);
+            factory = pa_ldvoidp(&g_factory);
         }
     }
-    (void) pa_dec32_nv(&TheFactoryInitializingCount);
-    return (DDS_DomainParticipantFactory)TheFactory;
+    return (DDS_DomainParticipantFactory)factory;
 }
 
 /*     DomainParticipant
@@ -190,9 +195,6 @@ DDS_DomainParticipantFactory_create_participant (
                             result = DDS_Entity_enable(participant);
                         }
                         if ( result == DDS_RETCODE_OK ) {
-                            if (factory->participantList == NULL) {
-                                factory->participantList = c_iterNew(NULL);
-                            }
                             factory->participantList = c_iterInsert (factory->participantList, participant);
                             result = factory->participantList ? DDS_RETCODE_OK : DDS_RETCODE_OUT_OF_RESOURCES;
                         }
@@ -457,9 +459,6 @@ DDS_DomainParticipantFactory_lookup_domain(
                 result = DDS_RETCODE_PRECONDITION_NOT_MET;
                 SAC_REPORT(result, "Could not locate a domain with domainId = %d.", id);
             } else {
-                if (factory->domainList == NULL) {
-                    factory->domainList = c_iterNew(NULL);
-                }
                 factory->domainList = c_iterInsert(factory->domainList, domain);
             }
         }
@@ -511,8 +510,7 @@ DDS_DomainParticipantFactory_delete_domain (
 }
 
 /*     ReturnCode_t
- *     delete_contained_entities(
- *          );
+ *     delete_contained_entities();
  */
 DDS_ReturnCode_t
 DDS_DomainParticipantFactory_delete_contained_entities (
@@ -586,5 +584,12 @@ DDS_DomainParticipantFactory_detach_all_domains (
 static void
 factoryCleanup(void)
 {
+    C_STRUCT(_DomainParticipantFactory) *factory = NULL;
     u_userDetach(U_USER_DELETE_ENTITIES);
+    factory = pa_ldvoidp(&g_factory);
+    if (factory != NULL) {
+        if (pa_casvoidp(&g_factory, factory, NULL)) {
+            DDS_free(factory);
+        }
+    }
 }

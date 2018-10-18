@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -47,7 +48,8 @@
  * nothing the statistics are updated as if the instance just became ALIVE (so
  * the new state has to be ALIVE). This is useful for initialization. It uses
  * the newState (oldState ^ xoredState) to determine whether counters have to be
- * updated. */
+ * updated.
+ */
 #define __V_WRITER_UPDATE_ALIVE__(writer, oldState, xoredState) \
     if (oldState != 0 && __V_WRITER_LIVELINESS_CHANGED__(xoredState)) { \
         if (__V_WRITER_ALIVE__(oldState)){\
@@ -60,7 +62,8 @@
     }
 
 /* Updates the statistics for the instance-state flags that are enabled. Updates
- * are only performed when statistics are enabled for the specified reader. */
+ * are only performed when statistics are enabled for the specified reader.
+ */
 #define UPDATE_WRITER_STATISTICS(writer, instance, oldState) \
     if (writer->statistics) { \
         v_state xoredState = oldState^v_instanceState(instance); \
@@ -72,7 +75,8 @@
 
 /* Subtracts the currently still enabled instance-state flags from the
  * statistics. Updates are only performed when statistics are enabled for
- * the specified writer. */
+ * the specified writer.
+ */
 #define UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(writer, instance) \
     if ((writer)->statistics) { \
         v_state state = v_instanceState(instance); \
@@ -94,7 +98,8 @@
 
 /* Evaluates to TRUE in all cases when resends need to be done in order within
  * a writer. This is the case when the access_scope of the publisher is either
- * V_PRESENTATION_TOPIC or V_PRESENTATION_GROUP. */
+ * V_PRESENTATION_TOPIC or V_PRESENTATION_GROUP.
+ */
 #define v__writerNeedsInOrderResends(w) ((w)->resend._d != V_PRESENTATION_INSTANCE)
 
 #define v__writerInOrderAdminOldest(w) (assert(v__writerNeedsInOrderResends(w)), v__writerInOrderAdmin(w)->resendOldest)
@@ -105,15 +110,20 @@
  *
  * In case v__writerNeedsInOrderResends(...) evaluates to TRUE, this is
  * determined by means of checking the head of the in-order admin. Otherwise
- * the size of the resendInstances table is inspected. */
+ * the size of the resendInstances table is inspected.
+ */
 #define v__writerHasResendsPending(w) ((c_bool)(v__writerNeedsInOrderResends(w) ? (v__writerInOrderAdminOldest(w) != NULL) : (c_tableCount(v__writerResendInstances(w)) > 0)))
-
 
 typedef struct v_writerNotifyChangedQosArg_s {
     /* the following fields are set when the partitionpolicy has changed. */
     c_iter addedPartitions;
     c_iter removedPartitions;
 } v_writerNotifyChangedQosArg;
+
+v_result
+v__writerEnable(
+    v_writer writer,
+    os_boolean builtin);
 
 c_bool
 v_writerPublishGroup (
@@ -200,10 +210,6 @@ v_writerGroupWalkUnlocked(
     v_writerGroupAction action,
     c_voidp arg);
 
-c_ulong
-v_writerAllocSequenceNumber (
-    v_writer _this);
-
 void
 v_writerResendItemRemove(
     v_writer writer,
@@ -214,8 +220,27 @@ v_writerResendItemInsert(
     v_writer writer,
     v_writerResendItem ri);
 
-v_typeRepresentation
-v__writerGetTypeRepresentation (
+char *
+v__writerGetNameSpaceNames(
+    v_writer writer,
+    c_iter partitions,
+    c_iter nameSpaces);
+
+c_bool
+v__writerInSingleNameSpace(
+    v_writer writer,
+    c_iter partitions,
+    c_iter nameSpaces);
+
+v_publisher
+v_writerGetPublisher(
+    v_writer _this);
+
+/* This operation will return the actual builtin publication data for this writer.
+ * The writer caches this last published publication data.
+ */
+v_message
+v_writerPublication(
     v_writer _this);
 
 #endif /* V__WRITER_H */

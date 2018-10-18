@@ -116,7 +116,7 @@ booted.</p>
 <h3>14.2.1. Alternatives to CAB file<a class="headerlink" href="#alternatives-to-cab-file" title="Permalink to this headline">¶</a></h3>
 <p>Microsoft&#8217;s Windows CE Remote Registry Editor can be used instead of a
 <tt class="docutils literal"><span class="pre">CAB</span></tt> file to set the necessary registry values. Alternatively,
-PrismTech also provides a convenient method of editing the registry
+ADLINK also provides a convenient method of editing the registry
 variables by way of the <tt class="docutils literal"><span class="pre">ospl</span></tt> utility using the <tt class="docutils literal"><span class="pre">getenv</span></tt> and
 <tt class="docutils literal"><span class="pre">putenv</span></tt> parameters (described below).</p>
 <p>Please refer to Microsoft&#8217;s Windows CE documentation for detailed
@@ -146,7 +146,7 @@ HDE\armv<span class="m">4</span>i.wince\bin&quot;;<span class="nv">%PATH%</span>
 <p>(All Vortex OpenSplice dynamic link library (<tt class="docutils literal"><span class="pre">dll</span></tt>) files must have been
 copied into the <tt class="docutils literal"><span class="pre">`\Windows</span></tt> directory on the Windows CE device prior to
 deployment.)</p>
-<p>When running OpenSplice executables on the command prompt, it is useful
+<p>When running Vortex OpenSplice executables on the command prompt, it is useful
 to redirect any output to text files by using the <tt class="docutils literal"><span class="pre">&gt;</span></tt> operator.</p>
 <p>If the <tt class="docutils literal"><span class="pre">PATH</span></tt> and <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variables have not already been set <em>via</em>
 a <tt class="docutils literal"><span class="pre">CAB</span></tt> file on device boot up, use the following commands to set those
@@ -167,7 +167,7 @@ Remote Registry Editor, or by running the <em>ospl getenv</em> command:</p>
 <p>The secure networking service uses OpenSSL for cryptography support. To
 use this feature, the library <tt class="docutils literal"><span class="pre">libeay32.dll</span></tt> is required; it must be
 copied to the <tt class="docutils literal"><span class="pre">\Windows</span></tt> directory on the Windows CE device.</p>
-<p>OpenSplice is tested against OpenSSL version 0.9.8i. This may be built
+<p>Vortex OpenSplice is tested against OpenSSL version 0.9.8i. This may be built
 as described below.</p>
 <div class="section" id="building-openssl-for-windows-ce-6-0">
 <h3>14.4.1. Building OpenSSL for Windows CE 6.0<a class="headerlink" href="#building-openssl-for-windows-ce-6-0" title="Permalink to this headline">¶</a></h3>
@@ -359,12 +359,12 @@ Stop.
 </div>
 </div>
 </div>
-<div class="section" id="deploying-opensplice-dds">
-<h2>14.5. Deploying OpenSplice DDS<a class="headerlink" href="#deploying-opensplice-dds" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="deploying-vortex-opensplice">
+<h2>14.5. Deploying Vortex OpenSplice<a class="headerlink" href="#deploying-vortex-opensplice" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span></tt></dt>
-<dd><p class="first">This command will start the OpenSplice DDS <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and OpenSplice
-DDS services specified within the configuration referred to by the
+<dd><p class="first">This command will start the Vortex OpenSplice <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and Vortex
+OpenSplice services specified within the configuration referred to by the
 <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable:</p>
 <p><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span> <span class="pre">&gt;</span> <span class="pre">osplstart.txt</span></tt></p>
 <p>A different configuration file can be specified as an additional
@@ -375,13 +375,13 @@ parameter; for example:</p>
 </div>
 </dd>
 <dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">list</span></tt></dt>
-<dd><p class="first">This command will list all the OpenSplice DDS configurations that are
+<dd><p class="first">This command will list all the Vortex OpenSplice configurations that are
 currently running on the node.</p>
 <p class="last"><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">list</span> <span class="pre">&gt;</span> <span class="pre">ospllist.txt</span></tt></p>
 </dd>
 <dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span></tt></dt>
-<dd><p class="first">This command will stop the OpenSplice DDS <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and OpenSplice
-DDS services specified within the configuration referred to by the
+<dd><p class="first">This command will stop the Vortex OpenSplice <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and Vortex
+OpenSplice services specified within the configuration referred to by the
 <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable:</p>
 <p><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span> <span class="pre">&gt;</span> <span class="pre">osplstop.txt</span></tt></p>
 <p>A different configuration to be stopped can be specified as an
@@ -413,10 +413,10 @@ instance can be terminated by specifying the process identifier:</p>
 <p>where <em>&lt;process id&gt;</em> is displayed in the output for the particular
 instance of <tt class="docutils literal"><span class="pre">mmstat</span></tt>.</p>
 </div>
-<div class="section" id="opensplice-examples">
-<h2>14.7. OpenSplice Examples<a class="headerlink" href="#opensplice-examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="vortex-opensplice-examples">
+<h2>14.7. Vortex OpenSplice Examples<a class="headerlink" href="#vortex-opensplice-examples" title="Permalink to this headline">¶</a></h2>
 <p>Please refer to the <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a> section for descriptions of the
-OpenSplice DDS examples.</p>
+Vortex OpenSplice examples.</p>
 <div class="section" id="building-the-examples">
 <h3>14.7.1. Building the examples<a class="headerlink" href="#building-the-examples" title="Permalink to this headline">¶</a></h3>
 <p>There is a shortcut to load the examples into Microsoft Visual Studio
@@ -425,7 +425,7 @@ which can be accessed from <em>Start &gt; Programs &gt; OpenSpliceDDS
 <p>Once the projects are open in Microsoft Visual Studio, click
 <em>Build/Rebuild Solution</em> at the appropriate level to build the required
 examples.</p>
-<p>Copy the produced executable files to the OpenSplice DDS <tt class="docutils literal"><span class="pre">bin</span></tt> directory
+<p>Copy the produced executable files to the Vortex OpenSplice <tt class="docutils literal"><span class="pre">bin</span></tt> directory
 (<em>i.e.</em> <tt class="docutils literal"><span class="pre">\NAND</span>
 <span class="pre">Flash\OpenSpliceDDS\&lt;OpenSpliceVersion&gt;\HDE\armv4i.wince\bin</span></tt>) on
 the Windows CE device. For the PingPong example the executable files are
@@ -435,7 +435,7 @@ the Windows CE device. For the PingPong example the executable files are
 for a new project perform the following steps:</p>
 <p><strong>Step 1</strong></p>
 <blockquote>
-<div><p>Run the OpenSplice command prompt from the <em>OpenSplice</em> entry under the
+<div><p>Run the Vortex OpenSplice command prompt from the <em>OpenSplice</em> entry under the
 Windows <em>Start</em> button:</p>
 <p><em>Start &gt; Programs &gt; OpenSpliceDDS &lt;OpenSpliceVersion&gt; armv4i.wince HDE
 &gt; OpenSpliceDDS command prompt</em></p>
@@ -447,7 +447,7 @@ new command prompt. To obtain these, right-click on the <em>Properties</em> for
 the <em>Visual Studio 2005 Command Prompt</em> entry located at <em>Start &gt;
 Programs &gt; Microsoft Visual Studio 2005 &gt; Visual Studio Tools &gt; Visual
 Studio 2005 Command Prompt</em> , and paste the <em>Shortcut Target</em> entry into
-the OpenSplice command prompt. For example this could be</p>
+the Vortex OpenSplice command prompt. For example this could be</p>
 <p><tt class="docutils literal"><span class="pre">%comspec%</span> <span class="pre">/k</span> <span class="pre">&quot;&quot;C:\Program</span> <span class="pre">Files\Microsoft</span> <span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">8\VC\vcvarsall.bat&quot;&quot;</span> <span class="pre">x86</span></tt></p>
 </div></blockquote>
 <p><strong>Step 3</strong></p>
@@ -521,9 +521,9 @@ can be terminated by running <tt class="docutils literal"><span class="pre">Chat
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#deploying-opensplice-dds">14.5. Deploying OpenSplice DDS</a></li>
+<li><a class="reference internal" href="#deploying-vortex-opensplice">14.5. Deploying Vortex OpenSplice</a></li>
 <li><a class="reference internal" href="#using-the-mmstat-diagnostic-tool-on-windows-ce">14.6. Using the <em>mmstat</em> Diagnostic Tool on Windows CE</a></li>
-<li><a class="reference internal" href="#opensplice-examples">14.7. OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#vortex-opensplice-examples">14.7. Vortex OpenSplice Examples</a><ul>
 <li><a class="reference internal" href="#building-the-examples">14.7.1. Building the examples</a></li>
 <li><a class="reference internal" href="#deploying-the-pingpong-example">14.7.2. Deploying the PingPong example</a></li>
 <li><a class="reference internal" href="#deploying-the-tutorial-example">14.7.3. Deploying the Tutorial example</a></li>
@@ -577,7 +577,7 @@ can be terminated by running <tt class="docutils literal"><span class="pre">Chat
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

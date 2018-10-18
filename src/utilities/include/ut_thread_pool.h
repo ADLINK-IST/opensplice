@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,14 +38,13 @@ extern "C" {
 
 OS_CLASS(ut_thread_pool);
 
-/* 
-  ut_thread_pool_new: Creates a new thread pool. Returns NULL if
-  cannot create initial set of threads. Threads are created with 
-  the optional atribute argument. Additional threads may be created
-  on demand up to max_threads.
-*/
+/* ut_thread_pool_new: Creates a new thread pool. Returns NULL if
+ * cannot create initial set of threads. Threads are created with
+ * the optional atribute argument. Additional threads may be created
+ * on demand up to max_threads.
+ */
 
-OS_API ut_thread_pool ut_thread_pool_new 
+OS_API ut_thread_pool ut_thread_pool_new
 (
   os_uint32 threads,     /* Initial number of threads in pool (can be 0) */
   os_uint32 max_threads, /* Maximum number of threads in pool (0 == infinite) */
@@ -60,13 +60,12 @@ OS_API void ut_thread_pool_free (ut_thread_pool pool);
 
 OS_API void ut_thread_pool_purge (ut_thread_pool pool);
 
-/* 
-  ut_thread_pool_submit: Submit a thread function and associated argument
-  to be invoked by a thread from the pool. If no threads are available a
-  new thread will be created on demand to handle the function unless the
-  pool thread maximum has been reached, in which case the function is queued.
-  Note that if the pool queue has reached it's maximum os_resultBusy is returned.
-*/
+/* ut_thread_pool_submit: Submit a thread function and associated argument
+ * to be invoked by a thread from the pool. If no threads are available a
+ * new thread will be created on demand to handle the function unless the
+ * pool thread maximum has been reached, in which case the function is queued.
+ * Note that if the pool queue has reached it's maximum os_resultBusy is returned.
+ */
 
 OS_API os_result ut_thread_pool_submit
 (

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,12 +18,6 @@
  *   limitations under the License.
  */
 
-// Csharp backend
-// PTF C# mapping for IDL
-// File /Users/Jcm/Documents/Ecllipse_WS/CSharpDDS/generated/dds_dcps.cs
-// Generated on 2008-11-11 13:36:00
-// from dds_dcps.idl
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -35,6 +30,30 @@ namespace DDS
     // Types & Pre-defined values
     // ----------------------------------------------------------------------
 
+
+    public struct Property
+    {
+        private string _name;
+        private string _value;
+
+        public Property(string name, string val)
+        {
+            _name = name;
+            _value = val;
+        }
+
+        public string Name
+        {
+            get { return _name; }
+            set { _name = value; }
+        }
+
+        public string Value
+        {
+            get { return _value; }
+            set { _value = value; }
+        }
+    }
 
     /// <summary>
     /// Duration represents a time interval.

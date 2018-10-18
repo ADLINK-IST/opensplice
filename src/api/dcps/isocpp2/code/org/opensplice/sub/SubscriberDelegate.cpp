@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -77,7 +78,7 @@ SubscriberDelegate::SubscriberDelegate(
     }
 
     std::string name = this->dp_.delegate()->create_child_name("subscriber");
-    uSub = u_subscriberNew(uPar, name.c_str(), uQos, false);
+    uSub = u_subscriberNew(uPar, name.c_str(), uQos);
     u_subscriberQosFree (uQos);
     if (!uSub) {
         ISOCPP_THROW_EXCEPTION(ISOCPP_ERROR, "Could not create subscriber.");
@@ -111,8 +112,10 @@ SubscriberDelegate::init(ObjectDelegate::weak_ref_type weak_ref)
     this->listener_dispatcher_set(this->dp_.delegate()->listener_dispatcher_get());
     /* This only starts listening when the status mask shows interest. */
     this->listener_enable();
-    /* Enable when needed. */
-    if (this->dp_.delegate()->is_auto_enable()) {
+    /* Enable when needed; in ISOCPP2 there is no factory for the DomainParticipant,
+     * so the DomainParticipant is always enabled. */
+    assert(this->dp_.delegate()->is_enabled());
+    if (this->dp_.delegate()->is_auto_enable() && !(this->is_group_coherent())) {
         this->enable();
     }
 }
@@ -198,37 +201,6 @@ SubscriberDelegate::end_coherent_access()
     ISOCPP_REPORT_STACK_END();
 }
 
-
-/*
-void SubscriberDelegate::init_builtin(DDS::Subscriber_ptr ddssub)
-{
-    if(ddssub == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                    OSPL_CONTEXT_LITERAL(
-                        "dds::core::NullReferenceError : Unable to get builtin Subscriber. "
-                        "Nil return from ::get_builtin_subscriber")));
-
-    DDS::SubscriberQos qos;
-    DDS::ReturnCode_t result = ddssub->get_qos(qos);
-    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_qos"));
-    qos_ = org::opensplice::sub::qos::convertQos(qos);
-
-    sub_.reset(ddssub, ::org::opensplice::core::SubDeleter(dp_->dp_));
-
-    DDS::DataReaderQos oldqos;
-    result = sub_->get_default_datareader_qos(oldqos);
-    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
-
-    default_dr_qos_ = org::opensplice::sub::qos::convertQos(oldqos);
-    entity_ = DDS::Entity::_narrow(ddssub);
-
-    org::opensplice::core::SubDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::SubDeleter>(sub_);
-    if(d)
-    {
-        d->set_builtin();
-    }
-}
-*/
-
 const dds::domain::DomainParticipant&
 SubscriberDelegate::participant() const
 {
@@ -277,7 +249,6 @@ std::vector<org::opensplice::sub::AnyDataReaderDelegate::ref_type>
 SubscriberDelegate::find_datareaders(const std::string& topic_name)
 {
     std::vector<org::opensplice::sub::AnyDataReaderDelegate::ref_type> readers;
-    //org::opensplice::sub::AnyDataReaderDelegate::ref_type reader;
 
     org::opensplice::core::EntitySet::vector entities;
     org::opensplice::core::EntitySet::vectorIterator iter;
@@ -355,6 +326,13 @@ SubscriberDelegate::is_auto_enable() const
     return autoEnable;
 }
 
+bool
+SubscriberDelegate::is_group_coherent() const
+{
+    org::opensplice::core::ScopedObjectLock scopedLock(*this);
+    return this->qos_.delegate().policy<dds::core::policy::Presentation>().delegate().coherent_access() &&
+            this->qos_.delegate().policy<dds::core::policy::Presentation>().delegate().access_scope() == dds::core::policy::PresentationAccessScopeKind::GROUP;
+}
 
 void
 SubscriberDelegate::listener_notify(

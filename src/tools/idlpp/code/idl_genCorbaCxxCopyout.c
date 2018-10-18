@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -1201,7 +1202,7 @@ idl_arrayElements(
                 idl_arrayLoopCopy(typeArray, buf, to, indent, stacRequested, catsRequested);
                 os_free(buf);
             } else {
-                idl_printIndent(indent);
+            	idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)%s, %s, sizeof (*%s));\n", cpyTo, from, from);
             }
             /* QAC EXPECT 3416; No side effect here */

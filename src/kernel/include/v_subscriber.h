@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -53,12 +54,13 @@ extern "C" {
 #define v_subscriberParticipant(_this) \
         v_participant(_this->participant)
 
+_Check_return_
+_Ret_maybenull_
 OS_API v_subscriber
 v_subscriberNew(
-    v_participant participant,
-    const c_char *name,
-    v_subscriberQos qos,
-    c_bool enable);
+    _In_ v_participant participant,
+    _In_opt_z_ const c_char *name,
+    _In_opt_ v_subscriberQos qos);
 
 OS_API void
 v_subscriberFree(
@@ -73,33 +75,24 @@ v_subscriberSetQos(
     v_subscriber _this,
     v_subscriberQos qos);
 
-OS_API v_result
-v_subscriberEnable(
-    v_subscriber _this);
-
 OS_API void
 v_subscriberDeinit(
    v_subscriber _this);
-
-OS_API void
-v_subscriberSubscribe(
-    v_subscriber _this,
-    const c_char *partitionExpr);
 
 OS_API c_iter
 v_subscriberLookupPartitions(
     v_subscriber _this,
     const c_char *partitionExpr);
 
-OS_API c_bool
-v_subscriberCheckPartitionInterest(
-    v_subscriber _this,
-    v_partition partition);
-
 OS_API v_result
 v_subscriberAddReader(
-    v_subscriber _this,
-    v_reader reader);
+    _Inout_ v_subscriber _this,
+    _Inout_ v_reader reader);
+
+OS_API v_result
+v_subscriberEnableReader(
+    _Inout_ v_subscriber s,
+    _Inout_ v_reader r);
 
 OS_API void
 v_subscriberRemoveReader(
@@ -110,10 +103,6 @@ OS_API c_iter
 v_subscriberLookupReadersByTopic(
     v_subscriber _this,
     const c_char *topicName);
-
-OS_API v_presentationKind
-v_subscriberAccessScope(
-    v_subscriber _this);
 
 OS_API v_result
 v_subscriberBeginAccess(

@@ -1,0 +1,60 @@
+/* -*- C -*- */
+/*
+ *                         Vortex OpenSplice
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
+ *
+ *   Licensed under the ADLINK Software License Agreement Rev 2.7 2nd October
+ *   2014 (the "License"); you may not use this file except in compliance with
+ *   the License.
+ *   You may obtain a copy of the License at:
+ *                      $OSPL_OUTER_HOME/LICENSE
+ *
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
+module q_osplserModule {
+  typedef struct type4u_s {
+    c_ulong a;
+    c_ulong b;
+    c_ulong c;
+    c_ulong d;
+  } type4u;
+
+  typedef struct pmd_s {
+    c_ulong a;
+    c_ulong b;
+    c_ulong c; /* officially: octets */
+    c_ulong kind; /* officially: octets */
+    sequence<octet> value;
+  } pmd;
+
+  enum bubble_kind {
+    BTK_DELETE_WRITER
+  };
+
+  typedef struct bubble_s {
+    bubble_kind kind;
+    c_ulong systemId;
+    c_ulong localId;
+    c_ulong serial;
+  } bubble;
+
+  struct name_value {
+    string name;
+    string value;
+  };
+  typedef sequence<name_value> seq_name_value;
+
+  struct ddsi_control {
+    c_ulong systemId;
+    c_ulong localId;
+    c_ulong serial;
+    c_bool deaf;
+    c_bool mute;
+    c_double duration; /* 0: infinite */
+  };
+};

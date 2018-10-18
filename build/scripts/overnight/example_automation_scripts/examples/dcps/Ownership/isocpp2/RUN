@@ -6,18 +6,25 @@ startOSPL
 
 echo "=== Launching Ownership "
 ./subscriber > subResult.txt &
+sub_pid=$!
 sleep 5
 
 echo === starting publisher "pub1" with ownership strength 5
 ./publisher pub1 5 40 1 > pubResult_1.txt &
+pub1_pid=$!
 
 echo === Waiting 2 seconds ...
 sleep 2
 
 echo === starting publisher "pub2" with ownership strength 10
 ./publisher pub2 10 5 0 > pubResult_2.txt &
+pub2_pid=$!
 
 sleep 15
+
+waitForProcessTermination $sub_pid 30
+waitForProcessTermination $pub1_pid 30
+waitForProcessTermination $pub2_pid 30
 
 ownershipCheckResult
 

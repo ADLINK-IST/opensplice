@@ -1,8 +1,9 @@
-/*
- *                         OpenSplice DDS
+﻿/*
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,21 +30,21 @@ namespace DDS
     {
         protected List<WaitSet> waitSetList = new List<WaitSet>();
         protected bool deinitializing = false;
-        
+
         internal Condition()
         {
             // Base class handles everything.
         }
-        
+
         internal override ReturnCode init(IntPtr userPtr, bool isWeak)
         {
             return base.init(userPtr, isWeak);
         }
-        
+
         internal override ReturnCode wlReq_deinit()
         {
             ReturnCode result = DDS.ReturnCode.Ok;
-            
+
             // Create a temporary representation of the waitSetList, since
             // it is not allowed to remove items from a collection during
             // a walk through that same collection. So we walk through
@@ -66,10 +67,10 @@ namespace DDS
                 waitSetList = null;
                 result = base.wlReq_deinit();
             }
-                
+
             return result;
         }
-                
+
         internal virtual ReturnCode AttachToWaitSet(WaitSet waitset)
         {
             ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
@@ -86,20 +87,13 @@ namespace DDS
                             /* The waitset will detach itself when it is destructed. */
                             waitSetList.Add(waitset);
                         }
-                    } 
+                    }
                     else
                     {
                         result = DDS.ReturnCode.Ok;
                     }
                 }
             }
-
-//            if (result != DDS.ReturnCode.Ok) {
-//                OS_REPORT(OS_ERROR,
-//                            "Condition::attach_waitset", 0,
-//                            "attach failed with %s",
-//                            DDS::OpenSplice::Utils::returnCodeToString(result));
-//            }
 
             return result;
         }
@@ -124,13 +118,6 @@ namespace DDS
                     }
                 }
             }
-
-//            if (result != DDS.ReturnCode.Ok) {
-//                OS_REPORT(OS_ERROR,
-//                            "Condition::detach_waitset", 0,
-//                            "detach failed with %s",
-//                            DDS::OpenSplice::Utils::returnCodeToString(result));
-//            }
 
             return result;
         }

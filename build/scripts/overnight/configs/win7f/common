@@ -16,3 +16,4 @@ unset USERPROFILE
 #There is no TAO for VS2015
 unset TAO_ROOT
 export OVERRIDE_STRICT_CHECKS=no
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

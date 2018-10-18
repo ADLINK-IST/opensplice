@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -251,9 +252,9 @@ u_entityGetInstanceHandle(
 
     result = u_observableReadClaim(u_observable(_this), (v_public *)&ke, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
-/* TODO : the handle retrieval is incorrect,
- *        must be retrieved from build-in reader.
- */
+        /* TODO : the handle retrieval is incorrect,
+         *        must be retrieved from build-in reader.
+         */
         handle = u_instanceHandleFromGID(v_publicGid(v_public(ke)));
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     } else {
@@ -380,4 +381,42 @@ u_entityDisableCallbacks(
         }
     }
     return triggered;
+}
+
+u_result
+u_entityGetProperty(
+    _In_ const u_entity _this,
+    _In_ const os_char * name,
+    _Out_ os_char ** value)
+{
+    u_result result  = U_RESULT_ILL_PARAM;
+    v_entity ke;
+    assert(_this != NULL);
+    result = u_observableWriteClaim(u_observable(_this), (v_public*)(&ke), C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        result = u_resultFromKernel(v_entityGetProperty(ke, name, value ));
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, OS_FUNCTION, result, "Failed to claim Domain.");
+    }
+    return result;
+}
+
+u_result
+u_entitySetProperty(
+    _In_ const u_entity _this,
+    _In_ const os_char * name,
+    _In_ const os_char * value)
+{
+    u_result result = U_RESULT_ILL_PARAM;
+    v_entity ke;
+    assert(_this != NULL);
+    result = u_observableWriteClaim(u_observable(_this), (v_public*)(&ke), C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        result = u_resultFromKernel(v_entitySetProperty(ke, name, value ));
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, OS_FUNCTION, result, "Failed to claim Domain.");
+    }
+    return result;
 }

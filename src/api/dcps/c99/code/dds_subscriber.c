@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,6 +27,8 @@
 struct SubscriberInfo {
     struct DDS_EntityUserData_s _parent;
     dds_subscriberlistener_t *listener;
+
+    bool ownParticipant;
 };
 
 
@@ -90,7 +93,7 @@ on_sample_rejected (
         dds_sample_rejected_status_t s;
         s.total_count = status->total_count;
         s.total_count_change = status->total_count_change;
-        s.last_reason = status->last_reason;
+        s.last_reason = (dds_sample_rejected_status_kind) status->last_reason;
         s.last_instance_handle = status->last_instance_handle;
         listener->readerlistener.on_sample_rejected(reader, &s);
     }
@@ -253,19 +256,45 @@ dds_subscriber_create(
     const dds_qos_t * qos,
     const dds_subscriberlistener_t * listener)
 {
-    DDS_ReturnCode_t result;
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
     struct SubscriberInfo *info;
     struct DDS_SubscriberListener dpl;
     struct DDS_SubscriberListener *lp = NULL;
     DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : 0;
     DDS_SubscriberQos *sQos;
+    bool ownParticipant = false;
 
     DDS_REPORT_STACK();
 
-    if (pp && subscriber) {
-        *subscriber = NULL;
+    if (!subscriber) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        DDS_REPORT(result, "Subscriber parameter is NULL.");
+    }
+    if (result == DDS_RETCODE_OK) {
+        if (!pp) {
+            pp = dds_participant_lookup (DDS_DOMAIN_ID_DEFAULT);
+            if (!pp) {
+                result = dds_participant_create(&pp, DDS_DOMAIN_ID_DEFAULT, qos, NULL);
+                if (result != DDS_RETCODE_OK){
+                    DDS_REPORT(result, "Failed to create an implicit DomainParticipant.");
+                } else {
+                  ownParticipant = true;
+                }
+            }
+        }
+    }
 
+    if (result == DDS_RETCODE_OK) {
         info = dds_subscriber_info_new();
+        if (!info) {
+            result = DDS_RETCODE_ERROR;
+            DDS_REPORT(result, "Failed to create publisher info.");
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
+
+        *subscriber = NULL;
+        info->ownParticipant = ownParticipant;
 
         if (listener) {
             info->listener = os_malloc(sizeof(dds_subscriberlistener_t));
@@ -291,9 +320,6 @@ dds_subscriber_create(
             result = dds_report_get_error_code();
         }
         DDS_Entity_release_user_data((DDS_EntityUserData)info);
-    } else {
-        return DDS_RETCODE_BAD_PARAMETER;
-        DDS_REPORT(result, "DomainParticipant or subscriber parameter is NULL.");
     }
 
     DDS_REPORT_FLUSH(pp, result != DDS_RETCODE_OK);
@@ -336,7 +362,7 @@ dds_subscriber_set_listener(
 {
     DDS_ReturnCode_t result               = DDS_RETCODE_ERROR;
     struct SubscriberInfo *info           = NULL;
-    struct DDS_SubscriberListener dpl     = {0};
+    struct DDS_SubscriberListener dpl     = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     dds_subscriberlistener_t *newListener = NULL;
     dds_subscriberlistener_t *oldListener = NULL;
     DDS_StatusMask mask                   = 0;
@@ -372,11 +398,18 @@ dds_subscriber_delete(
 {
     int result;
     DDS_DomainParticipant participant;
+    struct SubscriberInfo *info = NULL;
 
     result = DDS_Subscriber_delete_contained_entities(e);
     if (result == DDS_RETCODE_OK) {
         participant = DDS_Subscriber_get_participant(e);
         if (participant) {
+            if (DDS_Entity_claim_user_data(e, (DDS_EntityUserData *)&info) == DDS_RETCODE_OK) {
+                if (info->ownParticipant) {
+                    dds_entity_delete(participant);
+                }
+                DDS_Entity_release_user_data((DDS_EntityUserData)info);
+            }
             result = DDS_DomainParticipant_delete_subscriber(participant, e);
         } else {
             result = DDS_RETCODE_ALREADY_DELETED;

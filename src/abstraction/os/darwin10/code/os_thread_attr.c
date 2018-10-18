@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,16 +28,6 @@
  */
 #include <assert.h>
 
-#ifndef OSPL_ENV_PURIFY
-/**
- * Default stack size set to 256KB, when it is too small the OS
- * will automatically increase the stack size
- */
-#define OS_STACKSIZE_DEFAULT ((size_t)256*1024)
-#else
-#define OS_STACKSIZE_DEFAULT ((size_t)10*1024*1024)
-#endif
-
 /** \brief Initialize thread attributes
  *
  * - Set \b procAttr->schedClass to \b OS_SCHED_DEFAULT
@@ -50,6 +41,6 @@ os_threadAttrInit (
 {
     assert (threadAttr != NULL);
     threadAttr->schedClass = OS_SCHED_DEFAULT;
-    threadAttr->schedPriority = sched_get_priority_min (SCHED_OTHER);
-    threadAttr->stackSize = OS_STACKSIZE_DEFAULT;
+    threadAttr->schedPriority = (sched_get_priority_min (SCHED_OTHER) + sched_get_priority_max (SCHED_OTHER)) / 2;
+    threadAttr->stackSize = 0;
 }

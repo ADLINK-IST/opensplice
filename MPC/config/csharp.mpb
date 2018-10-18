@@ -20,7 +20,16 @@ project {
         // add '.' as a reference path as it is relative. Please specify
         // an absolute path." on C# project load into the IDE
         libpaths -= .
-    }
+  }
+  // needed to expand the env var into an actual value
+  expand(ospl_dotnet) {
+    $DOTNET
+  }
+
+  specific(prop:windows) {
+    TargetFrameworkVersion = $(ospl_dotnet)
+  }
+
 }
 // force platform to 32 bit when compiling for a 32 bit platform
 // default AnyCPU gives problems when compiled on a 64 bit architecture see OSPL-6171

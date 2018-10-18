@@ -1,0 +1,24 @@
+Kernel
+        Filename                DynamicDownload
+EndKernel
+
+AddressSpace
+        Name                            durability
+        Filename                        durability
+        MemoryPoolSize                  0x100000
+        MaximumPriority                 254
+        MaximumWeight                   65535
+        Language                        C
+        HeapSize                        0x200000
+
+        Object
+           MemoryRegion
+                                        Name .argsection
+                                        Section .argsection
+        EndObject
+
+        Task Initial
+                StartIt true
+                StackSize 0x10000
+        EndTask
+EndAddressSpace

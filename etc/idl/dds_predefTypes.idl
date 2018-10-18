@@ -1,0 +1,32 @@
+#ifndef DDS_PREDEF_TYPES_IDL
+#define DDS_PREDEF_TYPES_IDL
+
+module DDS {
+
+    typedef sequence<octet> ByteSeq;
+
+    struct _String {
+        string value;
+    };
+#pragma keylist String
+
+    struct KeyedString {
+        string key;
+        string value;
+    };
+#pragma keylist KeyedString key
+
+    struct Bytes {
+        ByteSeq value;
+    };
+#pragma keylist Bytes
+
+    struct KeyedBytes {
+        string key;
+        ByteSeq value;
+    };
+#pragma keylist KeyedBytes key
+
+};
+
+#endif /* DDS_BUILTIN_TYPES_IDL */

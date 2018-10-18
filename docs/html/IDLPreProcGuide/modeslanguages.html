@@ -59,10 +59,10 @@ the diagram <a class="reference internal" href="#id2">Integrated C++ ORB</a>.</p
 <em>TypeSupport</em>, <em>DataReader</em> and <em>DataWriter</em>, as well as C++ implementations
 and support code. The ORB pre-processor generates from the generated IDL
 interfaces the C++ specialized interfaces for that specific ORB. These interfaces
-are included by the application C++ code as well as the OpenSplice DDS generated
+are included by the application C++ code as well as the Vortex OpenSplice generated
 specialized C++ implementation code. The application C++ code as well as the
 specialized C++ implementation code (with the support functions) is compiled into
-object code and linked together with the applicable OpenSplice libraries and the
+object code and linked together with the applicable Vortex OpenSplice libraries and the
 ORB libraries.</p>
 <dl class="docutils">
 <dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
@@ -73,11 +73,11 @@ and/or compiler version.</dd>
 <p class="centered" id="id2">
 <strong><strong>Integrated C++ ORB</strong></strong></p><a class="reference internal image-reference" href="_images/IntegratedCppORB.png"><img alt="Integrated C++ ORB" class="align-center" src="_images/IntegratedCppORB.png" style="width: 150mm;" /></a>
 <p>The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
-<a class="reference internal" href="#integrated-c-orb-opensplice-idl-pre-processor-details">Integrated C++ ORB OpenSplice IDL Pre-processor Details</a>.
+<a class="reference internal" href="#integrated-c-orb-vortex-opensplice-idl-pre-processor-details">Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details</a>.
 It shows in more detail which files are generated, given an input file (in
 this example <tt class="docutils literal"><span class="pre">foo.idl</span></tt>).</p>
-<p class="centered" id="integrated-c-orb-opensplice-idl-pre-processor-details">
-<strong><strong>Integrated C++ ORB OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/IntegratedCppORB_detail.png"><img alt="Integrated C++ ORB OpenSplice IDL Pre-processor Details" class="align-center" src="_images/IntegratedCppORB_detail.png" style="width: 150mm;" /></a>
+<p class="centered" id="integrated-c-orb-vortex-opensplice-idl-pre-processor-details">
+<strong><strong>Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/IntegratedCppORB_detail.png"><img alt="Integrated C++ ORB Vortex OpenSplice IDL Pre-processor Details" class="align-center" src="_images/IntegratedCppORB_detail.png" style="width: 150mm;" /></a>
 <p>The file <tt class="docutils literal"><span class="pre">foo.h</span></tt> is the only file that needs to be included by the application.
 It includes all files needed by the application to interact with the DCPS interface.</p>
 <p>The file <tt class="docutils literal"><span class="pre">fooDcps.idl</span></tt> is an IDL definition of the specialized <em>TypeSupport</em>,
@@ -85,8 +85,8 @@ It includes all files needed by the application to interact with the DCPS interf
 C++ interface files.</p>
 <p>The <tt class="docutils literal"><span class="pre">fooDcps_impl.*</span></tt> files contain the specialized <em>TypeSupport</em>, <em>DataReader</em>
 and <em>DataWriter</em> implementation classes needed to communicate the type <em>via</em>
-OpenSplice DDS.</p>
-<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by OpenSplice DDS
+Vortex OpenSplice.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by Vortex OpenSplice
 in order to be able to handle the specific data types.</p>
 </div>
 <div class="section" id="c-standalone">
@@ -102,7 +102,7 @@ for compatibility purposes).</p>
 processing stages related to the C standalone context.
 For C++ the different stages are equal to the C standalone context.
 Because there is no ORB involved, all pre-processing is performed by the
-OpenSplice DDS IDL Pre-processor. The generated specialized implementations
+Vortex OpenSplice IDL Pre-processor. The generated specialized implementations
 and the application’s C++ code must be compiled into object code, plus all objects
 must be linked with the appropriate Vortex OpenSplice libraries.</p>
 </div>
@@ -126,7 +126,7 @@ scope is not used but <tt class="docutils literal"><span class="pre">C99</span><
 </div>
 <div class="section" id="id3">
 <h2>8.5. C Standalone<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
-<p>The <em>C standalone</em> mode provides an OpenSplice DDS context which does not need
+<p>The <em>C standalone</em> mode provides an Vortex OpenSplice context which does not need
 an ORB. Vortex OpenSplice resolves all implied IDL to C language mapping
 functions and requirements. The only difference when using the standalone
 mode is that DDS is used as the naming scope for definitions and functions.</p>
@@ -139,11 +139,11 @@ plus all objects must be linked with the appropriate Vortex OpenSplice libraries
 <p class="centered" id="id4">
 <strong><strong>C Standalone</strong></strong></p><a class="reference internal image-reference" href="_images/CStandalone.png"><img alt="C Standalone" class="align-center" src="_images/CStandalone.png" style="width: 150mm;" /></a>
 <p>The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
-the diagram <a class="reference internal" href="#c-standalone-opensplice-idl-pre-processor-details">C Standalone OpenSplice IDL Pre-processor Details</a>,
+the diagram <a class="reference internal" href="#c-standalone-vortex-opensplice-idl-pre-processor-details">C Standalone Vortex OpenSplice IDL Pre-processor Details</a>,
 providing more detail about the files generated when provided with an
 input file (<tt class="docutils literal"><span class="pre">foo.idl</span></tt> this example).</p>
-<p class="centered" id="c-standalone-opensplice-idl-pre-processor-details">
-<strong><strong>C Standalone OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/CStandalone_detail.png"><img alt="C Standalone OpenSplice IDL Pre-processor Details" class="align-center" src="_images/CStandalone_detail.png" style="width: 150mm;" /></a>
+<p class="centered" id="c-standalone-vortex-opensplice-idl-pre-processor-details">
+<strong><strong>C Standalone Vortex OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/CStandalone_detail.png"><img alt="C Standalone Vortex OpenSplice IDL Pre-processor Details" class="align-center" src="_images/CStandalone_detail.png" style="width: 150mm;" /></a>
 <p>The file <tt class="docutils literal"><span class="pre">foo.h</span></tt> is the only file that needs to be included by the application.
 It itself includes all necessary files needed by the application in order to
 interact with the DCPS interface.</p>
@@ -151,8 +151,8 @@ interact with the DCPS interface.</p>
 accordance with the
 <a class="reference internal" href="bibliography.html#omg-c-language-1999"><em>OMG&#8217;s IDL-to-C language mapping specification</em></a>.</p>
 <p>The <tt class="docutils literal"><span class="pre">fooSacDcps.*</span></tt> files contain the specialized <em>TypeSupport</em>, <em>DataReader</em>
-and <em>DataWriter</em> classes needed to communicate the type <em>via</em> OpenSplice DDS.</p>
-<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by OpenSplice DDS in
+and <em>DataWriter</em> classes needed to communicate the type <em>via</em> Vortex OpenSplice.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by Vortex OpenSplice in
 order to be able to handle the specific data types.</p>
 </div>
 <div class="section" id="c99-standalone">
@@ -167,7 +167,7 @@ to the corresponding C99 types. Further bounded strings are mapped to char array
 with a upperboundone larger than specified in the idl to allow for the terminating
 0 character.</p>
 <p>Further an additional file <tt class="docutils literal"><span class="pre">fooDcps.c</span></tt> is generated which contains the information
-to register the type information with OpenSplice DDS.</p>
+to register the type information with Vortex OpenSplice.</p>
 </div>
 <div class="section" id="java-standalone">
 <h2>8.7. Java Standalone<a class="headerlink" href="#java-standalone" title="Permalink to this headline">¶</a></h2>
@@ -197,11 +197,11 @@ ORB. The Vortex OpenSplice IDL Pre-processor generates IDL code for the
 specialized <em>TypeSupport</em>, <em>DataReader</em> and <em>DataWriter</em>, as well as Java
 implementations and support code. The ORB pre-processor generates the
 Java <tt class="docutils literal"><span class="pre">‘Foo’</span></tt> classes, which must be done manually. These classes are
-included with the application Java code as well as the OpenSplice DDS
+included with the application Java code as well as the Vortex OpenSplice
 generated specialized Java implementation code.
 The application Java code as well as the specialized Java implementation code
 (with the support functions) is compiled into class files and can be used
-together with the applicable OpenSplice libraries and the ORB libraries.</p>
+together with the applicable Vortex OpenSplice libraries and the ORB libraries.</p>
 <p>The artifacts and processing stages related to the Java CORBA cohabitation context
 are similar to those of the standalone mode, with one exception:
 the <tt class="docutils literal"><span class="pre">‘Foo’</span></tt> classes will not be generated by the Vortex OpenSplice IDL Pre-processor.
@@ -277,7 +277,7 @@ Instead these classes should be generated by the JacORB IDL Pre-processor.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

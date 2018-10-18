@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -279,7 +280,7 @@ template <typename T, template <typename Q> class DELEGATE>
 DataReader<T, DELEGATE>::DataReader(
     const dds::sub::Subscriber& sub,
     const dds::topic::Topic<T>& topic):
-        ::dds::core::Reference< DELEGATE<T> >(new DELEGATE<T>(sub, topic, sub->default_datareader_qos()))
+        ::dds::core::Reference< DELEGATE<T> >(new DELEGATE<T>(sub, topic, sub.is_nil() ? dds::sub::qos::DataReaderQos() : sub->default_datareader_qos()))
 {
     ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
 
@@ -295,7 +296,7 @@ DataReader<T, DELEGATE>::DataReader(
     const dds::core::status::StatusMask& mask) :
         ::dds::core::Reference< DELEGATE<T> >(new DELEGATE<T>(sub, topic, qos, listener, mask))
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
 
     this->delegate()->init(this->impl_);
 }
@@ -307,7 +308,7 @@ DataReader<T, DELEGATE>::DataReader(
     const dds::topic::ContentFilteredTopic<T>& topic) :
         ::dds::core::Reference< DELEGATE<T> >(new DELEGATE<T>(sub, topic, sub.default_datareader_qos()))
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
 
     this->delegate()->init(this->impl_);
 }
@@ -321,7 +322,7 @@ DataReader<T, DELEGATE>::DataReader(
     const dds::core::status::StatusMask& mask) :
         ::dds::core::Reference< DELEGATE<T> >(new DELEGATE<T>(sub, topic, qos, listener, mask))
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(sub);
 
     this->delegate()->init(this->impl_);
 }
@@ -554,6 +555,16 @@ dds::sub::detail::DataReader<T>::DataReader(const dds::sub::Subscriber& sub,
 {
     ISOCPP_REPORT_STACK_DDS_BEGIN(topic);
 
+    /* Create a implicit subscriber with the topic participant when needed. */
+    if (sub_.is_nil()) {
+        sub_ = dds::sub::Subscriber(topic->domain_participant());
+    }
+
+    /* Merge the topic QoS implicitly when needed. */
+    if (topic.qos()->force_merge()) {
+        qos_ = topic.qos();
+    }
+
     common_constructor(listener, mask);
 }
 
@@ -565,7 +576,17 @@ dds::sub::detail::DataReader<T>::DataReader(const dds::sub::Subscriber& sub,
            const dds::core::status::StatusMask& mask)
     : ::org::opensplice::sub::AnyDataReaderDelegate(qos, topic), sub_(sub)
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(topic);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(topic);
+
+    /* Create a implicit subscriber with the topic participant when needed. */
+    if (sub_.is_nil()) {
+        sub_ = dds::sub::Subscriber(topic->domain_participant());
+    }
+
+    /* Merge the topic QoS implicitly when needed. */
+    if (topic.topic().qos()->force_merge()) {
+        qos_ = topic.topic().qos();
+    }
 
     common_constructor(listener, mask);
 }
@@ -589,10 +610,11 @@ dds::sub::detail::DataReader<T>::common_constructor(
     u_subscriber uSubscriber = (u_subscriber)(sub_.delegate()->get_user_handle());
 
     std::string expression = this->AnyDataReaderDelegate::td_.delegate()->reader_expression();
-    c_value *params = this->AnyDataReaderDelegate::td_.delegate()->reader_parameters();
+    std::vector<c_value> params = this->AnyDataReaderDelegate::td_.delegate()->reader_parameters();
 
     std::string name = "reader <" + this->AnyDataReaderDelegate::td_.name() + ">";
-    u_dataReader uReader = u_dataReaderNew(uSubscriber, name.c_str(), expression.c_str(), params, uQos, OS_FALSE);
+    u_dataReader uReader = u_dataReaderNew(uSubscriber, name.c_str(), expression.c_str(),
+            params.empty() ? NULL : &params[0], params.size(), uQos);
     u_readerQosFree(uQos);
 
     if (!uReader) {
@@ -634,7 +656,7 @@ dds::sub::detail::DataReader<T>::init(ObjectDelegate::weak_ref_type weak_ref)
     /* This only starts listening when the status mask shows interest. */
     this->listener_enable();
     /* Enable when needed. */
-    if (this->sub_.delegate()->is_auto_enable()) {
+    if (this->sub_.delegate()->is_enabled() && this->sub_.delegate()->is_auto_enable()) {
         this->enable();
     }
 }
@@ -1182,25 +1204,25 @@ dds::sub::detail::DataReader<T>::read(SamplesFWIterator samples,
 
     switch(selector.mode) {
     case SELECT_MODE_READ:
-        this->AnyDataReaderDelegate::read((u_dataReader)(userHandle), selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read((u_dataReader)(userHandle), selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_INSTANCE:
-        this->AnyDataReaderDelegate::read_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_NEXT_INSTANCE:
-        this->AnyDataReaderDelegate::read_next_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read_next_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::read_w_condition(uQuery, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read_w_condition(uQuery, holder, max_samples);
         break;
     case SELECT_MODE_READ_INSTANCE_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::read_instance_w_condition(uQuery, selector.handle, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read_instance_w_condition(uQuery, selector.handle, holder, max_samples);
         break;
     case SELECT_MODE_READ_NEXT_INSTANCE_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::read_next_instance_w_condition(uQuery, selector.handle, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::read_next_instance_w_condition(uQuery, selector.handle, holder, max_samples);
         break;
     }
 
@@ -1219,25 +1241,25 @@ dds::sub::detail::DataReader<T>::take(SamplesFWIterator samples,
 
     switch(selector.mode) {
     case SELECT_MODE_READ:
-        this->AnyDataReaderDelegate::take((u_dataReader)(userHandle), selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take((u_dataReader)(userHandle), selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_INSTANCE:
-        this->AnyDataReaderDelegate::take_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_NEXT_INSTANCE:
-        this->AnyDataReaderDelegate::take_next_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take_next_instance((u_dataReader)(userHandle), selector.handle, selector.state_filter_, holder, max_samples);
         break;
     case SELECT_MODE_READ_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::take_w_condition(uQuery, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take_w_condition(uQuery, holder, max_samples);
         break;
     case SELECT_MODE_READ_INSTANCE_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::take_instance_w_condition(uQuery, selector.handle, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take_instance_w_condition(uQuery, selector.handle, holder, max_samples);
         break;
     case SELECT_MODE_READ_NEXT_INSTANCE_WITH_CONDITION:
         uQuery = selector.query_.delegate()->get_user_query();
-        this->AnyDataReaderDelegate::take_next_instance_w_condition(uQuery, selector.handle, holder, selector.max_samples_);
+        this->AnyDataReaderDelegate::take_next_instance_w_condition(uQuery, selector.handle, holder, max_samples);
         break;
     }
 

@@ -2,10 +2,10 @@
 #define OSPL_DDS_DCPS_BUILTINTOPICS_IDL
 
 /**
-*This file (name) was orginally in ./src/api/dcps/ccpp/idl/.
-*It's been modified to include from another file the base definitions
-*required for this 'built in topics' superset... :
-*/
+ * This file (name) was orginally in ./src/api/dcps/ccpp/idl/.
+ * It's been modified to include from another file the base definitions
+ * required for this 'built in topics' superset... :
+ */
 
 #include "dds_builtinTopics.idl"
 

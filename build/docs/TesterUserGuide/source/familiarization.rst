@@ -25,8 +25,8 @@ Step 2:  Start the Tester:
 
 +  On Linux, run ``ospltest``.
 
-+  On Windows, choose Vortex OpenSplice Tester from the *Start* menu 
-   or run ``ospltest`` from the Vortex OpenSplice command prompt.
++  On Windows, choose Launcher from the *Start* menu.  In the Launcher *Tools* tab, click on the *Tester* button.   
+   Or run ``ospltest`` from a command prompt.
 
 .. _`Starting Tester`:
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -55,15 +56,13 @@ os_signalHandlerIgnoreJavaSignals (void)
 }
 
 os_result
-os_signalHandlerNew(
-    os_boolean handleExitSignalsOnly)
+os_signalHandlerNew()
 {
     /* The signalHandler is always started in the os_processModuleInit() on Win32.
      * Therefore later invocations to os_signalHandlerNew() have no effect on
      * this platform. */
     assert(signalHandlerObj);
 
-    OS_UNUSED_ARG(handleExitSignalsOnly);
 
     return os_resultSuccess;
 }
@@ -250,6 +249,7 @@ CtrlHandler(
 {
     os_signalHandler _this = signalHandlerObj;
     os_callbackArg arg;
+    os_uint32 index;
 
     assert(_this);
 
@@ -266,12 +266,10 @@ CtrlHandler(
     }
 
     arg.sig = (void*)(os_address)0;
-    arg.ThreadId = os_threadIdToInteger(os_threadIdSelf());
-    if(os__signalHandlerExitRequestCallbackInvoke(&_this->callbackInfo, arg)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    index = pa_inc32_nv(&_this->callbackInfo.exitRequestInsertionIndex) % EXIT_REQUEST_BUFFER_SIZE;
+    os__signalHandlerExitRequestGetThreadContextCallbackInvoke(&_this->callbackInfo, index);
+    os_signalHandlerDeleteDeregisteredExitRequestCallbacks(&_this->callbackInfo);
+    return TRUE;
 }
 
 static void *
@@ -295,23 +293,27 @@ signalEmulatorThread(
             result = ReadFile(_this->signalPipe, &sig, sizeof(sig), &nread, NULL);
             if (result && (nread == sizeof(sig)) && sig > 0) {
                 os_callbackArg arg;
+                os_uint32 index;
+
                 OS_DEBUG_1("signalEmulatorThread", "Received signal %d", sig);
 
                 if (sig == OS_SIGKILL) {
                    _exit(0);
                 }
                 arg.sig = (void*)(os_address)sig;
-                arg.ThreadId = 0;
+                index = pa_inc32_nv(&_this->callbackInfo.exitRequestInsertionIndex) % EXIT_REQUEST_BUFFER_SIZE;
+                os__signalHandlerExitRequestGetThreadContextCallbackInvoke(&_this->callbackInfo, index);
                 if(os__signalHandlerExitRequestCallbackInvoke(&_this->callbackInfo, arg) == 0){
                     /* Implement the default-behaviour in case no exit-request
                      * handlers are installed. */
                     os_signalHandlerFinishExitRequest(arg);
                 }
+                os_signalHandlerDeleteDeregisteredExitRequestCallbacks(&_this->callbackInfo);
             }
         } else {
             /* Poll for availability of pipe. Would be odd, since it is set to
              * block until connected, but doesn't really hurt. */
-            os_sleep(delay);
+            ospl_os_sleep(delay);
         }
     } while (sig >= 0);
 

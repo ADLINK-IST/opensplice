@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,7 +34,6 @@
 #if defined(OSPL_USE_CXX11)
 #  include <memory>
 #  include <type_traits>
-#  include <array>
 #  define OSPL_CXX11_STD_MODULE ::std
 
 /* Compiling to use Tech Report 1 headers */
@@ -41,11 +41,9 @@
 #  ifdef _MSC_VER
 #    include <memory>
 #    include <type_traits>
-#    include <array>
 #  else
 #    include <tr1/memory>
 #    include <tr1/type_traits>
-#    include <tr1/array>
 #  endif
 #  define OSPL_CXX11_STD_MODULE ::std::tr1
 
@@ -54,7 +52,6 @@
 #  include <boost/shared_ptr.hpp>
 #  include <boost/weak_ptr.hpp>
 #  include <boost/type_traits.hpp>
-#  include <boost/array.hpp>
 #  define OSPL_CXX11_STD_MODULE ::boost
 
 #else
@@ -93,48 +90,6 @@ TO dds::core::polymorphic_cast(FROM& from)
     }
     return to;
 }
-
-/* We need a 'std' array. TIMTOWDI */
-#if !defined (OSPL_VANILLA_USING_TEMPLATE_IMPORT_BUST)
-namespace dds
-{
-namespace core
-{
-/* We're not renaming, or instantiating, so a vanilla using
- * should surely suffice. We don't need C++11 so this is the
- * default always unless: OSPL_VANILLA_USING_TEMPLATE_IMPORT_BUST
- * is defined */
-using OSPL_CXX11_STD_MODULE::array;
-}
-}
-#elif defined (OSPL_DDS_CXX11)
-/* C++11 template using syntax available. Go team! */
-namespace dds
-{
-namespace core
-{
-template <class T, std::size_t N > using array = OSPL_CXX11_STD_MODULE::array<T, N>;
-}
-}
-#elif !defined(OSPL_DONT_INHERIT_ARRAY)
-/* Workaround - this is not usually a GoodThing at all. AFAIK it
- * should cause no issues as all the ::array impls I've looked at
- * have no destructor to worry about. If I'm wrong you have a get
- * out in: OSPL_DONT_INHERIT_ARRAY */
-namespace dds
-{
-namespace core
-{
-template <class T, std::size_t N > struct array : public OSPL_CXX11_STD_MODULE::array<T, N> {};
-}
-}
-#else
-/* The below code was "lifted", to put it politely, from the GCC implementation
- * at some unknown point in time and included in the 'spec'.
- * It will never be used unless all else fails and the OSPL_DONT_INHERIT_ARRAY
- * is defined by you the user. */
-#include <dds/core/array.hpp>
-#endif
 
 
 // End of implementation

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,20 +44,21 @@ v_topicAdapterInit(
     v_participant  p,
     const c_char  *name)
 {
+    v_eventMask mask = V_EVENT_ALL_DATA_DISPOSED | V_EVENT_INCONSISTENT_TOPIC;
+
     assert(adapter != NULL);
     assert(p != NULL);
     assert(C_TYPECHECK(adapter, v_topicAdapter));
     assert(C_TYPECHECK(p,v_participant));
     assert(C_TYPECHECK(topic,v_topic));
 
-    v_entityInit(v_entity(adapter), name, TRUE);
-
+    v_entityInit(v_entity(adapter), name);
     adapter->topic = c_keep(topic);
+    (void)v_entityEnable(v_entity(adapter));
 
-    (void)v_observerSetEvent(v_observer(adapter), V_EVENT_ALL_DATA_DISPOSED | V_EVENT_INCONSISTENT_TOPIC);
+    (void)v_observerSetEvent(v_observer(adapter), mask);
 
-    v_observableAddObserver(v_observable(topic), v_observer(adapter), NULL);
-    v_observableAddObserver(v_observable(adapter), v_observer(p), NULL);
+    OSPL_ADD_OBSERVER(topic, adapter, mask, NULL);
     v_participantAdd(p, v_object(adapter));
     v_topic(adapter)->owner = p;
 }
@@ -148,8 +150,8 @@ v_topicAdapterFree(
 
     p = v_topicAdapterParticipant(adapter);
 
-    v_observableRemoveObserver(v_observable(adapter->topic), v_observer(adapter), NULL);
-    v_observableRemoveObserver(v_observable(adapter), v_observer(p), NULL);
+    OSPL_REMOVE_OBSERVER(adapter->topic, adapter, V_EVENTMASK_ALL, NULL);
+    OSPL_REMOVE_OBSERVER(adapter, p, V_EVENTMASK_ALL, NULL);
 
     if (p != NULL) {
         v_participantRemove(p,v_object(adapter));
@@ -176,32 +178,28 @@ v_topicAdapterNotify(
 {
     C_STRUCT(v_event) e;
     c_bool forward = TRUE;
-    c_bool notified;
 
     OS_UNUSED_ARG(userData);
+    assert(adapter != NULL);
     assert(C_TYPECHECK(adapter,v_topicAdapter));
+    assert(event != NULL);
 
-    if (event != NULL) {
-        switch (event->kind) {
-        case V_EVENT_ALL_DATA_DISPOSED:
-            v_statusNotifyAllDataDisposed(v_entity(adapter)->status);
-            break;
-        case V_EVENT_INCONSISTENT_TOPIC:
-            v_statusNotifyInconsistentTopic(v_entity(adapter)->status);
-            break;
-        default:
-            forward = FALSE;
-            break;
-        }
-        if (forward) {
-            e.kind = event->kind;
-            e.source = v_observable(adapter);
-            e.data = NULL;
-            notified = v_entityNotifyListener(v_entity(adapter), &e);
-            if (!notified) {
-                v_observableNotify(v_observable(adapter), &e);
-            }
-        }
+    switch (event->kind) {
+    case V_EVENT_ALL_DATA_DISPOSED:
+        v_statusNotifyAllDataDisposed(v_entity(adapter)->status);
+    break;
+    case V_EVENT_INCONSISTENT_TOPIC:
+        v_statusNotifyInconsistentTopic(v_entity(adapter)->status);
+    break;
+    default:
+        forward = FALSE;
+    break;
+    }
+    if (forward) {
+        e.kind = event->kind;
+        e.source = v_observable(adapter);
+        e.data = NULL;
+        (void)v_entityNotifyListener(v_entity(adapter), &e);
     }
 }
 
@@ -219,14 +217,14 @@ v_topicAdapterGetInconsistentTopicStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_topicStatus(status)->inconsistentTopic, arg);
         if (reset) {
             v_statusReset(status, V_EVENT_INCONSISTENT_TOPIC);
         }
         v_topicStatus(status)->inconsistentTopic.totalChanged = 0;
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
     }
 
     return result;
@@ -246,14 +244,14 @@ v_topicAdapterGetAllDataDisposedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_topicStatus(status)->allDataDisposed, arg);
         if (reset) {
             v_statusReset(status, V_EVENT_ALL_DATA_DISPOSED);
         }
         v_topicStatus(status)->allDataDisposed.totalChanged = 0;
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
     }
 
     return result;

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -95,8 +96,8 @@ idl_stacDefIsFieldExcluded(
     const os_char* member);
 
 /* Create a new stac map specified by scope,
-   type name and staclist
-*/
+ * type name and staclist
+ */
 static idl_stacMap
 idl_stacMapNew (
     const c_metaObject scope,
@@ -164,9 +165,7 @@ idl_stacDefAdd (
     }
 }
 
-/*
- * Check if there is a stac applied to the given key.
- */
+/* Check if there is a stac applied to the given key. */
 c_bool
 idl_isStacDefFor(
     c_metaObject scope,
@@ -364,7 +363,7 @@ idl_stacListItemIsDefined (
                             }
                             if (si == -1)
                             {
-                            /* bottom of the stack is reached */
+                                /* bottom of the stack is reached */
                                 if (typeScope == NULL || typeScope->name == NULL)
                                 {
                                     /* the typeScope has reached the bottom too,

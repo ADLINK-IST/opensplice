@@ -1,65 +1,11 @@
-E   opensplice/rhel4e/x86.linux-dev 25 #First# none
-E   opensplice/rhel4e/x86.linux-release 25 #First# none
-
-E   opensplice/win7a/x86.win32-dev 30 #First# none
-E   opensplice/win7a/x86.win32-release 30 #First# none
-
-E   opensplice/win7a-64/x86_64.win64-dev 30 #First# none
-E   opensplice/win7a-64/x86_64.win64-release 30 #First# none
-
-E   opensplice/ubuntu1204b/x86.linux-dev 25 #First# none
-E   opensplice/ubuntu1204b/x86.linux-release 25 #First# none
-
-E   opensplice/ubuntu1204-64b/x86_64.linux-dev 25 #First# none
-E   opensplice/ubuntu1204-64b/x86_64.linux-release 25 #First# none
-
-E   opensplice/rhel62a/x86.linux-dev 25 #First# none
-E   opensplice/rhel62a/x86.linux-release 25 #First# none
-
-E   opensplice/rhel62-64b/x86_64.linux-dev 25 #First# none
-E   opensplice/rhel62-64b/x86_64.linux-release 25 #First# none
-
-E   opensplice/rhel53a/x86.linux-dev 25 #First# none
-E   opensplice/rhel53a/x86.linux-release 25 #First# none
-
-E   opensplice/rhel54-64c/x86_64.linux-dev 25 #First# none
-E   opensplice/rhel54-64c/x86_64.linux-release 25 #First# none
-
-E   opensplice/rhel62-32a/x86.linux-dev 25 #First# none
-E   opensplice/rhel62-32a/x86.linux-release 25 #First# none
-
-E   opensplice/rhel62-64a/x86_64.linux-dev 25 #First# none
-E   opensplice/rhel62-64a/x86_64.linux-release 25 #First# none
-
-E   opensplice/ubuntu1204/x86.linux-dev 25 #First# none
-E   opensplice/ubuntu1204/x86.linux-release 25 #First# none
-
-E   opensplice/ubuntu1204-64/x86_64.linux-dev 25 #First# none
-E   opensplice/ubuntu1204-64/x86_64.linux-release 25 #First# none
-
-E   opensplice/raspberry1/armv6l.linux-dev 25 #First# none
-E   opensplice/raspberry1/armv6l.linux-release 25 #First# none
-
 E   opensplice/pi3a/armv7l.linux-dev 25 #First# none
 E   opensplice/pi3a/armv7l.linux-release 25 #First# none
 
 E   opensplice/bone1/armv7l.linux-dev 25 #First# none
 E   opensplice/bone1/armv7l.linux-release 25 #First# none
 
-E   opensplice/jetson1/armv7l.linux-dev 25 #First# none
-E   opensplice/jetson1/armv7l.linux-release 25 #First# none
-
-E   opensplice/win7b/x86.win32-dev-vs11 30 #First# none
-E   opensplice/win7b/x86.win32-release-vs11 30 #First# none
-
 E   opensplice/win7c/x86.win32-dev-vs12 30 #First# none
 E   opensplice/win7c/x86.win32-release-vs12 30 #First# none
-
-E   opensplice/win7d/x86_64.win64-dev-vs11 30 #First# none
-E   opensplice/win7d/x86_64.win64-release-vs11 30 #First# none
-
-E   opensplice/win7e/x86_64.win64-dev-vs12 30 #First# none
-E   opensplice/win7e/x86_64.win64-release-vs12 30 #First# none
 
 E   opensplice/rhel72a/x86_64.linux-dev 25 #First# none
 E   opensplice/rhel72a/x86_64.linux-release 25 #First# none
@@ -85,8 +31,8 @@ E   opensplice/win10-64-vor-c/x86_64.win64-release-vs14 30 #First# none
 E   opensplice/win10-64-vor-d/x86_64.win64-dev-vs14 30 #First# none
 E   opensplice/win10-64-vor-d/x86_64.win64-release-vs14 30 #First# none
 
-E   opensplice/win10-64-ospl-vs17/x86_64.win64-dev-vs17 30 #First# none
-E   opensplice/win10-64-ospl-vs17/x86_64.win64-release-vs17 30 #First# none
+E   opensplice/win10-64-ospl-7/x86_64.win64-dev-vs17 30 #First# none
+E   opensplice/win10-64-ospl-7/x86_64.win64-release-vs17 30 #First# none
 
 E   opensplice/macmini/x86_64.darwin10_clang-dev 25 #First# none
 E   opensplice/macmini/x86_64.darwin10_clang-release 25 #First# none

@@ -13,11 +13,13 @@ IDLPPTYPES  = DDS::Time_t,DDS::Duration_t
 IDLPPFLAGS := -N -S -l c
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
+-include $(OSPL_OUTER_HOME)/setup/makefiles/commercial.mak
 
 CPPFLAGS += -DOSPL_BUILD_SPLICED
 
 CFLAGS  += $(SHCFLAGS)
 CFLAGS += $(CFLAGS_XSTRICT)
+CFLAGS += $(CFLAGS_W_ERROR)
 
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
@@ -30,6 +32,5 @@ CINCS	+= -I$(OSPL_HOME)/src/user/include
 CINCS	+= -I$(OSPL_HOME)/src/user/code
 CINCS	+= -I$(OSPL_HOME)/src/utilities/include
 CINCS   += -I$(OSPL_HOME)/src/configuration/config/include
-
 
 -include $(DEPENDENCIES)

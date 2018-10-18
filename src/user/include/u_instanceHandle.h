@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -30,8 +31,8 @@ extern "C" {
 typedef c_longlong u_instanceHandle;
 
 #define U_INSTANCEHANDLE_NIL (0)
+#include "u_types.h"
 
-#include "u_user.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -61,6 +62,16 @@ OS_API u_instanceHandle
 u_instanceHandleNew(
     v_public object);
 
+/* This function will assign application specific user data to the instance handle and return the old value. */
+OS_API u_result
+u_instanceHandleSetUserData(
+    u_instanceHandle _this,
+    void *userData);
+
+/* This function will return the user data assigned to this instance handle. */
+OS_API void *
+u_instanceHandleGetUserData(
+    u_instanceHandle _this);
 
 #undef OS_API
 

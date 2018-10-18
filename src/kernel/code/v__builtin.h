@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -93,6 +94,67 @@ v_message
 v_builtinCreateCMSubscriberInfo (
     v_builtin _this,
     v_subscriber reader);
+
+/* Returns TRUE if there is a partition match between
+ * the given publication and subscription info.
+ */
+os_boolean
+v_builtinTestPartitionMatch(
+    const struct v_publicationInfo *pubInfo,
+    const struct v_subscriptionInfo *subInfo);
+
+/* Returns TRUE if there is a Qos match between
+ * the given publication and subscription info.
+ */
+os_boolean
+v_builtinTestQosMatch(
+    const struct v_publicationInfo *pubInfo,
+    const struct v_subscriptionInfo *subInfo);
+
+void
+v_builtinLogParticipant(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogPublication(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogSubscription(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogTopic(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogCMParticipant(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogCMDataWriter(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogCMDataReader(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogCMPublisher(
+    v_builtin _this,
+    const v_dataReaderSample sample);
+
+void
+v_builtinLogCMSubscriber(
+    v_builtin _this,
+    const v_dataReaderSample sample);
 
 #if defined (__cplusplus)
 }

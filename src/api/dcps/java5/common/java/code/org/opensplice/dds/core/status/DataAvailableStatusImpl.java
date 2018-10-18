@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,11 +27,11 @@ import org.opensplice.dds.core.OsplServiceEnvironment;
 public class DataAvailableStatusImpl extends DataAvailableStatus {
     private static final long serialVersionUID = -5689703674059469716L;
     private final transient OsplServiceEnvironment environment;
-    
+
     public DataAvailableStatusImpl(OsplServiceEnvironment environment){
         this.environment = environment;
     }
-    
+
     @Override
     public ServiceEnvironment getEnvironment() {
         return this.environment;

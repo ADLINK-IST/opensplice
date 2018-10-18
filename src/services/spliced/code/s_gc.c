@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,9 +34,6 @@ C_STRUCT(s_garbageCollector) {
     spliced spliced;
 };
 
-/**************************************************************
- * Private functions
- **************************************************************/
 static void *
 garbageCollector(
     void *arg)
@@ -51,13 +49,6 @@ garbageCollector(
     return NULL;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
 s_garbageCollector
 s_garbageCollectorNew(
     spliced daemon)
@@ -94,16 +85,31 @@ err_mutexInit:
     return NULL;
 }
 
-void
+os_boolean
 s_garbageCollectorFree(
     s_garbageCollector gc)
 {
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
+
     if (gc) { /* gc might be NULL, when spliced has detected other spliced */
-        ut_threadWaitExit(gc->thr, NULL);
-        os_condDestroy(&gc->cv);
-        os_mutexDestroy(&gc->mtx);
-        os_free(gc);
+        config = splicedGetConfiguration(gc->spliced);
+        osr = ut_threadTimedWaitExit(gc->thr, config->serviceTerminatePeriod, NULL);
+        if (osr == os_resultSuccess) {
+            os_condDestroy(&gc->cv);
+            os_mutexDestroy(&gc->mtx);
+            os_free(gc);
+        } else {
+            OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                ut_threadGetName(gc->thr),
+                (os_address)os_threadIdToInteger(ut_threadGetId(gc->thr)),
+                os_resultImage(osr));
+            result = OS_FALSE;
+        }
     }
+    return result;
 }
 
 void
@@ -122,7 +128,3 @@ s_garbageCollectorWaitForActive(
     }
     os_mutexUnlock(&gc->mtx);
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/

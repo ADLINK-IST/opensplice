@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 #ifndef V__GROUPQUEUE_H
 #define V__GROUPQUEUE_H
 
+#include "v_kernel.h"
 #include "v_groupQueue.h"
 #include "kernelModuleI.h"
 
@@ -46,6 +48,10 @@ v_groupQueueInit (
 void
 v_groupQueueDeinit (
     v_groupQueue _this);
+
+v_result
+v_groupQueueEnable(
+    _Inout_ v_groupQueue _this);
 
 #if defined (__cplusplus)
 }

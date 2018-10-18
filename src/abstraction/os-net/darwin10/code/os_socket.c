@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -360,4 +361,15 @@ os_sockQueryInterfaceStatusSignal(void *handle)
 {
     OS_UNUSED_ARG(handle);
     return os_resultFail;
+}
+
+os_result
+os_sockSetDontFrag(
+		   os_socket s,
+		   os_boolean dontFrag)
+{
+  OS_UNUSED_ARG(s);
+  OS_UNUSED_ARG(dontFrag);
+
+  return os_resultSuccess;
 }

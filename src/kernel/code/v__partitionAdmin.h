@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,32 +39,22 @@ void
 v_partitionAdminFree(
     v_partitionAdmin _this);
 
+void
+v_partitionAdminFill(
+    v_partitionAdmin _this,
+    const c_char *partitionExpr);
+
 c_bool
-v_partitionAdminFitsInterest(
+v_partitionAdminAdd(
     v_partitionAdmin _this,
     v_partition d);
 
-c_iter
-v_partitionAdminAdd(
-    v_partitionAdmin _this,
-    const c_char *partitionExpr);
-
-c_iter
-v_partitionAdminRemove(
-    v_partitionAdmin _this,
-    const c_char *partitionExpr);
-
 c_bool
-v_partitionAdminSet(
+v_partitionAdminUpdate(
     v_partitionAdmin _this,
     v_partitionPolicyI partitionExpressions,
     c_iter *addedPartitions,
     c_iter *removedPartitions);
-
-c_bool
-v_partitionAdminExists(
-    v_partitionAdmin _this,
-    const c_char *partitionName);
 
 c_iter
 v_partitionAdminLookup(

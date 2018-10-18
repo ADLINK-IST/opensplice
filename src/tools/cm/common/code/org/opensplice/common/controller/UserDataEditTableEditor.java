@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -52,8 +53,8 @@ import org.opensplice.common.view.table.UserDataEditTable;
 /**
  * Represents an editor that handles user editing in an UserDataEditTable. It
  * validates input and assigns valid values to the fields in the data.
- * 
- * @date Nov 9, 2004 
+ *
+ * @date Nov 9, 2004
  */
 public class UserDataEditTableEditor extends AbstractCellEditor implements TableCellEditor, ActionListener, KeyListener {
 
@@ -68,11 +69,11 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     private Component curEditor = null;
     private final Color editColor = Config.getInputColor();
     private final Color errorColor = Config.getIncorrectColor();
-    
+
     /**
      * Constructs a new editor for that is able to edit UserData of the supplied
      * type.
-     *  
+     *
      * @param _type The type of the UserData that must be edited.
      * @param _view The table that displays the graphical representation of the
      *              data.
@@ -87,7 +88,9 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     @Override
     public boolean isCellEditable(EventObject e) {
         JFrame frame = (JFrame) SwingUtilities.getRoot(status);
-        frame.firePropertyChange("enableSaveButton", 0, 1);
+        if (frame != null) {
+            frame.firePropertyChange("enableSaveButton", 0, 1);
+        }
         return true;
     }
 
@@ -97,13 +100,13 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      * - Primitive (except boolean): JTextField
      * - Boolean: JComboBox
      * - Enumeration: JComboBox
-     * 
+     *
      * @param table The table in which the user wants to edit.
      * @param value The current value in the cell.
      * @param isSelected Whether or not the cell is currently selected.
      * @param row The row in the table the user wants to edit.
      * @param column The column in the table the user wants to edit.
-     * 
+     *
      * @return The editor for the supplied cell.
      */
     @Override
@@ -152,30 +155,30 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
 
     /**
      * Provides access to the current value of the cell that is being edited.
-     * 
+     *
      * @return The current value of the field that is being edited.
      */
     @Override
     public Object getCellEditorValue() {
         return curValue;
     }
-    
+
     /**
-     * Stores the supplied object that will receive validation and assigment
+     * Stores the supplied object that will receive validation and assignment
      * information from now.
-     * 
+     *
      * @param _status The component that will receive the information.
      */
     public void setStatusListener(StatusPanel  _status){
         status = _status;
     }
-    
+
     /**
      * Constructs an editor for a primitive field.
-     * 
+     *
      * In case of a boolean a JComboBox with the possible values "TRUE" and "FALSE"
      * will be returned. In all other cases a JTextField will be returned.
-     * 
+     *
      * @param row The row that is being edited.
      * @param column The column that is being edited.
      * @param value The current value of the field that is being edited.
@@ -185,7 +188,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     private Component getPrimitiveEditor(int row, int column, Object value){
         Component temp;
         String primType = (String)model.getValueAt(row, 0);
-        
+
         if("c_bool".equals(primType)){
             String[] items = {"FALSE", "TRUE"};
             JComboBox combo = new JComboBox(items);
@@ -201,12 +204,12 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         temp.setBackground(editColor);
         return temp;
     }
-    
+
     /**
      * Constructs an editor for a enumeration field.
-     * 
+     *
      * A JComboBox filled with all possible values will be returned.
-     * 
+     *
      * @param row The row that is being edited.
      * @param column The column that is being edited.
      * @param value The current value of the field.
@@ -221,12 +224,12 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         temp.addActionListener(this);
         return temp;
     }
-    
+
     /**
      * Constructs an editor for a collection field.
-     * 
+     *
      * This is done by looking up the editor for the subtype of the collection.
-     * 
+     *
      * @param row The row that is being edited.
      * @param column The column that is being edited.
      * @param value The current value of the field.
@@ -238,11 +241,11 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         String name;
         MetaField subType = editField.getSubType();
         Component temp = null;
-        
+
         while(subType instanceof MetaCollection){
             subType = ((MetaCollection)subType).getSubType();
         }
-        
+
         if(subType instanceof MetaEnum){
             temp = this.getEnumEditor(row, column, value, (MetaEnum)subType);
         } else if(subType instanceof MetaStruct){
@@ -250,7 +253,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         } else {//primitive
             if(subType instanceof MetaUnion){
                 name = (String)model.getValueAt(row, column-1);
-                
+
                 if(name.endsWith(".switch")){
                     curUnion = (MetaUnion)subType;
                 }
@@ -260,17 +263,17 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         temp.setBackground(editColor);
         return temp;
     }
-    
+
     private Component getStructEditor(int row, int column, Object value, MetaStruct editField, String nameRest){
         String name, nextName;
         MetaField structField;
         Component component;
-        
+
         int index = nameRest.indexOf('[');
-        
+
         if(index == -1){
             index = nameRest.indexOf('.');
-            
+
             if(index == -1){
                 name = nameRest;
             } else {
@@ -279,10 +282,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         } else {
             name = nameRest.substring(0, index);
         }
-        
-        
+
+
         structField = editField.getField(name);
-        
+
         if(structField instanceof MetaStruct){
             nextName = nameRest.substring(index+1);
             component = this.getStructEditor(row, column, value, (MetaStruct)structField, nextName);
@@ -295,13 +298,13 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         }
         return component;
     }
-    
+
     /**
      * Called when a user confirms its input.
-     * 
+     *
      * This function validates the input of the user. If it succeeds the value
      * is assigned to the field, the user will be notified of its error.
-     * 
+     *
      * @param e The event that occurred.
      */
     @Override
@@ -310,27 +313,27 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
            this.assign();
         }
     }
-    
-    
+
+
     /**
      * Called when editing has been cancelled.
      */
     @Override
     public void cancelCellEditing(){
         super.cancelCellEditing();
-        
+
         if(status != null){
             status.setStatus("Editing cancelled", false, false);
         }
     }
-    
+
     /**
      * Called when editing has been stopped.
      */
     @Override
     public boolean stopCellEditing(){
         boolean result = true;
-        
+
         if(curEditor != null){
             result = this.assign().isValid();
         }
@@ -339,10 +342,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         }
         return result;
     }
-    
+
     private AssignmentResult assign(){
         AssignmentResult test = this.testAssignment(true);
-        
+
 
         if(test.isValid()){
             if(curEditor instanceof JComboBox){
@@ -367,21 +370,21 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         }
         return test;
     }
-    
+
     /**
      * Checks whether the current value in the editor is valid and will be
      * accepted as final input.
-     * 
+     *
      * @return The AssigmentResult that tells whether the input is valid and
-     *         if not; the reason why. 
+     *         if not; the reason why.
      */
     public AssignmentResult testAssignment(boolean updateSource){
         AssignmentResult result = new AssignmentResult(true, null);
-        
+
         if(curEditor != null){
             if(curEditor instanceof JTextField){
                 JTextField source = (JTextField)curEditor;
-                
+
                 String typeName = (String)(model.getValueAt(editRow, editColumn-2));
                 String typeNameTmp = typeName;
 
@@ -395,27 +398,27 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                 typeName = "INVALID";
 
                 String text = source.getText();
-                
+
                 try{
                     if("c_voidp".equals(typeName)){
                         source.setText((String)curValue);
                         if(status != null){
                             status.setStatus("Warning: Void pointers cannot be changed", false, false);
                         }
-                    } 
+                    }
                     else if(typeName.startsWith("C_SEQUENCE") || typeName.startsWith("C_ARRAY<")){
                         String fieldName = (String)(model.getValueAt(editRow, editColumn-1));
                         MetaCollection mc = (MetaCollection)(type.getField(fieldName));
-                        
+
                         if(mc == null){
                             mc = (MetaCollection)(type.getField(this.getTypeNameForField(fieldName)));
                         }
-                        
+
                         if(mc != null){
                             if(mc.getMaxSize() == 0){
                                 MetaField subType = mc.getSubType();
                                 String subTypeName = subType.getTypeName();
-                                
+
                                 if(text.equals("[]")){
                                     /*Ok, do nothing*/
                                 } else if(text.equals("NULL")){
@@ -427,7 +430,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                             (subTypeName.startsWith("C_STRING<")) ||
                                             (subTypeName.startsWith("C_WSTRING<")))))
                                 {
-                                    
+
                                     if(text.equals("[]")){
                                         /* Ok, do nothing*/
                                     } else if(text.length() <= 2){
@@ -444,10 +447,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                     } else {
                                         throw new NumberFormatException("Invalid value");
                                     }
-                                    
+
                                 } else {
                                     source.setText((String)curValue);
-                                    
+
                                     if(status != null){
                                         status.setStatus("Warning: Unbounded sequences of this type not supported. They " +
                                                          "will be interpreted as an empty sequence.", false, false);
@@ -465,29 +468,29 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                 status.setStatus("Error: Could not resolve type of field '" + fieldName + "'.", false, false);
                             }
                         }
-                        
+
                     }
                     else if(typeName.startsWith("C_ARRAY<")){
                         String fieldName = (String)(model.getValueAt(editRow, editColumn-1));
                         MetaCollection mc = (MetaCollection)(type.getField(fieldName));
-                        
+
                         if(mc.getMaxSize() == 0){
                             MetaField subType = mc.getSubType();
-                            
+
                             if(subType instanceof MetaPrimitive){
-                                
+
                             } else if(subType instanceof MetaCollection) {
                                 String subTypeName = subType.getTypeName();
-                                
+
                                 if( (subTypeName.equals("c_string")) ||
                                     (subTypeName.equals("c_wstring")))
-                                    
+
                                 {
-                                    
+
                                 } else if(  (subTypeName.startsWith("C_STRING<")) ||
                                             (subTypeName.startsWith("C_WSTRING<")))
                                 {
-                                    
+
                                 } else {
                                     if(status != null){
                                         status.setStatus("Warning: Unbounded arrays not supported. They " +
@@ -496,11 +499,11 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                     source.setText((String)curValue);
                                 }
                             }
-                            
+
                         } else {
                             if(status != null){
                                 status.setStatus("Warning: Recursive types not supported. The " +
-                                                 "first occurrence will be interpreted as a NULL pointer.", 
+                                                 "first occurrence will be interpreted as a NULL pointer.",
                                                  false, false);
                             }
                             source.setText((String)curValue);
@@ -512,7 +515,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                         }
                     } else {
                         String value = this.handlePrimitive(text, typeName);
-                        
+
                         if(updateSource){
                             source.setText(value);
                         }
@@ -539,17 +542,17 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         }
         return result;
     }
-    
+
     private String getTypeNameForField(String fieldName) {
         String result = null;
         String token;
         int index;
         StringTokenizer tokenizer = new StringTokenizer(fieldName, ".");
-        
+
         while(tokenizer.hasMoreTokens()){
             token = tokenizer.nextToken();
             index = token.indexOf('[');
-            
+
             if(index == -1){
                 if(result == null){
                     result = token;
@@ -569,7 +572,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
 
     private String handlePrimitive(String text, String typeName) throws NumberFormatException{
         String result;
-        
+
         if("c_char".equals(typeName)){//TODO: Java char is superset of IDL char
             if(text.length() != 1 && !text.matches("\\\\[0-3][0-7][0-7]")){
                 throw new NumberFormatException("Char must be of length 1, or an octal char code \\###.");
@@ -577,8 +580,12 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
             result = text;
         }
         else if("c_octet".equals(typeName)){
-            byte test = Byte.parseByte(text);
-            result = Byte.toString(test);
+            int test = Integer.parseInt(text);
+            if (test >= 0 && test <= 255) {
+                result = Integer.toString(test);
+            } else {
+                throw new NumberFormatException("Octet must have a value between 0 and 255.");
+            }
         }
         else if("c_short".equals(typeName)){
             short test = Short.parseShort(text);
@@ -600,7 +607,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                 throw new NumberFormatException("Unsigned long cannot be negative.");
             }
             long test = Long.parseLong(text);
-            
+
             if(test > 4294967295L){
                 throw new NumberFormatException("Unsigned long max == 4294967295.");
             }
@@ -628,17 +635,17 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         else if("c_float".equals(typeName)){
             float test = Float.parseFloat(text);
             result = Float.toString(test);
-        } 
+        }
         else if("c_double".equals(typeName)){
             double test = Double.parseDouble(text);
             result = Double.toString(test);
-        } 
+        }
         else if(    (typeName.startsWith("C_STRING<")) ||
                     (typeName.startsWith("C_WSTRING<")))
         {
             String temp = typeName.substring(typeName.indexOf('<') + 1, typeName.indexOf('>'));
             int size  = Integer.parseInt(temp);
-            
+
             if(text.length() > size){
                 throw new NumberFormatException("length " + text.length() + " > " + size);
             }
@@ -646,7 +653,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                 throw new NumberFormatException("String cannot contain ']]>'");
             }
             result = text;
-        } 
+        }
         else if("c_string".equals(typeName)){
             if(text.indexOf("]]>") != -1){
                 throw new NumberFormatException("String cannot contain ']]>'");
@@ -655,18 +662,18 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         } else {
             result = text;
         }
-        
+
         if(curUnion != null){
             if(!curUnion.labelExists(text)){
                 throw new NumberFormatException("Invalid union switch value");
             }
         }
-        
+
         return result;
     }
 
     /**
-     * Called when the user releases a key on the keyboard. When currently 
+     * Called when the user releases a key on the keyboard. When currently
      * editing a field, the input is validated. When a status listener is
      * attached status information is provided to that listener.
      */
@@ -675,12 +682,12 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
                 AssignmentResult test = this.testAssignment(false);
-                
+
                 if(test.isValid()){
                     curEditor.setBackground(editColor);
                 } else {
                     curEditor.setBackground(errorColor);
-                    
+
                     if(status != null){
                         status.setStatus(test.getErrorMessage(), false, false);
                     }
@@ -690,7 +697,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                     if (!curUnion.labelExists((String) ((JComboBox) e
                             .getSource()).getSelectedItem())) {
                         curEditor.setBackground(errorColor);
-                        
+
                         if(status != null){
                             status.setStatus("Error: Invalid union switch value", false, false);
                         }
@@ -701,7 +708,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                     stopCellEditing();
                 }
             }
-        }       
+        }
     }
 
     /**
@@ -709,7 +716,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      */
     @Override
     public void keyTyped(KeyEvent e) {}
-    
+
     /**
      * Does nothing.
      */

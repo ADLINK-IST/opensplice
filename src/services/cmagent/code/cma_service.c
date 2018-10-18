@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -65,13 +66,14 @@ cma__serviceMain(
 
 static os_result
 cma__exceptionHandler(
-    os_callbackArg cbArg,
-    void *arg) __nonnull_all__;
+    void *callingThreadContext,
+    void *arg);
 
 static os_result
 cma__exitRequestHandler(
     os_callbackArg cbArg,
-    void *arg) __nonnull_all__;
+    void *callingThreadContext,
+    void *arg);
 
 static c_bool
 cma__serviceChangeState(
@@ -240,8 +242,8 @@ cma__serviceNew(
     }
 
     if (!os_serviceGetSingleProcess()) {
-        _this->erh = os_signalHandlerRegisterExitRequestCallback(cma__exitRequestHandler, _this);
-        _this->eh = os_signalHandlerRegisterExceptionCallback(cma__exceptionHandler, _this);
+        _this->erh = os_signalHandlerRegisterExitRequestCallback(cma__exitRequestHandler, NULL, NULL, NULL, _this);
+        _this->eh = os_signalHandlerRegisterExceptionCallback(cma__exceptionHandler, NULL, NULL, NULL, _this);
     } else {
         _this->erh = os_signalHandlerExitRequestHandleNil;
         _this->eh = os_signalHandlerExceptionHandleNil;
@@ -271,7 +273,7 @@ cma__serviceNew(
         " (OpenSplice " OSPL_VERSION_STR ", build " OSPL_INNER_REV_STR "/" OSPL_OUTER_REV_STR ")\n");
 #else
     cma_log(LOG_INFO, "Started Control and Monitoring Agent service"
-        " (OpenSplice " OSPL_VERSION_STR ", non-PrismTech build)\n");
+        " (OpenSplice " OSPL_VERSION_STR ", non-ADLINK build)\n");
 #endif /* defined(OSPL_INNER_REV) && defined(OSPL_OUTER_REV) */
     cma_configurationPrint(_this->config);
 
@@ -416,11 +418,13 @@ cma__serviceMain(
 static os_result
 cma__exitRequestHandler(
     os_callbackArg cbArg,
+    void *callingThreadContext,
     void *arg)
 {
     cma_service _this = cma_service(arg);
 
     OS_UNUSED_ARG(cbArg);
+    OS_UNUSED_ARG(callingThreadContext);
 
     assert(_this);
 
@@ -432,12 +436,12 @@ cma__exitRequestHandler(
 
 static os_result
 cma__exceptionHandler(
-    os_callbackArg cbArg,
+    void *callingThreadContext,
     void *arg)
 {
     cma_service _this = cma_service(arg);
 
-    OS_UNUSED_ARG(cbArg);
+    OS_UNUSED_ARG(callingThreadContext);
     assert(_this);
 
     (void)cma__serviceChangeState(_this, STATE_DIED);

@@ -597,6 +597,9 @@ extends DomainEntity<DataReaderListener<TYPE>, DataReaderQos>
      * @throws org.omg.dds.core.OutOfResourcesException
      *                  The Data Distribution Service ran out of resources to
      *                  complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *                  Can happen when requesting conditional alignment on non-volatile readers or
+     *                  Historical data request already in progress or complete.
      *
      * @see     #waitForHistoricalData(long, TimeUnit)
      */
@@ -632,7 +635,9 @@ extends DomainEntity<DataReaderListener<TYPE>, DataReaderQos>
      * @throws org.omg.dds.core.OutOfResourcesException
      *                  The Data Distribution Service ran out of resources to
      *                  complete this operation.
-     *
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *                  Can happen when requesting conditional alignment on non-volatile readers or
+     *                  Historical data request already in progress or complete.
      * @see     #waitForHistoricalData(Duration)
      */
     public void waitForHistoricalData(long maxWait, TimeUnit unit)

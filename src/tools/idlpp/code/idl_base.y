@@ -110,13 +110,6 @@ declareTypeDefs(
     c_metaObject scope,
     c_iter typeDefs);
 
-#if 0
-static void
-declareAttributes(
-    c_metaObject scope,
-    c_iter attributes);
-#endif
-
 static void
 declareType(
     c_metaObject scope,
@@ -2048,23 +2041,6 @@ declareTypeDefs(
         typeDef = c_iterTakeFirst(typeDefs);
     }
 }
-
-#if 0
-static void
-declareAttributes(
-    c_metaObject scope,
-    c_iter attributes)
-{
-    c_attribute attribute;
-
-    attribute = c_iterTakeFirst(attributes);
-    while (attribute != NULL) {
-        declareIfArray(scope, c_property(attribute)->type);
-        c_free(attribute);
-        attribute = c_iterTakeFirst(attributes);
-    }
-}
-#endif
 
 static void
 declareType(

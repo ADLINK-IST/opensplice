@@ -220,6 +220,12 @@ sub handle_compiler_output_line($) {
       return;
   }
 
+  if ($s =~ m/^\s*Generating.*ERRORCODE.*html/) {
+      # Javadoc generation with ERROR in the filename
+      $self->Output_Normal ($s);
+      return;
+  }
+
   if ($s =~ m/ is deprecated. use /) {
     # Among these are glibc warnings to stop using the deprecated
     # pthread_setstackaddr in favor of pthread_setstack.
@@ -268,7 +274,7 @@ sub handle_compiler_output_line($) {
   }
 
   if ($s =~ /printf\("native error: %d\\n",nativeError\)/) {
-    # This output comes for ODBC and is just a printf 
+    # This output comes for ODBC and is just a printf
     # statement that is getting output for some reason
       $self->Output_Normal ($s);
       return;
@@ -279,7 +285,7 @@ sub handle_compiler_output_line($) {
       # which is wrongly classed as an error in the build log on ubuntu1604
       $self->Output_Normal ($s);
       return;
-  }  
+  }
 
   if ($s =~ m/Rule line too long/) {
     # Can be given by Borland make
@@ -313,7 +319,7 @@ sub handle_compiler_output_line($) {
     # This is a warning from building c99 error_utests and is not an error
     $self->Output_Warning ($s);
     return;
-  }  
+  }
 
   if ($s =~ m/cannot execute binary file/) {
     # Means we can't execute the binary, probably using target executable on host
@@ -333,6 +339,13 @@ sub handle_compiler_output_line($) {
     $self->Detected_Build_Error($1);
   }
 
+  # Building with debug flag - definition statements printed out on some
+  # platforms
+  if ($s =~ m/c_bool error = FALSE/) {
+    $self->Output_Normal ($s);
+    return;
+  }
+
   if ($s =~ m/^.*:[0-9]+: /) {
     # filename:linenumber is the typical format for an error
     if(# ... unless it is a warning
@@ -349,19 +362,29 @@ sub handle_compiler_output_line($) {
       $self->Output_Warning ($s);
       return;
     }
+    if( $s =~ m/configure.ac:[0-9]+: installing/) {
+        # Not an error but allowed output from configure.ac
+        return;
+    }
     # It could also be part of a split line warning relating to
     # mktemp/mkstemp
     if (/mkstemp/) {
       $self->Output_Normal ($s);
       return;
     }
-    
+
     if ($s =~ m/^.*.cpp:[0-9]+:[0-9]+:\s+required from here/) {
     # This is output on some platforms for some reason but is not an error
       $self->Output_Normal ($s);
       return;
     }
-    
+
+    if ($s =~ m/^.*.*:[0-9]+:[0-9]+:\s+required from\s/) {
+    # This is output on some platforms for some reason but is not an error
+      $self->Output_Normal ($s);
+      return;
+    }
+
     # Definitely an error
     $self->Output_Error ($s);
     return;
@@ -642,7 +665,7 @@ sub handle_compiler_output_line($) {
     $self->Output_Normal ($s);
     return;
   }
-  
+
   # OSPL additions from dcps_functions
   if ($s =~ m/No such file or directory/) {
     $self->Output_Error ($s);

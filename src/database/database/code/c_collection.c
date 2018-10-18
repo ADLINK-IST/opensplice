@@ -1,10 +1,11 @@
 /* -*- mode: c; c-file-style: "k&r"; c-basic-offset: 4; -*- */
 
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,6 +37,7 @@
 #include "c_stringSupport.h"
 #include "c_mmbase.h"
 #include "c__mmbase.h"
+#include "os_assert.h"
 
 #include "c_list_tmpl.h"
 #define C__LISTIMPL_EQUALS(a,b) (a) == (b)
@@ -201,7 +203,7 @@ C_CLASS(collectActionArg);
 static c_bool collectAction(c_object o, c_voidp arg)
 {
     collectActionArg a = (collectActionArg)arg;
-    c_iterInsert(a->results, c_keep(o));
+    a->results = c_iterInsert(a->results, c_keep(o));
     if (c_iterLength(a->results) < a->max) {
         return 1;
     }
@@ -512,6 +514,16 @@ c_setInsert (
     return f->object;
 }
 
+c_bool
+c_setContains (
+    c_set _this,
+    c_object o)
+{
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    assert(c_collectionIsType(_this, OSPL_C_SET));
+    return (ut_avlCLookup (&c_set_td, &set->tree, o) != NULL);
+}
+
 static c_object
 c_setReplace (
     c_set _this,
@@ -596,7 +608,7 @@ c_setSelect (
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
-        max = 0x7fffffff; /* RP: MAXINT */
+        max = 0x7fffffff;
     }
     arg.max = (c_ulong) max;
     c_setRead(_this,q,collectAction,&arg);
@@ -687,6 +699,31 @@ c_setWalk(
         proceed = action (n->object, actionArg);
     }
     return proceed;
+}
+
+c_object c_setIterNext (struct c_collectionIter *it)
+{
+    c_setNode n;
+    n = ut_avlCIterNext((ut_avlCIter_t *)&it->u.set);
+    return n ? n->object : NULL;
+}
+
+c_object c_setIterFirst (c_set _this, struct c_collectionIter *it)
+{
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    c_setNode n;
+    assert(c_collectionIsType(_this, OSPL_C_SET));
+
+/* Compile time assert to ensure the opaque it->u.set is equal to the size of
+ * ut_avlCIter_t. This type is opaque so that the database does not have a header
+ * dependency on ut_avl.h
+ */
+os_ct_assert(sizeof(it->u.set) == sizeof(ut_avlCIter_t));
+
+    it->next = c_setIterNext;
+    it->source = _this;
+    n = ut_avlCIterFirst(&c_set_td, &set->tree, (ut_avlCIter_t *)&it->u.set);
+    return n ? n->object : NULL;
 }
 
 /*============================================================================*/
@@ -817,7 +854,7 @@ c_bagSelect (
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
-        max = 0x7fffffff; /* RP: MAXINT */
+        max = 0x7fffffff;
     }
     arg.max = (c_ulong) max;
     c_bagRead(_this,q,collectAction,&arg);
@@ -1114,28 +1151,38 @@ c_tableRemove (
     return object;
 }
 
-#ifdef _NIL_
 c_object
 c_tableFind (
     c_table _this,
-    c_value *keyValues)
+    c_value *keyValues,
+    c_ulong nrOfKeys)
+{
+     return c_keep (c_tableFindWeakRef(_this, keyValues, nrOfKeys));
+}
+
+c_object
+c_tableFindWeakRef (
+    c_table _this,
+    c_value *keyValues, 
+    c_ulong nrOfKeys)
 {
     C_STRUCT(c_table) *table = (C_STRUCT(c_table) *)_this;
     union c_tableContents *contents;
     c_tableNode found;
     c_object object;
-    c_ulong i, nrOfKeys;
+    c_ulong i, nrOfKeys_table;
 
     assert(c_collectionIsType(_this, OSPL_C_DICTIONARY));
 
     _READ_BEGIN_(_this);
-
-    if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
+    if (table->key == NULL || (nrOfKeys_table = c_arraySize(table->key)) == 0) {
         if (table->contents.object == NULL) {
             goto notfound;
         }
         object = table->contents.object;
     } else {
+        assert(nrOfKeys == nrOfKeys_table);
+        OS_UNUSED_ARG(nrOfKeys_table);
         contents = &table->contents;
         for (i = 0; i < nrOfKeys; i++) {
             if ((found = ut_avlLookup (&c_table_td, &contents->tree, &keyValues[i])) == NULL) {
@@ -1147,12 +1194,11 @@ c_tableFind (
         object = contents->object;
     }
     _READ_END_(_this);
-    return c_keep (object);
+    return object;
 notfound:
     _READ_END_ (table);
     return NULL;
 }
-#endif
 
 static c_tableNode
 tableNext(
@@ -1230,8 +1276,7 @@ c_tableReadCursor (
 
     _READ_BEGIN_(table);
     if (table->key == NULL || (nrOfKeys = c_arraySize (table->key)) == 0) {
-        /* Special case when no key is defined; single place
-         * buffer */
+        /* Special case when no key is defined; single place buffer */
         _READ_END_(table);
         if (table->cursor[0] == NULL) {
             _CHECK_CONSISTENCY_(table,table->contents.object);
@@ -1266,7 +1311,8 @@ c_tablePeekCursor (
     _READ_BEGIN_(table);
 
     /* If table->key == NULL, table is a single place buffer. In that case cursor[0]
-     * contains the cursor for that buffer. */
+     * contains the cursor for that buffer.
+     */
     if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
         return table->cursor[0];
     }
@@ -1370,12 +1416,14 @@ tableReadTakeRangeWalk (
         n = ut_avlIterSucc (&c_table_td, tree, &it, start);
     }
     /* Don't bother looking at the end of the range if there's no
-     * matching data */
+     * matching data
+     */
     if (n == NULL) {
         return proceed;
     }
     /* Endpoint of the iteration: if N is outside the range, abort,
-     * else look up the first node beyond the range */
+     * else look up the first node beyond the range
+     */
     if (end == NULL) {
         endn = NULL;
     } else if (include_end) {
@@ -1404,9 +1452,10 @@ tableReadTakeActionNonMatchingKey (
     c_ulong keyIndex)
 {
     /* FIXME: this can't be right: for any key but the one nested most
-       deeply, N doesn't actually point to an object.  Hence any table
-       with multi-level keys can be tricked into returning the wrong
-       result or crashes (in practice, only if the key is a string) */
+     * deeply, N doesn't actually point to an object.  Hence any table
+     * with multi-level keys can be tricked into returning the wrong
+     * result or crashes (in practice, only if the key is a string)
+     */
     if ((keyIndex > 0) && (query != NULL)) {
         c_qKey key = query->keyField[keyIndex-1];
         if (key->expr != NULL) {
@@ -1567,12 +1616,14 @@ c_tableReadCircular (
         obj = c_tableReadCursor(_this);
         if (!obj) {
             /* Read till the end of the table, so wrap around to read up to
-             * the pivot. */
+             * the pivot.
+             */
             continue;
         }
 
         /* Perform the action-routine. If it return FALSE we have to stop walking
-         * over the table. */
+         * over the table.
+         */
         if (!action(obj, arg)) {
             return FALSE;
         }
@@ -1593,7 +1644,7 @@ c_tableSelect (
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
-        max = 0x7fffffff; /* RP: MAXINT */
+        max = 0x7fffffff;
     }
     arg.max = (c_ulong) max;
     c_tableRead(_this,q,collectAction,&arg);
@@ -1739,7 +1790,8 @@ c_tableTake (
         if (table->contents.object != NULL) {
             c_object o = NULL;
             /* FIXME: this can't be right: action is called regardless
-             * of whether the predicate is satisfied */
+             * of whether the predicate is satisfied
+             */
             if (predMatches (p, table->contents.object)) {
                 o = table->contents.object;
                 table->contents.object = NULL;
@@ -2474,7 +2526,7 @@ c_object c_collectionIterFirst(c_collection c, struct c_collectionIter *it)
     switch(c_collectionType(type)->kind) {
         case OSPL_C_QUERY:
         case OSPL_C_DICTIONARY:
-        case OSPL_C_SET:
+        case OSPL_C_SET:        return c_setIterFirst(c, it);
         case OSPL_C_BAG:        assert(0);
         case OSPL_C_LIST:       return c_listIterFirst(c, it);
         case OSPL_C_ARRAY:
@@ -3053,7 +3105,6 @@ c_tableNew(
             t->key = NULL;
         }
         t->cursor = c_arrayNew(c_voidp_t(base),nrOfKeys ? nrOfKeys : 1);
-        c_iterFree(fieldList);
         t->mm = c_baseMM(base);
         if (nrOfKeys == 0) {
             t->contents.object = NULL;
@@ -3061,71 +3112,17 @@ c_tableNew(
             ut_avlInit (&c_table_td, &t->contents.tree);
         }
     }
+    c_iterFree(fieldList);
     return (c_collection)t;
 }
 #undef C_TABLE_ANONYMOUS_NAME
 
-#if 0
-c_collection
-c_queryNew(
-    c_collection c,
-    q_expr predicate,
-    c_value params[])
-{
-    c_base base;
-    c_type subType;
-    c_qPred pred;
-    C_STRUCT(c_query) *q;
-    c_metaObject o;
-    c_string name;
-    c_long size;
-    c_qResult result;
-
-    base = c__getBase(c);
-
-    subType = c_collectionType(c__getType(c))->subType;
-    result = c_qPredNew(subType,c_keyList(c),predicate,params,&pred);
-    if (result == CQ_RESULT_OK) {
-        if (pred == NULL) {
-            return NULL;
-        }
-
-        if (c_metaObject(subType)->name != NULL) {
-            size = strlen(c_metaObject(subType)->name)+8;
-            name = c_stringMalloc(base,size);
-            os_sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
-        } else {
-            name = c_stringNew(base,"QUERY<******>");
-        }
-
-        o = c_metaDefine(c_metaObject(base),M_COLLECTION);
-        c_metaObject(o)->name = name;
-        c_collectionType(o)->kind = C_QUERY;
-        c_collectionType(o)->subType = c_keep(subType);
-        c_collectionType(o)->maxSize = C_UNLIMITED;
-        c_metaFinalize(o);
-
-        q = c_query(c_new(c_type(o)));
-        c_free(o);
-        if (q) {
-            q->source = c;
-            q->pred = pred;
-
-            c_qPredOptimize(q->pred);
-        }
-    } else {
-        q = NULL;
-    }
-
-    return (c_collection)q;
-}
-#else
 #define C_QUERY_ANONYMOUS_NAME "QUERY<******>"
 c_collection
 c_queryNew(
-    c_collection c,
-    q_expr predicate,
-    c_value params[])
+    const c_collection c,
+    const q_expr predicate,
+    const c_value params[])
 {
     c_base base;
     c_type subType;
@@ -3187,7 +3184,6 @@ c_queryNew(
     return (c_collection)q;
 }
 #undef C_QUERY_ANONYMOUS_NAME
-#endif
 
 void
 c_clear (

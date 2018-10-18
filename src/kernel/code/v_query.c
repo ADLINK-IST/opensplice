@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,7 +23,7 @@
 #include "v_queryStatistics.h"
 #include "v__dataReader.h"
 #include "v__dataView.h"
-#include "v_dataViewInstance.h"
+#include "v__dataViewInstance.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
 #include "v_entity.h"
@@ -82,7 +83,7 @@ v_queryInit(
 {
     assert(C_TYPECHECK(_this,v_query));
 
-    v_collectionInit(v_collection(_this), name, TRUE);
+    v_collectionInit(v_collection(_this), name);
 
     _this->source = src;
     _this->expression = c_stringNew(c_getBase(_this), expression);
@@ -417,21 +418,6 @@ v_queryTake(
 }
 
 void
-v_queryNotify(
-    v_query _this,
-    v_event event,
-    c_voidp userData)
-{
-    OS_UNUSED_ARG(userData);
-    if (_this && event) {
-        if (event->kind != V_EVENT_DATA_AVAILABLE) {
-            OS_REPORT(OS_WARNING, "v_query", V_RESULT_ILL_PARAM,
-                        "Unexpected event %d", event->kind);
-        }
-    }
-}
-
-void
 v_queryDetachWaitsets(
     v_query _this)
 {
@@ -439,18 +425,18 @@ v_queryDetachWaitsets(
     v_observable observable = v_observable(_this);
     v_proxy proxy, next;
 
-    v_observerLock(observer);
+    OSPL_LOCK(observer);
     proxy = observable->observers;
     while (proxy) {
         next = proxy->next;
         if (v_objectKind(proxy->source2) == K_WAITSET) {
-            v_observerUnlock(observer);
+            OSPL_UNLOCK(observer);
             (void)v_waitsetDetach(v_waitset(proxy->source2), observable);
-            v_observerLock(observer);
+            OSPL_LOCK(observer);
         }
         proxy = next;
     }
-    v_observerUnlock(observer);
+    OSPL_UNLOCK(observer);
 }
 
 c_bool

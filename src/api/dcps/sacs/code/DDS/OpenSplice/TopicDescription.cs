@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,16 +30,16 @@ namespace DDS.OpenSplice
         {
             get;
         }
-        
+
         string[] rlReq_TopicExpressionParameters
         {
             get;
         }
-        
+
         // Mostly invoked when lock is already ackquired.
         void wlReq_IncrNrUsers();
 
-        // Mostly invoked when lock is not yet ackquired. 
+        // Mostly invoked when lock is not yet ackquired.
         ReturnCode DecrNrUsers();
 
         TypeSupport rlReq_TypeSupport

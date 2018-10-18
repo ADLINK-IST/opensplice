@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -16,11 +17,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-// Csharp backend
-// PTF C# mapping for IDL
-// File /Users/Jcm/Documents/Ecllipse_WS/CSharpDDS/generated/dds_dcps.cs
-// Generated on 2008-11-11 13:36:00
-// from dds_dcps.idl
 
 using System;
 using System.Runtime.InteropServices;
@@ -715,6 +711,21 @@ namespace DDS
         /// The Listeners associated with an IEntity are not called until the IEntity is
         /// enabled. Conditions associated with an IEntity that is not enabled are "inactive",
         /// that is, have a TriggerValue which is false.
+        ///
+        /// In addition to the general description, the enable operation on a Subscriber has special meaning
+        /// in specific usecases. This applies only to Subscribers with PresentationQoS coherent-access set to
+        /// true with access-scope set to group.
+        ///
+        /// In this case the subscriber is always created in a disabled state, regardless of the factory's auto-enable
+        /// created entities setting. While the subscriber remains disabled, DataReaders can be created that will
+        /// participate in coherent transactions of the subscriber (See @ref DDS.ISubscriber.BeginAccess()) and
+        /// @ref DDS.ISubscriber.EndAccess() operations for more information).
+        ///
+        /// All DataReaders will also be created in a disabled state. Coherency with group access-scope requires data
+        /// to be delivered as a transaction, atomically, to all eligible readers. Therefore data should not be delivered
+        /// to any single DataReader immediately after it's created, as usual, but only after the application has finished
+        /// creating all DataReaders for a given Subscriber. At this point, the application should enable the Subscriber
+        /// which in turn enables all its DataReaders.
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
@@ -2155,6 +2166,72 @@ namespace DDS
         /// </returns>
         ReturnCode GetDiscoveredTopicData (ref TopicBuiltinTopicData data, InstanceHandle handle);
 
+        /// <summary>
+        /// This operation looks up the property for a given key in the DomainParticipant.
+        /// </summary>
+        /// <remarks>
+        /// This operation looks up the property for a given key
+        /// in the DomainParticipant, returning the value belonging to this key
+        /// If the property has not been set using setProperty,
+        /// the default value of the property is returned.
+        /// </remarks>
+        /// <param name="name">The name of the property to request the value from</param>
+        /// <param name="value">The value of the requested property.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the information on the specified property has been successfully retrieved</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - if the name specifies an undefined property or the operation is not supported in this version.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>DDS.ReturnCode BadParameter - An invalid name or value has been specified.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode GetProperty(ref Property property);
+
+        /// <summary>
+        /// This operation sets the property specified by a key value pair.
+        /// </summary>
+        /// <remarks>
+        /// This operation sets the property specified by a key value pair.
+        /// Currently, the following property is defined:
+        ///
+        /// isolateNode
+        /// The isolateNode property allows applications to isolate the federation from the rest of
+        /// the Domain, i.e. at network level disconnect the node from the rest of the system.
+        /// Additionally, they also need to be able to issue a request to reconnect their federation
+        /// to the domain again after which the durability merge-policy that is configured needs to be
+        /// applied.
+        ///
+        /// To isolate a federation, the application needs to set the isolateNode property value
+        /// to 'true' and to (de)isolate the federation the same property needs to set to 'false'.
+        /// The default value of the isolateNode property is 'false'.
+        ///
+        /// All data that is published after isolateNode is set to true will not be sent to the network
+        /// and any data received from the network will be ignored. Be aware that data being processed
+        /// by the network service at time of isolating a node may still be sent to the network due
+        /// to asynchronous nature of network service internals.
+        ///
+        /// The value is interpreted as a boolean (i.e., it must be either 'true' or 'false').
+        /// false (default): The federation is connected to the domain.
+        /// true: The federation is disconnected from the domain meaning that data is not published
+        /// on the network and data from the network is ignored.
+        /// </remarks>
+        /// <param name="name">The name of the property</param>
+        /// <param name="value">The value of the property</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the information on the specified property has been successfully set</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - if the name specifies an undefined property or the operation is not supported in this version.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>DDS.ReturnCode BadParameter - An invalid name or value has been specified.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode SetProperty(Property property);
 
     }
 
@@ -4324,6 +4401,10 @@ namespace DDS
         ///
         /// The calls to BeginAccess() / EndAccess() may be nested. In that case, the
         /// application must call EndAccess() as many times as it called BeginAccess().
+        ///
+        /// Note that a coherent Subscriber should first be enabled, otherwise this operation
+        /// will return an error. See @ref DDS.IEntity.Enable() for additional information.
+        ///
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
@@ -4351,6 +4432,9 @@ namespace DDS
         ///
         /// This call must close a previous call to BeginAccess() otherwise the operation will
         /// return the error DDS.ReturnCode PreconditionNotMet.
+        ///
+        /// Please consult @ref DDS.IEntity.Enable() for additional information about coherent access
+        ///
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
@@ -5842,11 +5926,11 @@ namespace DDS
 	/// ITopicListener. This interface must be implemented by the
 	/// application. A user-defined class must be provided by the application which must
 	/// extend from the ITopicListener class.All operations for this interface must be implemented
-	/// in the user-defined class, it is up to the application whether an operation is empty or 
+	/// in the user-defined class, it is up to the application whether an operation is empty or
 	/// contains some functionality.
-	/// The ITopicListener provides a generic mechanism (actually a callback function) for the Data 
-	/// Distribution Service to notify the application of relevant asynchronous status change events, 
-	/// such as a missed deadline, violation of a QosPolicy setting, etc. The ITopicListener is 
+	/// The ITopicListener provides a generic mechanism (actually a callback function) for the Data
+	/// Distribution Service to notify the application of relevant asynchronous status change events,
+	/// such as a missed deadline, violation of a QosPolicy setting, etc. The ITopicListener is
 	/// related to changes in communication status StatusConditions.</summary>
 	/// <example>
 	/// <code>
@@ -5865,9 +5949,9 @@ namespace DDS
 		/// This operation is called by the Data Distribution Service when the
 		/// InconsistentTopicStatus changes.</summary>
 		/// <remarks>
-		/// The implementation may be left empty when this functionality is not needed. 
+		/// The implementation may be left empty when this functionality is not needed.
 		/// This operation will only be called when the relevant ITopicListener is installed and
-		/// enabled with the DDS.StatusKind.InconsistentTopic. The InconsistentTopicStatus will change 
+		/// enabled with the DDS.StatusKind.InconsistentTopic. The InconsistentTopicStatus will change
 		/// when another Topic exists with the same topic_name but different characteristics.
 		/// </remarks>
 		/// <param name="entityInterface">contain a pointer to the Topic on which the conflict
@@ -5882,10 +5966,10 @@ namespace DDS
 	/// IDataWriterListener. This interface must be implemented by the
 	/// application. A user-defined class must be provided by the application which must
 	/// extend from the DataWriterListener class.</summary>
-	/// <remarks>All operations for this interface must be implemented in the user-defined class, 
+	/// <remarks>All operations for this interface must be implemented in the user-defined class,
 	/// it is up to the application whether an operation is empty or contains some functionality.
-	/// The IDataWriterListener provides a generic mechanism (actually a callback function) 
-	/// for the Data Distribution Service to notify the application of relevant 
+	/// The IDataWriterListener provides a generic mechanism (actually a callback function)
+	/// for the Data Distribution Service to notify the application of relevant
 	/// asynchronous status change events, such as a missed deadline, violation of
 	/// a QosPolicy setting, etc. The IDataWriterListener is related to
 	/// changes in communication status IStatusConditions.</remarks>
@@ -5899,17 +5983,17 @@ namespace DDS
 	/// 	{
 	/// 		Console.WriteLine("OnOfferedDeadlineMissed");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnOfferedIncompatibleQos(DDS.IDataWriter writer, DDS.OfferedIncompatibleQosStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnOfferedIncompatibleQos");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnLivelinessLost(DDS.IDataWriter writer, DDS.LivelinessLostStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnLivelinessLost");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnPublicationMatched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnPublicationMatched");
@@ -5921,40 +6005,40 @@ namespace DDS
     {
 		/// <summary>This operation is called by the Data Distribution Service when the
 		/// OfferedDeadlineMissedStatus changes.</summary>
-		/// <remarks> This operation will only be called when the relevant 
+		/// <remarks> This operation will only be called when the relevant
 		/// IDataWriterListener is installed and enabled for the offered
 		/// deadline missed status (DDS.StatusKind.OfferedDeadlineMissed). The offered deadline
-		/// missed status will change when the deadline that the IDataWriter has 
-		/// committed through its DeadlineQosPolicy was not respected for a 
+		/// missed status will change when the deadline that the IDataWriter has
+		/// committed through its DeadlineQosPolicy was not respected for a
 		/// specific instance.</remarks>
-		/// <param name="entityInterface">contain a pointer to the IDataWriter on which 
+		/// <param name="entityInterface">contain a pointer to the IDataWriter on which
 		/// the OfferedDeadlineMissedStatus has changed (this is an input to the application)</param>
 		/// <param name="status">contain the OfferedDeadlineMissedStatus object (this is
-		/// an input to the application).</param>				
+		/// an input to the application).</param>
         void OnOfferedDeadlineMissed(IDataWriter entityInterface, OfferedDeadlineMissedStatus status);
 		/// <summary>This operation called by the Data Distribution Service when the
 		/// OfferedIncompatibleQosStatus changes.</summary>
-		/// <remarks>This operation will only be called when the relevant IDataWriterListener 
-		/// is installed and enabled for the DDS.StatusKind.OfferedIncompatibleQos. The incompatible 
+		/// <remarks>This operation will only be called when the relevant IDataWriterListener
+		/// is installed and enabled for the DDS.StatusKind.OfferedIncompatibleQos. The incompatible
 		/// Qos status will change when a IDataReader object has been discovered by the IDataWriter
-		/// with the same ITopic and a requested DataReaderQos that was incompatible with the 
+		/// with the same ITopic and a requested DataReaderQos that was incompatible with the
 		/// one offered by the IDataWriter.</remarks>
-		/// <param name="entityInterface">contain a pointer to the IDataWriter on which the 
+		/// <param name="entityInterface">contain a pointer to the IDataWriter on which the
 		/// OfferedIncompatibleQosStatus has changed (this is an input to the application).</param>
-		/// <param name="status">contain the OfferedIncompatibleQosStatus object (this is 
+		/// <param name="status">contain the OfferedIncompatibleQosStatus object (this is
 		/// an input to the application).</param>
         void OnOfferedIncompatibleQos(IDataWriter entityInterface, OfferedIncompatibleQosStatus status);
-		/// <summary>This operation is called by the Data Distribution Service when the 
+		/// <summary>This operation is called by the Data Distribution Service when the
 		/// LivelinessLostStatus changes.</summary>
 		/// <remarks>This operation will only be called when the relevant
 		/// IDataWriterListener is installed and enabled for the liveliness lost status
 		/// (LivelinessLostStatus).
-		/// The liveliness lost status will change when the liveliness that the DataWriter has 
+		/// The liveliness lost status will change when the liveliness that the DataWriter has
 		/// committed through its LivelinessQosPolicy was not respected. In other words,
 		/// the IDataWriter failed to actively signal its liveliness within the offered liveliness
 		/// period. As a result, the IDataReader objects will consider the IDataWriter as no
 		/// longer “alive”.</remarks>
-		/// <param name="entityInterface">contains a pointer to the IDataWriter on which 
+		/// <param name="entityInterface">contains a pointer to the IDataWriter on which
 		/// the LivelinessLostStatus has changed (this is an input to
 		/// the application).</param>
 		/// <param name="status">contains the LivelinessLostStatus object (this is an input
@@ -5962,24 +6046,24 @@ namespace DDS
         void OnLivelinessLost(IDataWriter entityInterface, LivelinessLostStatus status);
 		/// <summary>
 		/// This operation is called by the Data Distribution Service when a new match has
-		/// been discovered for the current publication, or when an existing match has 
+		/// been discovered for the current publication, or when an existing match has
 		/// ceased to exist.</summary>
-		/// <remarks>Usually this means that a new IDataReader that matches the ITopic 
-		/// and that has compatible Qos as the current IDataWriter has either been discovered, 
-		/// or that a previously discovered IDataReader has ceased to be matched to the current 
-		/// IDataWriter. A IDataReader may cease to match when it gets deleted, when it 
-		/// changes its Qos to a value that is incompatible with the current IDataWriter or 
-		/// when either the IDataWriter or the IDataReader has chosen to put its matching 
-		/// counterpart on its ignore-list using the DDS.IDomainParticipant.IgnoreSubscription 
+		/// <remarks>Usually this means that a new IDataReader that matches the ITopic
+		/// and that has compatible Qos as the current IDataWriter has either been discovered,
+		/// or that a previously discovered IDataReader has ceased to be matched to the current
+		/// IDataWriter. A IDataReader may cease to match when it gets deleted, when it
+		/// changes its Qos to a value that is incompatible with the current IDataWriter or
+		/// when either the IDataWriter or the IDataReader has chosen to put its matching
+		/// counterpart on its ignore-list using the DDS.IDomainParticipant.IgnoreSubscription
 		/// or DDS.IDomainParticipant.IgnorePublication operations.
 		/// it will only be called when the relevant IDataWriterListener is installed and enabled
 		/// for the PublicationMatchedStatus.</remarks>
-		/// <param name="entityInterface">contains a pointer to the IDataWriter for which a 
+		/// <param name="entityInterface">contains a pointer to the IDataWriter for which a
 		/// match has been discovered (this is an input to the application provided by the
 		/// Data Distribution Service).</param>
-		/// <param name="status">contains the PublicationMatchedStatus object 
+		/// <param name="status">contains the PublicationMatchedStatus object
 		/// (this is an input to the application provided by the Data Distribution Service).</param>
-						
+
         void OnPublicationMatched(IDataWriter entityInterface, PublicationMatchedStatus status);
     }
 	/// <summary> Since a Publisher is an Entity, it has the ability to have a Listener
@@ -5989,7 +6073,7 @@ namespace DDS
 	/// extend from the IPublisherListener class.
 	/// All operations for this interface must be implemented in the user-defined class, it is
 	/// up to the application whether an operation is empty or contains some functionality.
-	/// The IPublisherListener provides a generic mechanism (actually a 
+	/// The IPublisherListener provides a generic mechanism (actually a
 	/// callback function) for the Data Distribution Service to notify the application of
 	/// relevant asynchronous status change events, such as a missed deadline, violation of
 	/// a QosPolicy setting, etc. The IPublisherListener is related to
@@ -6014,9 +6098,9 @@ namespace DDS
 	/// IDataReaderListener. This interface must be implemented by the
 	/// application. A user-defined class must be provided by the application which must
 	/// extend from the IDataReaderListener class.</summary>
-	/// <remarks>All operations for this interface must be implemented in the user-defined 
-	/// class, it is up to the application whether an operation is empty or contains some 
-	/// functionality. The IDataReaderListener provides a generic mechanism (actually a 
+	/// <remarks>All operations for this interface must be implemented in the user-defined
+	/// class, it is up to the application whether an operation is empty or contains some
+	/// functionality. The IDataReaderListener provides a generic mechanism (actually a
 	/// callback function) for the Data Distribution Service to notify the application of
 	/// relevant asynchronous status change events, such as a missed deadline, violation of
 	/// a QosPolicy setting, etc. The IDataReaderListener is related to
@@ -6026,7 +6110,7 @@ namespace DDS
 	/// {
 	///	public MyExampleDataReaderListener()
 	/// 	{
-	/// 	} 
+	/// 	}
 	///	public void OnRequestedDeadlineMissed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnRequestedDeadlineMissed");
@@ -6036,27 +6120,27 @@ namespace DDS
 	/// 	{
 	/// 		Console.WriteLine("OnRequestedIncompatibleQos");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnSampleRejected(DDS.IDataReader reader, DDS.SampleRejectedStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnSampleRejected");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnLivelinessChanged(DDS.IDataReader reader, DDS.LivelinessChangedStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnLivelinessChanged");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnDataAvailable(DDS.IDataReader reader)
 	/// 	{
 	/// 		Console.WriteLine("OnDataAvailableCalled");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnSubscriptionMatched(DDS.IDataReader reader, DDS.SubscriptionMatchedStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnSubscriptionMatchCalled");
 	/// 	}
-	/// 
+	///
 	/// 	public void OnSampleLost(DDS.IDataReader reader, DDS.SampleLostStatus status)
 	/// 	{
 	/// 		Console.WriteLine("OnSampleLostCalled");
@@ -6066,7 +6150,7 @@ namespace DDS
 	/// </example>
     public interface IDataReaderListener : IListener
     {
-		
+
 		/// <summary>
 		/// This operation called by the Data Distribution Service when the deadline
 		/// that the IDataReader was expecting through its DeadlineQosPolicy was not
@@ -6081,7 +6165,7 @@ namespace DDS
 		/// <param name="entityInterface">contain a pointer to the IDataReader for which
 		/// the deadline was missed (this is an input to the application provided by the Data
 		/// Distribution Service). </param>
-		/// <param name="status">contain the RequestedDeadlineMissedStatus object (this is 
+		/// <param name="status">contain the RequestedDeadlineMissedStatus object (this is
 		/// an input to the application  provided by the Data Distribution Service). </param>
         void OnRequestedDeadlineMissed(IDataReader entityInterface, RequestedDeadlineMissedStatus status);
 
@@ -6090,33 +6174,33 @@ namespace DDS
 		/// <remarks> The implementation may be left empty when this functionality is not
 		/// needed. This operation will only be called when the relevant IDataReaderListener
 		/// is installed and enabled for the DDS.StatusKind.RequestedIncompatibleQos. The
-		/// Data Distribution Service will provide a reference to the IDataReader in the 
-		/// parameter <paramref name="entityInterface"/> and the RequestedIncompatibleQosStatus object in the 
+		/// Data Distribution Service will provide a reference to the IDataReader in the
+		/// parameter <paramref name="entityInterface"/> and the RequestedIncompatibleQosStatus object in the
 		/// parameter <paramref name="status"/> , for use by the application.
-		/// 
-		/// When the IDataReaderListener on the IDataReader is not enabled with the 
+		///
+		/// When the IDataReaderListener on the IDataReader is not enabled with the
 		/// DDS.StatusKind.RequestedIncompatibleQos, the DDS.StatusKind.RequestedIncompatibleQos
-		/// change will propagate to the ISubscriberListener of the ISubscriber 
-		/// (if enabled) or to the IDomainParticipantListener of the 
+		/// change will propagate to the ISubscriberListener of the ISubscriber
+		/// (if enabled) or to the IDomainParticipantListener of the
 		/// IDomainParticipant (if enabled).
 		/// <param name="entityInterface">reader the IDataReader provided by the Data Distribution Service.</param>
 		/// <param name="status">the RequestedIncompatibleQosStatus object provided by the
 		/// Data Distribution Service.</param>
         void OnRequestedIncompatibleQos(IDataReader entityInterface, RequestedIncompatibleQosStatus status);
 
-		/// <summary>This operation called by the Data Distribution Service when a (received) 
+		/// <summary>This operation called by the Data Distribution Service when a (received)
 		/// sample has been rejected.</summary>
-		/// <remarks> Samples may be rejected by the IDataReader when it runs out of 
-		/// ResourceLimitsQosPolicy to store incoming samples. Usually this means that old samples need 
-		/// to be ‘consumed’ (for example by ‘taking’ them instead of ‘reading’ them) to make 
+		/// <remarks> Samples may be rejected by the IDataReader when it runs out of
+		/// ResourceLimitsQosPolicy to store incoming samples. Usually this means that old samples need
+		/// to be ‘consumed’ (for example by ‘taking’ them instead of ‘reading’ them) to make
 		/// room for newly incoming samples.
 		/// The implementation may be left empty when this functionality is not needed. This
 		/// operation will only be called when the relevant IDataReaderListener is installed
 		/// and enabled with the DDS.StatusKind.SampleLost.</remarks>
 		/// <param name="entityInterface">contains a pointer to the IDataReader for which a sample
-		///  has been rejected (this is an input to the application provided by the 
+		///  has been rejected (this is an input to the application provided by the
 		/// Data Distribution Service).</param>
-		/// <param name="status"> contains the SampleRejectedStatus object (this is an 
+		/// <param name="status"> contains the SampleRejectedStatus object (this is an
 		/// input to the application provided by the Data Distribution Service).
         void OnSampleRejected(IDataReader entityInterface, SampleRejectedStatus status);
 
@@ -6146,13 +6230,13 @@ namespace DDS
 		/// available for this IDataReader.
 		/// </summary>
 		/// <remarks>
-	    /// The implementation may be left empty when this functionality is not 
+	    /// The implementation may be left empty when this functionality is not
 		/// needed. This operation will only be called when the relevant IDataReaderListener
 		/// is installed and enabled for the DDS.StatusKind.DataAvailable.
 		/// The Data Distribution Service will provide a reference to the IDataReader in the
 		/// parameter <paramref name="entityInterface"/> for use by the application.
-		/// The statuses DDS.StatusKind.DataOnReaders and DDS.StatusKind.DataAvailable will 
-		/// occur together. In case these status changes occur, the Data Distribution 
+		/// The statuses DDS.StatusKind.DataOnReaders and DDS.StatusKind.DataAvailable will
+		/// occur together. In case these status changes occur, the Data Distribution
 		/// Service will look for an attached and activated ISubscriberListener or
 		/// IDomainParticipantListener (in that order) for the enabled
 		/// DDS.StatusKind.DataOnReaders. In case the DDS.StatusKind.DataOnReaders can not be
@@ -6173,14 +6257,14 @@ namespace DDS
 		///  when a new match has been discovered for the current subscription, or
 		///  when an existing match has ceased to exist. </summary>
 		/// <remarks> Usually this means that a new IDataWriter that matches
-		/// the ITopic and that has compatible Qos as the current IDataReader has 
+		/// the ITopic and that has compatible Qos as the current IDataReader has
 		/// either been discovered, or that a previously discovered IDataWriter has
-		/// ceased to be matched to the current IDataReader. A IDataWriter may cease to 
+		/// ceased to be matched to the current IDataReader. A IDataWriter may cease to
 		/// match when it gets deleted, when it changes its Qos to a value that is incompatible
 		/// with the current IDataReader or when either the IDataReader or the IDataWriter
 		/// has chosen to put its matching counterpart on its ignore-list using the
 		/// DDS.IDomainParticipant.IgnoreSubscription or DDS.IDomainParticipant.IgnorePublication operations.
-		/// 
+		///
 		/// The implementation of this IListener operation may be left empty when this
 		/// functionality is not needed: it will only be called when the relevant
 		/// IDataReaderListener is installed and enabled for the DDS.StatusKind.SubscriptionMatched.</remarks>
@@ -6201,16 +6285,16 @@ namespace DDS
 
 	/// <summary>Since a Subscriber is an Entity, it has the ability to have a Listener
 	/// associated with it. In this case, the associated Listener should be of type
-	/// ISubscriberListener. This interface must be implemented by the 
+	/// ISubscriberListener. This interface must be implemented by the
 	/// application. A user-defined class must be provided by the application which must
-	/// extend from the SubscriberListener class. All operations for this interface must be 
+	/// extend from the SubscriberListener class. All operations for this interface must be
 	/// implemented in the user-defined class, it is up to the application whether an operation is
 	/// empty or contains some functionality.
 	/// The ISubscriberListener provides a generic mechanism (actually a callback function) for
-	/// the Data Distribution Service to notify the application of relevant asynchronous status 
-	/// change events, such as a missed deadline, violation of a QosPolicy setting, etc. The 
+	/// the Data Distribution Service to notify the application of relevant asynchronous status
+	/// change events, such as a missed deadline, violation of a QosPolicy setting, etc. The
 	/// ISubscriberListener is related to changes in communication status StatusConditions.</summary>
-	/// <example><code> 
+	/// <example><code>
 	/// public class MySubscriberListener : DDS.ISubscriberListener
 	/// {
 	/// 	public MySubscriberListener()
@@ -6227,18 +6311,18 @@ namespace DDS
     {
 		/// <summary> This operation called by the Data Distribution Service when new data is
 		///  available for this Subscriber.</summary>
-		/// <remarks> The implementation may be left empty when this functionality is not needed. 
-		/// This operation will only be called when the relevant ISubscriberListener 
+		/// <remarks> The implementation may be left empty when this functionality is not needed.
+		/// This operation will only be called when the relevant ISubscriberListener
 		/// is installed and enabled with the DDS.StatusKind.DataOnReaders.
-		/// The statuses OnDataOnReaders() and OnDataAvailable() will occur together. 
+		/// The statuses OnDataOnReaders() and OnDataAvailable() will occur together.
 		/// In case these status changes occur, the Data Distribution Service will look for
-		/// an attached and activated ISubscriberListener or IDomainParticipantListener 
+		/// an attached and activated ISubscriberListener or IDomainParticipantListener
 		/// (in that order) for the enabled DDS.StatusKind.DataOnReaders. In case the DDS.StatusKind.DataOnReaders
 		/// can not be handled, the Data Distribution Service will look for an attached and activated
-		/// IDataReaderListener, ISubscriberListener or IDomainParticipantListener for the enabled 
+		/// IDataReaderListener, ISubscriberListener or IDomainParticipantListener for the enabled
 		/// DDS.StatusKind.DataAvailable (in that order). Note that if OnDataOnReaders is called, then the Data Distribution
 		/// Service will not try to call OnDataAvailable, however, the application can force a call
-		/// to the callback function OnDataAvailable of IDataReaderListener objects that have 
+		/// to the callback function OnDataAvailable of IDataReaderListener objects that have
 		/// data by means of the Subscriber.NotifyDatareaders() operation.</remarks>
 		/// <param name="entityInterface">contain a pointer to the ISubscriber for which data is available (this is
 		/// an input to the application provided by the Data Distribution Service).</param>
@@ -6251,9 +6335,9 @@ namespace DDS
 	/// extend from the IDomainParticipantListener class.
 	/// All operations for this interface must be implemented in the user-defined class, it is
 	/// up to the application whether an operation is empty or contains some functionality.
-	/// The IDomainParticipantListener provides a generic mechanism (actually a callback function) 
+	/// The IDomainParticipantListener provides a generic mechanism (actually a callback function)
 	/// for the Data Distribution Service to notify the application of relevant asynchronous status
-	/// change events, such as a missed deadline, violation of QosPolicy setting, etc. The 
+	/// change events, such as a missed deadline, violation of QosPolicy setting, etc. The
 	/// IDomainParticipantListener is related to changes in communication status StatusConditions.
 	/// </summary>
 	/// <example>

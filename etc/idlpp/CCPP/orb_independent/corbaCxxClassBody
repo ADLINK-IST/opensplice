@@ -27,6 +27,12 @@ $(scopedtypename)TypeSupportMetaHolder::~$(typename)TypeSupportMetaHolder ()
     // Rely on parent destructor.
 }
 
+::DDS::OpenSplice::TypeSupportMetaHolder *
+$(scopedtypename)TypeSupportMetaHolder::clone()
+{
+    return new $(scopedtypename)TypeSupportMetaHolder();
+}
+
 ::DDS::OpenSplice::DataWriter *
 $(scopedtypename)TypeSupportMetaHolder::create_datawriter ()
 {
@@ -76,9 +82,12 @@ $(scopedtypename)DataWriter_impl::init (
         DDS::OpenSplice::Topic *a_topic,
         const char *name,
         DDS::OpenSplice::cxxCopyIn copyIn,
-        DDS::OpenSplice::cxxCopyOut copyOut)
+        DDS::OpenSplice::cxxCopyOut copyOut,
+        u_writerCopy writerCopy,
+        void *cdrMarshaler)
 {
-    return DDS::OpenSplice::FooDataWriter_impl::nlReq_init(publisher, participant, qos, a_topic, name, copyIn, copyOut);
+    return DDS::OpenSplice::FooDataWriter_impl::nlReq_init(
+            publisher, participant, qos, a_topic, name, copyIn, copyOut, writerCopy, cdrMarshaler);
 }
 
 ::DDS::InstanceHandle_t
@@ -197,10 +206,12 @@ $(scopedtypename)DataReader_impl::init (
     DDS::OpenSplice::TopicDescription *a_topic,
     const char *name,
     DDS::OpenSplice::cxxCopyIn copyIn,
-    DDS::OpenSplice::cxxCopyOut copyOut)
+    DDS::OpenSplice::cxxCopyOut copyOut,
+    DDS::OpenSplice::cxxReaderCopy readerCopy,
+    void *cdrMarshaler)
 {
     return DDS::OpenSplice::FooDataReader_impl::nlReq_init(
-            subscriber, qos, a_topic, name, copyIn, copyOut,
+            subscriber, qos, a_topic, name, copyIn, copyOut, readerCopy, cdrMarshaler,
             this->dataSeqAlloc, this->dataSeqLength, this->dataSeqGetBuffer, this->dataSeqCopyOut);
 }
 

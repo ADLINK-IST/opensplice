@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -73,8 +74,9 @@ C_CLASS(c_valueType);
 /* Meta Specifiers                                                            */
 /*============================================================================*/
 
-/* Note: if c_metaKind is updated a corresponding update to the baseKind array
-   in common/mm_metakindNames.c for mmstat is also required */
+/* NOTE: if c_metaKind is updated a corresponding update to the baseKind array
+ * in common/mm_metakindNames.c for mmstat is also required
+ */
 typedef enum c_metaKind {
     M_UNDEFINED,
     M_ANNOTATION, M_ATTRIBUTE, M_CLASS, M_COLLECTION, M_CONSTANT, M_CONSTOPERAND,
@@ -86,8 +88,9 @@ typedef enum c_metaKind {
 } c_metaKind;
 C_ALIGNMENT_TYPE (c_metaKind);
 
-/* Note: if c_collKind is updated a corresponding update to the collectionKind
-   array in common/mm_metakindNames.c for mmstat is also required */
+/* NOTE: if c_collKind is updated a corresponding update to the collectionKind
+ * array in common/mm_metakindNames.c for mmstat is also required
+ */
 typedef enum c_collKind {
     OSPL_C_UNDEFINED,
     OSPL_C_LIST, OSPL_C_ARRAY, OSPL_C_BAG, OSPL_C_SET, OSPL_C_MAP, OSPL_C_DICTIONARY,
@@ -519,8 +522,7 @@ c_metaFindByName(
     const char *name,
     c_ulong metaFilter);
 
-/*
- * Walks over all the elements in the c_scope of the given metaObject.
+/* Walks over all the elements in the c_scope of the given metaObject.
  * Action 'action' is called for each element, and as arguments to that action,
  * the element and 'arg' are passed on.
  */
@@ -530,8 +532,7 @@ c_metaWalk(
     c_metaWalkAction action,
     c_metaWalkActionArg arg);
 
-/*
- * Walks over all the elements in the c_scope of the given metaObject.
+/* Walks over all the elements in the c_scope of the given metaObject.
  * Action 'action' is called for each element, and as arguments to that action,
  * the element and 'arg' are passed on. If action returns false, the walk is aborted
  * and false is returned.
@@ -542,9 +543,7 @@ c_metaWalkBool(
     c_metaWalkBoolAction action,
     c_metaWalkActionArg arg);
 
-/*
- * Returns the number of elements in the c_scope of the given c_metaObject.
- */
+/* Returns the number of elements in the c_scope of the given c_metaObject. */
 OS_API c_ulong
 c_metaCount(
     c_metaObject scope);

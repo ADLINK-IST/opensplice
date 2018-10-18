@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,9 +24,6 @@
 #include "v__participant.h"
 #include "v_typeRepresentation.h"
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 v_typeRepresentation
 v__typeRepresentationNew (
     v_kernel kernel,
@@ -64,9 +62,6 @@ v__typeRepresentationNew (
     return tr;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 v_typeHash
 v_typeHashFromArray (
     const os_uchar *array,
@@ -142,8 +137,7 @@ v_typeRepresentationNew (
             if ((tr->dataRepresentationId != found->dataRepresentationId) ||
                 (tr->typeHash.msb != found->typeHash.msb) ||
                 (tr->typeHash.lsb != found->typeHash.lsb)) {
-                /* Already a TypeRepresentation in participant which is not the one
-                 * being added. */
+                /* Already a TypeRepresentation in participant which is not the one being added. */
                 c_free(found);
                 c_free(tr);
                 tr = NULL;

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -266,9 +267,8 @@ u_writeWithHandleAction(
 
     assert(_this != NULL);
     assert(action != NULL);
-    assert(copy != NULL);
 
-    result = u_observableWriteClaim(u_observable(_this), (v_public *)(&writer), C_MM_RESERVATION_ZERO);
+    result = u_observableWriteClaim(u_observable(_this), (v_public *)(&writer), C_MM_RESERVATION_HIGH);
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         if (u_instanceHandleIsNil(handle)) {
             instance = NULL;
@@ -288,7 +288,6 @@ u_writeWithHandleAction(
 
                 /* if the instance is already deleted,
                  * then the result of an unregister is PRECONDITION_NOT_MET.
-                 * RP : is that statment correct in this generic function?
                  */
                 result = U_RESULT_PRECONDITION_NOT_MET;
                 OS_REPORT(OS_ERROR, "u_writeWithHandleAction", result,
@@ -299,6 +298,8 @@ u_writeWithHandleAction(
 
         if (result == U_RESULT_OK) {
             if (data != NULL) {
+                assert(copy != NULL);
+
                 message = v_topicMessageNew_s(writer->topic);
                 if (message) {
                     to = (void *) (message + 1);
@@ -352,7 +353,7 @@ u_writeWithHandleAction(
             }
             u_instanceHandleRelease(handle);
         }
-        u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_HIGH);
     }
     return result;
 }
@@ -782,11 +783,7 @@ u_writerGetMatchedSubscriptions (
     void *arg)
 {
     v_writer writer;
-    v_spliced spliced;
-    v_kernel kernel;
     u_result result;
-    c_iter participants;
-    v_participant participant;
 
     assert(_this != NULL);
     assert(action != NULL);
@@ -794,17 +791,7 @@ u_writerGetMatchedSubscriptions (
     result = u_writerReadClaim(_this, &writer, C_MM_RESERVATION_HIGH);
     if (result == U_RESULT_OK) {
         assert(writer);
-        kernel = v_objectKernel(writer);
-
-        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
-        assert(c_iterLength(participants) == 1);
-        participant = v_participant(c_iterTakeFirst(participants));
-        spliced = v_spliced(participant);
-        c_free(participant);
-        c_iterFree(participants);
-
-        result = u_resultFromKernel(
-                     v_splicedGetMatchedSubscriptions(spliced, writer, action, arg));
+        result = u_resultFromKernel(v_writerReadMatchedSubscriptions(writer, action, arg));
         u_writerRelease(_this, C_MM_RESERVATION_HIGH);
     }
     return result;
@@ -818,11 +805,7 @@ u_writerGetMatchedSubscriptionData (
     void *arg)
 {
     v_writer writer;
-    v_spliced spliced;
-    v_kernel kernel;
     u_result result;
-    c_iter participants;
-    v_participant participant;
 
     assert(_this != NULL);
     assert(action != NULL);
@@ -830,22 +813,10 @@ u_writerGetMatchedSubscriptionData (
     result = u_writerReadClaim(_this, &writer, C_MM_RESERVATION_HIGH);
     if (result == U_RESULT_OK) {
         assert(writer);
-        kernel = v_objectKernel(writer);
-
-        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
-        assert(c_iterLength(participants) == 1);
-        participant = v_participant(c_iterTakeFirst(participants));
-        spliced = v_spliced(participant);
-        c_free(participant);
-        c_iterFree(participants);
-
         result = u_resultFromKernel(
-                     v_splicedGetMatchedSubscriptionData(
-                                     spliced,
-                                     writer,
-                                     u_instanceHandleToGID(subscription_handle),
-                                     action,
-                                     arg));
+                     v_writerReadMatchedSubscriptionData(writer,
+                                                         u_instanceHandleToGID(subscription_handle),
+                                                         action, arg));
         u_writerRelease(_this, C_MM_RESERVATION_HIGH);
     }
     return result;

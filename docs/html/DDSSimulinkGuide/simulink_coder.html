@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>13. Generating C code with Simulink Coder &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="14. Troubleshooting" href="troubleshooting.html" />
+    <link rel="prev" title="12. Tutorial" href="tutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="14. Troubleshooting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="12. Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="generating-c-code-with-simulink-coder">
+<span id="id1"></span><h1>13. Generating C code with Simulink Coder<a class="headerlink" href="#generating-c-code-with-simulink-coder" title="Permalink to this headline">¶</a></h1>
+<p>The Vortex DDS Blockset for Simulink supports Simulink Coder generation of C code, if you have a Simulink Coder license from MathWorks.</p>
+<div class="section" id="prerequisites-for-c-generation">
+<h2>13.1. Prerequisites for C generation<a class="headerlink" href="#prerequisites-for-c-generation" title="Permalink to this headline">¶</a></h2>
+<p>In order to generate and compile C code containing DDS blocks, you must:</p>
+<ul class="simple">
+<li>Have Simulink Coder and MATLAB Coder installed and licensed from MathWorks.</li>
+<li>You have an appropriate C compile installed, as described by the MATLAB documentation.</li>
+<li>Vortex OpenSplice must be installed, and the appropriate <tt class="docutils literal"><span class="pre">release.com</span></tt> (Linux) or <tt class="docutils literal"><span class="pre">release.bat</span></tt> (Windows) script must have been executed in a command window.</li>
+<li>MATLAB must have been started from the same command window. You can check this by running the MATLAB command <tt class="docutils literal"><span class="pre">getenv('OSPL_HOME')</span></tt>. It should return a non-empty value.</li>
+<li>Your Simulink mode should execute correctly in simulation mode.</li>
+</ul>
+</div>
+<div class="section" id="preparing-for-c-generation">
+<h2>13.2. Preparing for C generation<a class="headerlink" href="#preparing-for-c-generation" title="Permalink to this headline">¶</a></h2>
+<p>Once your model has been validated via simulation mode, you are ready to generate and compile code.
+Because of an issue with the OpenSplice C99 language headers, you must manualy change the code generation options for your model.
+Follow these steps:</p>
+<ul class="simple">
+<li>From the model&#8217;s menu, choose <strong>Code &gt; C/C++ Code &gt; Code Generation Options</strong>.</li>
+<li>Click on the <strong>Code Generation</strong> tab in the left-hand pane.</li>
+<li>In the <strong>Build Configurations</strong> drop-down, choose <strong>Specify</strong>.</li>
+<li>In the table that appears below this, edit the <strong>Options</strong> value in the <strong>C Compiler</strong> row to remove the text <strong>$(ANSI_OPTS)</strong>.</li>
+<li>Click <strong>OK</strong> or <strong>Apply</strong> to save your changes, then close the Code Generation Options dialog.</li>
+</ul>
+<p>See the image, below, for an example of the code generation dialog.</p>
+<div class="figure">
+<img alt="Removing $(ANSI_OPTS) from C Compiler options" src="_images/linuxCodeGenNoANSI_OPTS.png" />
+<p class="caption">C/C++ Code Generation Options. Remove the text $(ANSI_OPTS) for C Compiler to avoid compile errors.</p>
+</div>
+</div>
+<div class="section" id="generating-code">
+<h2>13.3. Generating code<a class="headerlink" href="#generating-code" title="Permalink to this headline">¶</a></h2>
+<p>At least from the Vortex DDS Blockset point of view, you are ready to generate code. Follow these steps:</p>
+<ul class="simple">
+<li>From the model&#8217;s menu, choose <strong>Code &gt; C/C++ Code &gt; Build Model</strong>.</li>
+<li>Simulink will get busy. You may see the following warnings in the Diagnostic View. These are OK, but are explained below.</li>
+</ul>
+<p><strong>Domain Participant Warning</strong></p>
+<p>A warning may appear about the domain participant block:</p>
+<div class="highlight-python"><div class="highlight"><pre>Source &#39;SimpleDomain/Domain/Participant_Entity &#39; specifies that its sample time (-1)
+is back-inherited. You should explicitly specify the sample time of sources. You can
+disable this diagnostic by setting the &#39;Source block specifies -1 sample time&#39;
+diagnostic to &#39;none&#39; in the Sample Time group on the Diagnostics pane of the
+Configuration Parameters dialog box.
+
+Component:Simulink | Category:Blockwarning
+</pre></div>
+</div>
+<p>As the message states, this is because the block specifies a sample time of -1. The block only creates meaningful output on initialization (it connects to DDS),
+so any inherited sample time is sufficient. Specifying a sample time of -1 allows the block to be place into a function-call subblock.</p>
+<p><strong>Full header search warning</strong></p>
+<p>The following warning about reverting to full header searches may appear:</p>
+<div class="highlight-python"><div class="highlight"><pre>The following error occurred while attempting to run the preprocessor to find the
+minimum needed set of include files:
+
+While parsing the source file &#39;&lt;path-to&gt;/source/debug_utils.c&#39; the following error
+occurred
+
+&lt;path-to&gt;/source/debug_utils.c:14: cannot open source file &quot;os_stdlib.h&quot;
+|  #include &quot;os_stdlib.h&quot;
+|                        ^
+
+Reverting to full header search.
+</pre></div>
+</div>
+<p>This may occur as you are trying to package code from compilation on another platform. The referenced header file is part of the OpenSplice distrubution.
+When you compile on another platform, you will need to have that platform&#8217;s OpenSplice distribution installed, and <tt class="docutils literal"><span class="pre">release</span></tt> variables set. The warning may be ignored.</p>
+<p><strong>Copy File information messages</strong></p>
+<p>If you are creating a source distrubution, you may see information messages such as the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>cp: cannot stat ‘/libdcpsc99’: No such file or directory
+</pre></div>
+</div>
+<p>The build is attempting to copy OpenSplice shared libraries (which are refered to via environment variables). These should not be copied by the build. Instead, when you
+compile the source on a target platform, these libraries will be found in the local OpenSplice installation.</p>
+</div>
+<div class="section" id="running-built-models">
+<h2>13.4. Running built models<a class="headerlink" href="#running-built-models" title="Permalink to this headline">¶</a></h2>
+<p>When you run a compiled Simulink executable, you will need:</p>
+<ul class="simple">
+<li>An appropriate OpenSplice runtime installation on the machine executing the model</li>
+<li>The correct OpenSplice environment variables, which are set by the <tt class="docutils literal"><span class="pre">release</span></tt> script in the installation root directory.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">13. Generating C code with Simulink Coder</a><ul>
+<li><a class="reference internal" href="#prerequisites-for-c-generation">13.1. Prerequisites for C generation</a></li>
+<li><a class="reference internal" href="#preparing-for-c-generation">13.2. Preparing for C generation</a></li>
+<li><a class="reference internal" href="#generating-code">13.3. Generating code</a></li>
+<li><a class="reference internal" href="#running-built-models">13.4. Running built models</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="previous chapter">12. Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="troubleshooting.html"
+                        title="next chapter">14. Troubleshooting</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/simulink_coder.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="14. Troubleshooting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="12. Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,7 +28,6 @@
 
 #include "v_kernel.h"
 #include "v_reader.h"
-#include "v_dataViewSample.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -49,7 +49,20 @@ extern "C" {
  * the type of the object is checked to be <code>v_dataView</code> or
  * one of its subclasses.
  */
-#define  v_dataView(o) (C_CAST(o,v_dataView))
+#define v_dataView(o) (C_CAST(o,v_dataView))
+/**
+ * \brief The <code>v_dataViewSample</code> cast method.
+ *
+ * This method casts an object to a <code>v_dataViewSample</code> object.
+ * Before the cast is performed, if compiled with the NDEBUG flag not set,
+ * the type of the object is checked to be <code>v_dataViewSample</code> or
+ * one of its subclasses.
+ */
+#define v_dataViewSample(_this) (C_CAST(_this,v_dataViewSample))
+
+#define v_dataViewInstance(_this) (C_CAST(_this,v_dataViewInstance))
+#define v_dataViewInstanceTemplate(_this) ((v_dataViewInstanceTemplate)(_this))
+#define v_dataViewSampleTemplate(_this) ((v_dataViewSampleTemplate)(_this))
 
 #define v_dataView_t(scope) \
         c_type(c_resolve(c_getBase(scope), \

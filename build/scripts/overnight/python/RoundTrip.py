@@ -28,29 +28,29 @@ class roundtrip (Example):
 
     def runExample(self, lang, extra, types):
 
-        print("RoundTrip - runExample ...")
+        print "RoundTrip - runExample ..."
 
         if lang == "cs" and not self.host.isWindows():
-            print("C# not supported on " + self.host.name)
+            print "C# not supported on " + self.host.name
         else:
             if lang == "all":
                 self.runExampleAll(extra)
             else:
 
-                print("In runExample for " + self.expath + ": " + self.name + ": " + lang)
+                print "In runExample for " + self.expath + ": " + self.name + ": " + lang
 
-                currPath = os.getcwd() 
+                currPath = os.getcwd()
 
                 try:
                     super(roundtrip, self).setExampleResultDir(lang, extra)
 
                     if lang == "java":
                         pubName = "Saj_RoundTrip_Pong.jar"
-                        subName = "Saj_RoundTrip_Ping.jar"    
-                    elif lang == "java5":                    
-                        pubName = "Saj5_RoundTrip_Pong.jar"
-                        subName = "Saj5_RoundTrip_Ping.jar"                       
-                    else:                 
+                        subName = "Saj_RoundTrip_Ping.jar"
+                    elif lang == "java5":
+                        pubName = "pong/java5_pong.jar"
+                        subName = "ping/java5_ping.jar"
+                    else:
                         pubName = "pong"
                         subName = "ping"
 
@@ -64,7 +64,7 @@ class roundtrip (Example):
                     pub_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'yaml', pub_conds_file)
 
                     exSfx = ""
-  
+
                     if self.host.isWindows() and not "java" in lang:
                         exSfx = ".exe"
 
@@ -86,28 +86,28 @@ class roundtrip (Example):
                         subexe = os.path.join(self.pPath, subName) + exSfx
 
                         if os.path.isfile (pubexe):
-                            subThread = ExeThread(self.classpath, subLog, lang, subexe, self.sub_params, self.example_timeout) 
+                            subThread = ExeThread(self.classpath, subLog, lang, subexe, self.sub_params, self.example_timeout)
                         else:
                             msg = "MissingExecutable: " + subexe
-               
+
                         quitexe = os.path.join(self.pPath, subName) + exSfx
 
-                        if os.path.isfile (pubexe):  
+                        if os.path.isfile (pubexe):
                             quitThread = ExeThread(self.classpath, subLog, lang, quitexe, self.quit_params, self.example_timeout)
                         else:
                             msg = "MissingExecutable: " + quitexe
 
-                        os.chdir(self.pPath)   
+                        os.chdir(self.pPath)
 
                         if msg == "NONE":
                             self.startOSPL()
-                            print("Starting pubThread for ", pubexe)
+                            print "Starting pubThread for ", pubexe
                             pubThread.start()
-                            print("Starting subThread for ", subexe)
+                            print "Starting subThread for ", subexe
                             subThread.start()
-                                            
+
                             subThread.join(self.example_timeout)
-                            print("Starting quitThread for ", quitexe)
+                            print "Starting quitThread for ", quitexe
                             quitThread.start()
                             pubThread.join(self.example_timeout)
                             quitThread.join(self.example_timeout)
@@ -118,7 +118,7 @@ class roundtrip (Example):
                     try:
                         self.stopOSPL()
                     except Exception as ex:
-                        print("Exception stopping OpenSplice ", str(ex))
+                        print "Exception stopping OpenSplice ", str(ex)
 
                     if msg == "NONE":
                         try:
@@ -126,7 +126,7 @@ class roundtrip (Example):
 
                             if os.path.isfile (self.ospl_error_log):
                                 msg = "ospl-error.log found"
-                            #pdb.set_trace()                           
+                            #pdb.set_trace()
                             self.checkResults(subLog, sub_conds)
                             self.checkResults(pubLog, pub_conds)
 
@@ -147,14 +147,14 @@ class roundtrip (Example):
                     try:
                         self.writeResult (result,  self.expath +  self.name, lang, msg)
                     except Exception as ex:
-                        print("Exception writing result", str(ex))
+                        print "Exception writing result", str(ex)
 
-                    try: 
+                    try:
                         self.cleanUp()
                     except Exception as ex:
-                        print("Exception cleaning up", str(ex))
+                        print "Exception cleaning up", str(ex)
 
                 except Exception as ex:
-                    print("Unexpected exception ", str(ex))
+                    print "Unexpected exception ", str(ex)
                 finally:
-                    os.chdir(currPath)   
+                    os.chdir(currPath)

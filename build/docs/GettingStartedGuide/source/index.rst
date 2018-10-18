@@ -8,7 +8,7 @@ OpenSplice Getting Started Guide
 .. toctree::
    :maxdepth: 2
    :numbered:
-      
+
    preface
    about-ospl
    product-info
@@ -27,7 +27,7 @@ OpenSplice Getting Started Guide
    unixarm
    elinos
    contacts
-   
+
 
 Indices and tables
 ==================

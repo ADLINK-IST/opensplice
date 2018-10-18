@@ -1,5 +1,5 @@
 #ifndef _ISHAPESFORM_HPP
-#define	_ISHAPESFORM_HPP
+#define _ISHAPESFORM_HPP
 
 /** @file */
 
@@ -101,12 +101,12 @@ private slots:
 #endif
 
 private:
-    QTimer                     timer;
+    QTimer            timer;
     Ui::ShapesDialog  mainWidget;
     ShapesWidget*     shapesWidget;
-    ReaderQosDialog    readerQos_;
-    WriterQosDialog    writerQos_;
-    FilterDialog*       filterDialog_;
+    ReaderQosDialog   readerQos_;
+    WriterQosDialog   writerQos_;
+    FilterDialog*     filterDialog_;
 
     dds::domain::DomainParticipant dp_;
     dds::core::policy::Partition gQos_;

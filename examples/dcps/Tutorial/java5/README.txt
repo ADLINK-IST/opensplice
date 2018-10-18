@@ -23,16 +23,12 @@ MessageBoard [userid]
 The executables classes are located in the chatroom package, but should be
 started from the current directory in the following way:
 
-On posix plaforms
+java -jar chatter/java5_Chatter.jar
 
-java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes chatroom.MessageBoard
+java -jar messageboard/java5_MessageBoard.jar
 
 optionally command-line parameters may be included as well:
 
-java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes chatroom.Chatter 1 Bill
+java -jar userload/java5_Userload.jar 1 Bill
 
-On windows platforms
 
-java -classpath "%OSPL_HOME%/jar/dcpssaj5.jar";classes chatroom.MessageBoard
-
-java -classpath "%OSPL_HOME%/jar/dcpssaj5.jar";classes chatroom.Chatter 1 Bill

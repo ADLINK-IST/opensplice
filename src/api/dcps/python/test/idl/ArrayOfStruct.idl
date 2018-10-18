@@ -1,0 +1,24 @@
+const long length = 2;
+typedef long my_long;
+
+module basic{
+
+	module module_ArrayOfStruct{
+
+		struct Inner{
+			short long1;
+			double double1;
+		};
+		
+		typedef Inner inner_struct;
+		
+		struct ArrayOfStruct_struct{
+			long long1;
+			inner_struct array1[length];
+			my_long mylong1;
+		};
+		
+		#pragma keylist ArrayOfStruct_struct long1
+	};
+};
+		

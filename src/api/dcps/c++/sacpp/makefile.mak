@@ -14,7 +14,7 @@ vpath %.cpp ../../code ../../../common/code
 # Input IDL files.
 IDL_DIR     := $(OSPL_HOME)/etc/idl
 vpath %.idl $(IDL_DIR)
-TOPIC_IDL   := dds_builtinTopics.idl dds_dcps_builtintopics.idl dds_namedQosTypes.idl
+TOPIC_IDL   := dds_builtinTopics.idl dds_dcps_builtintopics.idl dds_namedQosTypes.idl dds_cdrBlob.idl
 
 # idlpp compiler settings.
 IDLPP       = $(WINCMD) idlpp 
@@ -39,6 +39,7 @@ CXXINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CXXINCS		+= -I$(OSPL_HOME)/src/user/include
 CXXINCS		+= -I$(OSPL_HOME)/src/utilities/include
 CXXINCS		+= -I$(OSPL_HOME)/src/database/database/include
+CXXINCS		+= -I$(OSPL_HOME)/src/database/serialization/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/common/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/c++/sacpp/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/c++/common/include

@@ -67,3 +67,5 @@ The setting BY_RECEPTION_TIMESTAMP indicates that, assuming the OWNERSHIP policy
 The setting BY_SOURCE_TIMESTAMP indicates that, assuming the OWNERSHIP policy allows it, a timestamp placed at the source should be used. This is the only setting that, in the case of concurrent same-strength \ref DCPS_Modules_Publication_DataWriter "DataWriter" objects updating the same instance, ensures all subscribers will end up with the same final value for the instance. The mechanism to set the source timestamp is middleware dependent.
 
 The value offered is considered compatible with the value requested if and only if the inequality “offered kind >= requested kind” evaluates to ‘TRUE.’ For the purposes of this inequality, the values of DESTINATION_ORDER kind are considered ordered such that BY_RECEPTION_TIMESTAMP < BY_SOURCE_TIMESTAMP.
+
+This QoS plays a role within the scope of \ref DCPS_Eventual_Consistency "Eventual Consistency"

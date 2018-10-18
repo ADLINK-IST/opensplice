@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,10 +22,12 @@
 #include "v_networkingStatistics.h"
 #include "v_service.h"
 #include "v_participant.h"
+#include "v__observable.h"
 #include "v__statCat.h"
 #include "v__kernel.h"
 
 #include "os_report.h"
+#include "os_atomics.h"
 
 v_networking
 v_networkingNew(
@@ -59,6 +62,8 @@ v_networkingNew(
         if (v_service(s)->state == NULL) {
             v_serviceFree(v_service(s));
             s = NULL;
+        } else {
+            OSPL_ADD_OBSERVER(kernel, s, V_EVENT_NEW_GROUP, NULL);
         }
     }
     return s;

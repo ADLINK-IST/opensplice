@@ -46,6 +46,21 @@ generate:
 	$(MAKE) -C ModelingGuide html
 	$(MAKE) -C ModelingGuide latexpdf
 
+	$(MAKE) -C DDSMATLABGuide html
+	$(MAKE) -C DDSMATLABGuide latexpdf
+
+	$(MAKE) -C DDSSimulinkGuide html
+	$(MAKE) -C DDSSimulinkGuide latexpdf
+
+	$(MAKE) -C DDSLabVIEWGuide html
+	$(MAKE) -C DDSLabVIEWGuide latexpdf
+
+	$(MAKE) -C PythonDCPSAPIGuide html
+	$(MAKE) -C PythonDCPSAPIGuide latexpdf
+
+	$(MAKE) -C NodeJSDCPSAPIGuide html
+	$(MAKE) -C NodeJSDCPSAPIGuide latexpdf
+
 docclean:
 	$(MAKE) -C ConfGuide clean
 	$(MAKE) -C GettingStartedGuide clean
@@ -61,6 +76,11 @@ docclean:
 	$(MAKE) -C RnRManagerGuide clean
 	$(MAKE) -C StreamsAPIReference clean
 	$(MAKE) -C ModelingGuide clean
+	$(MAKE) -C DDSMATLABGuide clean
+	$(MAKE) -C DDSSimulinkGuide clean
+	$(MAKE) -C DDSLabVIEWGuide clean
+	$(MAKE) -C PythonDCPSAPIGuide clean
+	$(MAKE) -C NodeJSDCPSAPIGuide clean
 
 	rm -rf configuide/source/ddsi2e.xml
 

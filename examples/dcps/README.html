@@ -4,9 +4,9 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-<title>OpenSplice DDS Examples</title>
+<title>Vortex OpenSplice Examples</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../docs/css/style.css" type="text/css">
 
 </head>
 <body>
@@ -21,6 +21,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="QueryCondition/README.html">QueryCondition </a></li>
   <li> <a href ="Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="Durability/README.html">Durability </a></li>
   <li> <a href ="Ownership/README.html">Ownership</a></li>
   <li> <a href ="BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -64,6 +65,10 @@ conditions :</p>
   <p class="ex-desc">The Lifecycle example is used to illustrate the different lifecycle states of the sample
    and the instance.</p>
    </li>
+  <li class="ex"><a class="ex-link" href ="Durability/README.html">Durability </a>
+  <p class="ex-desc">The Durability example illustrates the ability of late joining readers to obtain
+data that has already been published before these readers were created.</p>
+  </li>
 
   <li class="ex"> <a class="ex-link" href ="Ownership/README.html">Ownership</a>
   <p class="ex-desc">The Ownership example is used to illustrate the concept of Shared Ownership, controlled
@@ -74,7 +79,7 @@ through QoS, in DDS.</p>
   </li>
 
   <li> <a href ="NetworkPartitions/README.html">NetworkPartitions</a>
-  <p class="ex-desc">The NetworkPartitions example is used to illustrate the concept of network traffic partitioning based on the configuration of OpenSplice DDS.</p>
+  <p class="ex-desc">The NetworkPartitions example is used to illustrate the concept of network traffic partitioning based on the configuration of Vortex OpenSplice.</p>
   </li>
 
   <li class="ex"><a class="ex-link" href ="RoundTrip/README.html">RoundTrip </a>
@@ -89,44 +94,46 @@ from a publisher.</p></li>
  <p> Each example can be built individually. It is also possible to build a number of examples at the same time.</p></br>
 
  <h2>Building all examples in a posix environment</h2>
- <p>The examples can be built together using the various makefiles found in the examples directory of the installed version of OpenSpliceDDS
+ <p>The examples can be built together using the various makefiles found in the examples directory of the installed version of Vortex OpenSplice
     when building in a posix environment, using the following commands:</br></p>
     <ul>
-    <li><b><i>makefile -f Makefile</i></b>  will build all C and C++ standalone examples as well as ISO C++ examples</li>
+    <li><b><i>make -f Makefile</i></b>  will build all C and C++ standalone examples as well as ISO C++ examples</li>
     <li><b><i>makefile -f Makefile.DCPS_ISO_CPlusPlus</i></b>  will build all ISO C++ examples</li>
     <li><b><i>makefile -f Makefile.StandaloneJava</i></b> will build all Java standalone examples</li>
+    <li><b><i>mvn</i></b> will build all Java5 examples</li>
     <li><b><i>makefile -f Makefile.CORBACPlusPlus</i></b> will build all CORBA C++ examples</li>
     <li><b><i>makefile -f Makefile.CORBAJava</i></b> will build all CORBA Java examples</li>
     </ul></p>
-   <p>Before running any of the above commands it is necessary to set your environment using the <i>release.com</i> file found in the the OpenSpliceDDS
+   <p>Before running any of the above commands it is necessary to set your environment using the <i>release.com</i> file found in the the Vortex OpenSplice
    installation.  When building the CORBA examples using the above makefiles the ACE_ROOT and ODBCHOME environment variables must be set when building
    the CORBA C++ examples and the ACE_ROOT/lib directory must be added to the LD_LIBRARY_PATH.  When building the CORBA Java examples the JACORB_HOME environment variable must be set.</p>
  <h2>Building examples in Visual Studio</h2>
  <p>The examples can be built in Visual Studio using solutions files provided.</p>
  <p>After installing Vortex OpenSplice on Windows, from the Vortex Launcher, go to the <b>Examples</b> pane and select an example solution file to open.  There are 6 options:</p>
     <ul>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">CORBA C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all CORBA C++ Examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">CORBA C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all CORBA C++ Examples</span> in
         <span class ="ex-slnfile-path"><b>CORBA_CPlusPlus.sln</b></span></li>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">C-Sharp Examples</span></i></b> will build <span class="ex-slnfile-desc">all C# versions of the examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">C-Sharp Examples</span></i></b> will build <span class="ex-slnfile-desc">all C# versions of the examples</span> in
         <span class="ex-slnfile-path"><b>CSharp.sln</b></span></li>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C and C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all C and C++ versions of the examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C and C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all C and C++ versions of the examples</span> in
         <span class="ex-slnfile-path"><b>All_Standalone_C_and_CPlusPlus.sln</b></span></li>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C Examples</span></i></b>will build <span class="ex-slnfile-desc">all C versions of the examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C Examples</span></i></b>will build <span class="ex-slnfile-desc">all C versions of the examples</span> in
         <span class="ex-slnfile-path"><b>Standalone_C.sln</b></span></li>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all C++ versions of the examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">Standalone C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all C++ versions of the examples</span> in
         <span class="ex-slnfile-path"><b>Standalone_CPlusPlus.sln</b></span></li>
-      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">DCPS ISO C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all ISO C++ examples</span> in 
+      <li class="ex-slnfile"><b><i><span class="ex-slnfile-name">DCPS ISO C++ Examples</span></i></b> will build <span class="ex-slnfile-desc">all ISO C++ examples</span> in
         <span class="ex-slnfile-path"><b>DCPS_ISO_CPlusPlus.sln</b></span></li>
     </ul>
   </p>
   <p>When building the CORBA examples using the <b>CORBA C++ Examples</b> option the ACE_ROOT and ODBCHOME environment variables must be set.</p>
 
   <h2>Building Java examples on Windows</h2>
-  <p>Batch files are provided to build the Java examples in a windows environment.  These files can be found in the examples directory of the installed
-     OpenSpliceDDS. Start an OpenSpliceDDS command prompt and simply run</p>
+  <p>Batch files are provided to build the Java examples in a windows environment For Java5 maven is used to build the examples.  These files can be found in the examples directory of the installed
+     Vortex OpenSplice. Start a Vortex OpenSplice command prompt and simply run</p>
      <ul>
      <li><b><i>BUILD_StandaloneJava.bat</i></b> to build the Java standalone examples</li>
      <li><b><i>BUILD_CORBAJava.bat</i></b> to build the CORBA Java examples</li>
+     <li><b><i>mvn</i></b> to build the Java5 examples</li>
      </ul>
   <p>If building the CORBA Java examples the JACORB_HOME environment variable must be set.</p>
 </body>

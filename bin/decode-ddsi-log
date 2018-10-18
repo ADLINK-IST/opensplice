@@ -1,0 +1,1168 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Getopt::Long;
+
+my @showopts = ();
+my %shows = ("topic" => 0, "durability" => 0, "localdisc" => 0, "remotedisc" => 0, "user" => 1, "ack" => 1, "throttle" => 0, "block" => 1, "rematch" => 0, "in" => 1, "out" => 1, "partition" => 0, "builtin" => 0, "mtreader" => 0);
+my $topic_filter = '.';
+my $topic_xfilter = '$^';
+my $t0opt = undef;
+my $scint = undef;
+my $rawip2name = undef;
+my $helpflag = 0;
+GetOptions ("help" => \$helpflag, "show=s" => \@showopts, "topic-filter=s" => \$topic_filter, "topic-xfilter=s" => \$topic_xfilter, "t0=s" => \$t0opt, "sc=s" => \$scint, "hn=s" => \$rawip2name)
+  or die "Error in command line arguments\n";
+usage() if $helpflag;
+for (@showopts) {
+  $_ =~ /^((no-?)?)(.*)/;
+  die "--show $_: not a known category\n" unless exists $shows{$3};
+  $shows{$3} = ($1 eq '') ? 1 : 0;
+}
+
+my $guidre = "[0-9a-f]+(?::[0-9a-f]+){3}";
+my $gidre = "[0-9a-f]+(?::[0-9a-f]+){2}";
+my %opstr = ("00" => "R  ", "01" => "W  ", # index by $stinfo.$dflag
+             "10" => " D ", "11" => "WD ",
+             "20" => "  U", "21" => "W U",
+             "30" => " DU", "31" => "WDU");
+my %pp = ();
+my %rd = ();
+my %wr = ();
+my %rdgid = ();
+my %wrgid = ();
+my %sysid = ();
+my %proxypp = ();
+my %pwr = ();
+my %prd = ();
+my %pub = ();
+my %sub = ();
+my %ftrflag = ();
+my @ackcheck;
+my ($t0sec, $t0usec);
+my $prevtjump = -1e9;
+my %prevts = ();
+my %tlastpkt = ();
+my $self_seen = 0;
+my $ownip;
+my $txblock = undef;
+my $txblockwr = undef;
+my $txblocktp = undef;
+my $tlast_txblock = 0;
+my $tlast_non_spdp_check = 0;
+my %scint = ();
+my %scintcache = ();
+my $last_infots;
+my %spdp_infots;
+
+# Readers, writers for DDSI discovery data have entity ids, minus the
+# source and kind of 2, 3, &c., with the following interpretation
+# (actually, there are more ... but these are the ones I am most
+# interested in)
+my %discentitystr = ("2" => "TOPIC", "3" => "WRITER", "4" => "READER");
+
+%scint = do $scint if defined $scint;
+$rawip2name = do $rawip2name if defined $rawip2name;
+sub ip2name {
+  if (defined $rawip2name) {
+    return &$rawip2name(@_);
+  } else {
+    return $_[0];
+  }
+}
+
+if (defined $t0opt) {
+  $t0sec = int($t0opt);
+  $t0usec = int(1e6 * int($t0opt - $t0sec));
+}
+
+my @durstate = ("init", "disc.f.grp", "disc.l.grp",
+                "disc.p.src", "inj.pers", "f.init",
+                "complete", "fetch", "align", "f.align",
+                "terminating", "terminated");
+
+$| = 1; # let outbut not be fully buffered
+my $ts;
+my (%psgid, %psguid, %rwgid, %rwguid);
+while(<>) {
+  s/[\r\n]+$//; # chomp;
+  last unless /^(\d+)\.(\d+)\/ *([^:]+)/;
+  unless (defined $t0sec) {
+    ($t0sec, $t0usec) = ($1, $2);
+    printf "T0 = %d.%06d\n", $t0sec, $t0usec;
+  }
+  $ts = ($1 - $t0sec) + ($2 - $t0usec) / 1e6;
+  my $tid = $3;
+  $prevts{$tid} = $ts unless exists $prevts{$tid};
+  if ($ts < $prevts{$tid}) {
+    printf "%8.3f %24s %30.30s TJMP time jumped %.3fs (line $.)\n", $ts, "", "", $ts - $prevts{$tid}, $tid if $ts - $prevtjump > 1;
+    $prevtjump = $ts;
+  } elsif ($tid eq "xmit.user" && $ts > $prevts{$tid} + 3) {
+    printf "%8.3f %24s %30.30s TJMP possible time jump %.3fs (line $.)\n", $ts, "", "", $ts - $prevts{$tid}, $tid if $ts - $prevtjump > 1;
+  }
+  $prevts{$tid} = $ts;
+
+  while (@ackcheck && $ackcheck[0]->{ts} < $ts) {
+    my $x = shift @ackcheck;
+    my $nsamp = scalar(acklate($ts, $x->{wrguid}, $x->{seq}));
+    if ($nsamp > 0) {
+      # note: sample count is against check reqt, not current position
+      # of the writer
+      printf "%8.3f %24s %30.30s  ACK lagging by %d samples (last seq from writer: %d)\n",
+        $x->{ts}, fmtguid($x->{wrguid}), $wr{$x->{wrguid}}->{stopic}, $nsamp, $wr{$x->{wrguid}}->{seq}
+        unless $wr{$x->{wrguid}}->{acklate} || !$shows{ack} || !show_topic($wr{$x->{wrguid}}->{topic});
+      $wr{$x->{wrguid}}->{acklate} = $x->{tswrite};
+    }
+  }
+
+  # Check whether something other than an SPDP reasonably recently
+  # arrived (to guard against only SPDP keeping things alive, which is
+  # known to happen when network routing is configured incorrectly)
+  if ($ts - $tlast_non_spdp_check >= 1.0) {
+    while (my ($k, $v) = each %proxypp) {
+      if (!defined $v->{tdel} && $ts - $v->{tcreate} > 5.0 && $v->{non_spdp_seen} == 0) {
+        printf "%8.3f %24s %30.30s CONN nothing other than SPDP received for 5s, possible connectivity issue\n", $ts, fmtguid($k), "";
+        $v->{non_spdp_seen} = -1; # flagging it so we don't keep repeating it
+      }
+    }
+    $tlast_non_spdp_check = $ts;
+  }
+
+  if ($shows{block} && defined $txblock && $ts > $txblock + 1.0 && $txblock > $tlast_txblock) {
+    my $stopic = (exists $wr{$txblockwr}) ? $wr{$txblockwr}->{stopic} : "";
+    printf "%8.3f %24s %30.30s BLCK already blocked for %.3fs\n", $ts, fmtguid($txblockwr), $stopic, $ts - $txblock;
+    if (exists $wr{$txblockwr}) {
+      my @lates = acklate(1e100, $txblockwr);
+      for (@lates) {
+        my $cause = ($_->{haveack} ? sprintf "%d behind", $_->{nsamp} : "no ack yet");
+        printf "%8.3f %24s %30.30s BLCK   %s (%s)\n", $ts, fmtguid($txblockwr), $stopic, fmtguid($_->{guid}), $cause;
+      }
+    }
+    $tlast_txblock = $txblock;
+  }
+
+  if (/HDR\(([0-9a-f]+):[0-9a-f]+:[0-9a-f]+/) {
+    $tlastpkt{$1} = $ts;
+    undef $last_infots;
+    if (exists $sysid{$1} && exists $sysid{$1}->{tlastpkt} && !exists $sysid{$1}->{tresumepkt}) {
+      $sysid{$1}->{tresumepkt} = $ts;
+    }
+  }
+
+  # Special handling of ACKNACK of built-in reader/writer pairs:
+  # generally the script completely ignores the built-in ones (maybe I
+  # should change that?) but it is interesting to know when all
+  # discovery for a participant has completed.  The "happy-now" is a
+  # decent proxy for that.
+  if (/: ACKNACK\(F?#\d+:\d+\/\d+:[01]* (?:L\([0-9a-f:]+\s+[0-9.]+\)\s*)?([0-9a-f]+(?::[0-9a-f]+){2}:[234]c7) -\> ([0-9a-f]+(?::[0-9a-f]+){2}:[234]c2) .*happy-now/) {
+    check_disccomplete("A", $1);
+  } elsif (/: HEARTBEAT\(F?#\d+:\d+\.\.\d+\s+(?:L\([0-9a-f:]+\s+[0-9.]+\)\s*)?([0-9a-f]+(?::[0-9a-f]+){2}:[234]c2)/) {
+    check_disccomplete("H", $1);
+  } elsif (/tev: acknack (?:$guidre) -\> ([0-9a-f]+(?::[0-9a-f]+){2}:[234]c2): #\d+:(\d+)\/0:$/ && $2 > 1) {
+    check_disccomplete("B", $1);
+  }
+
+  # Special handling of INFOTS & SPDP for extracting start times of remote nodes
+  if (/recv: INFOTS\((\d+)\.(\d+)\)/) {
+    $last_infots = ($1 - $t0sec) + ($2/1e3 - $t0usec) / 1e6;
+  } elsif (/recv: DATA\(((?:[0-9a-f]+:){3}100c2) /) {
+    (my $ppguid = $1) =~ s/:100c2$/:1c1/;
+    $spdp_infots{$ppguid} = $last_infots;
+  }
+
+  if (/: ownip: ([0-9.]+)/) {
+    $ownip = $1;
+  } elsif (/: new_participant\(($guidre)/o) {
+    my $guid = $1;
+    (my $gid = $guid) =~ s/:[^:]+$//;
+    $pp{$guid} = { gid => $gid, guid => $guid, sub => {}, pub => {} };
+    if (! $self_seen) {
+      $self_seen = 1;
+      $guid =~ /^([^:]+)/;
+      $sysid{$1} = { self => 1, ip => $ownip, name => ip2name($ownip, $guid) };
+      printf "%8.3f %24s %30.30s SELF node %s (%u; %s) alive\n", $ts, $1, "", $ownip, hex($1), $sysid{$1}->{name};
+    }
+    printf "%8.3f LOCAL PARTICIPANT %s (%s)\n", $ts, fmtguid($guid), $gid if $shows{localdisc};
+  } elsif (/: unref_participant\(($guidre) .*user 0 builtin 0/) {
+    my $guid = $1;
+    (my $gid = $guid) =~ s/:[^:]+$//;
+    printf "%8.3f DELETE LOCAL PARTICIPANT %s (%s)\n", $ts, fmtguid($guid), $gid if $shows{localdisc};
+  } elsif (/: map group ($gidre) -> ($guidre)/o) {
+    $psgid{$tid} = $1;
+    $psguid{$tid} = $2;
+  } elsif (/: new_(reader|writer)\(gid ($gidre)\)$/o) {
+    $rwgid{$tid} = $2;
+  } elsif (/: new_(reader|writer)\(guid ($guidre)/o) {
+    $rwguid{$tid} = $2;
+  } elsif (/new_fictitious_transient_reader/) {
+    $ftrflag{$tid} = 1; # no GID or subscriber
+  } elsif (/: (READER|WRITER) ($guidre) QOS=\{(.*)/o) {
+    my $kind = $1;
+    my $g = ($1 eq "READER") ? \%sub : \%pub;
+    my $h = ($1 eq "READER") ? \%rd : \%wr;
+    my $hgid = ($1 eq "READER") ? \%rdgid : \%wrgid;
+    my $gk = ($1 eq "READER") ? "sub" : "pub";
+    my $hk = ($1 eq "READER") ? "rd" : "wr";
+    my $qos = $3;
+    die "$2 $rwguid{$tid}" unless $2 eq $rwguid{$tid};
+    unless ($3 =~ /topic=([^,]+?),type=([^,]+?).*?,partition=\{([^}]*?)\}.*?,history=([01]):/) {
+      # no topic, type: DDSI built-in reader/writer
+      if (defined $rwgid{$tid} || $ftrflag{$tid}) {
+        die;
+      }
+      if (defined $psgid{$tid} || defined $psguid{$tid}) {
+        # in some cases, we have a pub/sub gid+guid set for an
+        # internal reader (depends on the order of discovery)
+        die unless $rwguid{$tid} =~ /[4c][27]$/;
+      }
+      $psgid{$tid} = $psguid{$tid} = $rwguid{$tid} = undef;
+    } else {
+      my $topic = $1; my $type = $2; my $partitions = $3, my $keepall = $4;
+      unless (defined $rwguid{$tid} && ($ftrflag{$tid} || (defined $psgid{$tid} && defined $psguid{$tid} && defined $rwgid{$tid}))) {
+        die;
+      }
+      my @ps = split ',', $partitions;
+      $psgid{$tid} = $psguid{$tid} = $rwgid{$tid} = "" if $ftrflag{$tid};
+      (my $ppguid = $rwguid{$tid}) =~ s/:[^:]+$/:1c1/;
+      if (! exists $pp{$ppguid}->{$gk}->{$psguid{$tid}}) {
+        $pp{$ppguid}->{$gk}->{$psguid{$tid}} =
+          { gid => $psgid{$tid}, guid => $psguid{$tid}, ppguid => $ppguid, $hk => {} };
+      }
+      my $stopic = make_stopic($partitions, $topic);
+      #print "FTR $topic\n" if $ftrflag;
+      my $rw = { gid => $rwgid{$tid}, guid => $rwguid{$tid}, psguid => $psguid{$tid}, ppguid => $ppguid,
+                 topic => $topic, stopic => $stopic, type => $type, partition => \@ps,
+                 matches => {}, nhappy => 0, seq => 0, acklate => 0, cs => undef, keepall => $keepall };
+      $pp{$ppguid}->{$gk}->{$psguid{$tid}}->{$rwguid{$tid}} = $rw;
+      $h->{$rwguid{$tid}} = $rw;
+      $hgid->{$rwgid{$tid}} = $rw;
+      $g->{$psguid{$tid}} = { gid => $psgid{$tid}, guid => $psguid{$tid}, es => {}, txn => 0 } unless exists $g->{$psguid{$tid}};
+      $g->{$psguid{$tid}}->{es}->{$rwguid{$tid}} = 1;
+      my $gidstr;
+      if ($rwgid{$tid} eq '') {
+        $gidstr = "no gid";
+      } else {
+        $gidstr = sprintf "gid %s ${gk}gid %s", $rwgid{$tid}, $psgid{$tid};
+      }
+      printf "%8.3f LOCAL $kind %s %s {%s} (%s)\n", $ts, fmtguid($rwguid{$tid}), $topic, $partitions, $gidstr if $shows{localdisc} && $topic =~ /$topic_filter/o && $topic !~ /$topic_xfilter/o;
+      check_qos($ts, $kind, fmtguid($rwguid{$tid}), $topic, $partitions, $qos);
+      $psgid{$tid} = $psguid{$tid} = $rwgid{$tid} = $rwguid{$tid} = undef;
+      $ftrflag{$tid} = 0;
+    }
+  } elsif (/rtps_write\(gid ($gidre)\) - seq (\d+) txn id (\d+) (begin|end)s/o) {
+    my $wrgid = $1; my $kseq = $2; my $ktxnid = $3; my $op = uc $4;
+    die unless defined $wrgid{$wrgid};
+    my $wrguid = $wrgid{$wrgid}->{guid};
+    my $wr = $wr{$wrguid};
+    die unless defined $wr;
+    my $pub = $pub{$wr->{psguid}};
+    die unless defined $pub;
+    if ($op eq "BEGIN") {
+      die if defined $wr->{cs};
+      if ($pub->{txn} == 0) {
+        $pub->{txn} = keys %{$pub->{es}};
+        printf "%8.3f %24s %30.30s %16s XMT  BEGIN [%d writers]\n", $ts, fmtguid($pub->{guid}), "", "", $pub->{txn} if $shows{out};
+      }
+      $wr->{cs} = { seq => undef, ktxn => $ktxnid, kseq => $kseq }; # seq will be filled in with the first sample
+    } elsif ($op eq "END") {
+      if (defined $wr->{cs}) {
+        my $nk = $kseq - $wr->{cs}->{kseq};
+        my $nd = defined $wr->{cs}->{seq} ? $wr->{seq} - $wr->{cs}->{seq} + 1 : 0;
+        if ($nk != $nd) {
+          my $keeplastmsg = $wr->{keepall} ? " (weird)" : " - change writer to use a keep-all history";
+          printf "%8.3f %24s %30.30s %s #%-4d %-6s EOTX kernel has %d but DDSI %d samples in txn%s\n", $ts, fmtguid($wrguid), $wr->{stopic}, "", $wr->{seq}, "", $nk, $nd, $keeplastmsg;
+        }
+      } else {
+        # assume empty transaction
+        $wr->{cs} = { seq => $wr->{seq}+1, ktxn => $ktxnid, kseq => $kseq } unless defined $wr->{cs};
+      }
+      # not clearing: doing that when seeing the EoT
+    } else {
+      die;
+    }
+  } elsif (/: write_sample ($guidre) #(\d+)((?: C#(?:\d+))?): ST(\d+) [^\{]+?(\{.*(?:\}|\(trunc\))|:k:\{.*\}|:e:\(blob\))/o) {
+    my $wrguid = $1; my $seq = $2; my $cseq = $3; my $st = $4; my $data = $5;
+    my $dflag = ($data =~ /^:[ek]:/ ? 0 : 1);
+    $cseq =~ s/^ C#//;
+    # all but built-in writers must have been found in the log; we don't care for OSPL internal stuff
+    if (!defined $wr{$wrguid} && $wrguid !~ /[4c]2$/) {
+      die;
+    }
+    if (!defined ($wr{$wrguid}->{topic})) {
+      die;
+    }
+    my $wr = $wr{$wrguid};
+    $cseq = "C#$cseq" if $cseq ne "";
+    my $dest = getdest($wrguid);
+    $wr->{seq} = $seq;
+    if (defined $wr->{cs}) {
+      $wr->{cs}->{seq} = $seq unless defined $wr->{cs}->{seq};
+    }
+    if (scalar (keys %{$wr->{matches}}) > 0) {
+      push @ackcheck, { ts => $ts + 1, tswrite => $ts, wrguid => $wrguid, seq => $seq };
+    }
+    my $op = ($data =~ /^:e:/) ? "W  " : $opstr{$st.$dflag};
+    my $print = 0;
+    my $printlim = 1;
+    $print = show_topic($wr->{topic}) && $shows{out};
+    if ($wr->{topic} =~ /^d_/ && $shows{durability} && $data =~ /^\{/) {
+      $print = ($wr->{topic} =~ /$topic_filter/o || $data =~ /$topic_filter/o) && $wr->{topic} !~ /$topic_xfilter/o && $shows{out};
+      if ($print) {
+        $data = interpret_durability($wr->{topic}, $data);
+        $printlim = 0;
+      }
+    }
+    my $sdata = $printlim ? (sprintf "%-100.100s", $data) : (sprintf "%-100s", $data);
+    printf "%8.3f %24s %30.30s %s #%-4d %-6s XMT  %s -> %s\n", $ts, fmtguid($wrguid), $wr->{stopic}, $op, $seq, $cseq, $sdata, $dest if $print;
+    if ($data =~ /^:e:/ && defined $wr->{cs}) {
+      # assume empty transaction if no $wr->{cs}
+      my $pub = $pub{$wr->{psguid}};
+      die unless defined $pub;
+      $wr->{cs} = undef;
+      if ($pub->{txn} == 0) {
+        # presumably an empty transaction
+        $pub->{txn} = keys %{$pub->{es}};
+        printf "%8.3f %24s %30.30s %16s XMT  BEGIN [empty, %d writers]\n", $ts, fmtguid($pub->{guid}), "", "", $pub->{txn} if $shows{out};
+      }
+      if (--$pub->{txn} == 0) {
+        printf "%8.3f %24s %30.30s %16s XMT  COMMIT\n", $ts, fmtguid($pub->{guid}), "", "" if $shows{out};
+      }
+    }
+  } elsif (/: SPDP ST(\d) ($guidre)\s+bes\s+([0-9a-f]+)\s+.*NEW.*?meta(?: [0-9.]+:\d+)*? ([0-9.]+):\d+\)/o) {
+    my $st = $1; my $ppguid = $2; my $bes = hex $3; my $ip = $4;
+    (my $sysid = $ppguid) =~ s/:.*//;
+    my $note = "";
+    if (exists $sysid{$sysid} && defined $sysid{$sysid}->{tcrash}) {
+      printf "%8.3f %24s %30.30s DISC node %s apparently not disconnected as assumed before\n",
+        $ts, $sysid, "", $ip;
+      $sysid{$sysid}->{tcrash} = undef;
+    }
+    if ($st != 0) {
+      # should know it, but I guess it might not if one were to receive a dispose followed by an unregister
+      # actually deleting is deferred
+      #printf "%8.3f LEAVE %s\n", $ts, $ppguid;
+    } else {
+      $sysid{$sysid} = { npp => 0, ip => $ip, name => ip2name($ip, $ppguid), tdel => undef, tcrash => undef } unless defined $sysid{$sysid};
+      if ($sysid{$sysid}->{npp}++ > 0) {
+        die if defined $sysid{$sysid}->{tdel};
+      } elsif (! defined $sysid{$sysid}->{tdel}) {
+        my $x = defined $spdp_infots{$ppguid} ? sprintf " (started at %.3fs)", $spdp_infots{$ppguid} : "";
+        printf "%8.3f %24s %30.30s DISC node %s (%u; %s) alive%s\n", $ts, $sysid, "", $ip, hex($sysid), $sysid{$sysid}->{name}, $x;
+      } else {
+        my $dt = $ts - $sysid{$sysid}->{tdel};
+        my $dtgap = $sysid{$sysid}->{tresumepkt} - $sysid{$sysid}->{tlastpkt};
+        $sysid{$sysid}->{tdel} = undef;
+        delete $sysid{$sysid}->{tlastpkt};
+        delete $sysid{$sysid}->{tresumepkt};
+        printf "%8.3f %24s %30.30s DISC node %s (%u; %s) alive again after %.3fs (disconnect estimate %.3fs)\n", $ts, $sysid, "", $ip, hex($sysid), $sysid{$sysid}->{name}, $dt, $dtgap;
+      }
+      if (! exists $proxypp{$ppguid}) {
+        $proxypp{$ppguid} =
+          { guid => $ppguid,
+            ip => $ip,
+            name => ip2name($ip, $ppguid),
+            infots => $spdp_infots{$ppguid},
+            tcreate => $ts,
+            non_spdp_seen => 0,
+            disccomplete => init_proxypp_disccomplete($bes),
+            disccompleteflag => 0 };
+        #printf "%8.3f DISCOVER %s @ %s\n", $ts, $ppguid, $ip;
+      } else {
+        die unless defined $proxypp{$ppguid}->{tdel};
+        my $dt = $ts - $proxypp{$ppguid}->{tdel};
+        $proxypp{$ppguid}->{tdel} = undef;
+        $proxypp{$ppguid}->{tcreate} = $ts;
+        $proxypp{$ppguid}->{non_spdp_seen} = 0;
+        $proxypp{$ppguid}->{disccomplete} = {};
+        $proxypp{$ppguid}->{disccompleteflag} = 0;
+        #printf "%8.3f REDISCOVER %s @ %s - gone for %.3fs\n", $ts, $ppguid, $ip, $dt;
+        #if (defined $proxypp{$ppguid}->{isdurability}) {
+        #  printf "%8.3f REDISCOVER durability %s @ %s - gone for %.3fs\n", $ts, $ppguid, $ip, $dt;
+        #}
+      }
+    }
+  } elsif (/lease expired:.*? guid ($guidre)/o) {
+    # actually deleting is deferred
+    my $ppguid = $1;
+    (my $sysid = $ppguid) =~ s/:.*//;
+    # participant lease expiry doesn't necessarily mean a
+    # disconnection, but let's assume it does
+    die unless defined $sysid{$sysid};
+    if (!defined $sysid{$sysid}->{tcrash}) {
+      my $lastpacketmsg = exists $tlastpkt{$sysid} ? sprintf " last packet %.3fs ago", $ts - $tlastpkt{$sysid} : "";
+      printf "%8.3f %24s %30.30s DIED assuming disconnect of node %s (%u; %s)%s\n",
+        $ts, fmtguid($ppguid), "", $sysid{$sysid}->{ip}, hex($sysid), $sysid{$sysid}->{name}, $lastpacketmsg;
+      $sysid{$sysid}->{tcrash} = $ts;
+      $sysid{$sysid}->{tlastpkt} = exists $tlastpkt{$sysid} ? $tlastpkt{$sysid} : $ts;
+    }
+    if (defined $proxypp{$ppguid}->{isdurability}) {
+      printf "%8.3f %24s %30.30s DIED durability gone on node %s (%u; %s)\n", $ts, fmtguid($ppguid), "", $sysid{$sysid}->{ip}, hex($sysid), $sysid{$sysid}->{name};
+    }
+  } elsif (/unref_proxy_participant\(($guidre)\).*freeing/o) {
+    die unless exists $proxypp{$1} && ! defined $proxypp{$1}->{tdel};
+    delete_proxypp($ts, $1);
+  } elsif (/: SEDP ST0 ($guidre) [a-z_ -]*(reader|writer): .*QOS=\{(.*)/o) {
+    my $prwguid = $1; my $kind = uc $2;
+    my $h = ($kind eq "READER") ? \%prd : \%pwr;
+    my $hk = ($kind eq "READER") ? "prd" : "pwr";
+    my $qos = $3;
+    unless ($3 =~ /topic=([^,]+?),type=([^,]+?),presentation=(\d+):\d+:\d+,partition=\{([^}]*?)\}.*?,durability=(\d+)/) {
+      die unless $prwguid =~ /[4c][27]$/;
+    } else {
+      my $topic = $1; my $type = $2; my $access_scope = $3; my $partitions = $4; my $durkind = $5;
+      (my $ppguid = $prwguid) =~ s/:[0-9a-f]+$/:1c1/;
+      die unless exists $proxypp{$ppguid} && !defined $proxypp{$ppguid}->{tdel};
+      my @ps = split ',', $partitions;
+      my $stopic = make_stopic($partitions, $topic);
+      if ($topic =~ /^d_/) {
+        $proxypp{$ppguid}->{isdurability} = 1;
+      }
+      #print "$kind $topic\n" if $durkind >= 2 && ($kind eq "READER" || $access_scope >= 2);
+      my $prw = { guid => $prwguid, ppguid => $ppguid,
+                  topic => $topic, stopic => $stopic, type => $type, partition => \@ps,
+                  matches => {}, checklost => 0, suppressbegin => 0, tcreate => $ts };
+      if (! exists $h->{$prwguid}) {
+        $proxypp{$ppguid}->{$hk}->{$prwguid} = $prw;
+        $h->{$prwguid} = $prw;
+        printf "%8.3f DISCOVER $kind %s %s {%s}\n", $ts, fmtguid($prwguid), $topic, $partitions
+          if $shows{remotedisc} && $topic =~ /$topic_filter/o && $topic !~ /$topic_xfilter/o;
+      } else {
+        my $x = $h->{$prwguid};
+        die unless defined $x->{tdel};
+        die unless $x->{topic} eq $prw->{topic};
+        my $dt = $ts - $x->{tdel};
+        $x->{tdel} = undef;
+        if ($x->{explicitdel}) {
+          printf "%8.3f REDISCOVER ZOMBIE $kind %s %s - gone for %.3fs\n", $ts, fmtguid($prwguid), $stopic, $dt;
+        } else {
+          printf "%8.3f REDISCOVER $kind %s %s - gone for %.3fs\n", $ts, fmtguid($prwguid), $stopic, $dt
+            if $shows{remotedisc} && $topic =~ /$topic_filter/o && $topic !~ /$topic_xfilter/o;
+        }
+      }
+      check_qos($ts, $kind, fmtguid($prwguid), $topic, $partitions, $qos);
+    }
+  } elsif (/((?:SEDP ST3 (?:$guidre))?)delete_proxy_(reader|writer) \(($guidre)/o) {
+    if ($2 eq "reader") {
+      delete_prd($ts, $3, ($1 eq "") ? 1 : 0);
+    } else {
+      delete_pwr($ts, $3, ($1 eq "") ? 1 : 0);
+    }
+  } elsif (/gc_delete_(reader|writer)\((?:0[xX])?[0-9a-f]+, ($guidre)/o) {
+    # somewhat imprecise, as deleting a writer may take a significant amount of time
+    my $kind = uc $1; my $guid = $2;
+    my $g = ($kind eq "READER") ? \%sub : \%pub;
+    my $h = ($kind eq "READER") ? \%rd : \%wr;
+    next unless exists $h->{$guid};
+    my $x = $h->{$guid};
+    die
+      if exists $x->{tdel};
+    my $topic = $x->{topic};
+    my $gk = ($kind eq "READER") ? "sub" : "pub";
+    printf "%8.3f DELETE LOCAL $kind %s %s%s\n", $ts, fmtguid($guid), $topic, ($kind eq "WRITER" && $x->{nhappy} < scalar (keys %{$x->{matches}})) ? " (while unhappy)" : "" if $shows{localdisc} && $topic =~ /$topic_filter/o && $topic !~ /$topic_xfilter/o;
+    $x->{tdel} = $ts;
+  } elsif (/proxy_writer_add_connection\(pwr ($guidre) rd ($guidre)\)/o) {
+    my $pwrguid = $1; my $rdguid = $2;
+    die unless exists $pwr{$pwrguid} || $pwrguid =~ /[4c]2$/;
+    die unless exists $rd{$rdguid} || $rdguid =~ /[4c]7$/;
+    die if defined $pwr{$pwrguid}->{tdel};
+    next if $pwrguid =~ /[4c]2$/;
+    $pwr{$pwrguid}->{matches}->{$rdguid} = {};
+    $rd{$rdguid}->{matches}->{$pwrguid} = {};
+  } elsif (/writer_add_connection\(wr ($guidre) prd ($guidre)\)((?: - ack seq 9223372036854775807)?)/o) {
+    my $wrguid = $1; my $prdguid = $2; my $bereader = $3 ne '';
+    die unless exists $wr{$wrguid} || $wrguid =~ /[4c]2$/;
+    die unless exists $prd{$prdguid} || $prdguid =~ /[4c]7$/;
+    die if defined $prd{$prdguid}->{tdel};
+    next if $wrguid =~ /[4c]2$/;
+    my $wr = $wr{$wrguid};
+    my $prd = $prd{$prdguid};
+    $wr->{matches}->{$prdguid} = { seqp1 => 0, happy => ($bereader ? 1 : 0), thappy => ($bereader ? $ts : 1e100), tmatch => $ts };
+    $wr->{nhappy}++ if $bereader;
+    if (! exists $prd->{matches}->{$wrguid}) {
+      $prd->{matches}->{$wrguid} = {};
+    } else {
+      die unless defined $prd->{matches}->{$wrguid}->{seqp1del};
+      # nlost can become -1 if $wr->{seq} is still 0, which can happen
+      # if we sent a GAP for seq 1 to get a valid HEARTBEAT out in
+      # response to an ACKNACK; seqp1del can be 0, too ...
+      my $nlost;
+      if ($wr->{seq} == 0) {
+        die
+          if $prd->{matches}->{$wrguid}->{seqp1del} > 2;
+        $nlost = 0;
+      } else {
+        $nlost = $wr->{seq} - $prd->{matches}->{$wrguid}->{seqp1del} + 1;
+      }
+      printf "%8.3f %24s %30.30s MTCH %s rematch %d lost\n", $ts, fmtguid($wrguid), $wr->{stopic}, $prdguid, $nlost
+        if $nlost > 0 && $shows{rematch};
+      delete $prd->{matches}->{$wrguid}->{seqp1del};
+    }
+  } elsif (/ACKNACK\(F?#\d+:(\d+)\/\d+:([01]*) (?:L\(:1c1 [0-9.]+\) )?($guidre) -> ($guidre)(\??)/o) {
+    my $seqp1 = $1; my $nackset = $2; my $prdguid = $3; my $wrguid = $4; my $wrknown = ($5 eq "");
+    my $wr = $wr{$wrguid};
+    my $cnt = ($nackset =~ y/1//);
+    my $op = ($cnt == 0) ? " ACK" : "NACK";
+    next unless defined $wr;
+    if (exists $wr->{tdel} && $ts - $wr->{tdel} > 0.5) {
+      (my $prdsysid = $prdguid) =~ s/:.*//;
+      if (!$wr->{zombiewarn}->{$prdsysid} && exists $proxypp{$prdsysid} && exists $proxypp{$prdsysid}->{non_spdp_seen}) {
+        # shouldn't be getting ACKs this late
+        # but if no proper connection established yet, can be false positive
+        # (could take time of discovery of proxy participant into account as well)
+        $wr->{zombiewarn}->{$prdsysid} = 1;
+        if ($seqp1 <= 1) {
+          printf "%8.3f %24s %30.30s $op %s pre-emptive but writer deleted %.3fs ago, likely zombie\n",
+            $ts, fmtguid($wrguid), $wr->{stopic}, $prdguid, $ts - $wr->{tdel};
+        } else {
+          printf "%8.3f %24s %30.30s $op %s writer deleted %.3fs ago, seemingly no progress\n",
+            $ts, fmtguid($wrguid), $wr->{stopic}, $prdguid, $ts - $wr->{tdel};
+        }
+      }
+    }
+    next unless exists $prd{$prdguid};
+    next unless exists $wr->{matches}->{$prdguid};
+    if (defined $prd{$prdguid}->{tdel}) {
+      my $dt = $ts - $prd{$prdguid}->{tdel};
+      printf "%8.3f %24s %30.30s $op %s undiscovered %.3fs ago\n", $ts, fmtguid($wrguid), $wr->{stopic}, $prdguid, $dt;
+      next;
+    }
+    $proxypp{$prd{$prdguid}->{ppguid}}->{non_spdp_seen} = 1;
+    $wr->{matches}->{$prdguid}->{seqp1} = $seqp1;
+    if ($cnt == 0) {
+      # $seqp1 <= 1 => pre-emptive ACKNACK < which is not proof of a happy reader
+      if ($seqp1 > 1 && !$wr->{matches}->{$prdguid}->{happy}) {
+        $wr->{matches}->{$prdguid}->{happy} = 1;
+        $wr->{matches}->{$prdguid}->{thappy} = $ts;
+        $wr->{nhappy}++;
+      }
+      if (defined $wr->{matches}->{$prdguid}->{tnack}) {
+        my $dt = $ts - $wr->{matches}->{$prdguid}->{tnack};
+        printf "%8.3f %24s %30.30s $op %s caught up after %.3fs\n", $ts, fmtguid($wrguid), $wr->{stopic}, fmtguid($prdguid), $dt if $shows{ack} && show_topic($wr->{topic});
+        $wr->{matches}->{$prdguid}->{tnack} = undef;
+      }
+    } elsif ($wr->{matches}->{$prdguid}->{happy}) {
+      # initial rexmit requests are not that interesting, so we
+      # suppress tracking/printing them until the reader has sent a
+      # pure ACK (the same reasoning as the "happy" flag of DDSI2,
+      # which uses it to classify requests as historical data or
+      # recovery from packet loss)
+      $wr->{matches}->{$prdguid}->{tnack} = $ts unless defined $wr->{matches}->{$prdguid}->{tnack};
+      printf "%8.3f %24s %30.30s $op %s rexmit request for %d samples starting from %d\n",
+        $ts, fmtguid($wrguid), $wr->{stopic}, fmtguid($prdguid), $cnt, $seqp1 if $shows{ack} && show_topic($wr->{topic});
+    }
+    if ($wr->{acklate} && acklate($ts, $wrguid) == 0) {
+      my $dt = $ts - $wr->{acklate};
+      printf "%8.3f %24s %30.30s  ACK caught up after %.3fs since triggering write\n",
+        $ts, fmtguid($wrguid), $wr->{stopic}, $dt if $shows{ack} && show_topic($wr->{topic});
+      $wr->{acklate} = 0;
+    }
+  } elsif (/\(begin ($guidre) txn (\d+)\)/o) {
+    my $pwr = $pwr{$1};
+    die unless defined $pwr;
+    die if ! $pwr->{suppressbegin};
+    $pwr->{suppressbegin} = 0;
+    #printf "%8.3f %24s %30.30s %16s  RCV BEGIN txn %d\n", $ts, $1, $pwr->{stopic}, "", $2 if $shows{in};
+  } elsif (/\(commit ($guidre) txn (\d+) (\d+) seq_offset (\d+)/o) {
+    my $pwrguid = $1;
+    my $pwr = $pwr{$pwrguid};
+    die unless defined $pwr;
+    die if $pwr->{suppressbegin};
+    my $n = (defined $pwr->{cseq} && defined $pwr->{seq}) ? $pwr->{seq} - $pwr->{cseq} + 1 : 0;
+    my $nr = keys %{$pwr->{matches}};
+    printf "%8.3f %24s %30.30s %16s  RCV COMMIT txn %d %d [%d samples %d readers]\n", $ts, fmtguid($pwrguid), $pwr->{stopic}, "", $2, $3, $n, $nr if $shows{in};
+    $pwr->{cseq} = undef;
+  } elsif (/data\(application, vendor \d+\.\d+\): ($guidre) #(\d+)((?: C#\d+)?): ST(\d+) [^\{]+?(\{.*|:k:\{.*|:e:\(blob\))/o) {
+    my $pwrguid = $1; my $seq = $2; my $cseq = $3; my $st = $4; my $data = $5;
+    my $pwr = $pwr{$pwrguid};
+    my $dflag = ($data =~ /^:[ek]:/ ? 0 : 1);
+    next unless defined $pwr;
+    die if $pwr->{suppressbegin};
+    my $oldcseq = $pwr->{cseq};
+    my $nr = keys %{$pwr->{matches}};
+    $pwr->{seq} = $seq;
+    if ($cseq =~ /C#(\d+)/) {
+      $pwr->{cseq} = $1;
+    } else {
+      $pwr->{cseq} = undef;
+    }
+    if (defined $pwr->{cseq}) {
+      if (! defined $oldcseq) {
+        printf "%8.3f %24s %30.30s %16s  RCV BEGIN\n", $ts, fmtguid($pwrguid), $pwr->{stopic}, "" if $shows{in};
+        $pwr->{suppressbegin} = 1;
+      } elsif ($oldcseq != $pwr->{cseq}) {
+        printf "%8.3f %24s %30.30s %16s  RCV IMPLICIT COMMIT + BEGIN\n", $ts, fmtguid($pwrguid), $pwr->{stopic}, "" if $shows{in};
+      }
+    } elsif (defined $oldcseq) {
+      printf "%8.3f %24s %30.30s %16s  RCV IMPLICIT COMMIT\n", $ts, fmtguid($pwrguid), $pwr->{stopic}, "" if $shows{in};
+    }
+    my $op = ($data =~ /^:e:/) ? "W  " : $opstr{$st.$dflag};
+    my $print = 0;
+    my $printlim = 1;
+    $print = show_topic($pwr->{topic}) && $shows{in};
+    if ($pwr->{topic} =~ /^d_/ && $shows{durability} && $data =~ /^\{/) {
+      $print = ($pwr->{topic} =~ /$topic_filter/o || $data =~ /$topic_filter/o) && $pwr->{topic} !~ /$topic_xfilter/o && $shows{in};
+      if ($print) {
+        $data = interpret_durability($pwr->{topic}, $data);
+        $printlim = 0;
+      }
+    }
+    my $sdata = $printlim ? (sprintf "%-100.100s", $data) : (sprintf "%-100s", $data);
+    printf "%8.3f %24s %30.30s %s #%-4d %-6s  RCV %s [%d readers]\n", $ts, fmtguid($pwrguid), $pwr->{stopic}, $op, $seq, $cseq, $sdata, $nr if $print;
+  } elsif (/DATA\(($guidre)/o) {
+    my $pwrguid = $1;
+    (my $ppguid = $pwrguid) =~ s/:[0-9a-f]+$/:1c1/;
+    # 100c2 is entity id of SPDP writer
+    $proxypp{$ppguid}->{non_spdp_seen} = 1 if exists $proxypp{$ppguid} && !defined $proxypp{$ppguid}->{tdel} && $pwrguid !~ /:100c2$/;
+  } elsif (/HEARTBEAT\(F?#\d+:(\d+)\.\.(\d+) ($guidre)/o) {
+    my $prdguid = $3;
+    (my $ppguid = $prdguid) =~ s/:[0-9a-f]+$/:1c1/;
+    $proxypp{$ppguid}->{non_spdp_seen} = 1 if exists $proxypp{$ppguid} && !defined $proxypp{$ppguid}->{tdel};
+  } elsif (/: SEDP_TOPIC ST\d+ ([^\/]+)\/([^ ]+) QOS=(.*)/) {
+    my $topic = $1; my $type = $2; my $qos = $3;
+    my $sysid = "0";
+    printf "%8.3f %24s %30.30s %16s  RCV %s (%s)\n", $ts, $sysid, "TOPIC", "", $topic, $type if $shows{topic} && $shows{in};
+  } elsif (/: sedp: write topic ([^ ]+)/) {
+    my $topic = $1;
+    printf "%8.3f %24s %30.30s %16s XMT  %s\n", $ts, "0", "TOPIC", "", $topic if $shows{topic} && $shows{out};
+  } elsif (/writer ($guidre) topic ([^ ]+) waiting/o) {
+    my $wrguid = $1;
+    $txblock = $ts;
+    $txblockwr = $wrguid;
+    $txblocktp = $2;
+    printf "%8.3f %24s %30.30s BLCK\n", $ts, fmtguid($wrguid), $txblocktp if $shows{throttle} || $shows{block};
+  } elsif (/writer ($guidre) done waiting/o) {
+    my $wrguid = $1;
+    my $dt = $ts - $txblock;
+    my $mustprint = ($tlast_txblock == $txblock);
+    $txblock = undef;
+    $txblockwr = undef;
+    $txblocktp = undef;
+    if ($shows{throttle} || $shows{block} || $mustprint) {
+      if (!exists $wr{$wrguid}) {
+        printf "%8.3f %24s %30.30s UNBK after %.3fs\n", $ts, fmtguid($wrguid), "", $dt;
+      } else {
+        my $wr = $wr{$wrguid};
+        printf "%8.3f %24s %30.30s UNBK after %.3fs\n", $ts, fmtguid($wrguid), $wr->{stopic}, $dt;
+      }
+    }
+  } elsif (/message dropped because sender ($gidre) is unknown/o) {
+    my $gid = $1;
+    $gid =~ /^([0-9a-f]+):([0-9a-f]+):([0-9a-f]+)/;
+    my $decgid = sprintf "{%d,%d,%d}", hex $1, hex $2, hex $3;
+    printf "%8.3f %55s DROP unknown writer %s (a.k.a. %s) \n", $ts, "", $gid, $decgid;
+  } elsif (/: update_mtreader: (.*)/) {
+    printf "%8.3f %55s UMTR %s\n", $ts, "", $1 if $shows{mtreader};
+  }
+}
+# blocking on whc is generally very bad if it is not resolved by the time the log ends
+if (defined $txblock && $shows{block}) {
+  my $dt = $ts - $txblock;
+  my $wrguid = $txblockwr;
+  printf "%8.3f %24s %30.30s BLCK still blocked at end of log after %.3fs\n", $ts, fmtguid($wrguid), $txblocktp, $dt;
+  if (exists $wr{$txblockwr}) {
+    my @lates = acklate(1e100, $txblockwr);
+    for (@lates) {
+      my $cause = ($_->{haveack} ? sprintf "%d behind", $_->{nsamp} : "no ack yet");
+      printf "%8.3f %24s %30.30s BLCK   %s (%s)\n", $ts, fmtguid($txblockwr), $txblocktp, fmtguid($_->{guid}), $cause;
+    }
+  }
+}
+
+sub make_stopic {
+  my ($partitions, $topic) = @_;
+  my $stopic;
+  if ($shows{partition}) {
+    $stopic = "$partitions/$topic";
+    if (length $stopic < 30) {
+      # nop
+    } elsif (length $partitions < 15) {
+      my $max = 26 - length $partitions;
+      $stopic =~ s/\/.*?(.{1,$max})$/\/...$1/;
+    } elsif (length $topic < 15) {
+      my $max = 26 - length $topic;
+      $stopic =~ s/.*?(.{1,$max})\//...$1\//;
+    } else {
+      $stopic =~ s/.*?(.{1,11})\/.*?(.{1,11})$/...$1\/...$2/;
+    }
+  } else {
+    if (length $topic < 30) {
+      $stopic = $topic;
+    } else {
+      $topic =~ /(.{1,27})$/;
+      $stopic = "...$1";
+    }
+  }
+  return $stopic;
+}
+
+sub fmtguid {
+  my ($guid) = @_;
+  return $guid unless defined $rawip2name;
+  $guid =~ /^([0-9a-f]+)/;
+  return $guid unless exists $sysid{$1};
+  my $n = $sysid{$1}->{name};
+  $guid =~ s/^[0-9a-f]+/$n/;
+  return $guid;
+}
+
+sub acklate { # returns ({ "guid" => guid, "nsamp" => nr of samples not acked})
+  my ($ts, $wrguid, $seq) = @_;
+  if ($wr{$wrguid}->{seq} == 0) {
+    return ();
+  } else {
+    #my $x;
+    #for (values %{$wr{$wrguid}->{matches}}) {
+    #  next if $_->{seqp1} == 0; # nothing from reader yet, so not really lagging yet
+    #  $x = $_->{seqp1} if !(defined $x) || $_->{seqp1} < $x;
+    #}
+    #return 0 unless defined $x;
+    #$seq = $wr{$wrguid}->{seq} unless defined $seq;
+    #return ($x > $seq) ? 0 : ($seq - $x + 1);
+    my @r;
+    $seq = $wr{$wrguid}->{seq} unless defined $seq;
+    while (my ($k,$v) = each %{$wr{$wrguid}->{matches}}) {
+      # nothing from reader yet, and less than 2s passed since
+      # matching, so not really lagging yet
+      next if $v->{seqp1} == 0 && $ts < $v->{tmatch} + 2;
+      push @r, { "guid" => $k, "nsamp" => $seq - $v->{seqp1} + 1, "haveack" => ($v->{seqp1} > 0) } if $v->{seqp1} <= $seq;
+    }
+    return @r;
+  }
+}
+
+sub init_proxypp_disccomplete {
+  my ($bes) = @_;
+  # keys are TOPIC, WRITER, READER
+  # A = ACK received, i.e., remote reader exists
+  # H = HB received, i.e., remote writer exists
+  # B = pure ack sent, i.e., remote writer exists
+  # first element in arrays is bit in $bes indicating existence of the "announcer", i.e., the writer
+  # second is the bit indicating existence of the "detector", i.e., the reader
+  my %tab = ("WRITER" => [ 2, 3 ], "READER" => [ 4, 5 ], "TOPIC" => [ 12, 13 ]);
+  my $res = {};
+  while (my ($k, $v) = each %tab) {
+    $res->{"H$k"} = $res->{"B$k"} = 1 unless $bes & (1 << $v->[0]);
+    $res->{"A$k"} = 1 unless $bes & (1 << $v->[1]);
+  }
+  return $res;
+}
+
+sub check_disccomplete {
+  my ($which, $guid) = @_;
+  (my $kind = $guid) =~ s/^[0-9a-f:]+:([234])c[27]$/$1/;
+  (my $ppguid = $guid) =~ s/:[^:]+$/:1c1/;
+  (my $sysid = $ppguid) =~ s/:.*//;
+  if (exists $proxypp{$ppguid} && exists $proxypp{$ppguid}->{tcreate}) {
+    $proxypp{$ppguid}->{disccomplete}->{"$which$discentitystr{$kind}"} = 1;
+    if (! $proxypp{$ppguid}->{disccompleteflag} && keys %{$proxypp{$ppguid}->{disccomplete}} == 3 * keys %discentitystr) {
+      $proxypp{$ppguid}->{disccompleteflag} = 1;
+      my $dt = $ts - $proxypp{$ppguid}->{tcreate};
+      printf "%8.3f %24s %30.30s DISC node %s (%u; %s) discovery complete after %.3fs\n", $ts, $sysid, "", $sysid{$sysid}->{ip}, hex($sysid), $sysid{$sysid}->{name}, $dt;
+    }
+  }
+}
+
+sub delete_pwr {
+  my ($ts, $pwrguid, $isimplicit) = @_;
+  (my $ppguid = $pwrguid) =~ s/:[0-9a-f]+$/:1c1/;
+  #proxy endpoint doesn't necessarily exist, so shouldn't die
+  #die unless exists $pwr{$pwrguid} || $pwrguid =~ /[4c]2$/;
+  return unless exists $pwr{$pwrguid};
+  my $pwr = $pwr{$pwrguid};
+  my $proxypp = $proxypp{$ppguid};
+  die unless defined $proxypp;
+  for (keys %{$pwr->{matches}}) {
+    die unless $rd{$_}->{matches}->{$pwrguid};
+    delete $rd{$_}->{matches}->{$pwrguid};
+  }
+  # removal from GUID hash and actual deletion are separate events, so
+  # this is imprecise; built-ins get rougher treatmeant as they are
+  # not explicitly discovered
+  if ($pwrguid !~ /[4c]2$/) {
+    $pwr->{matches} = {};
+    $pwr{$pwrguid}->{tdel} = $ts;
+    $pwr{$pwrguid}->{explicitdel} = 1 unless $isimplicit;
+    if ($shows{remotedisc} && $pwr{$pwrguid}->{topic} =~ /$topic_filter/o && $pwr{$pwrguid}->{topic} !~ /$topic_xfilter/o) {
+      printf "%8.3f %24s %30.30s  UNDISCOVER %s\n", $ts, $pwrguid, $pwr{$pwrguid}->{stopic}, $isimplicit ? " (implicit)" : "";
+    }
+  } else {
+    delete $proxypp->{pwr}->{$pwrguid};
+    delete $pwr{$pwrguid};
+  }
+}
+
+sub delete_prd {
+  my ($ts, $prdguid, $isimplicit) = @_;
+  (my $ppguid = $prdguid) =~ s/:[0-9a-f]+$/:1c1/;
+  #proxy endpoint doesn't necessarily exist, so shouldn't die
+  #die unless exists $prd{$prdguid} || $prdguid =~ /[4c]7$/;
+  return unless exists $prd{$prdguid};
+  my $prd = $prd{$prdguid};
+  my $proxypp = $proxypp{$ppguid};
+  die unless defined $proxypp;
+  for (keys %{$prd->{matches}}) {
+    next if defined $prd->{matches}->{$_}->{seqp1del};
+    die unless $wr{$_}->{matches}->{$prdguid};
+    my $x = $wr{$_}->{matches}->{$prdguid};
+    $wr{$_}->{nhappy}-- if $x->{happy};
+    my $dtmatch = $ts - $x->{tmatch};
+    if ($x->{seqp1} == 0) {
+      # also happens when a writer with an empty WHC has written
+      # nothing since the match, hence disabling it for now
+      printf "%8.3f %24s %30.30s  DEL %s no ACKs received, reader matched for %.3fs\n", $ts, $_, $wr{$_}->{stopic}, $prdguid, $dtmatch
+        if $shows{ack} && 0;
+    } elsif ($wr{$_}->{seq} >= $x->{seqp1}) {
+      printf "%8.3f %24s %30.30s  DEL %s %d samples behind, reader matched for %.3fs\n", $ts, $_, $wr{$_}->{stopic}, $prdguid, $wr{$_}->{seq} - $x->{seqp1} + 1, $dtmatch
+         if $shows{ack} && show_topic($wr{$_}->{topic});
+    }
+    $prd->{matches}->{$_}->{seqp1del} = $x->{seqp1};
+    delete $wr{$_}->{matches}->{$prdguid};
+    if ($wr{$_}->{acklate} && acklate($ts, $_) == 0) {
+      printf "%8.3f %24s %30.30s  ACK caught up because of unmatch\n", $ts, fmtguid($_), $wr{$_}->{stopic} if $shows{ack} && show_topic($wr{$_}->{topic});
+      $wr{$_}->{acklate} = 0;
+    }
+  }
+  if ($prdguid !~ /[4c]7$/) {
+    #$prd->{matches} = {};
+    $prd{$prdguid}->{tdel} = $ts;
+    $prd{$prdguid}->{explicitdel} = 1 unless $isimplicit;
+    if ($shows{remotedisc} && $prd{$prdguid}->{topic} =~ /$topic_filter/o && $prd{$prdguid}->{topic} !~ /$topic_xfilter/o) {
+      printf "%8.3f %24s %30.30s  UNDISCOVER %s\n", $ts, $prdguid, $prd{$prdguid}->{stopic}, $isimplicit ? " (implicit)" : "";
+    }
+  } else {
+    delete $proxypp->{prd}->{$prdguid};
+    delete $prd{$prdguid};
+  }
+}
+
+sub delete_proxypp {
+  my ($ts, $ppguid) = @_;
+  my $proxypp = $proxypp{$ppguid};
+  (my $sysid = $ppguid) =~ s/:.*//;
+  die unless defined $proxypp;
+  #my @pwrguids = keys %{$proxypp->{pwr}};
+  #die unless @pwrguids == 0;
+  #my @prdguids = keys %{$proxypp->{prd}};
+  #die unless @prdguids == 0;
+  $proxypp{$ppguid}->{tdel} = $ts;
+  #delete $proxypp{$ppguid};
+  die unless $sysid{$sysid}->{npp} > 0;
+  if (--$sysid{$sysid}->{npp} == 0) {
+    my $dt = (defined $sysid{$sysid}->{tcrash}) ? $ts - $sysid{$sysid}->{tcrash} : undef;
+    my $dtmsg = (defined $dt) ? sprintf " (cleanup took %.3fs)", $dt : "";
+    printf "%8.3f %24s %30.30s DISC node %s (%u; %s) no proxy participants left%s\n",
+      $ts, $sysid, "", $sysid{$sysid}->{ip}, hex($sysid), $sysid{$sysid}->{name}, $dtmsg;
+    $sysid{$sysid}->{tdel} = $ts;
+    $sysid{$sysid}->{tcrash} = undef;
+  }
+}
+
+sub getdest {
+  my ($wrguid) = @_;
+  my $wr = $wr{$wrguid};
+  die unless defined $wr;
+  my @xs = sort { $a cmp $b } (keys %{$wr->{matches}});
+  my $d = "";
+  my $l = "";
+  my $n = 0;
+  for (@xs, "0") {
+    my $pp = $proxypp{"$1:1c1"} if /^(.*):[0-9a-f]+$/;
+    die unless defined $pp || $_ eq "0";
+    /^([0-9a-f]+)/;
+    if ($l eq $1) {
+      $n++;
+    } else {
+      $d .= "*$n" if $n > 1;
+      $n = 0;
+      $l = $1;
+      $d .= " $pp->{ip}" if defined $pp;
+    }
+  }
+  $d =~ s/^ +//;
+  return ($d eq "") ? "(no prd)" : $d;
+}
+
+sub interpret_durability_nameSpaces {
+  my ($ds, $d) = @_;
+  unless ($d =~ s/"([^"]+)","[^"]*",(\d+),(true|false) \(\d\),(\d+),\{(\d+),(\d+)\},(\d+),\{(\d+),\d+,\d+\},(?:true|false) \((\d+)\),(?:true|false) \((\d+)\),\{"([^"]*)",(\d+)\},//) {
+    print $d;
+    die;
+  }
+  my ($name, $dkind, $aligner, $akind, $initqsec, $initqnsec, $total, $master, $complete, $mconfirmed, $role, $nativestate) = ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+  # $dkind, $aligner, $akind, $total, $role: all config options
+  $dkind = $aligner = $akind = $role = undef; # kill warning
+  # $initqsec, $initqnsec: only interesting if discovering persistent source
+  # -- i.e., if $ds == 3
+  $master = sprintf "%x", $master;
+  my $mip = "";
+  if (exists $sysid{$master} && exists $sysid{$master}->{self}) {
+    $master .= "/ME";
+  } elsif (exists $sysid{$master}) {
+    $master .= "/$sysid{$master}->{ip}";
+  }
+  if ($ds == 3) {
+    sprintf "%s: master %s%s quality %d.%09u [%d]", $name, $master, ($mconfirmed ? "" : "?"), $initqsec, $initqnsec, $total;
+  } else {
+    $nativestate = unpack("l", pack("L", $nativestate));
+    sprintf "%s: master %s%s nsState %d [%d]", $name, $master, ($mconfirmed ? "" : "?"), $nativestate, $total;
+  }
+}
+
+sub bigE_readOctet {
+  my ($dref, $sref) = @_; # the handling of printable sequences is a bit of a hack
+  if (!$$sref) {
+    if ($$dref =~ s/^(\d+)(?: '.')?,//) {
+      return $1;
+    } elsif ($$dref =~ s/^"(.)//) {
+      $$sref = 1;
+      return ord($1);
+    } else {
+      print "$$sref/$$dref\n";
+      die;
+    }
+  } else {
+    $$dref =~ s/^(.)//;
+    my $ret = ord($1);
+    if ($$dref =~ s/^",(?=\d+)//) {
+      $$sref = 0;
+    }
+    return $ret;
+  }
+}
+
+sub bigE_read4 {
+  my ($n, @x) = (4); push @x, bigE_readOctet(@_) while $n--; return unpack("N", pack("C*", @x));
+}
+sub bigE_read8 {
+  my ($n, @x) = (8); push @x, bigE_readOctet(@_) while $n--; return unpack("Q>", pack("C*", @x));
+}
+sub bigE_readT {
+  my ($n, @x) = (2); push @x, bigE_read4(@_) while $n--; return \@x;
+}
+sub bigE_readGID {
+  my ($n, @x) = (3); push @x, bigE_read4(@_) while $n--; return \@x;
+}
+
+sub bigE_unpack {
+  my ($template, $dref, $sref) = @_;
+  my @res = ();
+  my ($w, $n, $last, $op);
+  my $idx = 0;
+  while ($idx < length $template) {
+    die unless (substr $template, $idx) =~ /^(\/?)([CbLQTGx])(\d*)/;
+    die if $1 ne '' && $3 ne '';
+    $idx += (length $1) + 1 + (length $3);
+    $w = $2;
+    $n = ($1 eq '/') ? $last : ($3 eq '') ? 1 : $3;
+    if ($w eq 'x') {
+      bigE_readOctet($dref, $sref) while $n--;
+    } else {
+      if    ($w eq 'C') { $op = \&bigE_readOctet; }
+      elsif ($w eq 'b') { $op = \&bigE_readOctet; }
+      elsif ($w eq 'L') { $op = \&bigE_read4; }
+      elsif ($w eq 'Q') { $op = \&bigE_read8; }
+      elsif ($w eq 'T') { $op = \&bigE_readT; }
+      elsif ($w eq 'G') { $op = \&bigE_readGID; }
+      else { die; }
+      push @res, ($last = &$op($dref, $sref)) while $n--;
+    }
+  }
+  return @res;
+}
+
+sub interpret_durability_sampleChain {
+  my ($d) = @_;
+  my ($topic, $part, $pre);
+  unless ($d =~ s/^"([^"]*)","([^"]*)",//) {
+    return $d;
+  }
+  $part = $1;
+  $topic = $2;
+  $pre = "part=\"$part\" topic=\"$topic\"";
+  unless ($d =~ /(.*?),0:\{\{83 'S',50 '2',0,1,(.*)/) {
+    return "$pre $d";
+  } else {
+    my ($e, $s) = ($2, 0);
+    my ($size, $isvalid, $state, $aTime, $wTime, $wGid, $wiGid, $seqno, $txnId) =
+      bigE_unpack("LbLTTGGLL", \$e, \$s);
+    my $vmsg = sprintf "size=%u state=%u at=%u.%09u wt=%u.%09u wg=%x:%x:%x wig=%x:%x:%x seq=%u txn=%u",
+      $size, $state, $aTime->[0], $aTime->[1], $wTime->[0], $wTime->[1],
+      $wGid->[0], $wGid->[1], $wGid->[2], $wiGid->[0], $wiGid->[1], $wiGid->[2],
+      $seqno, $txnId;
+    # skip QoS - perhaps include unpack-msg-qos.pl to decode it
+    bigE_unpack("L/C", \$e, \$s) if bigE_readOctet(\$e, \$s);
+    my $int = $scintcache{$topic};
+    if (! defined $int) {
+      for my $k (keys %scint) { if ($topic =~ /$k/) { $int = $scintcache{$topic} = $scint{$k}; last; } }
+      $int = $scintcache{$topic} = sub { return ""; } unless defined $int;
+    }
+    # 1 is write, 4 is disposed, 256 is register and 512 is unregister
+    # any of those and there are key values present, any others, not so much
+    my $content = &$int(\$e, \$s) if $state & (1 | 4 | 256 | 512);
+    if (defined $content && $content ne "") {
+      return "$pre $vmsg $content $d";
+    } else {
+      return "$pre $vmsg $d";
+    }
+  }
+}
+
+sub interpret_durability {
+  my ($topic, $d) = @_;
+  return $d if $topic =~ /^d_(historical|durability)/;
+  unless ($d =~ s/^\{\{\{(\d+),\d+,\d+\},\{(\d+),\d+,\d+\},(\d+),\{(\d+),(\d+)\},\d+\}[},]//) {
+    print $d;
+    die;
+  }
+  die unless defined $t0sec && defined $t0usec;
+  #my $ts = ($4 - $t0sec) + (($5 & 0x7fffffff) / 1000.0 - $t0usec) / 1e6;
+  my $dst = sprintf "%x", $1;
+  if ($1 == 0) {
+    $dst = "to ALL";
+  } elsif (exists $sysid{$dst} && exists $sysid{$dst}->{self}) {
+    $dst = "to ME";
+  } elsif (exists $sysid{$dst}) {
+    #$dst = "to $sysid{$dst}->{ip}";
+    $dst = "to $sysid{$dst}->{name}";
+  } else {
+    $dst = "to UNK";
+  }
+  my $src = sprintf "%x", $2;
+  if ($2 == 0) {
+    $src = "0 "
+  } elsif (exists $sysid{$src} && exists $sysid{$src}->{self}) {
+    $src = "";
+  } elsif (exists $sysid{$src}) {
+    #$src = "$sysid{$src}->{ip} ";
+    $src = "$sysid{$src}->{name} ";
+  } else {
+    $src = "UNK ";
+  }
+  my $ds = $3;
+  my $dstext = $durstate[$ds];
+  #return sprintf "[%s%s t=%.3f %s] %s", $src, $dst, $ts, $ds, $d;
+  if ($topic eq "d_nameSpaces") {
+    $d = interpret_durability_nameSpaces($ds, $d);
+  } elsif ($topic eq "d_sampleChain") {
+    $d = interpret_durability_sampleChain($d);
+  }
+  return sprintf "[%s%s %s] %s", $src, $dst, $dstext, $d;
+}
+
+sub show_topic {
+  my ($topic) = @_;
+  return $shows{topic} if $topic =~ /^DCPSTopic/;
+  return $shows{builtin} if $topic =~ /^(CM|DCPS|q_)/;
+  return $shows{durability} if $topic =~ /^d_/;
+  return $shows{user} && $topic =~ /$topic_filter/o && $topic !~ /$topic_xfilter/o;
+}
+
+sub check_qos {
+  my ($ts, $kind, $guid, $topic, $partitions, $qos) = @_;
+  if ($kind eq 'WRITER' && $qos =~ /,presentation=2:1:/ && $qos =~ /,history=0:/) {
+    printf "%8.3f $kind %s %s {%s} is keep-last and group coherent\n", $ts, $guid, $topic, $partitions;
+  }
+}
+
+sub usage {
+  print << 'EOT'
+Usage: ddsi-log [OPTIONS] INPUT
+
+--show KEYWORD         enable/disable showing of certain categories of
+                       events (see below)
+--topic-filter REGEX   limit output to topics matching REGEX (and for
+                       durability, durability protocol data that somehow
+                       matches REGEX)
+--topic-xfilter REGEX  do not show anything related to topics matching REGEX
+                       (even when it matches the topic-filter)
+--t0 TIMESTAMP         set timestamp reference to TIMESTAMP, timestamps
+                       printed are relative to this; defaults to the first
+                       timestamp in the input
+--sc PERLFILE          durability 'sample chain' interpreter, user code
+                       to decode (part of) the samples transferred by
+                       durability.  Included using perl's "do" statement,
+                       it should return a hash table that maps regular
+                       expressions for topic names to a code reference given
+                       the durability message payload (see below)
+--hn PERLFILE          IP-address to name translator, included using perl's
+                       "do" statement, it should return a code reference
+                       that takes the IP-address and the name as strings and
+                       returns the name to use (which can be just the IP
+                       address, the default)
+
+The --show option gives some control over the kinds of events that are
+shown in the output. Below is a list of keywords with the defaults.
+Enabling is the default, disabling is done by prefixing the keyword
+with "no" (i.e., --show noin means no input is shown).
+
+KEYWORD          DEF   DESCRIPTION
+* topic          no    show data related to topic discovery
+* durability     no    show durability traffic
+* builtin        no    show writes for OpenSplice built-in topics
+* localdisc      no    show discovery events for local readers and writers
+* remotedisc     no    show discovery events for remote readers and writers
+* mtreader       no    show events on multi-topic reader for local discovery
+* user           yes   show user traffic
+* ack            yes   show some ACK-related events (retransmit requests,
+                       long delays until an ACK is received, catching up
+                       after there has been an issue)
+* block          yes   show blocking (and unblocking) events in transmit
+                       path if it is blocked for some time
+* throttle       no    show all blocking (and unblocking) events in
+                       transmit path
+* rematch        no    show matching events for local writers and remote
+                       readers
+* in             yes   show incoming traffic
+* out            yes   show outgoing traffic
+* partition      no    include partition names in output
+
+The sample chain interpreters get an OSPL 'BigE' serialised message,
+possibly truncated.  Some simple cases for decoding these have been
+covered by the bigE_unpack function taking a string template and an
+unspecified set of additional parameters (these additional parameters
+are the passed into the sample chain interpreter).  The bigE_unpack
+function is provided in this script and accessible as ::bigE_unpack
+within a sample chain interpreter.  It is reminiscent of perl's native
+unpack functions in its use of templates to decode the contents, but
+it is not quite the same.  Templates can use:
+
+* C                    decodes an unsigned 8-bit integer
+* b                    decodes a boolean
+* L                    decodes an unsigned 32-bit integer
+* Q                    decodes an unsigned 64-bit integer (this assumes
+                       perl supporting 64-bit integers)
+* T                    decode 2 unsigned 32-bit integers, returned as a
+                       reference to an array
+* G                    decode 3 unsigned 32-bit integers, returned as a
+                       reference to an array
+* x                    skip input
+* a numerical suffix   repeat count for unpacking multiple of the same
+* / prefix             take repeat count from preceding decoded value
+
+I.e., L3x4L/C means unpack 3 32-bit integers, then skip 4 bytes,
+decode a 32-bit integer, read as many bytes as the preceding integer
+value, and return that as a list of (4+n) elements.  The return value
+of the function is spliced in as text.
+
+For example:
+  package sc;
+  sub intp_PubSub {
+    # struct { unsigned long seq; long keyval; ... };
+    my @ks = ::bigE_unpack("x4L", @_);
+    return sprintf "key={%u}", @ks;
+  }
+  return ('PubSub' => \&intp_PubSub);
+
+LIMITATIONS
+
+The script started out for analysing DDSI2 traces from a shared-memory
+configuration in SquashParticipants mode and with a known mapping of
+IP addresses to host names (hence the translation functions).  It
+handles single-process and non-SquashParticipants just fine, but the
+output is mostly based on IP addresses and host names and may be
+somewhat confusing in those (more standard) configurations.
+EOT
+;
+  exit 1;
+  return;
+}

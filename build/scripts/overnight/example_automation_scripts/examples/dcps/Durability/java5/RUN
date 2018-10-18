@@ -53,13 +53,13 @@ echo "==== Scenario 3.1      ======"
 echo "============================="
 echo " ===== Launching durability subscriber"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_1.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Durability_sub.jar transient > subResult_3_1.txt &
 
 sleep 5
 
 echo " ===== Launching durability publisher"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher transient true true > pubResult_3_1.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Durability_pub.jar transient true true > pubResult_3_1.txt &
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Sleep 30s to let the publisher complete "
@@ -93,19 +93,19 @@ then
 fi
 
 echo === running a first Subscriber
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_2_1.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Durability_sub.jar transient > subResult_3_2_1.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.2)"
 
 sleep 5
 
 echo " ===== Launching durability publisher"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher transient false true > pubResult_3_2.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Durability_pub.jar transient false true > pubResult_3_2.txt &
 
 sleep 5
 
 echo === running a second Subscriber
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_2_2.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Durability_sub.jar transient > subResult_3_2_2.txt &
 echo "=== End of second DurabilityDataSubscriber  (Scenario 3.2)"
 
 #Rather than kill the publisher just wait till it completes.
@@ -139,14 +139,14 @@ then
 fi
 
 echo === running a first Subscriber
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber persistent > subResult_3_3_1.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Durability_sub.jar persistent > subResult_3_3_1.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
 sleep 5
 
 echo " ===== Launching durability publisher"
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher persistent false true > pubResult_3_3.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Durability_pub.jar persistent false true > pubResult_3_3.txt &
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Sleep 30s to let the publisher complete "
@@ -164,7 +164,7 @@ then
 fi
 
 echo === running a second Subscriber
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber persistent > subResult_3_3_2.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Durability_sub.jar persistent > subResult_3_3_2.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
 sleep 20

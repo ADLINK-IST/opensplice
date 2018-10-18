@@ -1,0 +1,827 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>12. Tutorial &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="13. Generating C code with Simulink Coder" href="simulink_coder.html" />
+    <link rel="prev" title="11. Reader Block" href="reader.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="simulink_coder.html" title="13. Generating C code with Simulink Coder"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="reader.html" title="11. Reader Block"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<span id="id1"></span><h1>12. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>To demonstrate the capabilities of the DDS Simulink Integration, this tutorial will create two Simulink models.    One model will write DDS samples, and the second model will read the DDS samples.</p>
+<p>Both models will be run simultaneously, and use a DDS system for communication.</p>
+<p>A Simulink bus named ShapeType is created as part of this tutorial.   The bus can be created by either using the Simulink bus editor, or by generation from an IDL file.
+Both options are covered in this tutorial.</p>
+<div class="section" id="create-shapetype-bus-using-simulink-bus-editor">
+<h2>12.1. Create ShapeType Bus Using Simulink Bus Editor<a class="headerlink" href="#create-shapetype-bus-using-simulink-bus-editor" title="Permalink to this headline">¶</a></h2>
+<p>Buses define the data which will be published and read. Both the read and write Simulink models will make use of a bus to read and write sample data.</p>
+<p>For this tutorial, we will create a BUS named <strong>ShapeType</strong>.</p>
+<div class="section" id="open-the-bus-editor-from-the-matlab-command-window">
+<h3>12.1.1. Open the bus editor from the MATLAB command window<a class="headerlink" href="#open-the-bus-editor-from-the-matlab-command-window" title="Permalink to this headline">¶</a></h3>
+<div class="figure">
+<img alt="Open Bus Editor" src="_images/openBusEditor.png" />
+</div>
+</div>
+<div class="section" id="add-a-new-bus-named-shapetype">
+<h3>12.1.2. Add a new BUS named ShapeType<a class="headerlink" href="#add-a-new-bus-named-shapetype" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="select-add-bus-button">
+<h4>12.1.2.1. Select Add Bus button<a class="headerlink" href="#select-add-bus-button" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Add Bus" src="_images/addBus.png" />
+</div>
+</div>
+<div class="section" id="set-bus-name-and-key">
+<h4>12.1.2.2. Set Bus name and Key<a class="headerlink" href="#set-bus-name-and-key" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Set the new bus name to: <strong>ShapeType</strong>.</li>
+<li>Set Description to: &#64;Key(color).  This sets the Topic key.</li>
+<li>Select <strong>Apply</strong> button to save.</li>
+</ul>
+<div class="figure">
+<img alt="Bus Name" src="_images/addShapeType.png" />
+</div>
+<p>Note: If the Key is not set, the topic block&#8217;s Key annotation in the model will be shown empty and it will result in a keyless topic. Keyless topics have only one instance.</p>
+</div>
+</div>
+<div class="section" id="add-buselements">
+<h3>12.1.3. Add BusElements<a class="headerlink" href="#add-buselements" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>ShapeType</strong> bus will have 4 bus elements:  color, x, y and shapesize.</p>
+<p>A BusElement can be added to the ShapeType bus by selecting the <strong>Add/Insert BusElement</strong> button.</p>
+<div class="figure">
+<img alt="Add/Insert BusElement" src="_images/addBusElement.png" />
+</div>
+<p>A BusElement can be moved up or down using the <strong>Move Element Up</strong> and <strong>Move Element Down</strong> buttons.</p>
+<div class="figure">
+<img alt="Move Element" src="_images/upDownBusElement.png" />
+</div>
+<div class="section" id="add-color">
+<h4>12.1.3.1. Add color<a class="headerlink" href="#add-color" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Select <strong>Add/Insert BusElement</strong> button</li>
+<li>Set name to: color</li>
+<li>Set DataType to: uint8</li>
+<li>Set Dimensions to: 10</li>
+<li>Set Description to: &#64;String</li>
+<li>Select <strong>Apply</strong> to save</li>
+</ul>
+<div class="figure">
+<img alt="BusElement color" src="_images/colorBusElement.png" />
+</div>
+<p>Note: This creates a DDS &#8216;string&#8217; type. Bus elements of type &#8216;int8&#8217; or &#8216;uint8&#8217; with an annotation of &#64;String in the Description field define a DDS string. Dimension set to 10 means Simulink is going to read only the first ten bytes of the string. You can also use the &#8216;&#64;BString&#8217; annotation to define a DDS bounded string. The dimension of the field is treated as the maximum string size.</p>
+</div>
+<div class="section" id="add-x">
+<h4>12.1.3.2. Add x<a class="headerlink" href="#add-x" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Select <strong>Add/Insert BusElement</strong> button</li>
+<li>Set name to: x</li>
+<li>Set DataType to: int32</li>
+<li>Select <strong>Apply</strong> to save</li>
+</ul>
+<div class="figure">
+<img alt="BusElement x" src="_images/xBusElement.png" />
+</div>
+</div>
+<div class="section" id="add-y">
+<h4>12.1.3.3. Add y<a class="headerlink" href="#add-y" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Select <strong>Add/Insert BusElement</strong> button</li>
+<li>Set name to: y</li>
+<li>Set DataType to: int32</li>
+<li>Select <strong>Apply</strong> to save</li>
+</ul>
+<div class="figure">
+<img alt="BusElement y" src="_images/yBusElement.png" />
+</div>
+</div>
+<div class="section" id="add-shapesize">
+<h4>12.1.3.4. Add shapesize<a class="headerlink" href="#add-shapesize" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Select <strong>Add/Insert BusElement</strong> button</li>
+<li>Set name to: shapesize</li>
+<li>Set DataType to: int32</li>
+<li>Select <strong>Apply</strong> to save</li>
+</ul>
+<div class="figure">
+<img alt="BusElement shapesize" src="_images/shapesizeBusElement.png" />
+</div>
+</div>
+</div>
+<div class="section" id="export-bus-objects">
+<h3>12.1.4. Export BUS objects<a class="headerlink" href="#export-bus-objects" title="Permalink to this headline">¶</a></h3>
+<p>When bus objects are added to the MATLAB workspace, they will be lost on MATLAB close or workspace clear.   To persist the bus objects, they can be exported.</p>
+<p>A quick way to export the <strong>ShapeType</strong> bus using the bus editor, is to right click on the bus and select <strong>Export ShapeType to File…</strong></p>
+<div class="figure">
+<img alt="export bus" src="_images/busExport.png" />
+</div>
+<p>The <strong>ShapeType</strong> bus is complete.</p>
+</div>
+</div>
+<div class="section" id="create-shapetype-using-idl">
+<h2>12.2. Create ShapeType Using IDL<a class="headerlink" href="#create-shapetype-using-idl" title="Permalink to this headline">¶</a></h2>
+<p>The public Vortex.idlImportSl function can be called to generate Simulink bus definitions from an IDL file.
+The generated bus definitions are inserted into the &#8216;Design Data&#8217; section of a data dictionary.</p>
+<dl class="docutils">
+<dt>From the Simulink documentation -</dt>
+<dd><em>&#8220;A data dictionary is a persistent repository of data that are relevant to your model. You can also use the base workspace to store design data that are used by your model during simulation.&#8221;</em></dd>
+</dl>
+<p>The data dictionary can then be referenced from your models.</p>
+<div class="section" id="create-idl-file">
+<h3>12.2.1. Create IDL File<a class="headerlink" href="#create-idl-file" title="Permalink to this headline">¶</a></h3>
+<p>Create an IDL file to define your ShapeType topic structure.   For this tutorial we will name the file <em>ShapeType.idl</em>.</p>
+<div class="highlight-idl"><div class="highlight"><pre> struct ShapeType {
+   <span class="nb">string</span> color; <span class="o">//</span>@Key
+   <span class="nb">long</span> x;
+   <span class="nb">long</span> y;
+   <span class="nb">long</span> shapesize;
+ };
+<span class="o">#</span>pragma keylist ShapeType color
+</pre></div>
+</div>
+<p>IMPORTANT NOTE: The IDL file has to have a blank line after the pragma keylist declaration. (known bug)</p>
+</div>
+<div class="section" id="generate-simulink-bus-definitions-from-an-idl-file">
+<h3>12.2.2. Generate Simulink bus definitions from an IDL file<a class="headerlink" href="#generate-simulink-bus-definitions-from-an-idl-file" title="Permalink to this headline">¶</a></h3>
+<p>Steps:</p>
+<ol class="arabic">
+<li><p class="first">In MATLAB, navigate to the directory that contains the <em>ShapeType.idl</em> file.   Set this directory to be the MATLAB <strong>Current Folder</strong>.</p>
+</li>
+<li><p class="first">Call the idlImportSl function in the MATLAB command window.</p>
+<blockquote>
+<div><p>&gt;&gt; Vortex.idlImportSl(&#8216;ShapeType.idl&#8217;, &#8216;shape.sldd&#8217;)</p>
+<p>where:</p>
+<blockquote>
+<div><p>&#8216;ShapeType.idl&#8217; is the name of the IDL file</p>
+<p>&#8216;shape.sldd&#8217; is the name of the target data dictionary for the generated bus definitions</p>
+</div></blockquote>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="model-explorer">
+<h3>12.2.3. Model Explorer<a class="headerlink" href="#model-explorer" title="Permalink to this headline">¶</a></h3>
+<p>To make use of the bus definitions generated into the data dictionary, Simulink models can specify design data using the <strong>Model Explorer</strong>.</p>
+<div class="figure">
+<img alt="Model Explorer Design Data" src="_images/modelExplorer.png" />
+</div>
+</div>
+</div>
+<div class="section" id="shapes-write-model">
+<h2>12.3. Shapes Write Model<a class="headerlink" href="#shapes-write-model" title="Permalink to this headline">¶</a></h2>
+<p>This section outlines how to create a new DDS Simulink model that will write sample data for the topic type <strong>ShapeType</strong>.</p>
+<p>Although not necessary, this model will use the optional Domain and Publisher blocks.</p>
+<div class="section" id="create-a-new-simulink-model">
+<h3>12.3.1. Create a new Simulink model<a class="headerlink" href="#create-a-new-simulink-model" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="start-simulink">
+<h4>12.3.1.1. Start Simulink<a class="headerlink" href="#start-simulink" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Start Simulink" src="_images/startSimulink.png" />
+</div>
+</div>
+<div class="section" id="add-a-new-blank-model">
+<h4>12.3.1.2. Add a new blank model<a class="headerlink" href="#add-a-new-blank-model" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Start Add new blank model" src="_images/simulinkStartPage.png" />
+</div>
+</div>
+<div class="section" id="save-as">
+<h4>12.3.1.3. Save As...<a class="headerlink" href="#save-as" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Save the model as <em>“shapes_write_model.slx”</em>.</li>
+</ul>
+</div>
+<div class="section" id="model-settings">
+<h4>12.3.1.4. Model Settings<a class="headerlink" href="#model-settings" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Open Model Configuration Parameters dialog, by selecting menu <strong>Simulation / Model Configuration Parameters</strong>.</li>
+<li>Set the simulation stop time to 1000.0 seconds. (Note: “Simulation time is not the same as clock time. For example, running a simulation for 10 seconds usually does not take 10 seconds. Total simulation time depends on factors such as model complexity, solver step sizes, and computer speed.”  Simulink Help documentation)</li>
+<li>Set the Solver Type to Fixed-step.</li>
+</ul>
+<div class="figure">
+<img alt="Model Settings" src="_images/write_model_setup.png" />
+</div>
+</div>
+</div>
+<div class="section" id="add-simulink-dds-blocks">
+<h3>12.3.2. Add Simulink DDS Blocks<a class="headerlink" href="#add-simulink-dds-blocks" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="open-the-simulink-library-browser">
+<h4>12.3.2.1. Open the Simulink Library Browser<a class="headerlink" href="#open-the-simulink-library-browser" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Open the Simulink Library Browser</li>
+<li>Browse to and select <strong>Vortex DDS</strong> to view DDS custom blocks</li>
+</ul>
+<div class="figure">
+<img alt="Open Simulink Library Browser" src="_images/openLibraryBrowser.png" />
+</div>
+<div class="figure">
+<img alt="Vortex DDS Blocks" src="_images/ddsLibrary.png" />
+</div>
+</div>
+<div class="section" id="add-a-domain-block">
+<h4>12.3.2.2. Add a Domain block<a class="headerlink" href="#add-a-domain-block" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Drag a Domain participant block from the Simulink Library Browser onto the Simulink model diagram.</li>
+</ul>
+</div>
+<div class="section" id="set-domain-block-properties">
+<h4>12.3.2.3. Set domain block properties<a class="headerlink" href="#set-domain-block-properties" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>To set a block’s parameters, double click on the block to bring up the <strong>Block Parameters</strong> dialog.</li>
+<li>The domain id is read only and set to DDS_DOMAIN_DEFAULT.   This default is specified in the OSPL configuration file.</li>
+<li>The <strong>QoS</strong> tab defaults to the OSPL defaults.</li>
+<li>For this tutorial example, we are going to use the defaults, therefore no block parameters need to be specified.</li>
+</ul>
+<div class="figure">
+<img alt="Domain Block Parameters" src="_images/write_domain_parameters.png" />
+</div>
+</div>
+<div class="section" id="add-blocks-topic-publisher-and-writer">
+<h4>12.3.2.4. Add blocks (Topic, Publisher, and Writer)<a class="headerlink" href="#add-blocks-topic-publisher-and-writer" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt>Using the Simulink Library Browser drag the following block types onto your diagram:</dt>
+<dd><ul class="first last simple">
+<li>1 Topic</li>
+<li>1 Publisher</li>
+<li>1 Writer</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="connect-domain-to-topic-and-publisher">
+<h4>12.3.2.5. Connect Domain to Topic and Publisher<a class="headerlink" href="#connect-domain-to-topic-and-publisher" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Connect the Domain <strong>pp</strong> output to Topic <strong>pp</strong> input.</li>
+<li>Connect the Domain <strong>pp</strong> output to Publisher <strong>pp</strong> input.</li>
+</ul>
+<div class="figure">
+<img alt="Connecting participant ports" src="_images/write_connect_domain.png" />
+</div>
+</div>
+<div class="section" id="set-topic-block-parameters">
+<h4>12.3.2.6. Set Topic Block Parameters<a class="headerlink" href="#set-topic-block-parameters" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">Double click on the Topic to bring up the <strong>Block Parameters</strong> dialog.</p>
+</li>
+<li><dl class="first docutils">
+<dt>In the <strong>Topic</strong> tab:</dt>
+<dd><ul class="first last simple">
+<li>Set <strong>Bus Type</strong> to: ShapeType</li>
+<li>Set <strong>Topic Name</strong> to: Circle</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">The <strong>Ports</strong> tab allows for the setting of optional ports.  For this model, we will not change the defaults.</p>
+</li>
+<li><p class="first">Select the <strong>QoS</strong> tab.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Set the QoS file to: Shapes_Demo_QoS.xml.</dt>
+<dd><dl class="first last docutils">
+<dt>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.linux/tools/matlab/</dt>
+<dd><p class="first last">/examples/simulink/dds_reader_writer_model/Shapes_Demo_QoS.xml</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="figure">
+<img alt="Set Topic Block Parameters" src="_images/write_topic_parameters.png" />
+</div>
+</div>
+<div class="section" id="connect-topic-publisher-and-writer-blocks-set-writer-block-parameters">
+<h4>12.3.2.7. Connect Topic, Publisher and Writer Blocks &amp; Set Writer Block Parameters<a class="headerlink" href="#connect-topic-publisher-and-writer-blocks-set-writer-block-parameters" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">Connect the Topic <strong>topic</strong> output to the Writer <strong>topic</strong> input.</p>
+</li>
+<li><p class="first">Connect the Publisher <strong>ppub</strong> output to the Writer <strong>ppub</strong> input.</p>
+</li>
+<li><p class="first">Double click on the Writer block to edit the <strong>Block Parameters</strong>.    Set the <strong>Input Data Type</strong> to the bus: ShapeType.</p>
+</li>
+<li><p class="first">Select the Writer <strong>QoS</strong> tab.</p>
+</li>
+<li><p class="first">Set the QoS file to: Shapes_Demo_QoS.xml.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.linux/tools/matlab/</dt>
+<dd><p class="first last">/examples/simulink/dds_reader_writer_model/Shapes_Demo_QoS.xml</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<div class="figure">
+<img alt="Connect Blocks" src="_images/writer_write_parameters.png" />
+</div>
+</div>
+<div class="section" id="add-a-bus-creator-to-set-sample-data">
+<h4>12.3.2.8. Add a Bus Creator to Set Sample Data<a class="headerlink" href="#add-a-bus-creator-to-set-sample-data" title="Permalink to this headline">¶</a></h4>
+<p>To generate sample data, we will add a <strong>Simulink / Signal Routing / BusCreator</strong> block to our diagram.</p>
+<div class="figure">
+<img alt="Set Bus Creator Block Parameters" src="_images/write_buscreator_params.png" />
+</div>
+</div>
+<div class="section" id="add-bus-creator-inputs">
+<h4>12.3.2.9. Add Bus Creator Inputs<a class="headerlink" href="#add-bus-creator-inputs" title="Permalink to this headline">¶</a></h4>
+<p>For demonstration purposes, we will input to the <strong>BusCreator</strong> signals using <strong>Constant</strong>, <strong>Clock</strong> and <strong>Sine Wave</strong> blocks.</p>
+<p>Note:  To change the positioning of block ports, you can use the <strong>Rotate &amp; Flip</strong> block menu item, accessible by right clicking on a block.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Drag 2 <strong>Simulink / Sources / Constant</strong> blocks onto the diagram</li>
+<li>Connect one <strong>Constant</strong> block to color input signal</li>
+<li>Connect one <strong>Constant</strong> block to shapesize input signal</li>
+</ul>
+</div></blockquote>
+<div class="figure">
+<img alt="Bus Creator Constants" src="_images/buscreator_constants.png" />
+</div>
+<ul class="simple">
+<li>Set the <strong>Block Parameters</strong> for color signal <strong>Constant</strong> block</li>
+<li>Set <strong>Constant value</strong> to:  uint8(pad(&#8216;GREEN&#8217;,10,&#8217;right&#8217;, char( 0 ) ))</li>
+<li>Select <strong>OK</strong></li>
+</ul>
+<div class="figure">
+<img alt="color Constant" src="_images/colorConstant2.png" />
+</div>
+<ul class="simple">
+<li>Set the <strong>Block Parameters</strong> for shapesize signal <strong>Constant</strong> block</li>
+<li>Set <strong>Constant value</strong> to:  25</li>
+<li>Set <strong>Output data type</strong> to:  int32</li>
+</ul>
+<div class="figure">
+<img alt="shapesize Constant" src="_images/shapesizeConstantBLock.png" />
+</div>
+<ul class="simple">
+<li>Drag a <strong>Simulink / Sources / Sine Wave</strong> block onto diagram</li>
+<li>Connect <strong>Sine Wave</strong> block to y input signal</li>
+<li>Drag a <strong>Simulink / Signal Attributes / Data Type Conversion</strong> block onto <strong>Sine Wave</strong> connector.</li>
+<li>Set <strong>Output data type</strong> to: int32</li>
+</ul>
+<div class="figure">
+<img alt="Sine Wave y" src="_images/sinewave.png" />
+</div>
+<ul class="simple">
+<li>Set <strong>Block Parameters</strong> for <strong>Sine Wave</strong> block.</li>
+<li>Set <strong>Amplitude</strong> to: 150</li>
+<li>Set <strong>Bias</strong> to: 175</li>
+<li>Set <strong>Sample time</strong> to: 0.5</li>
+</ul>
+<div class="figure">
+<img alt="Sine Wave Block Parameters" src="_images/sineWaveBlockParamters.png" />
+</div>
+<ul>
+<li><dl class="first docutils">
+<dt>For the <strong>x</strong> input signal, drag 3 new blocks onto diagram:</dt>
+<dd><ul class="first last simple">
+<li><strong>Simulink / Sources / Constant</strong></li>
+<li><strong>Simulink / Sources / Clock</strong></li>
+<li><strong>Simulink / Math Operations / Math Function</strong></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Set <strong>Block Parameters</strong> for <strong>Math Function</strong> block.</p>
+</li>
+<li><p class="first">Set <strong>Function</strong> to: mod</p>
+</li>
+<li><p class="first">Set <strong>Output signal type</strong> to: real</p>
+</li>
+</ul>
+<div class="figure">
+<img alt="Math Function Block Parameters" src="_images/write_mathFunctionBlockParams.png" />
+</div>
+<ul class="simple">
+<li>Set <strong>Block Parameters</strong> for <strong>Constant</strong> block.</li>
+<li>Set <strong>Constant value</strong> to: 350</li>
+</ul>
+<div class="figure">
+<img alt="Constant Block Parameters" src="_images/constant_x.png" />
+</div>
+<ul class="simple">
+<li>Connect the <strong>Clock</strong> and <strong>Constant</strong> blocks to the mod <strong>Math Function</strong></li>
+<li>Connect the mod <strong>Math Function</strong> to the <strong>BusCreator</strong> x input signal</li>
+</ul>
+<div class="figure">
+<img alt="Connect mod block" src="_images/modBlock.png" />
+</div>
+<ul class="simple">
+<li>Drag a <strong>Simulink / Signal Attributes / Data Type Conversion</strong> block onto <strong>Math Function</strong> connector.</li>
+<li>Set <strong>Output data type</strong> to: int32</li>
+</ul>
+<div class="figure">
+<img alt="Connect mod block" src="_images/modBlock2.png" />
+</div>
+<p><strong>Save your model.   Your model is now complete!</strong></p>
+</div>
+</div>
+</div>
+<div class="section" id="shapes-read-model">
+<h2>12.4. Shapes Read Model<a class="headerlink" href="#shapes-read-model" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id2">
+<h3>12.4.1. Create a new Simulink model<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>This section outlines how to create a new DDS Simulink model that will read and display sample data for the topic type <strong>ShapeType</strong>.</p>
+<p>In this model example, we will be making use of many of the defaults, so the optional blocks will not be included in this model.</p>
+<div class="section" id="id3">
+<h4>12.4.1.1. Start Simulink<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Start Simulink" src="_images/startSimulink.png" />
+</div>
+</div>
+<div class="section" id="id4">
+<h4>12.4.1.2. Add a new blank model<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Start Add new blank model" src="_images/simulinkStartPage.png" />
+</div>
+</div>
+<div class="section" id="id5">
+<h4>12.4.1.3. Save As...<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Save the model as <em>“shapes_read_model.slx”</em>.</li>
+</ul>
+</div>
+<div class="section" id="id6">
+<h4>12.4.1.4. Model Settings<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Open Model Configuration Parameters dialog, by selecting menu <strong>Simulation / Model Configuration Parameters</strong>.</li>
+<li>Set the simulation stop time to <strong>inf</strong>. (Note: “Specify inf to run a simulation or generated program until you explicitly pause or stop it.”  Simulink Help documentation)</li>
+<li>Set the Solver Type to <strong>Fixed-step</strong>.</li>
+</ul>
+<div class="figure">
+<img alt="Setup Read Model" src="_images/read_model_settings.png" />
+</div>
+</div>
+</div>
+<div class="section" id="id7">
+<h3>12.4.2. Add Simulink DDS Blocks<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id8">
+<h4>12.4.2.1. Open the Simulink Library Browser<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h4>
+<div class="figure">
+<img alt="Vortex DDS Library" src="_images/ddsLibrary.png" />
+</div>
+</div>
+<div class="section" id="add-all-required-blocks-topic-and-reader">
+<h4>12.4.2.2. Add all required blocks (Topic and Reader)<a class="headerlink" href="#add-all-required-blocks-topic-and-reader" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt>Using the Simulink Library Browser drag the following block types onto your diagram:</dt>
+<dd><ul class="first last simple">
+<li>1 Topic</li>
+<li>1 Reader</li>
+</ul>
+</dd>
+</dl>
+<p>Note: For this example model, we will be using the block defaults for the Domain and Subscriber, therefore they will not be included on the model.</p>
+<p>To set a block’s parameters, double click on the block to bring up the <strong>Block Parameters</strong> dialog.</p>
+<div class="figure">
+<img alt="Add Blocks" src="_images/read_blocks.png" />
+</div>
+</div>
+<div class="section" id="toggle-off-optional-ports">
+<h4>12.4.2.3. Toggle off optional ports<a class="headerlink" href="#toggle-off-optional-ports" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Double click on the Topic to bring up the <strong>Block Parameters</strong> dialog.</li>
+<li>In the Topic <strong>Ports</strong> tab deselect the Participant port.</li>
+<li>Double click on the Reader to bring up the <strong>Block Parameters</strong> dialog.</li>
+<li>In the Reader <strong>Ports</strong> tab deselect the Subscriber, Reader, Status, Info and Samples Read ports.</li>
+</ul>
+</div>
+<div class="section" id="id9">
+<h4>12.4.2.4. Set Topic Block Parameters<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">Double click on the Topic to bring up the <strong>Block Parameters</strong> dialog, select <strong>Topic</strong> tab.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Set the <strong>Bus Type</strong>: ShapeType bus</dt>
+<dd><p class="first last">Note:  If the ShapeType bus is not displayed, select Refresh data types from dropdown list.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">Set the <strong>Topic Name</strong> to: Circle.</p>
+</li>
+</ul>
+<div class="figure">
+<img alt="Topic Block Parameters" src="_images/read_topic_topic.png" />
+</div>
+<ul>
+<li><p class="first">Select the <strong>QoS</strong> tab.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Set the QoS file to <span class="classifier-delimiter">:</span> <span class="classifier">Shapes_Demo_QoS.xml.</span></dt>
+<dd><dl class="first last docutils">
+<dt>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.linux/tools/matlab/</dt>
+<dd><p class="first last">examples/simulink/dds_reader_writer_model/Shapes_Demo_QoS.xml</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="set-reader-block-parameters">
+<h4>12.4.2.5. Set Reader Block Parameters<a class="headerlink" href="#set-reader-block-parameters" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">Double click on the Reader block to edit the <strong>Block Parameters</strong>.    Set the <strong>Input Data Type</strong> to the bus: ShapeType.</p>
+</li>
+<li><p class="first">Select the <strong>QoS</strong> tab.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Set the QoS file to <span class="classifier-delimiter">:</span> <span class="classifier">Shapes_Demo_QoS.xml.</span></dt>
+<dd><dl class="first last docutils">
+<dt>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.8.x/HDE/x86_64.linux/tools/matlab/</dt>
+<dd><p class="first last">examples/simulink/dds_reader_writer_model/Shapes_Demo_QoS.xml</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="connect-topic-and-reader">
+<h4>12.4.2.6. Connect Topic and Reader<a class="headerlink" href="#connect-topic-and-reader" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Connect the Topic block <strong>topic</strong> output to the Reader block <strong>topic</strong> input.</li>
+</ul>
+<div class="figure">
+<img alt="Connect Topic and Reader" src="_images/read_connect.png" />
+</div>
+</div>
+<div class="section" id="add-a-bus-selector-to-read-and-display-sample-data">
+<h4>12.4.2.7. Add a Bus Selector to read and display sample data<a class="headerlink" href="#add-a-bus-selector-to-read-and-display-sample-data" title="Permalink to this headline">¶</a></h4>
+<p>To read and display sample data, we will add a <strong>Simulink / Signal Routing / Bus Selector</strong> block to our diagram.</p>
+</div>
+<div class="section" id="set-bus-selector-block-parameters">
+<h4>12.4.2.8. Set Bus Selector Block Parameters<a class="headerlink" href="#set-bus-selector-block-parameters" title="Permalink to this headline">¶</a></h4>
+<p>Specify the output signals we would like to display in our simulation.  For this example, we will display all the ShapeType BUS signals in the running simulation.</p>
+<ul class="simple">
+<li>Connect the Reader <strong>data</strong> output to the <strong>Bus Selector</strong>.</li>
+<li>Double click on the <strong>Bus Selector</strong> block to edit the <strong>Block Parameters</strong>.</li>
+<li>Add all the signals in the bus to the <strong>Selected signals</strong>.</li>
+</ul>
+<div class="figure">
+<img alt="Bus Selector Block Parameters" src="_images/read_busSelectorOutputs.png" />
+</div>
+</div>
+<div class="section" id="add-bus-selector-outputs">
+<h4>12.4.2.9. Add Bus Selector outputs<a class="headerlink" href="#add-bus-selector-outputs" title="Permalink to this headline">¶</a></h4>
+<p>For demonstration purposes, we will output the bus signals using 2 Simulink <strong>Display</strong> blocks and an <strong>XY Graph</strong>.</p>
+<p>Note:  To change the positioning of block ports, you can use the <strong>Rotate &amp; Flip</strong> block menu item, accessible by right clicking on a block.</p>
+<ul>
+<li><p class="first">Drag 2 <strong>Simulink / Sinks / Display</strong> blocks onto the diagram.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Connect the <strong>Display</strong> blocks to the <strong>Bus Selector</strong> output signals.</dt>
+<dd><ul class="first last simple">
+<li>Connect the Bus Selector color output signal to a Display block.</li>
+<li>Connect the Bus Selector shapesize output signal to a Display block.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Note:   Default Display block settings used.</p>
+<div class="figure">
+<img alt="Bus Selector Outputs" src="_images/read_busSelector_display.png" />
+</div>
+<ul>
+<li><p class="first">Drag <strong>Simulink / Sinks / XY Graph</strong> block onto diagram</p>
+</li>
+<li><p class="first">Connect the <strong>BusSelector</strong> x and y outputs to the <strong>XY Graph</strong> block.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Set the Block Parameters on the <strong>XY Graph</strong>:</dt>
+<dd><p class="first last">X-min: 0
+X-max: 400
+Y-min: 0
+Y-max: 400</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="figure">
+<img alt="Bus Selector XY Graph" src="_images/xyGraph2.png" />
+</div>
+<p><strong>Save your model!!!   The model is now complete!</strong></p>
+</div>
+</div>
+</div>
+<div class="section" id="running-simulations">
+<h2>12.5. Running Simulations<a class="headerlink" href="#running-simulations" title="Permalink to this headline">¶</a></h2>
+<p>We now have two Simulink models.    We will run both models and see that data samples are being written by one model and read be the second model.</p>
+<div class="section" id="setup-write-model">
+<h3>12.5.1. Setup Write Model<a class="headerlink" href="#setup-write-model" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Open shapes_write_model.slx.</li>
+<li>Select menu item <strong>Simulation / Update Diagram</strong> to diagnose any possible model problems.</li>
+<li>Fix any issues.</li>
+</ol>
+</div>
+<div class="section" id="setup-read-model">
+<h3>12.5.2. Setup Read Model<a class="headerlink" href="#setup-read-model" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Open shapes_read_model.slx.</li>
+<li>Select menu item <strong>Simulation / Update Diagram</strong> to diagnose any possible model problems.</li>
+<li>Fix any issues.</li>
+</ol>
+</div>
+<div class="section" id="run-simulations">
+<h3>12.5.3. Run Simulations<a class="headerlink" href="#run-simulations" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Position models side by side.</li>
+<li>Start the read model simulation.</li>
+<li>Start the write model simulation.</li>
+<li>Expected:   The write model will write samples, that are received by the read model and displayed in that model’s <strong>XY Graph</strong> and <strong>Display</strong> blocks.</li>
+<li>The write model will run to completion.   The read model needs to be stopped manually.</li>
+</ol>
+<div class="figure">
+<img alt="Run Simulations" src="_images/run.png" />
+</div>
+<p><strong>Run Results</strong></p>
+<div class="figure">
+<img alt="Run results" src="_images/results.png" />
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">12. Tutorial</a><ul>
+<li><a class="reference internal" href="#create-shapetype-bus-using-simulink-bus-editor">12.1. Create ShapeType Bus Using Simulink Bus Editor</a><ul>
+<li><a class="reference internal" href="#open-the-bus-editor-from-the-matlab-command-window">12.1.1. Open the bus editor from the MATLAB command window</a></li>
+<li><a class="reference internal" href="#add-a-new-bus-named-shapetype">12.1.2. Add a new BUS named ShapeType</a><ul>
+<li><a class="reference internal" href="#select-add-bus-button">12.1.2.1. Select Add Bus button</a></li>
+<li><a class="reference internal" href="#set-bus-name-and-key">12.1.2.2. Set Bus name and Key</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#add-buselements">12.1.3. Add BusElements</a><ul>
+<li><a class="reference internal" href="#add-color">12.1.3.1. Add color</a></li>
+<li><a class="reference internal" href="#add-x">12.1.3.2. Add x</a></li>
+<li><a class="reference internal" href="#add-y">12.1.3.3. Add y</a></li>
+<li><a class="reference internal" href="#add-shapesize">12.1.3.4. Add shapesize</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#export-bus-objects">12.1.4. Export BUS objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#create-shapetype-using-idl">12.2. Create ShapeType Using IDL</a><ul>
+<li><a class="reference internal" href="#create-idl-file">12.2.1. Create IDL File</a></li>
+<li><a class="reference internal" href="#generate-simulink-bus-definitions-from-an-idl-file">12.2.2. Generate Simulink bus definitions from an IDL file</a></li>
+<li><a class="reference internal" href="#model-explorer">12.2.3. Model Explorer</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#shapes-write-model">12.3. Shapes Write Model</a><ul>
+<li><a class="reference internal" href="#create-a-new-simulink-model">12.3.1. Create a new Simulink model</a><ul>
+<li><a class="reference internal" href="#start-simulink">12.3.1.1. Start Simulink</a></li>
+<li><a class="reference internal" href="#add-a-new-blank-model">12.3.1.2. Add a new blank model</a></li>
+<li><a class="reference internal" href="#save-as">12.3.1.3. Save As...</a></li>
+<li><a class="reference internal" href="#model-settings">12.3.1.4. Model Settings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#add-simulink-dds-blocks">12.3.2. Add Simulink DDS Blocks</a><ul>
+<li><a class="reference internal" href="#open-the-simulink-library-browser">12.3.2.1. Open the Simulink Library Browser</a></li>
+<li><a class="reference internal" href="#add-a-domain-block">12.3.2.2. Add a Domain block</a></li>
+<li><a class="reference internal" href="#set-domain-block-properties">12.3.2.3. Set domain block properties</a></li>
+<li><a class="reference internal" href="#add-blocks-topic-publisher-and-writer">12.3.2.4. Add blocks (Topic, Publisher, and Writer)</a></li>
+<li><a class="reference internal" href="#connect-domain-to-topic-and-publisher">12.3.2.5. Connect Domain to Topic and Publisher</a></li>
+<li><a class="reference internal" href="#set-topic-block-parameters">12.3.2.6. Set Topic Block Parameters</a></li>
+<li><a class="reference internal" href="#connect-topic-publisher-and-writer-blocks-set-writer-block-parameters">12.3.2.7. Connect Topic, Publisher and Writer Blocks &amp; Set Writer Block Parameters</a></li>
+<li><a class="reference internal" href="#add-a-bus-creator-to-set-sample-data">12.3.2.8. Add a Bus Creator to Set Sample Data</a></li>
+<li><a class="reference internal" href="#add-bus-creator-inputs">12.3.2.9. Add Bus Creator Inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#shapes-read-model">12.4. Shapes Read Model</a><ul>
+<li><a class="reference internal" href="#id2">12.4.1. Create a new Simulink model</a><ul>
+<li><a class="reference internal" href="#id3">12.4.1.1. Start Simulink</a></li>
+<li><a class="reference internal" href="#id4">12.4.1.2. Add a new blank model</a></li>
+<li><a class="reference internal" href="#id5">12.4.1.3. Save As...</a></li>
+<li><a class="reference internal" href="#id6">12.4.1.4. Model Settings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">12.4.2. Add Simulink DDS Blocks</a><ul>
+<li><a class="reference internal" href="#id8">12.4.2.1. Open the Simulink Library Browser</a></li>
+<li><a class="reference internal" href="#add-all-required-blocks-topic-and-reader">12.4.2.2. Add all required blocks (Topic and Reader)</a></li>
+<li><a class="reference internal" href="#toggle-off-optional-ports">12.4.2.3. Toggle off optional ports</a></li>
+<li><a class="reference internal" href="#id9">12.4.2.4. Set Topic Block Parameters</a></li>
+<li><a class="reference internal" href="#set-reader-block-parameters">12.4.2.5. Set Reader Block Parameters</a></li>
+<li><a class="reference internal" href="#connect-topic-and-reader">12.4.2.6. Connect Topic and Reader</a></li>
+<li><a class="reference internal" href="#add-a-bus-selector-to-read-and-display-sample-data">12.4.2.7. Add a Bus Selector to read and display sample data</a></li>
+<li><a class="reference internal" href="#set-bus-selector-block-parameters">12.4.2.8. Set Bus Selector Block Parameters</a></li>
+<li><a class="reference internal" href="#add-bus-selector-outputs">12.4.2.9. Add Bus Selector outputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-simulations">12.5. Running Simulations</a><ul>
+<li><a class="reference internal" href="#setup-write-model">12.5.1. Setup Write Model</a></li>
+<li><a class="reference internal" href="#setup-read-model">12.5.2. Setup Read Model</a></li>
+<li><a class="reference internal" href="#run-simulations">12.5.3. Run Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="reader.html"
+                        title="previous chapter">11. Reader Block</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="simulink_coder.html"
+                        title="next chapter">13. Generating C code with Simulink Coder</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="simulink_coder.html" title="13. Generating C code with Simulink Coder"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="reader.html" title="11. Reader Block"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

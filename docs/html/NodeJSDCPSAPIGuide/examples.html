@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Examples &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="index.html" />
+    <link rel="next" title="5. Node.js API for Vortex DDS" href="dds_entities.html" />
+    <link rel="prev" title="3. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Node.js API for Vortex DDS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="examples">
+<span id="id1"></span><h1>4. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>Examples are provided to demonstrate the Node.js DCPS features.</p>
+<p>The examples can be found in the following directory:</p>
+<blockquote>
+<div><em>$OSPL_HOME/tools/nodejs/examples</em></div></blockquote>
+<p>WHERE:</p>
+<blockquote>
+<div><p>Linux</p>
+<blockquote>
+<div>OSPL_HOME = <em>INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux</em></div></blockquote>
+<p>Windows</p>
+<blockquote>
+<div>OSPL_HOME = <em>INSTALLDIR\ADLINK\Vortex_v2\Device\VortexOpenSplice\6.9.x\HDE\x86_64.win64</em></div></blockquote>
+</div></blockquote>
+<div class="section" id="example-files">
+<h2>4.1. Example Files<a class="headerlink" href="#example-files" title="Permalink to this headline">¶</a></h2>
+<p>Each subfolder consists of a Node.js example project.</p>
+<div class="section" id="examplestable">
+<span id="id2"></span><h3>4.1.1. Examples<a class="headerlink" href="#examplestable" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="74%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>Example</strong></th>
+<th class="head"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>HelloWorld</td>
+<td>Demonstrates how to read and write a simple
+topic in DDS</td>
+</tr>
+<tr class="row-odd"><td>jsshapes</td>
+<td>Demonstrates how to read and write to a
+DDS application</td>
+</tr>
+<tr class="row-even"><td>IoTData</td>
+<td>Demonstrates reading and writing an IoTData topic</td>
+</tr>
+<tr class="row-odd"><td>PingPong</td>
+<td>Demonstrates reading, writing, and waitsets</td>
+</tr>
+<tr class="row-even"><td>QoSExample</td>
+<td>Demonstrates QoS settings</td>
+</tr>
+<tr class="row-odd"><td>GetSetQoSExample</td>
+<td>Demonstrates getting and setting QoS using
+QoS Provider and DCPS api</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="file-types">
+<h3>4.1.2. File Types<a class="headerlink" href="#file-types" title="Permalink to this headline">¶</a></h3>
+<p>The examples directory contains files of different types.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="87%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>File Type</strong></th>
+<th class="head"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>js</td>
+<td>A program file or script written in JavaScript</td>
+</tr>
+<tr class="row-odd"><td>package.json</td>
+<td>Lists the packages that a project depends on</td>
+</tr>
+<tr class="row-even"><td>xml</td>
+<td>An XML file that contains one or more Quality of Service (QoS) profiles for DDS entities</td>
+</tr>
+<tr class="row-odd"><td>idl</td>
+<td>An interface description language file used to define topic(s)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="running-examples">
+<h2>4.2. Running Examples<a class="headerlink" href="#running-examples" title="Permalink to this headline">¶</a></h2>
+<p>To run a Node.js example:</p>
+<ol class="arabic">
+<li><p class="first">Setup OSPL environment variables</p>
+<blockquote>
+<div><p><strong>Linux</strong></p>
+<ul>
+<li><p class="first">For each example javascript file to be run, open a Linux terminal</p>
+</li>
+<li><p class="first">Navigate to directory containing release.com file (OSPL_HOME)</p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux</em></p>
+</li>
+<li><p class="first">Run release.com (“. release.com”)</p>
+</li>
+</ul>
+<p><strong>Windows</strong></p>
+<ul>
+<li><p class="first">For each example javascript file to be run, open a command prompt</p>
+</li>
+<li><p class="first">Navigate to directory containing release.bat file (OSPL_HOME)</p>
+<p><em>\INSTALLDIR\ADLINK\Vortex_v2\Device\VortexOpenSplice\6.9.x\HDE\x86_64.win64</em></p>
+</li>
+<li><p class="first">Run release.bat (“release.bat”), if OSPL environment variables are not set system wide</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Change directory to the example folder</p>
+<blockquote>
+<div><p>Example:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/tools/nodejs/examples/HelloWorld</em></p>
+</div></blockquote>
+</div></blockquote>
+</li>
+<li><p class="first">Run npm install to install the Node.js DCPS API (vortexdds-x.y.z.tgz) and all other dependencies</p>
+<blockquote>
+<div><p>npm install</p>
+</div></blockquote>
+</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you are running the examples from another directory outside the OSPL install, then you will need to manually install the Node.js DCPS API first and then run npm install for the example dependencies as follows:</p>
+<p>npm install $OSPL_HOME/tools/nodejs/vortexdds-x.y.z.tgz</p>
+<p class="last">npm install</p>
+</div>
+<ol class="arabic" start="4">
+<li><p class="first">Run .js file(s) in a terminal/command shell</p>
+<blockquote>
+<div><p>Example:</p>
+<blockquote>
+<div><p>node HelloWorldSubscriber.js</p>
+</div></blockquote>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Examples</a><ul>
+<li><a class="reference internal" href="#example-files">4.1. Example Files</a><ul>
+<li><a class="reference internal" href="#examplestable">4.1.1. Examples</a></li>
+<li><a class="reference internal" href="#file-types">4.1.2. File Types</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-examples">4.2. Running Examples</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">3. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dds_entities.html"
+                        title="next chapter">5. Node.js API for Vortex DDS</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/examples.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="dds_entities.html" title="5. Node.js API for Vortex DDS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

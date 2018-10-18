@@ -1,5 +1,5 @@
 #ifndef _SHAPEDYNAMICS_HPP
-#define	_SHAPEDYNAMICS_HPP
+#define _SHAPEDYNAMICS_HPP
 
 /** @file */
 /**

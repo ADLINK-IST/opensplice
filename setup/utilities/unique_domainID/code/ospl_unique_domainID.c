@@ -23,7 +23,7 @@ static sem_t done;
 static void signal_handler( int status )
 {
    unused(status);
-   sem_post( &done );
+   (void)sem_post( &done );
 }
 
 
@@ -58,13 +58,13 @@ static char * claimid( int i )
          {
             /* Device locked but process owning lock has exited, reseting lock.*/
             fflush(stderr);
-            close(lock_fd_rw);
-            unlink(lockfile);
+            (void)close(lock_fd_rw);
+            (void)unlink(lockfile);
             lock_fd=open(lockfile, O_WRONLY | O_CREAT | O_EXCL, 0644);
          }
          else
          {
-            close(lock_fd_rw);
+             (void)close(lock_fd_rw);
          }
       }
    }
@@ -78,9 +78,9 @@ static char * claimid( int i )
             if ( errno != EINTR)
             {
                fflush(stderr);
-               close(lock_fd);
+               (void)close(lock_fd);
                lock_fd = -1;
-               unlink(lockfile);
+               (void)unlink(lockfile);
                break;
             }
          }
@@ -93,7 +93,7 @@ static char * claimid( int i )
 
    if ( lock_fd != -1 )
    {
-      close(lock_fd);
+       (void)close(lock_fd);
    }
    return(lock_fd != -1 ? lockfile : NULL);
 }
@@ -122,18 +122,18 @@ int main(int argc, char **argv)
 
    if ( i > MIN_UNIQ_ID )
    {
-      sem_init( &done, 0, 0 );
+      (void)sem_init( &done, 0, 0 );
 
       sat.sa_handler = signal_handler;
-      sigemptyset( &sat.sa_mask);
+      (void)sigemptyset( &sat.sa_mask);
       sat.sa_flags = 0;
       sigaction(SIGTERM,&sat,NULL);
       sigaction(SIGINT,&sat,NULL);
       sigaction(SIGHUP,&sat,NULL);
 
-      sem_wait( &done );
+      (void)sem_wait( &done );
 
-      unlink(lockfile);
+      (void)unlink(lockfile);
    }
    else
    {

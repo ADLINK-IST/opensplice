@@ -57,7 +57,7 @@
 Modeler.</p>
 <p><strong>Step 1:</strong>  Prerequisites</p>
 <blockquote>
-<div><p>Ensure that Java Version 6 (<em>required</em>) and the OpenSplice Host
+<div><p>Ensure that Java Version 6 (<em>required</em>) and the Vortex OpenSplice Host
 Development Environment <a class="footnote-reference" href="#id3" id="id2">[1]</a> (<em>recommended</em>), plus any other supporting
 software (such as native compilers, for example), are installed
 and working.</p>
@@ -65,7 +65,7 @@ and working.</p>
 The prerequisites for C++ Code Generation are given in the
 <em>Release Notes</em> included with your Modeler product distribution.</p>
 <p>The Release Notes can be viewed by opening <tt class="docutils literal"><span class="pre">index.html</span></tt> located in
-the root (or base) directory of your OpenSplice installation and
+the root (or base) directory of your Vortex OpenSplice installation and
 following the <em>Release Notes</em> link.</p>
 </div></blockquote>
 <p><strong>Step 2:</strong>  Run the Vortex OpenSplice Modeler installer</p>
@@ -96,37 +96,37 @@ on-screen instructions. For example:</p>
 </div></blockquote>
 <p><strong>Step 3:</strong>  Install the license file</p>
 <blockquote>
-<div><p>A license file must be obtained from PrismTech, then copied to
+<div><p>A license file must be obtained from ADLINK, then copied to
 the <tt class="docutils literal"><span class="pre">eclipse</span></tt> or <tt class="docutils literal"><span class="pre">eclipse/etc</span></tt> subdirectories where
 the Vortex OpenSplice Modeler has been installed, or copied to
-the <tt class="docutils literal"><span class="pre">PrismTech/Vortex_v2/license</span></tt> directory, or have the
-<tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> environment variable defined with the file
+the <tt class="docutils literal"><span class="pre">ADLINK/Vortex_v2/license</span></tt> directory, or have the
+<tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt> environment variable defined with the file
 path to the license file.</p>
 <p>For example:</p>
 <p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/PrismTech/Vortex_v2/Tools/VortexModeler/2.5.12/eclipse/etc</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/ADLINK/Vortex_v2/Tools/VortexModeler/2.5.12/eclipse/etc</span></tt></div></blockquote>
 <p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">\PrismTech\Vortex_v2\Tools\VortexModeler\2.5.12\eclipse</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">\ADLINK\Vortex_v2\Tools\VortexModeler\2.5.12\eclipse</span></tt></div></blockquote>
 <p>For more information about licensing, please refer to the
 <em>Getting Started Guide</em>.</p>
 </div></blockquote>
 </div>
-<div class="section" id="setting-opensplice-preferences">
-<h2>3.2. Setting OpenSplice Preferences<a class="headerlink" href="#setting-opensplice-preferences" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="setting-vortex-opensplice-preferences">
+<h2>3.2. Setting Vortex OpenSplice Preferences<a class="headerlink" href="#setting-vortex-opensplice-preferences" title="Permalink to this headline">¶</a></h2>
 <p>After installing the Vortex OpenSplice Modeler it is necessary
-to specify the location of the OpenSplice DDS installation to be
+to specify the location of the Vortex OpenSplice installation to be
 used.</p>
 <p><strong>Step 1:</strong>  Start the Vortex OpenSplice Modeler.</p>
 <p><strong>Step 2:</strong>  Choose <em>Window &gt; Preferences</em>.</p>
 <p><strong>Step 3:</strong>  Select <em>OpenSplice</em>.</p>
-<p><strong>Step 4:</strong>  Add the location of the OpenSplice DDS installation
+<p><strong>Step 4:</strong>  Add the location of the Vortex OpenSplice installation
 to <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt>.</p>
 <blockquote>
 <div><p>In the <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt> path field enter (for example)</p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">/home/apps/PrismTech/Vortex_v2/Device/VortexOpenSplice/6.6.0p1/HDE/x86_64.linux</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/apps/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.6.0p1/HDE/x86_64.linux</span></tt></div></blockquote>
 <p>The <em>Browse</em> button can be used to navigate through your file
 system to point to the installation.</p>
 <p>You can also set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> path if this is different from the
@@ -136,17 +136,17 @@ default location.</p>
 <blockquote>
 <div><p>Set the <tt class="docutils literal"><span class="pre">LITE_HOME</span></tt> path field, <em>e.g.</em></p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">/home/apps/PrismTech/Device/VortexLite/2.0.0</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/apps/ADLINK/Device/VortexLite/2.0.0</span></tt></div></blockquote>
 <p>As before, you can set the <tt class="docutils literal"><span class="pre">LITE_URI</span></tt> path to a Vortex Lite
 configuration file if required.</p>
-<p class="centered" id="the-opensplice-preferences">
-<strong><strong>The OpenSplice Preferences</strong></strong></p><a class="reference internal image-reference" href="_images/001_OpenSplicePreferences.png"><img alt="The OpenSplice Preferences" class="align-center" src="_images/001_OpenSplicePreferences.png" style="width: 120mm;" /></a>
+<p class="centered" id="the-vortex-opensplice-preferences">
+<strong><strong>The Vortex OpenSplice Preferences</strong></strong></p><a class="reference internal image-reference" href="_images/001_OpenSplicePreferences.png"><img alt="The Vortex OpenSplice Preferences" class="align-center" src="_images/001_OpenSplicePreferences.png" style="width: 120mm;" /></a>
 <p>The license location can also be specified using the <em>Licensing
-Preferences</em> page, which is below the <em>OpenSplice Preferences</em>
+Preferences</em> page, which is below the <em>Vortex OpenSplice Preferences</em>
 page described above.</p>
 </div></blockquote>
-<p class="centered" id="opensplice-licensing">
-<strong><strong>OpenSplice licensing</strong></strong></p><a class="reference internal image-reference" href="_images/002_OpenSpliceLicensing.png"><img alt="OpenSplice licensing" class="align-center" src="_images/002_OpenSpliceLicensing.png" style="width: 120mm;" /></a>
+<p class="centered" id="vortex-opensplice-licensing">
+<strong><strong>Vortex OpenSplice licensing</strong></strong></p><a class="reference internal image-reference" href="_images/002_OpenSpliceLicensing.png"><img alt="Vortex OpenSplice licensing" class="align-center" src="_images/002_OpenSpliceLicensing.png" style="width: 120mm;" /></a>
 </div>
 <div class="section" id="uninstallation-instructions">
 <h2>3.3. Uninstallation Instructions<a class="headerlink" href="#uninstallation-instructions" title="Permalink to this headline">¶</a></h2>
@@ -167,12 +167,12 @@ OpenSplice Modeler installation.</p>
 <p>On <strong>Unix-based platforms</strong> (including Linux), the default path will
 be:</p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/PrismTech/Vortex_v2/Tools/VortexModeler/&lt;version&gt;/uninstall</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/ADLINK/Vortex_v2/Tools/VortexModeler/&lt;version&gt;/uninstall</span></tt></div></blockquote>
 <p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number.</p>
 <p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
 <p>On <strong>Windows-based platforms</strong>, the default path will be:</p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">\PrismTech\Vortex_v2\Tools\VortexModeler\&lt;version&gt;\uninstall</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">\ADLINK\Vortex_v2\Tools\VortexModeler\&lt;version&gt;\uninstall</span></tt></div></blockquote>
 <p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number.</p>
 </div></blockquote>
 <p><strong>Step 2:</strong>  Run the Vortex OpenSplice Modeler uninstaller.</p>
@@ -235,7 +235,7 @@ without the HDE.</td></tr>
   <ul>
 <li><a class="reference internal" href="#">3. Installation</a><ul>
 <li><a class="reference internal" href="#general-installation-instructions">3.1. General Installation Instructions</a></li>
-<li><a class="reference internal" href="#setting-opensplice-preferences">3.2. Setting OpenSplice Preferences</a></li>
+<li><a class="reference internal" href="#setting-vortex-opensplice-preferences">3.2. Setting Vortex OpenSplice Preferences</a></li>
 <li><a class="reference internal" href="#uninstallation-instructions">3.3. Uninstallation Instructions</a></li>
 </ul>
 </li>
@@ -285,7 +285,7 @@ without the HDE.</td></tr>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

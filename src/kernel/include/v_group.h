@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,10 +42,6 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef c_bool (*v_groupEntryAction)(v_entry e, c_voidp arg);
-typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
-typedef c_bool (*groupInstanceDisposeFunc)(v_groupInstance instance, c_voidp arg);
-typedef c_bool (*dataReaderInstanceDisposeFunc)(v_dataReaderInstance instance, c_voidp arg);
-
 
 /**
  * \brief The <code>v_group</code> cast method.
@@ -85,10 +82,10 @@ typedef c_bool (*dataReaderInstanceDisposeFunc)(v_dataReaderInstance instance, c
         v_data(v_group(_this)->dataDescription)
 
 #define v_groupTopic(_this)\
-        v_topic(v_group(_this)->topic)
+        (v_group(_this)->topic)
 
 #define v_groupPartition(_this)\
-        v_partition(v_group(_this)->partition)
+        (v_group(_this)->partition)
 
 #define v_groupSampleMessage(_this) \
         (v_groupSampleTemplate(_this)->message)
@@ -125,7 +122,7 @@ OS_API void
 v_groupFree (
     v_group _this);
 
-OS_API void
+OS_API c_bool
 v_groupAddEntry (
     v_group _this,
     v_entry e);
@@ -134,11 +131,6 @@ OS_API void
 v_groupRemoveEntry (
     v_group _this,
     v_entry e);
-
-OS_API v_entry
-v_groupLookupEntry (
-    v_group _this,
-    v_reader r);
 
 OS_API c_bool
 v_groupAddStream (
@@ -191,10 +183,10 @@ v_groupWrite (
     v_resendScope *resendScope);
 
 OS_API v_writeResult
-v_groupResend (
-    v_group _this, v_message o,
+v_groupWriteHistoricalData (
+    v_group group,
+    v_message msg,
     v_groupInstance *instancePtr,
-    v_resendScope *resendScope,
     v_networkId writingNetworkId);
 
 OS_API v_writeResult
@@ -205,12 +197,11 @@ v_groupWriteNoStream (
     v_networkId writingNetworkId);
 
 OS_API v_writeResult
-v_groupWriteNoStreamWithEntry (
-    v_group group,
-    v_message msg,
+v_groupResend (
+    v_group _this, v_message o,
     v_groupInstance *instancePtr,
-    v_networkId writingNetworkId,
-    v_entry entry);
+    v_resendScope *resendScope,
+    v_networkId writingNetworkId);
 
 OS_API v_writeResult
 v_groupWriteCheckSampleLost(
@@ -307,14 +298,14 @@ OS_API c_bool
 v_groupNwAttachedGet (
     v_group _this );
 
-OS_API c_bool
+OS_API v_alignState
 v_groupCompleteGet (
-    v_group _this );
+    _In_ v_group _this );
 
-OS_API void
+OS_API v_alignState
 v_groupCompleteSet (
-    v_group _this,
-    c_bool complete);
+    _Inout_ v_group _this,
+    _In_ v_alignState alignState);
 
 OS_API void
 v_groupNotifyAwareness (
@@ -366,19 +357,6 @@ v_groupFlushActionWithCondition(
 OS_API void
 v_groupUpdatePurgeList(
     v_group group);
-
-OS_API v_groupInstance
-v_groupLookupInstance(
-    v_group group,
-    c_value keyValue[]);
-
-OS_API v_groupInstance
-v_groupLookupInstanceAndRegistration(
-    v_group group,
-    c_value keyValue[],
-    v_gid gidTemplate,
-    v_matchIdentityAction predicate,
-    v_registration *registration);
 
 OS_API v_message
 v_groupCreateUntypedInvalidMessage(
@@ -460,6 +438,22 @@ v_groupDisconnectWriter(
     os_timeW timestamp,
     c_bool isLocal,
     c_bool isImplicit);
+
+OS_API const char *
+v_alignStateImage(
+    _In_ v_alignState s);
+
+OS_API void
+v_groupWalkInstances(
+    v_group _this,
+    c_action action,
+    void *actionArg);
+
+OS_API v_writeResult
+v_groupWriteHistoricalToReader (
+    v_group group,
+    v_message msg,
+    v_entry entry);
 
 #undef OS_API
 

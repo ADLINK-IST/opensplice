@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,13 +23,14 @@ package org.opensplice.dds.sub;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.omg.dds.core.AlreadyClosedException;
 import org.omg.dds.core.StatusCondition;
 import org.omg.dds.core.status.Status;
+import org.omg.dds.pub.DataWriter;
 import org.omg.dds.sub.DataReader;
 import org.omg.dds.sub.DataReaderListener;
 import org.omg.dds.sub.DataReaderQos;
@@ -53,7 +55,7 @@ public class SubscriberImpl
         extends
         DomainEntityImpl<DDS.Subscriber, DomainParticipantImpl, DDS.DomainParticipant, SubscriberQos, SubscriberListener, SubscriberListenerImpl>
         implements Subscriber {
-    private final ConcurrentHashMap<DDS.DataReader, AbstractDataReader<?>> readers;
+    private final HashMap<DDS.DataReader, AbstractDataReader<?>> readers;
     private final boolean isBuiltin;
 
     public SubscriberImpl(OsplServiceEnvironment environment,
@@ -89,7 +91,7 @@ public class SubscriberImpl
             Utilities.throwLastErrorException(this.environment);
         }
         this.setOld(old);
-        this.readers = new ConcurrentHashMap<DDS.DataReader, AbstractDataReader<?>>();
+        this.readers = new HashMap<DDS.DataReader, AbstractDataReader<?>>();
         this.isBuiltin = false;
 
         if (this.listener != null) {
@@ -107,7 +109,7 @@ public class SubscriberImpl
         }
         this.listener = null;
         this.setOld(oldSubscriber);
-        this.readers = new ConcurrentHashMap<DDS.DataReader, AbstractDataReader<?>>();
+        this.readers = new HashMap<DDS.DataReader, AbstractDataReader<?>>();
         this.isBuiltin = true;
     }
 
@@ -319,7 +321,9 @@ public class SubscriberImpl
         if (oldBuiltin != null) {
             result = new DataReaderImpl<TYPE>(this.environment, this,
                     (TopicDescriptionExt<TYPE>) td, oldBuiltin);
-            this.readers.put(result.getOld(), result);
+            synchronized (this.readers) {
+                this.readers.put(result.getOld(), result);
+            }
         }
         return result;
     }
@@ -343,11 +347,14 @@ public class SubscriberImpl
 
     @Override
     public void closeContainedEntities() {
-        for (AbstractDataReader<?> reader : this.readers.values()) {
-            try {
-                reader.close();
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
+        synchronized (this.readers) {
+            HashMap<DDS.DataReader, AbstractDataReader<?>> copyReaders = new HashMap<DDS.DataReader, AbstractDataReader<?>>(this.readers);
+            for (AbstractDataReader<?> reader : copyReaders.values()) {
+                try {
+                    reader.close();
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
+                }
             }
         }
     }
@@ -519,7 +526,9 @@ public class SubscriberImpl
         DDS.DataReader old = dataReader.getOld();
         old.delete_contained_entities();
         int rc = this.getOld().delete_datareader(old);
-        this.readers.remove(old);
+        synchronized (this.readers) {
+            this.readers.remove(old);
+        }
         Utilities.checkReturnCode(rc, this.environment,
                 "DataReader.close() failed.");
     }

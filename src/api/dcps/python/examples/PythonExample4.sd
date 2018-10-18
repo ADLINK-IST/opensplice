@@ -1,0 +1,11 @@
+scenario PythonExample4
+
+log("Starting Tester Script...");
+
+repeat OsplTestTopic 1.0 0 (id => 21, index => 221, x => 3.4, y => 4.5, z => 5.6, t => 6.7, state => boost, description => "Hello from Tester!");
+
+wait (15);
+
+log("Finished Tester Scripted.");
+
+end scenario

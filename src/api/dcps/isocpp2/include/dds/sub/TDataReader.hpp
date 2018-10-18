@@ -792,7 +792,14 @@ public:
      * sub.default_datareader_qos(qos) @endlink or, if the call was never made,
      * the @ref anchor_dds_sub_datareader_qos_defaults "default" values.
      *
+     * <i>Implicit Subscriber</i><br>
+     * It is expected to provide a Subscriber when creating a DataReader. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * Subscriber is created with a default QoS and the DomainParticipant from the provided
+     * Topic.
+     *
      * @param sub       the Subscriber that will contain this DataReader
+     *                  (or dds::core::null for an implicit subscriber)
      * @param topic     the Topic associated with this DataReader
      * @throws dds::core::Error
      *                  An internal error has occurred.
@@ -825,6 +832,12 @@ public:
      * dds::sub::DataReader<Foo::Bar> reader(subscriber, topic, readerQos);
      * @endcode
      *
+     * <i>Implicit Subscriber</i><br>
+     * It is expected to provide a Subscriber when creating a DataReader. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * Subscriber is created with a default QoS and the DomainParticipant from the provided
+     * Topic.
+     *
      * <i>Listener</i><br>
      * The following statuses are applicable to the DataReaderListener:
      *  - dds::core::status::StatusMask::requested_deadline_missed()
@@ -841,6 +854,7 @@ public:
      * for more information.
      *
      * @param sub       the Subscriber that will contain this DataReader
+     *                  (or dds::core::null for an implicit subscriber)
      * @param topic     the Topic, ContentFilteredTopic or MultiTopic associated with this DataReader
      * @param qos       the DataReader qos.
      * @param listener  the DataReader listener.
@@ -1402,7 +1416,7 @@ public:
      * // Access the information.
      * std::vector<dds::sub::Sample<Space::Type1> >::iterator iter = samples.begin();
      * for (iter = samples.begin(); iter != samples.end(); ++iter) {
-     *     const dds::sub::Sample<Foo::Bar>& sample = *iter;
+     *     const dds::sub::Sample<Foo::Bar>& sampleDataReader = *iter;
      * }
      * @endcode
      *

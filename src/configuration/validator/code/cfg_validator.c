@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@
 #include "cfg_metaConfigParser.h"
 #include "cfg_validator.h"
 
-#define CONFIG_SYNTAX_FILE_NAME "metaconfig.xml"
+#define CONFIG_SYNTAX_FILE_NAME "ospl_metaconfig.xml"
 #define CONFIG_SYNTAX_FILE_NAME_PREFIX  "splice_metaconfig_"
 #define CONFIG_SYNTAX_FILE_NAME_POSTFIX ".1.xml"
 #define CONFIG_VALIDATION_DISABLED "OSPL_CONFIG_VALIDATION_DISABLED"
@@ -433,8 +434,23 @@ findServiceMappingByCommand(
     cfg_serviceMapping item;
     c_iter list;
     c_iterIter iter;
+    char *ptr, *normalizedCmd;
 
     assert(services);
+
+    /* For matching, the basename of command without suffix is required */
+    normalizedCmd = os_fileNormalize(command);
+    ptr = os_rindex(normalizedCmd, '.');
+    if (ptr) {
+        *ptr = '\0';
+    }
+
+    ptr = os_rindex(normalizedCmd, OS_FILESEPCHAR);
+    if (ptr) {
+        ptr++;
+    } else {
+        ptr = normalizedCmd;
+    }
 
     list = cfg_elementGetChildren(services);
     if (list) {
@@ -442,8 +458,8 @@ findServiceMappingByCommand(
         item = c_iterNext(&iter);
         while (item && !mapping) {
             const char *cmd = cfg_serviceMappingGetCommand(item);
-            if (cmd && command) {
-                if (strcmp(cmd, command) == 0) {
+            if (cmd && ptr) {
+                if (strcmp(cmd, ptr) == 0) {
                     mapping = item;
                 } else {
                     item = c_iterNext(&iter);
@@ -451,6 +467,8 @@ findServiceMappingByCommand(
             }
         }
     }
+
+    os_free(normalizedCmd);
 
     return mapping;
 }
@@ -507,6 +525,62 @@ getBooleanAttributeValue(
     }
 
     return result;
+}
+
+static cfg_serviceMapping
+validateServiceCommand(
+    cf_element configRoot,
+    const char *name,
+    const char *command,
+    cfg_checkContext context)
+{
+    cfg_serviceMapping mapping = NULL;
+    c_iter list;
+    c_iterIter iter;
+    c_bool cont = TRUE;
+    char *fullname;
+
+    cfg_serviceMapping result = NULL;
+
+    assert(configRoot);
+    assert(name);
+    
+    fullname = os_locate(command, OS_ROK | OS_XOK);
+    if (!fullname) {
+        cont = FALSE;
+    }
+    os_free(fullname);    
+
+    list = cfg_elementGetChildren(context->services);
+    if (list) {
+        iter = c_iterIterGet(list);
+        while (cont && (mapping = cfg_serviceMapping(c_iterNext(&iter))) != NULL) {
+            c_iter nodeList = findChildrenByName(configRoot, cfg_nodeGetName(cfg_node(mapping)));
+            cf_node node = c_iterTakeFirst(nodeList);
+            while (node && cont) {
+                if (cf_nodeKind(node) == CF_ELEMENT) {
+                    char *foundName = getAttributeValue(cf_element(node), "name");
+                    if (foundName) {
+                        if (!strcmp(name, foundName)) {
+                            cont = FALSE;
+                            result = mapping;
+                            OS_REPORT_WID(OS_INFO, "configuration validator", 0, context->domainId,
+                                              "Element <Service name=\"%s\"><Command>%s<Command></Service> command '%s' is non-default for service %s but executable, accepting it as valid command",
+                                              name, command, command, foundName);
+                            
+                        }
+                        os_free(foundName);
+                    }
+                }
+                node = c_iterTakeFirst(nodeList);
+            }
+            c_iterFree(nodeList);
+        }
+    }
+    
+
+    return result;
+
 }
 
 
@@ -597,6 +671,9 @@ getListedServices(
                             command = getElementData(cf_element(node));
                             if (command) {
                                 mapping = findServiceMappingByCommand(context->services, command);
+                                if (!mapping) {
+                                    mapping = validateServiceCommand(configRoot, name, command, context);
+                                }
                                 if (mapping) {
                                     entry = serviceEntryNew(mapping, name, enabled);
                                     list = c_iterAppend(list, entry);
@@ -731,8 +808,14 @@ validateConfigurationDisabled(void)
     return disabled;
 }
 
+/* This function returns the absolute path of the meta config file in the development tree.
+ * This alternative location is only applicable for internal use in the development environment.
+ * In normal installed environments the meta config file is located at $OSPL_HOME/etc or
+ * in the current directory in case a user wants to override the meta configuration file.
+ * The development location is $OSPL_HOME/src/tools.cm/config/code
+ */
 static char *
-getSyntaxFilenameAlternative(void)
+alternativeMetaConfigFileName(void)
 {
     const char *osplhome;
     const char *dirs[] = {"src", "tools", "cm", "config", "code"};
@@ -770,9 +853,8 @@ getSyntaxFilenameAlternative(void)
     return filename;
 }
 
-
 static char *
-getSyntaxFilename(void)
+defaultMetaConfigFileName(void)
 {
     const char *osplhome;
     const char *dir = "etc";
@@ -800,7 +882,7 @@ cfg_validateConfiguration(
     cf_element configRoot)
 {
     cfgprs_status status = CFGPRS_OK;
-    C_STRUCT(cfg_checkContext) context = {0};
+    C_STRUCT(cfg_checkContext) context = {NULL, NULL, NULL, OS_FALSE, 0};
     char *syntaxFileName;
     cfg_element syntaxRoot = NULL;
     cfg_element serviceMapping = NULL;
@@ -814,20 +896,45 @@ cfg_validateConfiguration(
         context.domainId = -1;
     }
 
-    syntaxFileName = getSyntaxFilename();
-    if (syntaxFileName) {
-        fp = fopen(syntaxFileName, "r");
-        if (!fp) {
-            char *altFilename = getSyntaxFilenameAlternative();
-            fp = fopen(altFilename, "r");
-            if (!fp) {
-                OS_REPORT_WID(OS_ERROR, "configuration validator", 0, context.domainId,
-                        "Failed to open configuration syntax file: %s", syntaxFileName);
-            }
-            os_free(altFilename);
+    /* First check for a local config file in current directory */
+    syntaxFileName = os_strdup(CONFIG_SYNTAX_FILE_NAME);
+    fp = fopen(syntaxFileName, "r");
+
+    /* If no local config file then use the default OSPL_HOME/etc/ospl_metaconfig.xml config file. */
+    if (!fp) {
+        os_free(syntaxFileName);
+        syntaxFileName = defaultMetaConfigFileName();
+        if (syntaxFileName) {
+            fp = fopen(syntaxFileName, "r");
         }
-    } else {
-        OS_REPORT(OS_ERROR, "configuration validator", 0, "OSPL_HOME is not set");
+        /* If also no default config file then look for alternative.
+         * This alternative location is only applicable for internal use in the development environment.
+         */
+        if (!fp) {
+            char *alternativeFileName;
+            alternativeFileName = alternativeMetaConfigFileName();
+            if (alternativeFileName) {
+                fp = fopen(alternativeFileName, "r");
+                os_free(alternativeFileName);
+            }
+        }
+        if (!fp) {
+            const char *osplhome = os_getenv("OSPL_HOME");
+            if (osplhome) {
+                OS_REPORT_NOW(OS_ERROR, "configuration validator", 0, context.domainId,
+                          "Failed to open meta configuration file \"%s\".\n"
+                          "              The file was not found in the current directory nor\n"
+                          "              at the default location: %s%setc",
+                          CONFIG_SYNTAX_FILE_NAME, osplhome, os_fileSep());
+            } else {
+                OS_REPORT_NOW(OS_ERROR, "configuration validator", 0, context.domainId,
+                          "Failed to open meta configuration file \"%s\".\n"
+                          "              The file was not found in the current directory nor\n"
+                          "              could the file be found at the default location because\n"
+                          "              the environment variable OSPL_HOME was not set",
+                          CONFIG_SYNTAX_FILE_NAME);
+            }
+        }
     }
 
     if (fp) {
@@ -844,7 +951,7 @@ cfg_validateConfiguration(
 
         } else {
             OS_REPORT_WID(OS_ERROR, "configuration validator", 0, context.domainId,
-                      "Failed to parse configuration syntax file: %s", syntaxFileName);
+                          "Meta configuration parse error(s) in file: %s", syntaxFileName);
         }
         cfg_nodeFree(cfg_node(syntaxRoot));
         cfg_nodeFree(cfg_node(serviceMapping));

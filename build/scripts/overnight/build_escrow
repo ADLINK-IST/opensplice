@@ -198,7 +198,7 @@ then
    wget $9
 
    zip -rq $ZIP_DATE.zip Vortex*.zip ospl-3rd-party-software.zip 
-   scp -i ~/.ssh/id_rsa_releases $ZIP_DATE.zip releases@repository2.prismtech.com:~/Vortex/$ZIP_DATE/
+   scp -i ~/.ssh/id_rsa_releases $ZIP_DATE.zip releases@releases.prismtech.com:~/Vortex/$ZIP_DATE/
 else
    echo "Not building final zip "
 fi

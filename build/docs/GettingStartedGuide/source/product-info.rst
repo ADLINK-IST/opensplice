@@ -25,21 +25,21 @@ Services
   node and the rest of the nodes on \`the network'.
 
 + **Tuner Service** (``cmsoap``)
-  Responsible for providing remote SOAP-based access to a deployed 
+  Responsible for providing remote SOAP-based access to a deployed
   DDS system by providing a control-and-monitoring (C&M) API
 
 + **Networking Bridge Service**
-  Responsible for bridging DDS traffic between multiple 
+  Responsible for bridging DDS traffic between multiple
   networks (each with a related Networking Service)
-  
+
 + **Recording and Replay Service**
   Responsible for recording and replaying of real-time DDS
-  data, controlled a topic-based API (as also used by the 
+  data, controlled a topic-based API (as also used by the
   Vortex RnR Manager tool)
-  
+
 + **DBMS Connect Service**
   Responsible for bi-directional bridging between DDS and a
-  relational database (RDBMS) system 
+  relational database (RDBMS) system
 
 Tools
 =====
@@ -48,13 +48,13 @@ Tools
   Generates topic types, type-specific readers and writers.
 
 + **OpenSplice Tuner**
-  Allows local and/or remote 'white-box' inspection and tuning 
+  Allows local and/or remote 'white-box' inspection and tuning
   of a deployed Vortex OpenSplice federation and/or appliciation.
 
 + **OpenSplice Tester**
   Allows for script-based 'black-box' regression-testing
   of locally or remotely deployed Vortex OpenSplice Systems.
-  
+
 + **OpenSplice Configurator**
   Simplifies the process for configuring the services.
 
@@ -79,7 +79,7 @@ Key Features
 + It offers total lifecycle support from prototyping through to remote maintenance.
 
 + Vortex OpenSplice supports both Single Process (library) and Shared Memory (federated)
-  deployment architectures, targeting either ease of use or advanced scalability 
+  deployment architectures, targeting either ease of use or advanced scalability
   and determinism scenarios.
 
 
@@ -123,21 +123,21 @@ this can be found in the *Release Notes*.
 
 These compilers are the officially-supported set, but we have experience
 of customers who will use the delivered libraries with slight variants
-of the compiler. In most cases this works, but PrismTech has provided
+of the compiler. In most cases this works, but ADLINK has provided
 the source code so that customers can rebuild the C++ APIs for their
 compiler of choice.
 
 |caution|
-  **NOTE:** PrismTech only provides support on the officially-supported
+  **NOTE:** ADLINK only provides support on the officially-supported
   platforms due to difficult-to-fix issues with compiler-generated code,
   but some customers will fund us to qualify OpenSplice on their platform.
   If you wish to use a variant of an official platform, then as long as
   the issue can be recreated on the official platform it will be covered
   under an Vortex OpenSplice support contract. If you wish to request support
-  on a specific platform then please contact PrismTech
-  (http://www.prismtech.com/contact-us)
+  on a specific platform then please contact ADLINK
+  (http://ist.adlinktech.com/)
 
-  
+
 ********************
 Interaction patterns
 ********************
@@ -154,13 +154,13 @@ Support for evolutionary data models
 ************************************
 
 Apart from the OMG IDL based data-modeling, Vortex OpenSplice also supports modeling of
-evolutionary types using the popular Google Protocol Buffers (GPB) technology (and the 
+evolutionary types using the popular Google Protocol Buffers (GPB) technology (and the
 related .proto files).
 
 
-  
+
 *********************
-Building your own C++ 
+Building your own C++
 *********************
 
 Building your own ISO C++ API
@@ -220,4 +220,4 @@ about using Vortex OpenSplice on specific platforms.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-   
+

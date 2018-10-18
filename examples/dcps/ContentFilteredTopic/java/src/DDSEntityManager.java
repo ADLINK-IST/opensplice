@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,25 +18,10 @@
  *   limitations under the License.
  *
  */
-/************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
- * LOGICAL_NAME:    DDSEntityManager.java
- * FUNCTION:        OpenSplice example code.
- * MODULE:          Tutorial for the Java programming language.
- * DATE             April 2009.
- ************************************************************************
- * 
- * This file contains the implementation for the 'DDSEntityManager' executable.
- * 
- ***/
 
 import org.opensplice.dds.dcps.TypeSupportImpl;
 
-import DDS.STATUS_MASK_NONE; 
+import DDS.STATUS_MASK_NONE;
 import DDS.DOMAIN_ID_DEFAULT;
 import DDS.ContentFilteredTopic;
 import DDS.DATAREADER_QOS_USE_TOPIC_QOS;
@@ -43,6 +29,7 @@ import DDS.DATAWRITER_QOS_USE_TOPIC_QOS;
 import DDS.DataReader;
 import DDS.DataWriter;
 import DDS.DataWriterQosHolder;
+import DDS.DestinationOrderQosPolicyKind;
 import DDS.DomainParticipant;
 import DDS.DomainParticipantFactory;
 import DDS.PARTICIPANT_QOS_DEFAULT;
@@ -100,6 +87,7 @@ public class DDSEntityManager {
 		participant.get_default_topic_qos(topicQos);
 		topicQos.value.reliability.kind = ReliabilityQosPolicyKind.RELIABLE_RELIABILITY_QOS;
 		topicQos.value.durability.kind = DurabilityQosPolicyKind.TRANSIENT_DURABILITY_QOS;
+		topicQos.value.destination_order.kind = DestinationOrderQosPolicyKind.BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
 		status = participant.set_default_topic_qos(topicQos.value);
 		ErrorHandler.checkStatus(status,
 				"DomainParticipant.set_default_topic_qos");
@@ -149,11 +137,11 @@ public class DDSEntityManager {
 	public void createWriter() {
 		TopicQosHolder topicQos = new TopicQosHolder();
 		topic.get_qos(topicQos);
-		 
+
 		DataWriterQosHolder writerQos = new DataWriterQosHolder();
 		publisher.get_default_datawriter_qos(writerQos);
 		publisher.copy_from_topic_qos(writerQos,topicQos.value);
-		
+
 		writerQos.value.writer_data_lifecycle.autodispose_unregistered_instances = false;
 		writer = publisher.create_datawriter(topic,
 				writerQos.value, null, STATUS_MASK_NONE.value);

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -82,8 +83,6 @@ int OSPL_MAIN (int argc, char *argv[])
          do
          {
             OwnershipDataSample = &msgList->_buffer[j];
-            // When is this supposed to happen?
-            // Needs comment...
             if( infoSeq->_buffer[j].valid_data )
             {
                printf("\n   %s %8.1f    %s        %d", OwnershipDataSample->ticker, OwnershipDataSample->price, OwnershipDataSample->publisher, OwnershipDataSample->strength);

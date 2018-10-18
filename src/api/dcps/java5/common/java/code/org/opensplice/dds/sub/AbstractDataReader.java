@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,10 +24,10 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -69,7 +70,7 @@ public abstract class AbstractDataReader<TYPE>
         implements org.opensplice.dds.sub.DataReader<TYPE> {
 
     protected final TopicDescriptionExt<TYPE> topicDescription;
-    protected final ConcurrentHashMap<DDS.Condition, ReadConditionImpl<TYPE>> conditions;
+    protected final HashMap<DDS.Condition, ReadConditionImpl<TYPE>> conditions;
     protected final HashSet<AbstractIterator<TYPE>> iterators;
     protected final Selector<TYPE> selector;
 
@@ -79,7 +80,7 @@ public abstract class AbstractDataReader<TYPE>
         super(environment, parent, parent.getOld());
 
         this.topicDescription = topicDescription;
-        this.conditions = new ConcurrentHashMap<DDS.Condition, ReadConditionImpl<TYPE>>();
+        this.conditions = new HashMap<DDS.Condition, ReadConditionImpl<TYPE>>();
         this.iterators = new HashSet<AbstractIterator<TYPE>>();
         this.selector = new SelectorImpl<TYPE>(environment, this);
     }
@@ -180,12 +181,15 @@ public abstract class AbstractDataReader<TYPE>
     @SuppressWarnings("unchecked")
     @Override
     public void closeContainedEntities() {
-        for (ReadConditionImpl<TYPE> condition : this.conditions.values()) {
-            /*
-             * Intentionally ignoring potential errors during deletion as
-             * application may concurrently close conditions.
-             */
-            this.getOld().delete_readcondition(condition.getOld());
+        synchronized (this.conditions) {
+            HashMap<DDS.Condition, ReadConditionImpl<TYPE>> copyConditions = new HashMap<DDS.Condition, ReadConditionImpl<TYPE>>(this.conditions);
+            for (ReadConditionImpl<TYPE> condition : copyConditions.values()) {
+                /*
+                 * Intentionally ignoring potential errors during deletion as
+                 * application may concurrently close conditions.
+                 */
+                this.getOld().delete_readcondition(condition.getOld());
+            }
         }
         HashSet<AbstractIterator<TYPE>> clones;
 

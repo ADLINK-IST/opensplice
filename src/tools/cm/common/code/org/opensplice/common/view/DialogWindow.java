@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,7 +19,7 @@
  *
  */
 /**
- * Contains all SPLICE DDS C&M Tooling common view components. 
+ * Contains all SPLICE DDS C&M Tooling common view components.
  */
 package org.opensplice.common.view;
 
@@ -34,20 +35,20 @@ import java.util.*;
 
 /**
  * This class represents a generic dialog window and is meant to provide a fast and
- * simple way of constructing dialog windows. 
- * 
+ * simple way of constructing dialog windows.
+ *
  * The window contains a status bar and
  * 'OK' and 'Cancel' buttons. By providing NameValuePanel objects, the user can
- * fill the dialog window with as many fields as he wishes. 
+ * fill the dialog window with as many fields as he wishes.
  */
-public class DialogWindow extends JFrame {    
+public class DialogWindow extends JFrame {
     /**
      * The constructor of this object. It initializes the window.
-     * 
-     * @param _controller The controller where to sent actions to. 'cancel' 
+     *
+     * @param _controller The controller where to sent actions to. 'cancel'
      * for the Cancel button and _action for the OK button
      * @param _fields Array of name/value pairs that must be showed in the dialog window.
-     * @param _action The action that the controller expects when the user clicks th OK button.
+     * @param _action The action that the controller expects when the user clicks the OK button.
      * @param _title The title of the dialog window that will be shown in the top.
      */
     public DialogWindow(ActionListener _controller, NameValuePanel[] _fields, String _action, String _title) {
@@ -59,7 +60,7 @@ public class DialogWindow extends JFrame {
         fieldNameMapping = new HashMap<String, NameValuePanel>(_fields.length);
         initialize();
     }
-    
+
     DialogWindow(ActionListener _controller, String _action, String _title){
         super();
         controller = _controller;
@@ -69,9 +70,9 @@ public class DialogWindow extends JFrame {
         fieldNameMapping = new HashMap<String, NameValuePanel>();
         initialize();
     }
-    
+
     /**
-     * This method initializes the dialog window. 
+     * This method initializes the dialog window.
      */
     void initialize() {
         this.setSize(1200, 1600);
@@ -87,33 +88,33 @@ public class DialogWindow extends JFrame {
         });
         this.pack();
     }
-    
+
     /**
      * This method initializes the root content pane
-     * 
+     *
      * @return The created or already existing content pane.
      */
     JPanel getJContentPane() {
         if (jContentPane == null) {
             jContentPane = new JPanel();
             java.awt.GridLayout layGridLayout15 = new java.awt.GridLayout();
-            
+
             if(fields != null){
-                layGridLayout15.setRows(fields.length);    
+                layGridLayout15.setRows(fields.length);
             }
-            
+
             layGridLayout15.setColumns(1);
             layGridLayout15.setHgap(0);
             layGridLayout15.setVgap(5);
             JPanel inputPanel = new JPanel();
             inputPanel.setLayout(layGridLayout15);
             jContentPane.setLayout(new java.awt.BorderLayout());
-            
+
             if(fields != null){
                 for(int i=0; i<fields.length; i++){
                     String label = fields[i].getName();
                     JComponent editor = fields[i].getField();
-                     
+
                     if(editor instanceof JTextField){
                         ((JTextField)editor).setActionCommand(action);
                         ((JTextField)editor).addActionListener(controller);
@@ -132,7 +133,7 @@ public class DialogWindow extends JFrame {
                         });
                     }
                     fieldNameMapping.put(label, fields[i]);
-                    inputPanel.add(fields[i], null);  
+                    inputPanel.add(fields[i], null);
                 }
             }
             jContentPane.add(inputPanel, java.awt.BorderLayout.NORTH);
@@ -141,10 +142,10 @@ public class DialogWindow extends JFrame {
         }
         return jContentPane;
     }
-    
+
 	/**
      * This method initializes the status panel
-	 * 
+	 *
 	 * @return The created or already existing status panel.
 	 */
 	StatusPanel getStatusPanel() {
@@ -153,10 +154,10 @@ public class DialogWindow extends JFrame {
 		}
 		return statusPanel;
 	}
-	
+
 	/**
      * This method initializes the buttonPanel that contains the OK and Cancel button.
-	 * 
+	 *
 	 * @return The created or already existing buttonPanel.
 	 */
 	JPanel getButtonPanel() {
@@ -169,10 +170,10 @@ public class DialogWindow extends JFrame {
 		}
 		return buttonPanel;
 	}
-    
+
 	/**
      * This method initializes the cancelButton
-	 * 
+	 *
 	 * @return The created or already existing Cancel button.
 	 */
 	JButton getCancelButton() {
@@ -186,10 +187,10 @@ public class DialogWindow extends JFrame {
 		}
 		return cancelButton;
 	}
-    
+
 	/**
      * This method initializes the OK button.
-	 * 
+	 *
 	 * @return The created or already existing OK button.
 	 */
 	JButton getOkButton() {
@@ -204,10 +205,10 @@ public class DialogWindow extends JFrame {
 		}
 		return okButton;
 	}
-    
+
     /**
      * Sets the status message in the status panel of the dialog window.
-     * 
+     *
      * @param message The message to show in the status panel.
      * @param persistent true if the message should be shown until the next
      * call to this operation, false if it should disappear after a few seconds.
@@ -215,39 +216,39 @@ public class DialogWindow extends JFrame {
     public void setStatus(String message, boolean persistent){
         statusPanel.setStatus(message, persistent);
     }
-    
+
     /**
      * Provides access to all values in the input fields.
-     * 
+     *
      * @return The map of values. The key is the name of the field <fieldName, value>.
      */
     public HashMap<String, Object> getValues() {
         HashMap<String, Object> values = new HashMap<String, Object>();
-        
+
         for(int i=0; i<fields.length; i++){
             values.put(fields[i].getName(), fields[i].getValue());
         }
         return values;
     }
-    
+
     /**
      * Provides access to the value of a field.
-     * 
+     *
      * @param fieldName The fieldName of the field to get the value of.
      * @return The value of the field.
      */
     public Object getValue(String fieldName){
         NameValuePanel nv = fieldNameMapping.get(fieldName);
-        
+
         if(nv == null){
             return "";
         }
         return nv.getValue();
     }
-    
+
     /**
      * Checks if all fields have compatible values in.
-     * 
+     *
      * @return true if all fields have a compatible value, false otherwise.
      */
     public boolean isInputValid(){
@@ -255,74 +256,74 @@ public class DialogWindow extends JFrame {
         Object test = null;
         Collection<NameValuePanel> f = fieldNameMapping.values();
         Iterator<NameValuePanel> fIter = f.iterator();
-        
+
         while(fIter.hasNext()){
             nvp = fIter.next();
             test = nvp.getValue();
             if(test == null || test.equals("")){
                 if(!(nvp.isEmptyInputAllowed())){
                     return false;
-                } 
+                }
             }
         }
         return true;
     }
-    
+
     public NameValuePanel getField(String name){
         return fieldNameMapping.get(name);
     }
-    
+
     public NameValuePanel[] getFields(){
         return fields;
     }
-    
+
     /**
      * The root pane of the dialog window.
      */
     javax.swing.JPanel jContentPane     = null;
-    
+
     /**
      * The status panel.
      */
     StatusPanel statusPanel      = null;
-    
+
     /**
      * The panel where the 'OK' and 'Cancel' buttons are placed on.
      */
     JPanel buttonPanel      = null;
-    
+
     /**
      * The 'Cancel' button.
      */
     JButton cancelButton    = null;
-    
+
     /**
      * The 'OK' button.
      */
     JButton okButton        = null;
-    
+
     /**
      * The controller (mvC), where the action command will be sent to when the
      * user clicks the OK button.
      */
     ActionListener controller           = null;
-    
+
     /**
      * The title of the dialog window.
      */
     String title                        = null;
-    
+
     /**
-     * The action string that must be sent to the controller 
+     * The action string that must be sent to the controller
      * when the 'OK' button is clicked.
      */
     String action                       = null;
-    
+
     /**
      * The name/value pairs that are shown in the window.
      */
-    NameValuePanel[] fields             = null;  
-    
+    NameValuePanel[] fields             = null;
+
     /**
      * Fields in the window <String, NameValuePanel>
      */

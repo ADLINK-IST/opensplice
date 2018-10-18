@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -53,11 +54,12 @@ getFirewall()
     idx = 0;
     if ((pipeRead = popen("/sbin/iptables-save", "r")) == NULL) {
         perror("getFirewall");
+        os_free(dst);
         dst = NULL;
     }
 
     /* Read firewall line by line */
-    while ((fgets(buff, LINESIZE, pipeRead)) && (dst != NULL)) {
+    while ((dst != NULL) && (fgets(buff, LINESIZE, pipeRead))) {
         len = strnlen(buff, LINESIZE);
         buff[len-1] = '\0'; /* remove newline-char */
         dst = os_realloc(dst, (idx+1) * sizeof(char*));
@@ -69,6 +71,7 @@ getFirewall()
         dst = os_realloc(dst, (idx+1) * sizeof(char*));
         dst[idx] = NULL;
     } else {
+        os_free(dst);
         dst = NULL;
     }
 
@@ -131,7 +134,7 @@ newRule(
     int prot,
     os_portState state)
 {
-    char *protStr, *portStr, *hostStr, *actionStr, *prefix;
+    char *protStr, *portStr, *hostStr, *actionStr=NULL, *prefix;
     char *tmp, *mask;
     char *fwRule;
 
@@ -179,6 +182,16 @@ newRule(
     prefix = "-A INPUT ";
     fwRule = os_malloc((strlen(prefix) + strlen(hostStr) + strlen(protStr) + strlen(portStr) + strlen(actionStr) + 1) * sizeof(char));
     sprintf(fwRule, "-A INPUT %s%s%s%s", hostStr, protStr, portStr, actionStr);
+    if(actionStr) {
+        os_free(actionStr);
+    }
+    if (host) {
+        os_free(hostStr);
+        os_free(portStr);
+    }
+    if (prot) {
+        os_free(protStr);
+    }
     return fwRule;
 }
 
@@ -287,15 +300,20 @@ os_setPort(
         }
         if (!done) {
             /* Build a new rule and insert it*/
+            char **old_fw = fw;
+
             fwRule = newRule(&host, prot, state);
             if (fwRule != NULL && (fw = insertRule(fw, fwRule)) != NULL) {
                 setFirewall(fw);
+                os_free(fwRule);
+                os_free(old_fw);
             } else {
                 printf("Failed to insert new rule\n");
                 if(fwRule == NULL) {
                     printf("Rule creation failed\n");
                 } else {
                     printf("Rule insertion failed\n");
+                    os_free(fwRule);
                 }
                 result = os_resultFail;
             }
@@ -314,7 +332,7 @@ os_setPort(
 struct sockaddr_in
 resolveHost(char *hostStr, int port)
 {
-    struct sockaddr_in result;
+    struct sockaddr_in result={0};
     result.sin_family = AF_INET;
     result.sin_port = htons(port);
     if (hostStr != NULL) {

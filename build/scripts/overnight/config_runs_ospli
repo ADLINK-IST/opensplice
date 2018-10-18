@@ -7,38 +7,25 @@ E   ospli/rhel62-64a/x86_64.linux-release-coverity-inner 1 heads/OSPL_V6_4_0p6c1
 ################################ end Coverity Runs ##################################
 
 ################################ First Runs ##################################
-M   ospli/ebmr-p/ppc_e5500-linux-release-inner 1 #First# none
-E   ospli/ebmr-p/ppc_e5500-linux-dev-inner 1 #First# none
 
-M   ospli/ebmr-p/armhf-linux-release-inner 1 #First# none
-E   ospli/ebmr-p/armhf-linux-dev-inner 1 #First# none
-
-M   ospli/ubuntu1004c/cortexa9t_neon.WRlinux5_gcc-release-inner 1 #Third# none
+E   ospli/ubuntu1004c/cortexa9t_neon.WRlinux5_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1004c/cortexa9t_neon.WRlinux5_gcc-dev-inner 1 #First# none
 
-M   ospli/priva0912-linux-dev/armv6l.linux-release-inner 10 #First# none
+E   ospli/priva0912-linux-dev/armv6l.linux-release-inner 10 #First# none
 E   ospli/priva0912-linux-dev/armv6l.linux-dev-inner 10 #First# none
 
-
 E   ospli/winxp2/PPC604.vxworks6.6.win32-dev-inner 1 #First# none
-M   ospli/winxp2/PPC604.vxworks6.6.win32-release-inner 1 #First# none
+E   ospli/winxp2/PPC604.vxworks6.6.win32-release-inner 1 #First# none
 
 E   ospli/ubuntu1004b/mpc8308_glibc_small.WRlinux4u3_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1004b/mpc8308_glibc_small.WRlinux4u3_gcc-dev-inner 1 #First# none
 E   ospli/ubuntu1004b/common_pc_glibc_small.WRlinux4u3_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1004b/common_pc_glibc_small.WRlinux4u3_gcc-dev-inner 1 #First# none
 
-E   ospli/rhel4g/x86.linux-dev 25 #First# none
-E   ospli/rhel4g/x86.linux-release 25 #First# none
-E   ospli/rhel4g/x86.linux-dev-inner 1 #First# none
-E   ospli/rhel4g/x86.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel4g/x86.linux-release-inner 1 #First# none
-E   ospli/rhel4g/x86.linux-release-notest-inner 1 #First# none
-E   ospli/rhel4g/x86.linux-release-examples-inner 1 #First# none
-
 E   ospli/rhel4d/x86.linux-dev 25 #First# none
 E   ospli/rhel4d/x86.linux-release 25 #First# none
-M   ospli/rhel4d/x86.linux-dev-inner 1 #First# none
+E   ospli/rhel4d/x86.linux-dev-inner 1 #First# none
+
 E   ospli/rhel4d/x86.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel4d/x86.linux-release-inner 1 #First# none
 E   ospli/rhel4d/x86.linux-release-notest-inner 1 #First# none
@@ -49,25 +36,13 @@ E   ospli/rhel4e/x86.linux-release 25 #First# none
 E   ospli/rhel4e/x86.linux-debug-notest-noexample-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-dev-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel4e/x86.linux-release-inner 1 #First# none
+E   ospli/rhel4e/x86.linux-release-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-release-notest-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-release-examples-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-release-nodbt-inner 1 #First# none
 E   ospli/rhel4e/x86.linux-release-testsingleprocess-inner 1 #First# none
 
 E   ospli/rhel4/x86.linux-gcov-inner 1 #First# none
-
-E   ospli/winxp12/x86.win32-dev 40 #First# none
-E   ospli/winxp12/x86.win32-release 40 #First# none
-E   ospli/winxp12/x86.win32-dev-inner 1 #First# none
-E   ospli/winxp12/x86.win32-dev-notest-inner 1 #First# none
-M   ospli/winxp12/x86.win32-dev-notao-inner 1 #First# none
-E   ospli/winxp12/x86.win32-dev-notest-notao-inner 1 #First# none
-E   ospli/winxp12/x86.win32-release-inner 1 #First# none
-E   ospli/winxp12/x86.win32-release-notest-inner 1 #First# none
-E   ospli/winxp12/x86.win32-release-nodbt-inner 1 #First# none
-E   ospli/winxp12/x86.vxworks5.5-dev-inner 1 #First# none
-M   ospli/winxp12/x86.vxworks5.5-release-inner 1 #First# none
 
 E   ospli/winxp13/pentium.vxworks6.9.3.1-dev-inner 1 #First# none
 E   ospli/winxp13/pentium.vxworks6.9.3.1-release-inner 1 #First# none
@@ -77,7 +52,7 @@ E   ospli/winxp13/pentium4.vxworks6.8.2-release-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.8.2-dev-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.8.2_km-release-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.8.2_km-dev-inner 1 #First# none
-M   ospli/winxp13/pentium4.vxworks6.8.2_km_smp-release-inner 1 #First# none
+E   ospli/winxp13/pentium4.vxworks6.8.2_km_smp-release-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.8.2_km_smp-dev-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.9.3.1-dev-inner 1 #First# none
 E   ospli/winxp13/pentium4.vxworks6.9.3.1-release-inner 1 #First# none
@@ -110,7 +85,7 @@ E   ospli/winxp13-new/pentium4.vxworks6.8.2_km-release-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.8.2_km-dev-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.8.2_km_smp-release-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.8.2_km_smp-dev-inner 1 #First# none
-M   ospli/winxp13-new/pentium4.vxworks6.8.3_km_smp-release-inner 1 #First# none
+E   ospli/winxp13-new/pentium4.vxworks6.8.3_km_smp-release-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.8.3_km_smp-dev-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.9.3.1-dev-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.9.3.1-release-inner 1 #First# none
@@ -126,16 +101,16 @@ E   ospli/winxp13-new/PPC85XXe500v2.vxworks6.9.3.1_km-release-inner 1 #First# no
 E   ospli/winxp13-new/PPC85XXe500v2.vxworks6.9.3.1_km-dev-inner 1 #First# none
 
 E   ospli/winxp13-new/pentium4.vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/winxp13-new/pentium4.vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/winxp13-new/pentium4.vxworks6.9.4.1-release-inner 1 #First# none
 E   ospli/winxp13-new/pentium4.vxworks6.9.4.1-shlib-dev-inner 1 #First# none
-M   ospli/winxp13-new/pentium4.vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/winxp13-new/pentium4.vxworks6.9.4.1-shlib-release-inner 1 #First# none
 E   ospli/winxp13-new/atom.vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/winxp13-new/atom.vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/winxp13-new/atom.vxworks6.9.4.1-release-inner 1 #First# none
 E   ospli/winxp13-new/atom.vxworks6.9.4.1-shlib-dev-inner 1 #First# none
-M   ospli/winxp13-new/atom.vxworks6.9.4.1-shlib-release-inner 1 #First# none
-M   ospli/winxp13-new/E500v2.vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/winxp13-new/atom.vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/winxp13-new/E500v2.vxworks6.9.4.1-release-inner 1 #First# none
 E   ospli/winxp13-new/E500v2.vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release-inner 1 #First# none
 
 E   ospli/winxp13-new/x86.win32-dev 40 #First# none
 E   ospli/winxp13-new/x86.win32-dev-inner 1 #First# none
@@ -144,18 +119,19 @@ E   ospli/winxp13-new/x86.win32-release 40 #First# none
 E   ospli/winxp13-new/x86.win32-release-inner 1 #First# none
 E   ospli/winxp13-new/x86.win32-release-nodbt-inner 1 #First# none
 E   ospli/winxp13-new/x86.win32-release-notest-inner 1 #First# none
+E   ospli/winxp13-new/x86.win32-release-examples-inner 1 #First# none
 
 E   ospli/sles11/p4-vx6.9.3.1-c2d-dev-inner 1 #First# none
-M   ospli/sles11/p4-vx6.9.3.1-c2d-rel-inner 1 #First# none
+E   ospli/sles11/p4-vx6.9.3.1-c2d-rel-inner 1 #First# none
 E   ospli/sles11/p4-vx6.9.3.1_km-c2d-dev-inner 1 #First# none
-M   ospli/sles11/p4-vx6.9.3.1_km-c2d-rel-inner 1 #First# none
+E   ospli/sles11/p4-vx6.9.3.1_km-c2d-rel-inner 1 #First# none
 
 E   ospli/sles11/p4-vx6.9.4.1-c2d-dev-inner 1 #First# none
-M   ospli/sles11/p4-vx6.9.4.1-c2d-rel-inner 1 #First# none
+E   ospli/sles11/p4-vx6.9.4.1-c2d-rel-inner 1 #First# none
 E   ospli/sles11/p4-vx6.9.4.1-shlib-c2d-dev-inner 1 #First# none
-M   ospli/sles11/p4-vx6.9.4.1-shlib-c2d-rel-inner 1 #First# none
+E   ospli/sles11/p4-vx6.9.4.1-shlib-c2d-rel-inner 1 #First# none
 E   ospli/sles11/p4-vx6.9.4.1_km-c2d-dev-inner 1 #First# none
-M   ospli/sles11/p4-vx6.9.4.1_km-c2d-rel-inner 1 #First# none
+E   ospli/sles11/p4-vx6.9.4.1_km-c2d-rel-inner 1 #First# none
 
 E   ospli/sles11/MIPS32R2sf-vxworks6.8.2-dev-inner 1 #First# none
 E   ospli/sles11/MIPS32R2sf-vxworks6.8.2-release-inner 1 #First# none
@@ -171,7 +147,7 @@ E   ospli/sles11/pentium4-vxworks6.8.2_km-release-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.8.2_km_smp-dev-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.8.2_km_smp-release-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.8.2_km_smp-dev-inner 1 #First# none
-M   ospli/sles11/pentium4-vxworks6.8.3_km_smp-release-inner 1 #First# none
+E   ospli/sles11/pentium4-vxworks6.8.3_km_smp-release-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.8.3_km_smp-dev-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.9.3.1-dev-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.9.3.1-shlib-release-inner 1 #First# none
@@ -187,70 +163,41 @@ E   ospli/sles11/pentium-vxworks6.9.3.1_km-release-inner 1 #First# none
 E   ospli/sles11/E500v2-vxworks6.9.3.1-dev-inner 1 #First# none
 E   ospli/sles11/E500v2-vxworks6.9.3.1-release-inner 1 #First# none
 E   ospli/sles11/E500v2-vxworks6.9.3.1-shlib-dev-inner 1 #First# none
-M   ospli/sles11/E500v2-vxworks6.9.3.1-shlib-release-inner 1 #Third# none
+E   ospli/sles11/E500v2-vxworks6.9.3.1-shlib-release-inner 1 #First# none
 E   ospli/sles11/PPC85XXe500v2-vxworks6.9.3.1_km-dev-inner 1 #First# none
 E   ospli/sles11/PPC85XXe500v2-vxworks6.9.3.1_km-release-inner 1 #First# none
 
 E   ospli/sles11/pentium4-vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/sles11/pentium4-vxworks6.9.4.1-release-inner 1 #First# none
-M   ospli/sles11/pentium4-vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/sles11/pentium4-vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/sles11/pentium4-vxworks6.9.4.1-shlib-release-inner 1 #First# none
 E   ospli/sles11/pentium4-vxworks6.9.4.1-shlib-dev-inner 1 #First# none
 E   ospli/sles11/atom-vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/sles11/atom-vxworks6.9.4.1-release-inner 1 #First# none
-M   ospli/sles11/atom-vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/sles11/atom-vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/sles11/atom-vxworks6.9.4.1-shlib-release-inner 1 #First# none
 E   ospli/sles11/atom-vxworks6.9.4.1-shlib-dev-inner 1 #First# none
 E   ospli/sles11/E500v2-vxworks6.9.4.1-dev-inner 1 #First# none
-M   ospli/sles11/E500v2-vxworks6.9.4.1-release-inner 1 #First# none
-M   ospli/sles11/E500v2-vxworks6.9.4.1-shlib-release-inner 1 #First# none
+E   ospli/sles11/E500v2-vxworks6.9.4.1-release-inner 1 #First# none
+E   ospli/sles11/E500v2-vxworks6.9.4.1-shlib-release-inner 1 #First# none
 
 E   ospli/ssso10/PPC604.vxworks5.5-dev-inner 1 #First# none
 E   ospli/ssso10/PPCE500.vxworks5.5-dev-inner 1 #First# none
-M   ospli/ssso10/PPC604.vxworks5.5-release-inner 1 #First# none
+E   ospli/ssso10/PPC604.vxworks5.5-release-inner 1 #First# none
 E   ospli/ssso10/PPCE500.vxworks5.5-release-inner 1 #First# none
-
-E   ospli/DDS1-WIN2K3/armv4i.wince6-dev-inner 1 #First# none
-M   ospli/DDS1-WIN2K3/armv4i.wince6-release-inner 1 #First# none
-MT  ospli/DDS1-WIN2K3/armv4i.wince6-release-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/armv4i.wince6-debug-inner 1 #First# none
-
-E   ospli/DDS1-WIN2K3/x86.win32-dev 40 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-release 40 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-dev-notest-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 #First# none
-M   ospli/DDS1-WIN2K3/x86.win32-release-notest-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-release-examples-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-release-nodbt-inner 1 #First# none
-E   ospli/DDS1-WIN2K3/x86.win32-release-netsrc-inner 1 #First# none
-
-E   ospli/dds2-win2k3/x86.win32-dev 40 #First# none
-E   ospli/dds2-win2k3/x86.win32-release 40 #First# none
-E   ospli/dds2-win2k3/x86.win32-dev-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-release-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-release-nolic-inner 1 #First# none
-M   ospli/dds2-win2k3/x86.win32-release-notest-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-release-notest-nolic-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-release-nodbt-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-release-netsrc-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-debug-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-debug-notest-inner 1 #First# none
-E   ospli/dds2-win2k3/x86.win32-debug-notest-notao-inner 1 #First# none
 
 E   ospli/dds3-win2k3/x86.win32-dev 40 #First# none
 E   ospli/dds3-win2k3/x86.win32-release 40 #First# none
 E   ospli/dds3-win2k3/x86.win32-dev-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-dev-notest-inner 1 #First# none
-M   ospli/dds3-win2k3/x86.win32-release-inner 1 #First# none
+E   ospli/dds3-win2k3/x86.win32-release-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-release-netsrc-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-release-nolic-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-release-notest-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-release-notest-nolic-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-release-nodbt-inner 1 #First# none
+E   ospli/dds3-win2k3/x86.win32-release-examples-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-dev-notestbuild-inner 40 #First# none
 E   ospli/dds3-win2k3/x86.win32-debug-inner 1 #First# none
 E   ospli/dds3-win2k3/x86.win32-debug-notest-inner 1 #First# none
-
-E   ospli/blade1/x86_64.linux_opencc-release-inner 1 #First# none
 
 E   ospli/rhel5a/x86.linux-dev 30 #First# none
 E   ospli/rhel5a/x86.linux-release 30 #First# none
@@ -261,7 +208,7 @@ E   ospli/rhel5a/x86.linux-memcheck-notest-inner 1 #First# none
 E   ospli/rhel5a/x86.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel5a/x86.linux-release-notest-inner 1 #First# none
 E   ospli/rhel5a/x86.linux-release-examples-inner 1 #First# none
-M   ospli/rhel5a/x86.linux-release-inner 1 #First# none
+E   ospli/rhel5a/x86.linux-release-inner 1 #First# none
 E   ospli/rhel5a/mpc8313e.linux-dev-inner 1 #First# none
 E   ospli/rhel5a/mpc8313e.linux-release-inner 1 #First# none
 
@@ -285,20 +232,20 @@ E   ospli/rhel53a/mpc8313e.linux-release-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos4.2-dev-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos4.2-release-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos4.2_perc-dev-inner 1 #First# none
-M   ospli/rhel53a/x86.elinos4.2_perc-release-inner 1 #First# none
-M   ospli/rhel53a/x86.elinos5.1_rhel5.3-release-inner 1 #First# none
+E   ospli/rhel53a/x86.elinos4.2_perc-release-inner 1 #First# none
+E   ospli/rhel53a/x86.elinos5.1_rhel5.3-release-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos5.1_rhel5.3-dev-inner 1 #First# none
-M   ospli/rhel53a/x86.elinos5.2_rhel5.3-release-inner 1 #First# none
+E   ospli/rhel53a/x86.elinos5.2_rhel5.3-release-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos5.2_rhel5.3-dev-inner 1 #First# none
 E   ospli/rhel53a/x86.elinos5.2_perc-release-inner 1 #First# none
 E   ospli/rhel53a/E500mc.linux-dev-inner 1 #First# none
-M   ospli/rhel53a/E500mc.linux-release-inner 1 #First# none
+E   ospli/rhel53a/E500mc.linux-release-inner 1 #First# none
 E   ospli/rhel53a/E500mc.linux-debug-inner 1 #First# none
 
 E   ospli/rhel53a/arm.elinos5.2_rhel5.3-dev-normi-inner 1 #First# none
 E   ospli/rhel53a/arm.elinos5.2_rhel5.3-release-normi-inner 1 #First# none
 E   ospli/rhel53a/arm.elinos5.2_rhel5.3-dev-thales-inner 1 #First# none
-M   ospli/rhel53a/arm.elinos5.2_rhel5.3-release-thales-inner 1 #Third# none
+E   ospli/rhel53a/arm.elinos5.2_rhel5.3-release-thales-inner 1 #First# none
 
 E   ospli/rhel54b/x86.linux-release-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-release-netsrc-inner 1 #First# none
@@ -312,23 +259,11 @@ E   ospli/rhel54b/x86.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-debug-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-debug-notest-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-debug-notest-noexample-inner 1 #First# none
-M   ospli/rhel54b/x86.linux-gcov-inner 1 #First# none
+E   ospli/rhel54b/x86.linux-gcov-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-release-TAO161-inner 1 #First# none
-M   ospli/rhel54b/x86.linux-release-notest-TAO161-inner 1 #First# none
+E   ospli/rhel54b/x86.linux-release-notest-TAO161-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-debug-TAO161-inner 1 #First# none
 E   ospli/rhel54b/x86.linux-debug-notest-TAO161-inner 1 #First# none
-
-E   ospli/rhel53-64/x86_64.linux-dev 35 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-release 35 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-dev-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-dev-notest-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-release-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-release-nodbt-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-release-notest-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-debug-inner 1 #Broken# none
-E   ospli/rhel53-64/x86_64.linux-debug-notest-inner 1 #Broken# none
-E   ospli/rhel53-64/arm.elinos5.2_rhel5.3-dev-inner 1 #Broken# none
-E   ospli/rhel53-64/arm.elinos5.2_rhel5.3-release-inner 1 #Broken# none
 
 E   ospli/rhel54-64b/x86_64.linux-dev 25 #First# none
 E   ospli/rhel54-64b/x86_64.linux-release 25 #First# none
@@ -339,7 +274,7 @@ E   ospli/rhel54-64b/x86_64.linux-release-notest-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-release-examples-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-release-nolic-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-release-notest-nolic-inner 1 #First# none
-M   ospli/rhel54-64b/x86_64.linux-release-notest-TAO161-inner 1 #First# none
+E   ospli/rhel54-64b/x86_64.linux-release-notest-TAO161-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-debug-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-debug-notest-inner 1 #First# none
 E   ospli/rhel54-64b/x86_64.linux-debug-nolic-inner 1 #First# none
@@ -351,17 +286,18 @@ E   ospli/rhel54-64c/x86_64.linux-dev 25 #First# none
 E   ospli/rhel54-64c/x86_64.linux-release 25 #First# none
 E   ospli/rhel54-64c/x86_64.linux-dev-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel54-64c/x86_64.linux-release-inner 1 #First# none
+E   ospli/rhel54-64c/x86_64.linux-release-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-release-notest-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-release-examples-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-debug-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-debug-notest-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-release-notest-TAO161-inner 1 #First# none
 E   ospli/rhel54-64c/x86_64.linux-debug-notest-TAO161-inner 1 #First# none
+
 E   ospli/rhel72-64a/x86_64.elinos6.0-dev-inner 1 #First# none
 E   ospli/rhel72-64a/x86_64.elinos6.0-release-inner 1 #First# none
 E   ospli/rhel72-64a/x86_64.elinos6.1-dev-inner 1 #First# none
-M   ospli/rhel72-64a/x86_64.elinos6.1-release-inner 1 #First# none
+E   ospli/rhel72-64a/x86_64.elinos6.1-release-inner 1 #First# none
 
 E   ospli/v240a/studio12-dev 60 #First# none
 E   ospli/v240a/studio12-release 60 #First# none
@@ -369,7 +305,7 @@ E   ospli/v240a/studio12-dev-notest-inner 1 #First# none
 E   ospli/v240a/studio12-dev-inner 1 #First# none
 E   ospli/v240a/studio12-debug-notao-inner 1 #First# none
 E   ospli/v240a/studio12-release 60 #First# none
-M   ospli/v240a/studio12-release-inner 1 #First# none
+E   ospli/v240a/studio12-release-inner 1 #First# none
 E   ospli/v240a/studio12-release-notest-inner 1 #First# none
 E   ospli/v240a/studio12-release-examples-inner 1 #First# none
 E   ospli/v240a/studio12-release-nodbt-inner 1 #First# none
@@ -390,7 +326,7 @@ E   ospli/ultra4/studio12-release-inner 1 #First# none
 E   ospli/ultra4/studio12-release-notest-inner 1 #First# none
 E   ospli/ultra4/studio12_64-release 60 #First# none
 E   ospli/ultra4/studio12_64-release-inner 60 #First# none
-M   ospli/ultra4/gcc-release-inner 1 #First# none
+E   ospli/ultra4/gcc-release-inner 1 #First# none
 E   ospli/ultra4/gcc-release-notest-inner 1 #First# none
 E   ospli/ultra4/gcc-dev-inner 1 #First# none
 
@@ -398,7 +334,7 @@ E   ospli/win7a/x86.win32-dev 30 #First# none
 E   ospli/win7a/x86.win32-release 30 #First# none
 E   ospli/win7a/x86.win32-dev-inner 1 #First# none
 E   ospli/win7a/x86.win32-dev-notest-inner 1 #First# none
-M   ospli/win7a/x86.win32-release-inner 1 #First# none
+E   ospli/win7a/x86.win32-release-inner 1 #First# none
 E   ospli/win7a/x86.win32-release-notest-inner 1 #First# none
 E   ospli/win7a/x86.win32-release-examples-inner 1 #First# none
 E   ospli/win7a/x86.win32-release-nodbt-inner 1 #First# none
@@ -416,14 +352,22 @@ E   ospli/win7c/x86.win32-dev-vs12-notest-normi-inner 1 #First# none
 E   ospli/win7c/x86.win32-release-vs12-normi-inner 1 #First# none
 E   ospli/win7c/x86.win32-release-vs12-notest-normi-inner 1 #First# none
 
-M   ospli/winx/x86.win32-dev-vs12-inner 30 #Third# none
-E   ospli/winx/x86.win32-release-vs12-notest-inner 30 #First# none
+E   ospli/win7g/x86.win32-release-vs12-notest-inner 1 #First# none
+E   ospli/win7g/x86.win32-release-vs12-nodbt-inner 1 #First# none
+E   ospli/win7g/x86.win32-release-vs12-inner 1 #First# none
+E   ospli/win7g/x86.win32-dev-vs12-inner 1 #First# none
+E   ospli/win7g/x86.win32-dev-vs12-notest-inner 1 #First# none
+E   ospli/win7g/x86.win32-dev-vs12-normi-inner 1 #First# none
+E   ospli/win7g/x86.win32-dev-vs12-notest-normi-inner 1 #First# none
+E   ospli/win7g/x86.win32-release-vs12-notest-normi-inner 1 #First# none
+E   ospli/win7g/x86.win32-release-vs12-normi-inner 1 #First# none
+E   ospli/win7g/x86.win32-release-vs12-nolic-inner 1 #First# none
 
 E   ospli/win7b/x86.win32-dev-vs11 30 #First# none
 E   ospli/win7b/x86.win32-release-vs11 30 #First# none
 E   ospli/win7b/x86.win32-dev-vs11-inner 1 #First# none
 E   ospli/win7b/x86.win32-dev-vs11-notest-inner 1 #First# none
-M   ospli/win7b/x86.win32-release-vs11-inner 1 #First# none
+E   ospli/win7b/x86.win32-release-vs11-inner 1 #First# none
 E   ospli/win7b/x86.win32-release-vs11-notest-inner 1 #First# none
 E   ospli/win7b/x86.win32-release-vs11-nodbt-inner 1 #First# none
 E   ospli/win7b/x86.win32-dev-vs11-normi-inner 1 #First# none
@@ -439,7 +383,7 @@ E   ospli/win7-32-ospl-1/x86.win32-release-vs10-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-nodbt-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-nolic-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-notao-inner 1 #First# none
-M   ospli/win7-32-ospl-1/x86.win32-release-vs10-notest-inner 1 #First# none
+E   ospli/win7-32-ospl-1/x86.win32-release-vs10-notest-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-notest-notao-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-netsrc-inner 1 #First# none
 E   ospli/win7-32-ospl-1/x86.win32-release-vs10-examples-inner 1 #First# none
@@ -454,7 +398,7 @@ E   ospli/win7-32-ospl-2/x86.win32-release-vs10-nolic-inner 1 #First# none
 E   ospli/win7-32-ospl-2/x86.win32-release-vs10-notao-inner 1 #First# none
 E   ospli/win7-32-ospl-2/x86.win32-release-vs10-notest-inner 1 #First# none
 E   ospli/win7-32-ospl-2/x86.win32-release-vs10-notest-notao-inner 1 #First# none
-M   ospli/win7-32-ospl-2/x86.win32-release-vs10-netsrc-inner 1 #First# none
+E   ospli/win7-32-ospl-2/x86.win32-release-vs10-netsrc-inner 1 #First# none
 
 E   ospli/win7-32-ospl-3/x86.win32-dev-vs10-inner 1 #First# none
 E   ospli/win7-32-ospl-3/x86.win32-dev-vs10-notao-inner 1 #First# none
@@ -473,7 +417,7 @@ E   ospli/win7-32-ospl-4/x86.win32-dev-vs10-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-dev-vs10-notao-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-dev-vs10-notest-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-dev-vs10-notest-notao-inner 1 #First# none
-M   ospli/win7-32-ospl-4/x86.win32-release-vs10-inner 1 #First# none
+E   ospli/win7-32-ospl-4/x86.win32-release-vs10-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-release-vs10-nodbt-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-release-vs10-nolic-inner 1 #First# none
 E   ospli/win7-32-ospl-4/x86.win32-release-vs10-notao-inner 1 #First# none
@@ -487,7 +431,7 @@ E   ospli/win7a-64/x86_64.win64-dev-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-dev-notest-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-dev-nocpp-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-dev-nojava-inner 1 #First# none
-M   ospli/win7a-64/x86_64.win64-release-inner 1 #First# none
+E   ospli/win7a-64/x86_64.win64-release-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-release-notao-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-release-notest-notao-inner 1 #First# none
 E   ospli/win7a-64/x86_64.win64-release-notest-inner 1 #First# none
@@ -537,7 +481,7 @@ E   ospli/win7-64-ospl-1/x86_64.win64-dev-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-dev-notest-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-dev-nocpp-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-dev-nojava-inner 1 #First# none
-M   ospli/win7-64-ospl-1/x86_64.win64-release-inner 1 #First# none
+E   ospli/win7-64-ospl-1/x86_64.win64-release-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-release-notao-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-release-notest-notao-inner 1 #First# none
 E   ospli/win7-64-ospl-1/x86_64.win64-release-notest-inner 1 #First# none
@@ -554,7 +498,7 @@ E   ospli/win7-64-ospl-2/x86_64.win64-dev-nojava-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-notao-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-notest-notao-inner 1 #First# none
-M   ospli/win7-64-ospl-2/x86_64.win64-release-notest-inner 1 #First# none
+E   ospli/win7-64-ospl-2/x86_64.win64-release-notest-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-notest-noexamples-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-nodbt-inner 1 #First# none
 E   ospli/win7-64-ospl-2/x86_64.win64-release-nolic-inner 1 #First# none
@@ -562,7 +506,7 @@ E   ospli/win7-64-ospl-2/x86_64.win64-release-examples-inner 1 #First# none
 
 E   ospli/win7-64-ospl-3/x86_64.win64-dev 30 #First# none
 E   ospli/win7-64-ospl-3/x86_64.win64-release 30 #First# none
-M   ospli/win7-64-ospl-3/x86_64.win64-dev-inner 1 #First# none
+E   ospli/win7-64-ospl-3/x86_64.win64-dev-inner 1 #First# none
 E   ospli/win7-64-ospl-3/x86_64.win64-dev-notest-inner 1 #First# none
 E   ospli/win7-64-ospl-3/x86_64.win64-dev-nocpp-inner 1 #First# none
 E   ospli/win7-64-ospl-3/x86_64.win64-dev-nojava-inner 1 #First# none
@@ -580,7 +524,7 @@ E   ospli/win7-64-ospl-4/x86_64.win64-dev-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-dev-notest-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-dev-nocpp-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-dev-nojava-inner 1 #First# none
-M   ospli/win7-64-ospl-4/x86_64.win64-release-inner 1 #Third# none
+E   ospli/win7-64-ospl-4/x86_64.win64-release-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-release-notao-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-release-notest-notao-inner 1 #First# none
 E   ospli/win7-64-ospl-4/x86_64.win64-release-notest-inner 1 #First# none
@@ -592,7 +536,7 @@ E   ospli/win7e/x86_64.win64-dev-vs12 30 #First# none
 E   ospli/win7e/x86_64.win64-release-vs12 30 #First# none
 E   ospli/win7e/x86_64.win64-dev-vs12-inner 1 #First# none
 E   ospli/win7e/x86_64.win64-dev-vs12-notest-inner 1 #First# none
-M   ospli/win7e/x86_64.win64-release-vs12-inner 1 #First# none
+E   ospli/win7e/x86_64.win64-release-vs12-inner 1 #First# none
 E   ospli/win7e/x86_64.win64-release-vs12-notest-inner 1 #First# none
 E   ospli/win7e/x86_64.win64-release-vs12-nolic-inner 1 #First# none
 E   ospli/win7e/x86_64.win64-release-vs12-nodbt-inner 1 #First# none
@@ -617,17 +561,29 @@ E   ospli/win7f/x86_64.win64-dev-vs14-normi-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-dev-vs14-notest-normi-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-release-vs14-normi-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-release-vs14-notest-normi-inner 1 #First# none
-M   ospli/win7f/x86_64.win64-dev-vs14-nocpp-inner 1 #First# none
+E   ospli/win7f/x86_64.win64-dev-vs14-nocpp-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-dev-vs14-nojava-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-debug-vs14-inner 1 #First# none
 E   ospli/win7f/x86_64.win64-debug-vs14-notest-inner 1 #First# none
 
+E   ospli/win7h/x86_64.win64-dev-vs12 30 #First# none
+E   ospli/win7h/x86_64.win64-release-vs12 30 #First# none
+E   ospli/win7h/x86_64.win64-dev-vs12-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-dev-vs12-notest-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-release-vs12-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-release-vs12-notest-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-release-vs12-nolic-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-release-vs12-nodbt-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-dev-vs12-nocpp-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-dev-vs12-nojava-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-debug-vs12-inner 1 #First# none
+E   ospli/win7h/x86_64.win64-debug-vs12-notest-inner 1 #First# none
 
 E   ospli/win7d/x86_64.win64-dev-vs11 30 #First# none
 E   ospli/win7d/x86_64.win64-release-vs11 30 #First# none
 E   ospli/win7d/x86_64.win64-dev-vs11-inner 1 #First# none
 E   ospli/win7d/x86_64.win64-dev-vs11-notest-inner 1 #First# none
-M   ospli/win7d/x86_64.win64-release-vs11-inner 1 #First# none
+E   ospli/win7d/x86_64.win64-release-vs11-inner 1 #First# none
 E   ospli/win7d/x86_64.win64-release-vs11-notest-inner 1 #First# none
 E   ospli/win7d/x86_64.win64-release-vs11-nodbt-inner 1 #First# none
 E   ospli/win7d/x86_64.win64-dev-vs11-normi-inner 1 #First# none
@@ -657,6 +613,14 @@ E   ospli/win7-64e/mvme5100_750.int5010.win32-release-inner 1 #First# none
 E   ospli/win7-64e/mvme5100_750.int5010.win32-rtec-inner 1 #First# none
 
 E   ospli/win7-64d/arm.qnx6.5-release-inner 1 #First# none
+
+E   ospli/win10-32-ospl-1/x86.win32-dev-vs14-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-dev-vs14-notest-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-release-vs14-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-release-vs14-examples-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-release-vs14-nodbt-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-release-vs14-nolic-inner 1 #First# none
+E   ospli/win10-32-ospl-1/x86.win32-release-vs14-notest-inner 1 #First# none
 
 E   ospli/win10-64-vor-a/x86_64.win64-dev-vs14 30 #First# none
 E   ospli/win10-64-vor-a/x86_64.win64-release-vs14 30 #First# none
@@ -692,6 +656,43 @@ E   ospli/win10-64-vor-b/x86_64.win64-dev-vs14-nojava-inner 1 #First# none
 E   ospli/win10-64-vor-b/x86_64.win64-debug-vs14-inner 1 #First# none
 E   ospli/win10-64-vor-b/x86_64.win64-debug-vs14-notest-inner 1 #First# none
 
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14 30 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14 30 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-nodbt-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-normi-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-notest-normi-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-normi-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-release-vs14-notest-normi-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-nocpp-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-dev-vs14-nojava-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-debug-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-c/x86_64.win64-debug-vs14-notest-inner 1 #First# none
+
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14 30 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14 30 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-notest-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-nodbt-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-normi-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-notest-normi-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-normi-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-release-vs14-notest-normi-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-nocpp-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-dev-vs14-nojava-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-debug-vs14-inner 1 #First# none
+E   ospli/win10-64-vor-d/x86_64.win64-debug-vs14-notest-inner 1 #First# none
+
+E   ospli/win10-64-ospl-7/x86_64.win64-dev-vs17 30 #First# none
+E   ospli/win10-64-ospl-7/x86_64.win64-release-vs17 30 #First# none
+
 E   ospli/winxp17/x86.win32-dev-vs9 30 #First# none
 E   ospli/winxp17/x86.win32-release-vs9 30 #First# none
 E   ospli/winxp17/x86.win32-dev-vs9-inner 1 #First# none
@@ -699,14 +700,6 @@ E   ospli/winxp17/x86.win32-dev-vs9-notest-inner 1 #First# none
 E   ospli/winxp17/x86.win32-release-vs9-inner 1 #First# none
 E   ospli/winxp17/x86.win32-release-vs9-notest-inner 1 #First# none
 E   ospli/winxp17/x86.win32-release-vs9-nodbt-inner 1 #First# none
-
-E   ospli/win2008-64a/x86.win32-dev 30 #First# none
-E   ospli/win2008-64a/x86.win32-release 30 #First# none
-E   ospli/win2008-64a/x86.win32-dev-inner 1 #First# none
-E   ospli/win2008-64a/x86.win32-dev-notest-inner 1 #First# none
-E   ospli/win2008-64a/x86.win32-release-inner 1 #First# none
-E   ospli/win2008-64a/x86.win32-release-notest-inner 1 #First# none
-E   ospli/win2008-64a/x86.win32-release-nodbt-inner 1 #First# none
 
 E   ospli/win2008-64a/x86_64.win64-debug-notest-notao-inner 1 #First# none
 E   ospli/win2008-64a/x86_64.win64-dev 30 #First# none
@@ -717,23 +710,12 @@ E   ospli/win2008-64a/x86_64.win64-dev-nocpp-inner 1 #First# none
 E   ospli/win2008-64a/x86_64.win64-release-inner 1 #First# none
 E   ospli/win2008-64a/x86_64.win64-release-notest-inner 1 #First# none
 E   ospli/win2008-64a/x86_64.win64-release-nodbt-inner 1 #First# none
-M   ospli/win2008-64a/x86_64.win64-release-notao-inner 1 #First# none
+E   ospli/win2008-64a/x86_64.win64-release-notao-inner 1 #First# none
 
 E   ospli/win2008-64a/armv4i.wince7-dev-inner 1 #First# none
 E   ospli/win2008-64a/armv4i.wince7-release-inner 1 #First# none
 
-E   ospli/rhel60-64a/x86.linux-dev-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-dev-notest-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-release-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-release-notest-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-release-notao-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-debug-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-debug-notest-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-debug-notao-inner 1 #First# none
-E   ospli/rhel60-64a/x86.linux-debug-notest-notao-inner 1 #First# none
-E   ospli/rhel60-64a/x86_64.linux-dev-inner 1 #First# none
-
-M   ospli/rhel60-64a/x86_64.linux-memcheck-inner 1 #First# none
+E   ospli/rhel60-64a/x86_64.linux-memcheck-inner 1 #First# none
 E   ospli/rhel60-64a/x86_64.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel60-64a/x86_64.linux-release-inner 1 #First# none
 E   ospli/rhel60-64a/x86_64.linux-release-notest-inner 1 #First# none
@@ -746,7 +728,7 @@ E   ospli/rhel60-64a/x86_64.linux-debug-notest-notao-inner 1 #First# none
 
 E   ospli/rhel62-64a/x86_64.linux-dev 25 #First# none
 E   ospli/rhel62-64a/x86_64.linux-release 25 #First# none
-M   ospli/rhel62-64a/x86_64.linux-dev-inner 1 #Third# none
+E   ospli/rhel62-64a/x86_64.linux-dev-inner 1 #First# none
 E   ospli/rhel62-64a/x86_64.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel62-64a/x86_64.linux-release-inner 1 #First# none
 E   ospli/rhel62-64a/x86_64.linux-release-notest-inner 1 #First# none
@@ -769,7 +751,7 @@ E   ospli/rhel62-64b/x86_64.linux-dev 25 #First# none
 E   ospli/rhel62-64b/x86_64.linux-release 25 #First# none
 E   ospli/rhel62-64b/x86_64.linux-dev-inner 1 #First# none
 E   ospli/rhel62-64b/x86_64.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel62-64b/x86_64.linux-release-inner 1 #First# none
+E   ospli/rhel62-64b/x86_64.linux-release-inner 1 #First# none
 E   ospli/rhel62-64b/x86_64.linux-release-osplo-src-inner 1 #First# none
 E   ospli/rhel62-64b/x86_64.linux-release-notest-inner 1 #First# none
 E   ospli/rhel62-64b/x86_64.linux-release-examples-inner 1 #First# none
@@ -797,7 +779,7 @@ E   ospli/rhel62-64c/x86_64.linux-debug-notest-inner 1 #First# none
 E   ospli/rhel62-64c/x86_64.linux-debug-notao-inner 1 #First# none
 E   ospli/rhel62-64c/x86_64.linux-debug-notest-notao-inner 1 #First# none
 E   ospli/rhel62-64c/x86_64.linux-release-TAO161-inner 1 #First# none
-M   ospli/rhel62-64c/x86_64.linux-debug-TAO161-inner 1 #First# none
+E   ospli/rhel62-64c/x86_64.linux-debug-TAO161-inner 1 #First# none
 E   ospli/rhel62-64c/x86_64.linux-debug-notest-TAO161-inner 1 #First# none
 
 
@@ -805,26 +787,27 @@ E   ospli/rhel64-64b/armv7a_vfp_neon.linux-release-inner 1 #First# none
 E   ospli/rhel64-64b/armv7a_vfp_neon.linux-dev-inner 1 #First# none
 E   ospli/rhel64-64b/E500mc.linux-release-inner 1 #First# none
 E   ospli/rhel64-64b/E500mc.linux-dev-inner 1 #First# none
-M   ospli/rhel64-64d/E500mc.linux-release-inner 1 #First# none
+E   ospli/rhel64-64d/E500mc.linux-release-inner 1 #First# none
+E   ospli/rhel64-64d/E500mc.linux-dev-inner 1 #First# none
+E   ospli/rhel64-64d/E500mc.linux-debug-inner 1 #First# none
+
+E   ospli/rhel64-64d/E500mc.linux-release-inner 1 #First# none
 E   ospli/rhel64-64d/E500mc.linux-dev-inner 1 #First# none
 
-M   ospli/rhel64-64d/E500mc.linux-release-inner 1 #First# none
-E   ospli/rhel64-64d/E500mc.linux-dev-inner 1 #First# none
-
-M   ospli/rhel64-64d/armv7a_vfp_neon.linux-release-inner 1 #First# none
+E   ospli/rhel64-64d/armv7a_vfp_neon.linux-release-inner 1 #First# none
 E   ospli/rhel64-64d/armv7a_vfp_neon.linux-dev-inner 1 #First# none
-M   ospli/rhel64-64d/armv7a_vfp_neon.linux-debug-inner 1 #First# none
+E   ospli/rhel64-64d/armv7a_vfp_neon.linux-debug-inner 1 #First# none
 E   ospli/rhel64-64d/armv7a_vfp_neon.linux-examples-inner 1 #First# none
 
 E   ospli/rhel64-64c/x86.qnx6.5-release-inner 1 #First# none
-M   ospli/rhel64-64c/arm.qnx6.5-release-inner 1 #First# none
-M   ospli/rhel64-64c/x86_64.linux-dev-notestbuild-sp-vg-inner 1 #First# none
+E   ospli/rhel64-64c/arm.qnx6.5-release-inner 1 #First# none
+E   ospli/rhel64-64c/x86_64.linux-dev-notestbuild-sp-vg-inner 1 #First# none
 E   ospli/rhel64-64c/x86_64.linux-release-inner 1 #First# none
 E   ospli/rhel64-64c/x86_64.linux-release-notest-inner 1 #First# none
 E   ospli/rhel64-64c/x86_64.linux-dev-inner 1 #First# none
 E   ospli/rhel64-64c/x86_64.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel64-64c/mpc8313e.linux-dev-inner 1 #First# none
-M   ospli/rhel64-64c/mpc8313e.linux-release-inner 1 #First# none
+E   ospli/rhel64-64c/mpc8313e.linux-release-inner 1 #First# none
 
 E   ospli/debian40/x86.linux-dev-inner 1 #First# none
 E   ospli/debian40/x86.linux-dev-notest-inner 1 #First# none
@@ -837,7 +820,7 @@ E   ospli/rhel60a/x86.linux-dev 25 #First# none
 E   ospli/rhel60a/x86.linux-release 25 #First# none
 E   ospli/rhel60a/x86.linux-dev-inner 1 #First# none
 E   ospli/rhel60a/x86.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel60a/x86.linux-release-inner 1 #Third# none
+E   ospli/rhel60a/x86.linux-release-inner 1 #First# none
 E   ospli/rhel60a/x86.linux-release-nolic-inner 1 #First# none
 E   ospli/rhel60a/x86.linux-release-notest-inner 1 #First# none
 E   ospli/rhel60a/x86.linux-release-examples-inner 1 #First# none
@@ -849,7 +832,7 @@ E   ospli/rhel60a/x86.linux-debug-notest-nolic-inner 1 #First# none
 
 E   ospli/rhel62-32a/x86.linux-dev 25 #First# none
 E   ospli/rhel62-32a/x86.linux-release 25 #First# none
-M   ospli/rhel62-32a/x86.linux-dev-inner 1 #First# none
+E   ospli/rhel62-32a/x86.linux-dev-inner 1 #First# none
 E   ospli/rhel62-32a/x86.linux-dev-notest-inner 1 #First# none
 E   ospli/rhel62-32a/x86.linux-release-inner 1 #First# none
 E   ospli/rhel62-32a/x86.linux-release-nolic-inner 1 #First# none
@@ -865,7 +848,7 @@ E   ospli/rhel62a/x86.linux-dev 25 #First# none
 E   ospli/rhel62a/x86.linux-release 25 #First# none
 E   ospli/rhel62a/x86.linux-dev-inner 1 #First# none
 E   ospli/rhel62a/x86.linux-dev-notest-inner 1 #First# none
-M   ospli/rhel62a/x86.linux-release-inner 1 #First# none
+E   ospli/rhel62a/x86.linux-release-inner 1 #First# none
 E   ospli/rhel62a/x86.linux-release-nolic-inner 1 #First# none
 E   ospli/rhel62a/x86.linux-release-notest-inner 1 #First# none
 E   ospli/rhel62a/x86.linux-release-examples-inner 1 #First# none
@@ -885,6 +868,7 @@ E   ospli/rhel72a/x86_64.linux-release-examples-inner 1 #First# none
 E   ospli/rhel72a/x86_64.linux-dev 1 #First# none
 E   ospli/rhel72a/x86_64.linux-dev-inner 1 #First# none
 E   ospli/rhel72a/x86_64.linux-debug-inner 1 #First# none
+E   ospli/rhel72a/x86_64.linux-release-coverity-inner 1 #First# none
 
 E   ospli/pi3a/armv7l.linux-dev 1 #First# none
 E   ospli/pi3a/armv7l.linux-dev-inner 1 #First# none
@@ -904,14 +888,9 @@ E   ospli/raspberry1/armv6l.linux-release-notest-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-release-nodbt-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-debug-notest-noexample-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-debug-inner 1 #First# none
-E   ospli/raspberry1/armv6l.linux-dev 25 #First# none
-E   ospli/raspberry1/armv6l.linux-release 25 #First# none
-
-E   ospli/bone1/armv7l.linux-dev 25 #First# none
-E   ospli/bone1/armv7l.linux-release 25 #First# none
 
 E   ospli/jetson1/armv7l.linux-dev-inner 1 #First# none
-M   ospli/jetson1/armv7l.linux-release-inner 1 #First# none
+E   ospli/jetson1/armv7l.linux-release-inner 1 #First# none
 E   ospli/jetson1/armv7l.linux-release-notest-inner 1 #First# none
 E   ospli/jetson1/armv7l.linux-release-examples-inner 1 #First# none
 
@@ -926,7 +905,7 @@ E   ospli/bone3/armv7l.linux-release-inner 1 #First# none
 E   ospli/bone3/armv7l.linux-release-notest-inner 1 #First# none
 
 E   ospli/bone6/armv7l.linux-dev-inner 1 #First# none
-M   ospli/bone6/armv7l.linux-release-inner 1 #First# none
+E   ospli/bone6/armv7l.linux-release-inner 1 #First# none
 E   ospli/bone6/armv7l.linux-release-notest-inner 1 #First# none
 
 E   ospli/bone7/armv7l.linux-dev-inner 1 #First# none
@@ -937,61 +916,69 @@ E   ospli/ubuntu1204/x86.linux-dev-notest-inner 1 #First# none
 E   ospli/ubuntu1204/x86.linux-dev 25 #First# none
 E   ospli/ubuntu1204/x86.linux-release 25 #First# none
 E   ospli/ubuntu1204/x86.linux-release-inner 1 #First# none
-M   ospli/ubuntu1204/x86.linux-release-notest-inner 1 #First# none
+E   ospli/ubuntu1204/x86.linux-release-notest-inner 1 #First# none
 E   ospli/ubuntu1204/x86.linux-release-doxygen-inner 1 #First# none
 E   ospli/ubuntu1204/x86.linux-gcov-inner 1 #First# none
 
 E   ospli/ubuntu1204-64/x86_64.linux-dev 25 #First# none
 E   ospli/ubuntu1204-64/x86_64.linux-release 25 #First# none
 E   ospli/ubuntu1204-64/x86_64.linux-release-inner 1 #First# none
-M   ospli/ubuntu1204-64/x86_64.linux-release-notest-inner 1 #First# none
+E   ospli/ubuntu1204-64/x86_64.linux-release-notest-inner 1 #First# none
+E   ospli/ubuntu1204-64/x86_64.linux-release-nolic-inner 1 #First# none
+E   ospli/ubuntu1204-64/x86_64.linux-release-notest-nolic-inner 1 #First# none
 E   ospli/ubuntu1204-64/arm.linaro-release-inner 1 #First# none
-M   ospli/ubuntu1204-64/cortexa9t.yocto-release-inner 1 #First# none
+E   ospli/ubuntu1204-64/cortexa9t.yocto-release-inner 1 #First# none
 
 E   ospli/ubuntu1204b/x86.linux-dev 25 #First# none
 E   ospli/ubuntu1204b/x86.linux-release 25 #First# none
 E   ospli/ubuntu1204b/x86.linux-gcov-inner 25 #First# none
 E   ospli/ubuntu1204b/x86.linux-release-inner 1 #First# none
 E   ospli/ubuntu1204b/x86.linux-release-notest-inner 1 #First# none
-M   ospli/ubuntu1204b/x86.linux-gcc482-release-inner 1 #First# none
+E   ospli/ubuntu1204b/x86.linux-gcc482-release-inner 1 #First# none
 E   ospli/ubuntu1204b/x86.linux-gcc482-release-notest-inner 1 #First# none
 E   ospli/ubuntu1204b/x86.linux-gcc482-debug-inner 1 #First# none
 E   ospli/ubuntu1204b/x86.linux-gcc482-dev-inner 1 #First# none
-M   ospli/ubuntu1204b/cortexa9t_neon.WRlinux5_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1204b/cortexa9t_neon.WRlinux5_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1204b/cortexa9t_neon.WRlinux5_gcc-dev-inner 1 #First# none
-M   ospli/ubuntu1204b/intel_atom.WRlinux5_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1204b/intel_atom.WRlinux5_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1204b/intel_atom.WRlinux5_gcc-dev-inner 1 #First# none
-MT  ospli/ubuntu1204b/x86.linux-release-werror-inner 1 #Third# none
+ET  ospli/ubuntu1204b/x86.linux-release-werror-inner 1 #First# none
 E   ospli/ubuntu1204b/x86.linux-release-examples-inner 1 #First# none
 
 E   ospli/ubuntu1204-64b/x86_64.linux-dev 25 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-release 25 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-release-inner 1 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-release-notest-inner 1 #First# none
-M   ospli/ubuntu1204-64b/x86_64.linux-gcc482-release-inner 1 #First# none
+E   ospli/ubuntu1204-64b/x86_64.linux-release-nolic-inner 1 #First# none
+E   ospli/ubuntu1204-64b/x86_64.linux-release-notest-nolic-inner 1 #First# none
+E   ospli/ubuntu1204-64b/x86_64.linux-gcc482-release-inner 1 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-gcc482-release-notest-inner 1 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-gcc482-debug-inner 1 #First# none
 E   ospli/ubuntu1204-64b/x86_64.linux-gcc482-dev-inner 1 #First# none
-M   ospli/ubuntu1204-64b/armv7l.linux-release-inner 1 #First# none
+E   ospli/ubuntu1204-64b/armv7l.linux-release-inner 1 #First# none
 ET  ospli/ubuntu1204-64b/x86_64.linux-release-werror-inner 1 #First# none
 
 E   ospli/ubuntu1404-64a/x86_64.linux-dev-inner 25 #First# none
 E   ospli/ubuntu1404-64a/x86_64.linux-dev-notest-inner 25 #First# none
 E   ospli/ubuntu1404-64a/x86_64.linux-release-inner 1 #First# none
 E   ospli/ubuntu1404-64a/x86_64.linux-release-notest-inner 1 #First# none
-M   ospli/ubuntu1404-64a/x86.WRlinux7_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1404-64a/x86.WRlinux7_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1404-64a/x86.WRlinux7_gcc-dev-inner 1 #First# none
 E   ospli/ubuntu1404-64a/x86_64.WRlinux8_gcc-release-inner 1 #First# none
 E   ospli/ubuntu1404-64a/x86_64.WRlinux8_gcc-dev-inner 1 #First# none
 E   ospli/ubuntu1404-64a/armv7l.linux-release-inner 1 #First# none
-M   ospli/ubuntu1404-64a/armv7l.linux-release-nojava-inner 1 #First# none
+E   ospli/ubuntu1404-64a/armv7l.linux-release-nojava-inner 1 #First# none
 E   ospli/ubuntu1404-64a/armv7l.linux-release-marvell-inner 1 #First# none
-M   ospli/ubuntu1404-64a/armv7l.linux-release-nojava-marvell-inner 1 #First# none
+E   ospli/ubuntu1404-64a/armv7l.linux-release-nojava-marvell-inner 1 #First# none
 E   ospli/ubuntu1404-64a/arm.elinos5.2_linux64-release-thales-inner 1 #First# none
-M   ospli/ubuntu1404-64a/x86_64.WRlinux7_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1404-64a/x86_64.WRlinux7_gcc-release-inner 1 #First# none
 
-M   ospli/ubuntu1404-64a/armv7at2-vfp-neon.WRlinux7_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1404-64a/armv7at2-vfp-neon.WRlinux7_gcc-release-inner 1 #First# none
+E   ospli/ubuntu1404-64a/armv7at2-vfp-neon.WRlinux7_gcc-release-examples-inner 1 #First# none
 E   ospli/ubuntu1404-64a/armv7at2-vfp-neon.WRlinux7_gcc-dev-inner 1 #First# none
+E   ospli/ubuntu1404-64a/armv7at2-vfp-neon.WRlinux7_gcc-dev-examples-inner 1 #First# none
+
+E   ospli/ubuntu1404-64a/cortexa9t-use.linux-release-inner 1 #First# none
 
 E   ospli/ubuntu1604-32a/x86.linux-release 120 #First# none
 E   ospli/ubuntu1604-32a/x86.linux-release-inner 120 #First# none
@@ -1008,14 +995,8 @@ E   ospli/ubuntu1604-64a/x86_64.linux-release-inner 120 #First# none
 E   ospli/ubuntu1604-64a/x86_64.linux-release-notest-inner 120 #First# none
 E   ospli/ubuntu1604-64a/x86_64.linux-release-examples-inner 120 #First# none
 E   ospli/ubuntu1604-64a/x86_64.linux-dev 120 #First# none
-E   ospli/ubuntu1604-64a/x86_64.linux-dev-inner 120 #First# none 
+E   ospli/ubuntu1604-64a/x86_64.linux-dev-inner 120 #First# none
 E   ospli/ubuntu1604-64a/x86_64.linux-dev-notest-inner 120 #First# none
-
-E   ospli/ubuntu1604-64b/x86_64.linux-release-inner 120 #First# none
-E   ospli/ubuntu1604-64b/x86_64.linux-release-notest-inner 120 #First# none
-E   ospli/ubuntu1604-64b/x86_64.linux-release-examples-inner 120 #First# none
-E   ospli/ubuntu1604-64b/x86_64.linux-dev-inner 120 #First# none 
-E   ospli/ubuntu1604-64b/x86_64.linux-dev-notest-inner 120 #First# none
 
 E   ospli/ubuntu1804-64a/x86_64.linux-release 120 #First# none
 E   ospli/ubuntu1804-64a/x86_64.linux-release-inner 120 #First# none
@@ -1028,33 +1009,154 @@ E   ospli/ubuntu1804-64a/x86_64.linux-dev-notest-inner 120 #First# none
 E   ospli/rhel4y/PPC7448.lynxos5.linux32-dev-inner 1 #First# none
 E   ospli/rhel4y/PPC7448.lynxos5.linux32-release-inner 1 #First# none
 E   ospli/rhel4y/PPCE600.lynxos5.linux32-dev-inner 1 #First# none
-M   ospli/rhel4y/PPCE600.lynxos5.linux32-release-inner 1 #First# none
+E   ospli/rhel4y/PPCE600.lynxos5.linux32-release-inner 1 #First# none
 
 E   ospli/debian6a-64/PPC440.linux-dev-inner 1 #First# none
 E   ospli/debian6a-64/PPC440.linux-release-inner 1 #First# none
 
-M   ospli/debian6a-32/x86.linux_perc-release-inner 1 #First# none
+E   ospli/debian6a-32/x86.linux_perc-release-inner 1 #First# none
 E   ospli/debian6a-32/x86.linux_perc-release-notest-inner 1 #First# none
 E   ospli/debian6a-32/x86.linux_perc-release-examples-inner 1 #First# none
 
+E   ospli/debian9-32-a/x86.linux-release-inner 1 #First# none
+E   ospli/debian9-32-a/x86.linux-release-notest-inner 1 #First# none
+E   ospli/debian9-32-a/x86.linux-release-examples-inner 1 #First# none
+E   ospli/debian9-32-a/x86.linux-release-nodbt-inner 1 #First# none
+E   ospli/debian9-32-a/x86.linux-dev-inner 1 #First# none
+E   ospli/debian9-32-a/x86.linux-dev-notest-inner 1 #First# none
+
+E   ospli/debian9-64-p/x86_64.linux-release-inner 1 #First# none
+E   ospli/debian9-64-p/x86_64.linux-release-notest-inner 1 #First# none
+E   ospli/debian9-64-p/x86_64.linux-release-notest-nolic-inner 1 #First# none
+E   ospli/debian9-64-p/x86_64.linux-release-examples-inner 1 #First# none
+E   ospli/debian9-64-p/x86_64.linux-dev-inner 1 #First# none
+E   ospli/debian9-64-p/x86_64.linux-dev-notest-inner 1 #First# none
+E   ospli/debian9-64-p/armhf.linux-release-inner 1 #First# none
+E   ospli/debian9-64-p/armhf.linux-dev-inner 1 #First# none
+
 E   ospli/ultra9/PPC604.vxworks5.5.2-release-inner 1 #First# none
 
-M   ospli/rhel5a/PPC604.vxworks6.6-dev-inner 1 #First# none
+E   ospli/rhel5a/PPC604.vxworks6.6-dev-inner 1 #First# none
 E   ospli/rhel5a/PPC604.vxworks6.6-release-inner 1 #First# none
 
 E   ospli/priva-debian7/armv7l.linux-release-inner 1 #First# none
 E   ospli/priva-debian7/armv7l.linux-debug-inner 1 #First# none
 E   ospli/priva-debian7/armv7l.linux-dev-inner 1 #First# none
 
+E   ospli/macmini/x86_64.darwin10_clang-release 120 #First# none
 E   ospli/macmini/x86_64.darwin10_clang-release-inner 1 #First# none
 E   ospli/macmini/x86_64.darwin10_clang-release-notest-inner 1 #First# none
 E   ospli/macmini/x86_64.darwin10_clang-release-examples-inner 1 #First# none
-E   ospli/macmini/x86_64.darwin10_clang-release-examples-dbt-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-release-dbt-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-dev 120 #First# none
 E   ospli/macmini/x86_64.darwin10_clang-dev-inner 1 #First# none
+
+E   ospli/DDSs-Mac-mini.testnet.ptnl/x86_64.darwin10_clang-release-inner 1 #First# none
+E   ospli/DDSs-Mac-mini.testnet.ptnl/x86_64.darwin10_clang-release-notest-inner 1 #First# none
+E   ospli/DDSs-Mac-mini.testnet.ptnl/x86_64.darwin10_clang-release-examples-inner 1 #First# none
+E   ospli/DDSs-Mac-mini.testnet.ptnl/x86_64.darwin10_clang-release-dbt-inner 1 #First# none
+E   ospli/DDSs-Mac-mini.testnet.ptnl/x86_64.darwin10_clang-dev-inner 1 #First# none
 
 E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-release-inner 1 #First# none
 E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-debug-inner 1 #First# none
 E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-dev-inner 1 #First# none
+
+E   ospli/ub1604-epro.testnet.ptnl/aarch64_zynqmp.linux-dev-inner 1 #First# none
+E   ospli/ub1604-epro.testnet.ptnl/aarch64_zynqmp.linux-release-inner 1 #First# none
+
+# Replaced by t1040 builds but may be needed in future
+#E   ospli/ebmr-p/ppc_e5500-linux-release-inner 1 #First# none
+#E   ospli/ebmr-p/ppc_e5500-linux-dev-inner 1 #First# none
+#E   ospli/ebmr-p/armhf-linux-release-inner 1 #First# none
+#E   ospli/ebmr-p/armhf-linux-dev-inner 1 #First# none
+
+#E   ospli/t1040/ppc_e5500-linux-release-inner 1 #First# none
+#E   ospli/t1040/ppc_e5500-linux-dev-inner 1 #First# none
+
+#E   ospli/rhel4g/x86.linux-dev 25 #Broken# none
+#E   ospli/rhel4g/x86.linux-release 25 #Broken# none
+#E   ospli/rhel4g/x86.linux-dev-inner 1 #Broken# none
+#E   ospli/rhel4g/x86.linux-dev-notest-inner 1 #Broken# none
+#E   ospli/rhel4g/x86.linux-release-inner 1 #Broken# none
+#E   ospli/rhel4g/x86.linux-release-notest-inner 1 #Broken# none
+#E   ospli/rhel4g/x86.linux-release-examples-inner 1 #Broken# none
+
+# winxp12 cygwin is broken
+#E   ospli/winxp12/x86.win32-dev 40 #First# none
+#E   ospli/winxp12/x86.win32-release 40 #First# none
+#E   ospli/winxp12/x86.win32-dev-inner 1 #First# none
+#E   ospli/winxp12/x86.win32-dev-notest-inner 1 #First# none
+#E   ospli/winxp12/x86.win32-dev-notao-inner 1 #First# none
+#E   ospli/winxp12/x86.win32-dev-notest-notao-inner 1 #Third# none
+#E   ospli/winxp12/x86.win32-release-inner 1 #First# none
+#E   ospli/winxp12/x86.win32-release-notest-inner 1 #First# none
+#E   ospli/winxp12/x86.win32-release-nodbt-inner 1 #First# none
+#E   ospli/winxp12/x86.vxworks5.5-dev-inner 1 #First# none
+#E   ospli/winxp12/x86.vxworks5.5-release-inner 1 #Second# none
+
+# DDS1-WIN2K3 - cygwin is broken
+#E   ospli/DDS1-WIN2K3/armv4i.wince6-dev-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/armv4i.wince6-release-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/armv4i.wince6-release-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/armv4i.wince6-debug-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-dev 40 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release 40 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-dev-notest-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release-notest-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release-examples-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release-nodbt-inner 1 #First# none
+#E   ospli/DDS1-WIN2K3/x86.win32-release-netsrc-inner 1 #First# none
+
+#E   ospli/dds2-win2k3/x86.win32-dev 40 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release 40 #First# none
+#E   ospli/dds2-win2k3/x86.win32-dev-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-nolic-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-notest-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-notest-nolic-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-nodbt-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-release-netsrc-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-debug-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-debug-notest-inner 1 #First# none
+#E   ospli/dds2-win2k3/x86.win32-debug-notest-notao-inner 1 #First# none
+
+#E   ospli/blade1/x86_64.linux_opencc-release-inner 1 #First# none
+
+#E   ospli/rhel53-64/x86_64.linux-dev 35 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-release 35 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-dev-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-dev-notest-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-release-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-release-nodbt-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-release-notest-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-debug-inner 1 #Broken# none
+#E   ospli/rhel53-64/x86_64.linux-debug-notest-inner 1 #Broken# none
+#E   ospli/rhel53-64/arm.elinos5.2_rhel5.3-dev-inner 1 #Broken# none
+#E   ospli/rhel53-64/arm.elinos5.2_rhel5.3-release-inner 1 #Broken# none
+
+#M   ospli/winx/x86.win32-dev-vs12-inner 30 #Missing# none
+#E   ospli/winx/x86.win32-release-vs12-notest-inner 30 #Missing# none
+
+#E   ospli/win2008-64a/x86.win32-dev 30 #First# none
+#E   ospli/win2008-64a/x86.win32-release 30 #First# none
+#E   ospli/win2008-64a/x86.win32-dev-inner 1 #First# none
+#E   ospli/win2008-64a/x86.win32-dev-notest-inner 1 #First# none
+#E   ospli/win2008-64a/x86.win32-release-inner 1 #First# none
+#E   ospli/win2008-64a/x86.win32-release-notest-inner 1 #First# none
+#E   ospli/win2008-64a/x86.win32-release-nodbt-inner 1 #First# none
+
+#E  ospli/rhel60-64a/x86.linux-dev-inner 1 #First# none
+#E  ospli/rhel60-64a/x86.linux-dev-notest-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-release-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-release-notest-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-release-notao-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-debug-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-debug-notest-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-debug-notao-inner 1 #First# none
+#E   ospli/rhel60-64a/x86.linux-debug-notest-notao-inner 1 #First# none
+#E   ospli/rhel60-64a/x86_64.linux-dev-inner 1 #First# none
 
 ################################# end First Runs #############################
 
@@ -1247,9 +1349,9 @@ E   ospli/ultra9/solaris-dev-notest-gcc342-inner 1 #Old# none
 E   ospli/ultra9/solaris-release-gcc342-inner 1 #Old# none
 E   ospli/ultra9/solaris-release-notest-gcc342-inner 1 #Old# none
 E   ospli/winxp16/PENTIUM3.vxworks6.6-release-inner 1 #Old# none
-E   ospli/winxp16/PENTIUM3.vxworks6.6-dev-inner 1 #Old# none 
+E   ospli/winxp16/PENTIUM3.vxworks6.6-dev-inner 1 #Old# none
 E   ospli/winxp16/PENTIUM.vxworks6.9.2-release-inner 1 #Old# none
-E   ospli/winxp16/PENTIUM.vxworks6.9.2-dev-inner 1 #Old# none 
+E   ospli/winxp16/PENTIUM.vxworks6.9.2-dev-inner 1 #Old# none
 E   ospli/winxp17/PPC604.vxworks6.7.win32-dev-inner 1 #Old# none
 E   ospli/winxp17/PPC604.vxworks6.7.win32-release-inner 1 #Old# none
 E   ospli/win7a/ppc.pikeos3.1-release-inner 1 #Old# none

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,16 +33,20 @@ cms_threadNew(
     cms_thread thread;
     thread = os_malloc(sizeof *thread);
     cms_object(thread)->kind = CMS_THREAD;
-    cms_threadInit(thread, name, attr);
+    if (!cms_threadInit(thread, name, attr)){
+        os_free(thread);
+        thread = NULL;
+    }
     return thread;
 }
 
-void
+c_bool
 cms_threadInit(
     cms_thread thread,
     const c_char* name,
     os_threadAttr * attr)
 {
+    c_bool retValue = FALSE;
     if(thread != NULL){
         if(name != NULL){
             thread->ready = TRUE;
@@ -50,20 +55,19 @@ cms_threadInit(
             thread->name = name;
             thread->did.id[0] = '\0';
             thread->uri = NULL;
-
+            retValue = TRUE;
             if (attr != NULL) {
                 thread->attr = *attr;
             } else {
                 os_threadAttrInit(&thread->attr);
             }
         } else {
-            os_free(thread);
-            thread = NULL;
             OS_REPORT(OS_ERROR, CMS_CONTEXT, 0, "cms_threadInit failed. (no name supplied)");
         }
     } else {
         OS_REPORT(OS_ERROR, CMS_CONTEXT, 0, "cms_threadInit failed.");
     }
+    return (retValue);
 }
 
 void

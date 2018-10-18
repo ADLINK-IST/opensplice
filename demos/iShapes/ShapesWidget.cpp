@@ -13,7 +13,6 @@ ShapesWidget::ShapesWidget(QWidget *parent)
     : QWidget(parent),
       showCurrentFilter_(false),
       logo_(":/images/ospl-dds-br.png"),
-      ptpcm_(":/images/pt_pcm.png"),
       paused_(false)
 {
     this->setBackgroundRole(QPalette::Base);
@@ -52,8 +51,6 @@ ShapesWidget::paintEvent(QPaintEvent*)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.drawPixmap(ISOCPP_LOGO_X, ISOCPP_LOGO_Y, logo_);
-    /* This code adds the PrismTech logo to the top-centre of the iShapes canvas. */
-    /*    painter.drawPixmap(BRAND_LOGO_X, BRAND_LOGO_Y, ptpcm_);*/
     if (showCurrentFilter_)
     {
         QBrush brush(QColor(0x99,0x99,0x99,0x99), Qt::SolidPattern);

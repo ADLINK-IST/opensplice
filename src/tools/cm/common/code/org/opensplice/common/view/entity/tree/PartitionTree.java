@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,16 +30,16 @@ import org.opensplice.common.model.ModelRegister;
 
 /**
  * Concrete implementation of an EntityTree. It represents a tree which holds
- * all Partition entities in the connected kernel and shows its dependant 
+ * all Partition entities in the connected kernel and shows its dependent
  * entities as children.
- *  
+ *
  * @date Oct 5, 2004
  */
 public class PartitionTree extends EntityTree {
 
     /**
      * Constructs a new PartitionTree.
-     * 
+     *
      * @param _participant The participant where to resolve the domains from.
      * @param _register The ModelRegister that needs to be triggered on changes
      *                  in the tree. It may be null when no component needs

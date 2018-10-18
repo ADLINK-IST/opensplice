@@ -43,13 +43,13 @@ Prerequisites
 
 A Java 7 or later runtime (JRE) is required. The JAVA_HOME environment variable must be set to the JRE installation directory.
 
-Check that the following command yields a Java version of 1.7 or later. On Linux systems, use::
+Check that the following command yields a Java version of 1.7 or later::
 
-   $JAVA_HOME/bin/java -version
+    #Linux
+    $JAVA_HOME/bin/java -version
 
-On Windows systems, use::
-
-   %JAVA_HOME%\bin\java -version
+    #Windows
+    "%JAVA_HOME%\bin\java" -version
 
 Note that during the installation, it is assumed the the environment variable OSPL_HOME refers the the fully qualified
 path of the Vortex OpenSplice installation.
@@ -61,50 +61,96 @@ The Tester Scripting package does not include the Jython scripting engine - it m
 Jython is an open source project licensed under the Python Software Foundation License Version 2 (http://www.jython.org/license.html).
 The license is OSI Approved (https://opensource.org/licenses/alphabetical).
 
-Tester Scripting requires Jython 2.7.0 or later. Follow the following steps to download and install Jython:
+Tester Scripting requires Jython 2.7.0 or later. Download the Jython 2.7.0 Installer from the Jython Download page (http://www.jython.org/downloads.html).
 
-1. Download the Jython 2.7.0 Installer from the Jython Download page (http://www.jython.org/downloads.html).
+Automated installation and configuration
+-----------------------------------------
+Once the Jython installer has been downloaded, the osplscript command can be used to install Jython in your 
+Vortex OpenSpice home directory. Follow the following steps:
 
-2. Install Jython. It is recommended, but not necessary that Jython be installed in the $OSPL_HOME/jython directory (linux) or the %OSPL_HOME%\jython directory (Windows). The following command line will install the standard Jython distribution::
+1. Start a command prompt (Windows) or Terminal window (Linux). The Vortex OpenSplice Launcher can create a Console window that eliminates the need for the step 2.
+2. Ensure that the OSPL_HOME environment variable is set by running the release script. On Linux run::
+
+    #linux
+    source $OSPL_HOME/release.com
+    
+    #Windows
+    "%OSPL_HOME%\release.bat"
+
+3. Change to the directory containing the Jython 2.7.0 installer, jython-installer-2.7.0.jar
+4. Enter the command::
+
+    osplscript
+
+5. The command will display a message similar to the following, and then prompt you to continue::
+
+    **************************************************************
+    Your OSPL installation has not been configured for osplscript;
+    no Jython installation was found in the OSPL install directory:
+      <your-install-directory>
+    A jython installer has been found in the current directory.
+    Do you wish to install Jython and configure osplscript? [yes|no]:
+
+6. Enter 'yes' (without the quotes), and press Enter; osplscript will be configured.
+7. When completed, the Jython interpreter will be started. Either type 'exit()' or continue on to verifying the installation with the instructions in the next secion.
+
+Manual installation and configuration
+-------------------------------------
+
+If you do not want place a Jython interpreter in the OSPL_HOME directory, or if you already
+have Jython interpreter installed in another location, you can use the following manual installation
+and configuration procedure.
+
+Install a Jython interpreter in a location of your choice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you want to install Jython in another location, do the following steps:
+
+1. Start a command prompt (Windows) or Terminal window (Linux).
+2. Ensure that your JAVA_HOME environment variable refers to an appropriate Java installation (Java 7 or later).
+3. From the directory containing the downloaded Jython installer, enter the following command::
+
+    jython-installer-2.7.0.jar -s -d <desired-install-directory> -t standard
+
+If you prefer, you can remove the (-s) option (silent install), in which case, a graphical installation
+wizard will appear. Proceed through the wizard to select a 'Standard' installation.
+
+Configure the Jython interpreter with OSPLScript package
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To your Jython interpreter for Python scripting, you must install the OSPLScript Python package. Follow these steps:
+
+1. Ensure that the Jython 'bin' directory in the system PATH environment variable.
+2. Start a command prompt (Windows) or terminal window (Linux). The Vortex OpenSplice Launcher can create a Console window that eliminates the need for the step 3.
+3. Ensure the Vortex OpenSplice environment variables are set by running the 'release' script.
+4. Start the Jython easy_install program. The following command line will install the standard Jython distribution::
 
     # for Linux systems
-    $JAVA_HOME/bin/java -jar jython-installer-2.7.0.jar -s -d $OSPL_HOME/jython -t standard
-
-    # For Windows Systems
-    "%JAVA_HOME%\bin\java" -jar jython-installer.2.7.0.jar -s -d "%OSPL_HOME%\jython" -t standard
-
-3. Change to the OSPL_HOME directory.
-
-4. Install the Tester Scripting python package. Use the following command::
-
-    # for Linux systems
-    jython/bin/easy_install tools/scripting/OSPLScript-1.0.0.tar.gz
+    easy_install "$OSPL_HOME/tools/scripting/OSPLScript-1.0.0.tar.gz"
 
     # for Windows systems
-    jython\bin\easy_install tools\scripting\OSPLScript-1.0.0.tar.gz
+    easy_install "%OSPL_HOME%\tools\scripting\OSPLScript-1.0.0.zip"
+
+Once the package installation has completed, you may proceed with verifying the installation.
 
 Verifying the installation
 ==========================
 
-The following steps will verify that the Jython installation is correctly configured.
+The following steps will verify that the Jython installation is correctly configured. The following steps
+are done from a command window:
 
-1. Ensure OpenSplice is running by issuing the following command::
+1. Ensure that the Vortex OpenSplice environment variables are set by running the 'release' command script.
+2. Ensure OpenSplice is running by issuing the following command::
 
     ospl start
 
-2. Start OpenSplice Tester to create some test topics used below::
+3. Start OpenSplice Tester to create some test topics used below::
 
     ospltest
 
-3. Start the Jython interpreter::
+4. Start the Jython interpreter::
 
-    # for Linux systems
-    jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+    osplscript
 
-    # for Windows systems
-    jython\bin\jython -Djava.ext.dirs=%OSPL_HOME%\jar
-
-4. Enter the following commands at the interpreter command prompt:
+5. Enter the following commands at the interpreter command prompt:
 
     >>> from osplscript import dds
     >>> topic = dds.findTopic('OsplTestTopic')
@@ -134,12 +180,18 @@ Prerequisites
 =============
 
 This demo assumes a shell instance that has been initialized with the release.com script found in the OSPL installation directory.
-In particular, the quick tour relies on the $OSPL_HOME, $OSPL_URI and $LD_LIBRARY_PATH variables being appropriately set.
-To run the script, do the following::
+In particular, the quick tour relies on the following environment variables be set: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH.
+The easiest way to set these variables is to use the Vortex OpenSplice launcher to start a Console window.
+Alternatively, run the 'release' script in your Vortex OpenSplice installation directory. To run the script, do the following::
 
-	cd OSPL-install-directory
-	. release.com
+    # linux
+    cd OSPL-install-directory
+    . release.com
 
+    # Windows
+    cd OSPL-install-directory
+    release.bat
+    
 Preliminaries
 =============
 
@@ -155,10 +207,9 @@ Tester is used to define topics used in the scripting engine, and to observe sam
 
 Writing and Reading samples
 ===========================
-The instructions below assume that you have installed and configured Jython in $OSPL_HOME/jython.
 Start the OSPL Scripting engine::
 
-	$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+	osplscript
 
 You will see a standard start up banner from the Jython engine similar to the following::
 
@@ -267,21 +318,21 @@ OSPL Scripting implements DDS wait sets with read conditions, query conditions a
 available on a data reader. Here is a simple example:
 
     >>> from osplscript import dds
-    >>> 
+
     >>> # find the topic, create a data reader and wait set
     >>> topic = dds.findTopic('OsplTestTopic')
     >>> dr = dds.Reader(topic)
     >>> ws = dds.WaitSet()
-    >>> 
+
     >>> # create a read condition of Alive, NotRead, New samples
     >>> rc = dr.readCondition(dds.DataState().withAlive().withNotRead().withNew())
-    >>> 
+
     >>> # attach the read condition to the wait set
     >>> ws.attachCondition(rc)
-    >>> 
+
     >>> # wait...
     >>> ws.waitForConditions()
-    >>>
+
     >>> # waiting returned, we have a sample
     >>> sample = dr.take()
     >>> # do something with the sample
@@ -298,11 +349,11 @@ A selector is created via a reader's newSelectBuilder() method. A 'select builde
 The following example creates a selector:
 
     >>> from osplscript import dds
-    >>> 
+
     >>> # find the topic, create a data reader
     >>> topic = dds.findTopic('OsplTestTopic')
     >>> dr = dds.Reader(topic)
-    >>>
+
     >>> # create a selector for Alive, NotRead, New samples with 'index = 100'
     >>> selector = dr.newSelectBuilder().withAlive().withNotRead().withNew() \
     >>>     .content('index = 100').build()
@@ -348,11 +399,11 @@ substitution parameters of the form {n}, where n is a zero-based index into an l
 For example, we could filter OsplTestTopic's index value to be between an upper and lower bound, and specify the query as follows:
 
     >>> from osplscript import dds
-    >>> 
+
     >>> # find the topic, create a data reader
     >>> topic = dds.findTopic('OsplTestTopic')
     >>> dr = dds.Reader(topic)
-    >>>
+
     >>> # create a selector for Alive, NotRead, New samples with 'index = 100'
     >>> selector = dr.newSelectBuilder().withAlive().withNotRead().withNew() \
     >>>     .content('index >= {0} and index < {1}', ['100', '200']) \
@@ -403,14 +454,14 @@ To establish a publisher or subscriber with coherent access, use the Presentatio
 publisher or subscriber QoS:
 
     >>> from osplscript import dds, qos
-    >>>
+
     >>> # create a presentation policy, enabling Group coherence and ordered access
     >>> groupPresentation = qos.Presentation().withCoherentAccess().withGroup() \
     >>>     .withOrderedAccess()
-    >>>
+
     >>> # create a publisher with the policy
     >>> pub = dds.Publisher(qos.PublisherQos().withPolicy(groupPresentation))
-    >>>
+
     >>> # create a subscriber with the policy
     >>> sub = dds.Subscriber(qos.SubscriberQos().withPolicy(groupPresentation))
 
@@ -468,12 +519,12 @@ As a work around, attached status conditions from each of the subscriber's reade
 
     >>> # This will work
     >>> ws = dds.WaitSet()
-    >>>
+
     >>> # do this for each reader (dr) you care about
     >>> sc = dr.statusCondition()
     >>> sc.setEnabledStatuses([status.DataAvailableStatus])
     >>> ws.attachCondition(sc)
-    >>>
+
     >>> ws.waitForConditions()
 
 Creating a unit test script
@@ -522,7 +573,7 @@ Start by created a text file in your favourite editor. Call the file firstUnitTe
 
 This test case essentially repeats the test we created in the interpreter. To run the test, enter the following command in your shell command prompt::
 
-	$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar firstUnitTest.py
+	osplscript firstUnitTest.py
 
 The script engine will respond with output like the following::
 
@@ -541,7 +592,7 @@ The OsplTestTopic used above is simple. This section examines working with more 
 As with the preceding examples, Tester should be running, as it creates the samples that are used in this example.
 If OSPL Scripting is not running, start it::
 
-$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+	osplscript
 
 The use the following Python to find the OsplSequenceTopic DDS topic and create a Python class from it:
 
@@ -618,11 +669,8 @@ Once PyDev is installed, you must configure it with the location of you Jython i
 5. Enter a name for the Jython interpreter. Example: Tester Script
 6. Browser for the jython.jar file in the root directory of the Tester Script Jython installation.
 7. Click OK.
-8. Still in the Preferences dialog on the PyDev > Interpreters > Jython interpreters page, select your
-newly created interpreter entry in the upper list. Then click the **Environment** tab in the lower half
-of the dialog.
-9. Add the following environment variables: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH. Their values should
-be the same as those found in your command line environment.
+8. Still in the Preferences dialog on the PyDev > Interpreters > Jython interpreters page, select your newly created interpreter entry in the upper list. Then click the **Environment** tab in the lower half of the dialog.
+9. Add the following environment variables: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH. Their values should be the same as those found in your command line environment.
 10. Click the **Libraries** tab in the lower half of the dialog.
 11. Click **New Folder** and browse for and select the **jar** directory under your Vortex OpenSplice installation directory.
 12. Click **OK** to complete the folder selection.

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,8 +20,8 @@
  */
 
 
-#include "v_dataViewSample.h"
-#include "v_dataViewInstance.h"
+#include "v__dataViewSample.h"
+#include "v__dataViewInstance.h"
 #include "v__orderedInstance.h"
 #include "v_dataView.h"
 #include "v__reader.h"
@@ -42,20 +43,18 @@ void checkInstance(v_dataViewInstance instance, c_bool isNotEmpty);
 
 v_dataViewSample
 v_dataViewSampleNew(
-    v_dataViewInstance instance,
+    v_dataView dataView,
     v_readerSample masterSample)
 {
-    v_dataView dataView;
     v_dataViewSample sample;
 
-    assert(instance != NULL);
+    assert(dataView != NULL);
     assert(masterSample != NULL);
     assert(C_TYPECHECK(masterSample,v_readerSample));
 
-    dataView = v_dataView(v_instanceEntity(instance));
     sample = v_dataViewSample(c_new(dataView->sampleType));
     if (sample) {
-        v_readerSample(sample)->instance = (c_voidp)instance;
+        v_readerSample(sample)->instance = NULL;
         v_readerSample(sample)->sampleState = L_VALIDDATA;
         v_dataViewSampleList(sample)->next = NULL;
         v_dataViewSampleList(sample)->prev = NULL;
@@ -68,21 +67,6 @@ v_dataViewSampleNew(
         assert(FALSE);
     }
     return sample;
-}
-
-
-void
-v_dataViewSampleFree(
-    v_dataViewSample sample)
-{
-    OS_UNUSED_ARG(sample);
-    assert(sample != NULL);
-    assert(C_TYPECHECK(sample, v_dataViewSample));
-
- PRINT_REFCOUNT(v_dataViewSampleFree, sample);
-    /* Free the slave-samples as well */
-
- PRINT_REFCOUNT(v_dataViewSampleFree, sample);
 }
 
 void
@@ -110,7 +94,8 @@ v_dataViewSampleRemove(
 
         if (v_objectKind (instance) == K_ORDEREDINSTANCE) {
             /* Set v_orderedInstance bookmark to NULL by default if "no"
-               examples exist. */
+             * examples exist.
+             */
             v_orderedInstance(instance)->bookmark = NULL;
             v_dataViewInstanceTemplate(instance)->sample = NULL;
             c_free(sample);
@@ -129,7 +114,8 @@ v_dataViewSampleRemove(
             /* Upon removing the head of the list the previous pointer of the
              * next sample should never be set, because that would set the
              * previous pointer of the tail sample and thus cause undefined
-             * behavior. */
+             * behavior.
+             */
             v_dataViewInstanceTemplate(instance)->sample = sample->prev;
         } else {
             v_dataViewSample(sample->next)->prev = sample->prev;
@@ -142,7 +128,8 @@ v_dataViewSampleRemove(
             v_orderedInstance (instance)->bookmark == sample)
         {
             /* Bookmark should not need to be updated on a take operation, it
-               might need to be updated when samples are purged for example. */
+             * might need to be updated when samples are purged for example.
+             */
             v_orderedInstance (instance)->bookmark = sample->prev;
         }
 

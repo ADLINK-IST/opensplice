@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -406,7 +407,7 @@ SAJ_FUNCTION(jniValidateFilter)(
                             params[i] = c_stringValue((const c_string) strings[i]);
                         }
                     }
-                    if (u_topicContentFilterValidate2(SAJ_VOIDP(uTopic), expr, params)) {
+                    if (u_topicContentFilterValidate2(SAJ_VOIDP(uTopic), expr, params, nrOfParams)) {
                         retcode = SAJ_RETCODE_OK;
                     } else {
                         retcode = SAJ_RETCODE_BAD_PARAMETER;

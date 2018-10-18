@@ -67,9 +67,9 @@ in the :ref:`Tutorial <Tutorial>`.
 Conventions
 ***********
 
-The icons shown below are used in PrismTech product documentation 
+The icons shown below are used in the Vortex product documentation 
 to help readers to quickly identify information relevant to their 
-specific use of Vortex OpenSplice DDS.
+specific use of Vortex OpenSplice.
 
 
  ========= ================================================================== 
@@ -108,4 +108,4 @@ specific use of Vortex OpenSplice DDS.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,12 +22,12 @@ package org.opensplice.dds.topic;
 
 import java.io.Serializable;
 
+import org.omg.dds.topic.TopicListener;
 import org.opensplice.dds.core.Listener;
 import org.opensplice.dds.core.OsplServiceEnvironment;
 import org.opensplice.dds.core.event.AllDataDisposedEventImpl;
 import org.opensplice.dds.core.event.InconsistentTopicEventImpl;
 import org.opensplice.dds.core.status.StatusConverter;
-import org.omg.dds.topic.TopicListener;
 
 import DDS.AllDataDisposedTopicStatusHolder;
 import DDS.InconsistentTopicStatus;
@@ -35,7 +36,7 @@ public class TopicListenerImpl<TYPE> extends
  Listener<TopicListener<TYPE>>
         implements DDS.ExtTopicListener, Serializable {
     private static final long serialVersionUID = -3957061097858393241L;
-    private final AbstractTopic<TYPE> topic;
+    private final transient AbstractTopic<TYPE> topic;
     private final transient org.opensplice.dds.topic.TopicListener<TYPE> extListener;
 
     public TopicListenerImpl(OsplServiceEnvironment environment,

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -1214,7 +1215,7 @@ static int cfgst_node_cmp (const void *va, const void *vb)
     return memcmp (va, vb, sizeof (struct cfgst_nodekey));
 }
 
-struct cfgst * config_init(u_participant participant, const char *servicename, cma_configuration config)
+static struct cfgst * cma_config_init(u_participant participant, const char *servicename, cma_configuration config)
 {
     /* pre: all parameters in config should be 0 */
     int ok = 1;
@@ -1235,7 +1236,7 @@ struct cfgst * config_init(u_participant participant, const char *servicename, c
 
     if ((root = u_participantGetConfiguration ((u_participant) participant)) == NULL)
     {
-        CMA_ERROR ("cmagent_config", "config_init: u_participantGetConfiguration failed");
+        CMA_ERROR ("cmagent_config", "cma_config_init: u_participantGetConfiguration failed");
         ut_avlFree (&cfgst_found_treedef, &cfgst->found, os_free);
         os_free (cfgst);
         return NULL;
@@ -1313,7 +1314,7 @@ struct cfgst * config_init(u_participant participant, const char *servicename, c
     }
 }
 
-void config_print_and_free_cfgst (struct cfgst *cfgst)
+static void cma_config_print_and_free_cfgst (struct cfgst *cfgst)
 {
     if (cfgst == NULL)
         return;
@@ -1322,7 +1323,7 @@ void config_print_and_free_cfgst (struct cfgst *cfgst)
     os_free (cfgst);
 }
 
-void config_fini (cma_configuration config)
+static void cma_config_fini (cma_configuration config)
 {
     if (config->valid)
     {
@@ -1353,7 +1354,7 @@ cma_configurationNew(
     _this->participant = cma_serviceParticipant(service);
     _this->serviceName = cma_serviceName(service); /* weak ref, cma_service outlives cma_configuration */
 
-    _this->cfgst = config_init(_this->participant, _this->serviceName, _this);
+    _this->cfgst = cma_config_init(_this->participant, _this->serviceName, _this);
     if (!_this->cfgst) {
         os_free(_this);
         return NULL;
@@ -1369,6 +1370,7 @@ cma__configurationDeinit(
     assert(_this);
 
     /* TODO deinit config */
+    cma_config_fini (_this);
 
     cma__objectDeinit(cma_object(_this));
 }
@@ -1377,7 +1379,7 @@ void
 cma_configurationPrint(
     cma_configuration _this)
 {
-    config_print_and_free_cfgst(_this->cfgst);
+    cma_config_print_and_free_cfgst(_this->cfgst);
     _this->cfgst = NULL;
 }
 

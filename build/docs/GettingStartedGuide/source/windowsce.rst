@@ -75,7 +75,7 @@ Alternatives to CAB file
 
 Microsoft's Windows CE Remote Registry Editor can be used instead of a
 ``CAB`` file to set the necessary registry values. Alternatively,
-PrismTech also provides a convenient method of editing the registry
+ADLINK also provides a convenient method of editing the registry
 variables by way of the ``ospl`` utility using the ``getenv`` and
 ``putenv`` parameters (described below).
 
@@ -83,9 +83,9 @@ Please refer to Microsoft's Windows CE documentation for detailed
 information about ``CAB`` files and the Remote Registry Editor.
 
 
-******************************
+*********************************
 The Vortex OpenSplice Environment
-******************************
+*********************************
 
 Vortex OpenSplice requires the contents of the *bin* , *lib* and *etc*
 directories from within the Vortex OpenSplice installation to be available
@@ -114,7 +114,7 @@ executables. For example:
 copied into the ```\Windows`` directory on the Windows CE device prior to
 deployment.)
 
-When running OpenSplice executables on the command prompt, it is useful
+When running Vortex OpenSplice executables on the command prompt, it is useful
 to redirect any output to text files by using the ``>`` operator.
 
 If the ``PATH`` and ``OSPL_URI`` variables have not already been set *via*
@@ -143,7 +143,7 @@ The secure networking service uses OpenSSL for cryptography support. To
 use this feature, the library ``libeay32.dll`` is required; it must be
 copied to the ``\Windows`` directory on the Windows CE device.
 
-OpenSplice is tested against OpenSSL version 0.9.8i. This may be built
+Vortex OpenSplice is tested against OpenSSL version 0.9.8i. This may be built
 as described below.
 
 Building OpenSSL for Windows CE 6.0
@@ -170,7 +170,7 @@ The following are needed to make an OpenSSL build for Windows CE 6.0:
 + An installed WinCE 6.0 SDK to be targeted
     In this description the
     target SDK is ``'WinCE-GS3Target'``
-    
+
 + Perl
     You will need to install Active Perl, from
     http://www.activestate.com/ActivePerl.
@@ -212,11 +212,11 @@ any location you want.
 .. code-block:: make
 
   set OSVERSION=WCE600
-  
+
   set TARGETCPU=ARMV4I
-  
+
   set PLATFORM=VC-CE
-  
+
   set PATH=C:\Program Files\Microsoft Visual Studio 8\VC\ce\bin\x86_arm;
   C:\Program Files\Microsoft Visual Studio 8\Common7\IDE;%PATH%
 
@@ -226,7 +226,7 @@ any location you want.
   set LIB=C:\Program Files\Windows CE Tools\wce600\WinCE-GS3Target\lib\
   ARMV4I;C:\Program Files\\Microsoft Visual Studio 8\VC\ce\lib\armv4
 
-.. 
+..
 
   If you target a different SDK, replace the text *WinCE-GS3Target*
   in the lines above with your own SDK.
@@ -302,7 +302,7 @@ Build OpenSSL
 
   set WCECOMPAT=C:\wcecompat
 
-.. 
+..
 
   If you target a different SDK, replace the text ``WinCE-GS3Target``
   in the lines above with your own SDK. Also, change the *wcecompat*
@@ -351,13 +351,13 @@ If you get the following error message:
 Remove ``/WX`` in the makefile (``ce.mak``).
 
 
-************************
-Deploying OpenSplice DDS
-************************
+***************************
+Deploying Vortex OpenSplice
+***************************
 
 ``ospl start``
-  This command will start the OpenSplice DDS ``splicedaemon`` and OpenSplice
-  DDS services specified within the configuration referred to by the
+  This command will start the Vortex OpenSplice ``splicedaemon`` and Vortex
+  OpenSplice services specified within the configuration referred to by the
   ``OSPL_URI`` variable:
 
   ``ospl start > osplstart.txt``
@@ -369,14 +369,14 @@ Deploying OpenSplice DDS
   |  ``HDE/armv4i.wince/etc/config/ospl.xml" > osplstart.txt``
 
 ``ospl list``
-  This command will list all the OpenSplice DDS configurations that are
+  This command will list all the Vortex OpenSplice configurations that are
   currently running on the node.
 
   ``ospl list > ospllist.txt``
 
 ``ospl stop``
-  This command will stop the OpenSplice DDS ``splicedaemon`` and OpenSplice
-  DDS services specified within the configuration referred to by the
+  This command will stop the Vortex OpenSplice ``splicedaemon`` and Vortex
+  OpenSplice services specified within the configuration referred to by the
   ``OSPL_URI`` variable:
 
   ``ospl stop > osplstop.txt``
@@ -415,14 +415,14 @@ where *<process id>* is displayed in the output for the particular
 instance of ``mmstat``.
 
 
-*******************
-OpenSplice Examples
-*******************
+**************************
+Vortex OpenSplice Examples
+**************************
 
 .. note: xref to install-configure.rst
 
 Please refer to the :ref:`Examples` section for descriptions of the
-OpenSplice DDS examples.
+Vortex OpenSplice examples.
 
 
 Building the examples
@@ -436,7 +436,7 @@ Once the projects are open in Microsoft Visual Studio, click
 *Build/Rebuild Solution* at the appropriate level to build the required
 examples.
 
-Copy the produced executable files to the OpenSplice DDS ``bin`` directory
+Copy the produced executable files to the Vortex OpenSplice ``bin`` directory
 (*i.e.* ``\NAND
 Flash\OpenSpliceDDS\<OpenSpliceVersion>\HDE\armv4i.wince\bin``) on
 the Windows CE device. For the PingPong example the executable files are
@@ -448,7 +448,7 @@ for a new project perform the following steps:
 
 **Step 1**
 
-  Run the OpenSplice command prompt from the *OpenSplice* entry under the
+  Run the Vortex OpenSplice command prompt from the *OpenSplice* entry under the
   Windows *Start* button:
 
   *Start > Programs > OpenSpliceDDS <OpenSpliceVersion> armv4i.wince HDE
@@ -461,7 +461,7 @@ for a new project perform the following steps:
   the *Visual Studio 2005 Command Prompt* entry located at *Start >
   Programs > Microsoft Visual Studio 2005 > Visual Studio Tools > Visual
   Studio 2005 Command Prompt* , and paste the *Shortcut Target* entry into
-  the OpenSplice command prompt. For example this could be
+  the Vortex OpenSplice command prompt. For example this could be
 
   ``%comspec% /k ""C:\Program Files\Microsoft Visual Studio 8\VC\vcvarsall.bat"" x86``
 
@@ -485,7 +485,7 @@ Start Vortex OpenSplice as described above. The Ping and Pong executables
 can then be started as follows:
 
   ``start pong PongRead PongWrite > pong.txt``
-  
+
   ``start ping 100 100 m PongRead PongWrite > ping.txt``
 
 The ``ping.txt`` file produced should contain the expected Ping Pong

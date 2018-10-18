@@ -1,0 +1,13 @@
+{
+  "name": "iotexample",
+  "version": "1.0.0",
+  "description": "",
+  "main": "IoTDataExample.js",
+  "dependencies": {
+    "path": "^0.12.7",
+    "vortexdds": "file:../../vortexdds-0.1.0.tgz"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
+}

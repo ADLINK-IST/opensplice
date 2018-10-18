@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,9 +25,10 @@
 #include "vortex_os.h"
 #include "os_report.h"
 
+#define DATE_SIZE (OS_CTIME_R_BUFSIZE)
 #define MAX_TIMESTAMP_LENGTH (10 + 1 + 6)
 #define MAX_TID_LENGTH       (15)
-#define MAX_HDR_LENGTH       (MAX_TIMESTAMP_LENGTH + 1 + MAX_TID_LENGTH + 2)
+#define MAX_HDR_LENGTH       (DATE_SIZE + 1 + MAX_TIMESTAMP_LENGTH + 1 + MAX_TID_LENGTH + 2)
 
 #define BUF_OFFSET MAX_HDR_LENGTH
 
@@ -82,16 +84,21 @@ cma__logbufFlushReal(
 
     if (gc->tracing.file) {
         char hdr[MAX_HDR_LENGTH + 1];
+        char date[DATE_SIZE];
         int n, tsec, tusec;
+        os_timeW time;
 
         if (_this->tstamp < 0) {
             _this->tstamp = cma_timeNow();
         }
 
         cma_time_sec_usec_conv(_this->tstamp, &tsec, &tusec);
+        OS_TIMEW_SET_VALUE(time, _this->tstamp);
+        os_ctimeW_r(&time, date, DATE_SIZE);
+
         _this->tstamp = -1;
-        n = snprintf(hdr, sizeof(hdr), "%d.%06d/%*.*s: ",
-            tsec, tusec, MAX_TID_LENGTH, MAX_TID_LENGTH, cma_threadName(self));
+        n = snprintf(hdr, sizeof(hdr), "%s %d.%06d/%*.*s: ",
+            date, tsec, tusec, MAX_TID_LENGTH, MAX_TID_LENGTH, cma_threadName(self));
         assert(n > 0 && n <= BUF_OFFSET);
         memcpy(_this->buf + BUF_OFFSET - (size_t)n, hdr, (size_t)n);
         (void)fwrite(_this->buf + BUF_OFFSET - (size_t)n, 1, _this->pos - BUF_OFFSET + (size_t)n, gc->tracing.file);

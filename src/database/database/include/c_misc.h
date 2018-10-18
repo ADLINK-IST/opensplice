@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,15 +44,14 @@ extern "C" {
 
 #define C_TYPECHECK(o,t) (o == c_checkType(o,#t))
 
-/**
- This function verifies the object type.
- The type of the object must be the same as or be derived from the specified type.
- If the type is correct the function will return the given object otherwise it will
- return NULL, so it can simply be added into existing code.
- If a type mismatch occures an error report is generated.
- If the standard assert functionality is enabled a type mismatch will result in
- an abort signal.
-**/
+/* This function verifies the object type.
+ * The type of the object must be the same as or be derived from the specified type.
+ * If the type is correct the function will return the given object otherwise it will
+ * return NULL, so it can simply be added into existing code.
+ * If a type mismatch occures an error report is generated.
+ * If the standard assert functionality is enabled a type mismatch will result in
+ * an abort signal.
+ */
 OS_API c_object c_checkType     (c_object o, const c_char *typeName);
 OS_API c_bool   c_instanceOf    (c_object o, const c_char *typeName);
 OS_API void     c_copyIn        (c_type type, const void *data, c_voidp *dest);

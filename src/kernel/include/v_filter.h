@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,29 +38,29 @@ extern "C" {
 
 OS_API v_filter
 v_filterNew (
-    v_topic t,
+    c_type t,
+    c_array keyList,
     q_expr e,
-    const c_value params[]);
+    const c_value params[],
+    os_uint32 nrOfParams);
 
-OS_API v_filter
-v_filterNewFromIndex (
-    v_index t,
-    q_expr e,
-    const c_value params[]);
+OS_API c_bool
+v_filterEvalKey (
+    v_filter _this,
+    c_object o);
 
 OS_API c_bool
 v_filterEval (
     v_filter _this,
     c_object o);
 
-OS_API void
-v_filterSplit (
-    v_topic topic,
-    q_expr where,
-    const c_value params[],
-    c_array *instanceQ,
-    c_array *sampleQ,
-    v_index index);
+OS_API c_bool
+v_filterHasKey (
+    v_filter _this);
+
+OS_API c_bool
+v_filterHasNonKey (
+    v_filter _this);
 
 #undef OS_API
 

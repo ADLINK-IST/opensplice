@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,7 +36,6 @@
  * The Delivery Service on the node of the DataWriter that has sent the message
  * will receive the delivery acknoledgement message and notify the DataWriter
  * that the sent message has been delivered.
- *
  */
 
 /**
@@ -48,12 +48,6 @@
  */
 #define v_deliveryService(o) (C_CAST(o,v_deliveryService))
 
-#define v_deliveryServiceLock(_this) \
-        v_observerLock(v_deliveryService(_this))
-
-#define v_deliveryServiceUnLock(_this) \
-        v_observerUnlock(v_deliveryService(_this))
-
 v_deliveryService
 v_deliveryServiceNew(
     v_subscriber subscriber,
@@ -64,29 +58,12 @@ v_deliveryServiceFree(
     v_deliveryService _this);
 
 v_result
-v_deliveryServiceEnable(
-    v_deliveryService _this);
+v__deliveryServiceEnable(
+    _Inout_ v_deliveryService _this);
 
 void
 v_deliveryServiceDeinit(
     v_deliveryService _this);
-
-/* the following v_deliveryServiceSubscribe and v_deliveryServiceUnSubscribe
- * methods are defined by the v_reader interface and are required to
- * establish connectivity to communication partitions.
- */
-c_bool
-v_deliveryServiceSubscribe(
-    v_deliveryService _this,
-    v_partition partition);
-
-c_bool
-v_deliveryServiceUnSubscribe(
-    v_deliveryService _this,
-    v_partition partition);
-
-#define v_deliveryServiceAddEntry(_this,entry) \
-        v_deliveryServiceEntry(v_readerAddEntry(v_reader(_this),v_entry(entry)))
 
 /* The v_deliveryServiceRegister method is called by the spliced to pass received
  * builtin subscription messages. The Delivery Service will use this information

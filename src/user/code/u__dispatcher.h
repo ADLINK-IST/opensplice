@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,7 +24,12 @@
 
 #include "u_observable.h"
 #include "u_entity.h"
-#include "u_dispatcher.h"
+
+/* Returns mask of events that have been handled by the listener. */
+typedef u_eventMask (*u_dispatcherListener)(u_dispatcher o, u_eventMask event, void *usrData);
+typedef void (*u_dispatcherThreadAction)(u_dispatcher o, void *usrData);
+
+#define  u_dispatcher(o) ((u_dispatcher)(o))
 
 u_dispatcher
 u_dispatcherNew(
@@ -32,6 +38,18 @@ u_dispatcherNew(
 u_result
 u_dispatcherFree(
     u_dispatcher _this);
+
+u_result
+u_dispatcherInsertListener(
+    const u_dispatcher _this,
+    const u_eventMask eventMask,
+    const u_observableListener l,
+    void *userData);
+
+u_result
+u_dispatcherRemoveListener(
+     const u_dispatcher _this,
+     const u_observableListener l);
 
 #endif
 

@@ -249,7 +249,7 @@ hand in order for the project to build correctly.
 The following section describes the second method.
 
 
-Changing the generated OpenSplice DDS project using *Multi*
+Changing the generated Vortex OpenSplice project using *Multi*
 ===========================================================
 
 You can make changes to any of the settings you specified with
@@ -266,7 +266,7 @@ Select the *All Options* tab and expand the *Advanced* section.
 
 **Step 3**
 
-Select *Advanced OpenSplice DDS XML To Int Convertor Options*. In the
+Select *Advanced Vortex OpenSplice XML To Int Convertor Options*. In the
 right-hand pane you will see the options that you have set with the
 ``ospl_projgen`` tool with their values, similar to
 `Integrity: changing project options in Multi`_ below.
@@ -295,7 +295,7 @@ please see section `The ospl_xml2int command`_.)
   Note that if you do remove filesystem support from the kernel image you
   should also remove all references to the ``ivfs`` library, and make
   appropriate changes to the ``ospl_log.c`` file as well. See section
-  `Amending OpenSplice DDS Configuration with Multi`_ for information
+  `Amending Vortex OpenSplice Configuration with Multi`_ for information
   about ``ospl_log.c``.
 
 Similarly you can change any other option and the changes are applied
@@ -309,7 +309,7 @@ When the changes are complete, rebuild the project by right-clicking on
 The ospl_xml2int Tool
 =====================
 
-The ``ospl_xml2int`` tool is used to inspect your OpenSplice DDS
+The ``ospl_xml2int`` tool is used to inspect your Vortex OpenSplice
 configuration file (``ospl.xml``) and generate an appropriate Integrate
 file (``ospl.int``). For more information on Integrate files please
 consult the Integrity manual.
@@ -374,7 +374,7 @@ the arguments are described in detail below.
 ``-o <file>``
   Name of the generated Integrate file.
 
-Applications linking with OpenSplice DDS must comply with the following
+Applications linking with Vortex OpenSplice must comply with the following
 requirements:
 
 + The ``First`` and ``Length`` parameters must match those of ``spliced``
@@ -446,8 +446,8 @@ files to match your setup. These files can be found under
 
 
 Once you have made all of the required changes to ``ospl.int``, you must
-rebuild the whole project. Your changes will be picked up by OpenSplice
-DDS automatically.
+rebuild the whole project. Your changes will be picked up by Vortex OpenSplice
+automatically.
 
 **************************************************
 Critical Warning about *Object 10* and *Object 11*
@@ -463,32 +463,32 @@ Critical Warning about *Object 10* and *Object 11*
   ``Object 11`` are defined (except those for ``ResourceStore`` as noted
   below). The value replacing ``10`` must be the same for every address
   space, and likewise for the value replacing ``11``. You **must** change
-  **all** references in order for OpenSplice DDS to work correctly.
+  **all** references in order for Vortex OpenSplice to work correctly.
 
   *The only exception is the* ``ResourceStore`` *address space.*
-  ``Object 10`` *and* ``Object 11`` *are unique to the OpenSplice DDS*
+  ``Object 10`` *and* ``Object 11`` *are unique to the Vortex OpenSplice*
   *ResourceStore and they* **MUST NOT** *be altered.*
-  *If you do change them, OpenSplice DDS*  **WILL NOT WORK!**
+  *If you do change them, Vortex OpenSplice*  **WILL NOT WORK!**
 |caution| |caution|
 
 
-**************************************************
-Amending OpenSplice DDS Configuration with *Multi*
-**************************************************
+*****************************************************
+Amending Vortex OpenSplice Configuration with *Multi*
+*****************************************************
 
-You can make changes to the OpenSplice DDS configuration from Multi by
+You can make changes to the Vortex OpenSplice configuration from Multi by
 editing the files under the project
 ``src/projgen.gpj/opensplice_configuration.gpj/libospl_cfg.gpj``. See
-`Integrity: changing OpenSplice DDS configuration in Multi`_ below:
+`Integrity: changing Vortex OpenSplice configuration in Multi`_ below:
 
 
-.. _`Integrity: changing OpenSplice DDS configuration in Multi`:
+.. _`Integrity: changing Vortex OpenSplice configuration in Multi`:
 
 .. figure:: /images/Integrity-DDSconfigMulti.png
    :height: 70mm
-   :alt: Integrity: changing OpenSplice DDS configuration in Multi
+   :alt: Integrity: changing Vortex OpenSplice configuration in Multi
 
-   **Integrity: changing OpenSplice DDS configuration in Multi**
+   **Integrity: changing Vortex OpenSplice configuration in Multi**
 
 
 |caution|
@@ -496,13 +496,13 @@ editing the files under the project
   ``ospl_log.c``. The others must **NOT** be altered!
 
 ``ospl.xml``
-  This is your OpenSplice DDS configuration file. (See
-  :ref:`Configuration` for more information about the options an OpenSplice DDS
+  This is your Vortex OpenSplice configuration file. (See
+  :ref:`Configuration` for more information about the options an Vortex OpenSplice
   configuration file may have.)
 
 ``ospl_log.c``
   This file determines where the log entries (errors,
-  warnings and informational messages) from OpenSplice DDS go. The way the
+  warnings and informational messages) from Vortex OpenSplice go. The way the
   default file is generated by ``ospl_projgen`` depends on whether you have
   specified filesystem support or not. (See comments within the file for
   more information.)

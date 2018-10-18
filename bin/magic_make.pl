@@ -50,6 +50,9 @@ my $ndebug = 0;
 
 my $config = 'Release';
 
+# When set enable the lib modifier which is set when release build and a debug build is included
+my $ospl_lib_modifier = 0;
+
 my $splice_target = $ENV{SPLICE_TARGET};
 if ($debug_override == '')
 {
@@ -67,6 +70,7 @@ if ($incdeb == 1)
     {
         $config = '"Release Debug"';
         $ndebug = 1;
+        $ospl_lib_modifier = 1;
     }
 }
 
@@ -386,6 +390,10 @@ sub do_mpc
   if ($ospl_home ne '')
   {
     unshift(@mpc_args, '--ospl-home', "$ospl_home");
+  }
+  if ($ospl_lib_modifier)
+  {
+      unshift(@mpc_args, '--ospl-libmod');
   }
   my $command = "mwc.pl @mpc_args";
   print STDERR "$scriptname: Generating MPC build file(s): $command\n";

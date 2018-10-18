@@ -8,7 +8,7 @@ SPECIAL      = DEBUG
 
 # Compiler flags
 CFLAGS_OPT       = -O0 -g
-CFLAGS_DEBUG     = -DNDEBUG
+CFLAGS_DEBUG     = -DNDEBUG  -funwind-tables
 CFLAGS_STRICT_UNINITIALIZED =
 JCFLAGS          = -g
 

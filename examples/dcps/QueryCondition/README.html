@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - QueryCondition</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic</a></li>
   <li>QueryCondition</li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -41,8 +42,8 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <ul><li> CheckStatus : provides return status checking</li>
         <li> DDSEntityManager : implements a class providing operations to set up DCPS
 entities(creation, deletion)</li>
-        <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_querycondition_pub" data-langcpp="sacpp_querycondition_pub" data-langjava="QueryConditionDataPublisher" data-langisocpp="publisher" data-langcs="sacs_querycondition_pub" data-langjava5="QueryConditionDataPublisher" data-langisocpp2="publisher">QueryConditionDataPublisher</span> <span class="ex-unit-desc">application generates stock quotes for two ticker symbols, GE and MSFT</span>.</li>
-        <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_querycondition_sub" data-langcpp="sacpp_querycondition_sub" data-langjava="QueryConditionDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_querycondition_sub" data-langjava5="QueryConditionDataSubscriber" data-langisocpp2="subscriber">QueryConditionDataSubscriber</span> <span class="ex-unit-desc">filters events through use of Queries</span>.
+        <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_querycondition_pub" data-langcpp="sacpp_querycondition_pub" data-langjava="QueryConditionDataPublisher" data-langisocpp="publisher" data-langcs="sacs_querycondition_pub" data-langjava5="pub/target/classes/QueryConditionDataPublisher" data-langisocpp2="publisher">QueryConditionDataPublisher</span> <span class="ex-unit-desc">application generates stock quotes for two ticker symbols, GE and MSFT</span>.</li>
+        <li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_querycondition_sub" data-langcpp="sacpp_querycondition_sub" data-langjava="QueryConditionDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_querycondition_sub" data-langjava5="sub/target/classes/QueryConditionDataSubscriber" data-langisocpp2="subscriber">QueryConditionDataSubscriber</span> <span class="ex-unit-desc">filters events through use of Queries</span>.
         </li></ul>
 
 <h4>Configurable:</h4>
@@ -115,9 +116,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_querycondition_sub.jar </li>
-                        <li>saj5_querycondition_pub.jar </li>
-                        <li>saj5_querycondition_types.jar </li>
+                <ul><li>java5_QueryCondition_sub.jar </li>
+                        <li>java5_QueryCondition_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
@@ -155,7 +155,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_querycondition_sub GE (or MSFT)</i></b> for C </li>
           <li><b><i>sacpp_querycondition_sub GE (or MSFT)</i></b> for C++ </li>
           <li><b><i>java -jar saj_quesrycondition_sub.jar GE (or MSFT)</i></b> for Java </li>
-          <li><b><i>java -jar saj5_querycondition_sub.jar GE (or MSFT)</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/java5_QueryCondition_sub.jar GE (or MSFT)</i></b> for Java5 </li>
           <li><b><i>subscriber GE (or MSFT)</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
@@ -164,7 +164,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
           <li><b><i>sac_querycondition_pub</i></b> for C </li>
           <li><b><i>sacpp_querycondition_pub</i></b> for C++ </li>
           <li><b><i>java -jar saj_quesrycondition_pub.jar </i></b> for Java </li>
-          <li><b><i>java -jar saj5_querycondition_pub.jar </i></b> for Java </li>
+          <li><b><i>java -jar pub/java5_QueryCondition_pub.jar </i></b> for Java </li>
           <li><b><i>publisher</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>
@@ -210,9 +210,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_querycondition_sub.jar </li>
-                        <li>saj5_querycondition_pub.jar </li>
-                        <li>saj5_querycondition_types.jar </li>
+                <ul><li>java5_QueryCondition_sub.jar </li>
+                        <li>java5_QueryCondition_pub.jar </li>
                 </ul>
 
 <h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
@@ -251,7 +250,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_querycondition_sub GE (or MSFT)</i></b> for C++ </li>
           <li><b><i>sacs_querycondition_sub GE (or MSFT)</i></b> for C# </li>
           <li><b><i>java -jar saj_quesrycondition_sub.jar GE (or MSFT)</i></b> for Java </li>
-          <li><b><i>java -jar saj5_querycondition_sub.jar GE (or MSFT)</i></b> for Java5 </li>
+          <li><b><i>java -jar sub/java5_QueryCondition_sub.jar GE (or MSFT)</i></b> for Java5 </li>
           <li><b><i>subscriber GE (or MSFT)</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
@@ -261,7 +260,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>sacpp_querycondition_pub</i></b> for C++ </li>
           <li><b><i>sacs_querycondition_pub</i></b> for C# </li>
           <li><b><i>java -jar saj_quesrycondition_pub.jar </i></b> for Java </li>
-          <li><b><i>java -jar saj5_querycondition_pub.jar </i></b> for Java5 </li>
+          <li><b><i>java -jar pub/java5_QueryCondition_pub.jar </i></b> for Java5 </li>
           <li><b><i>publisher</i></b> for ISO C++ 2 </li>
       </ul>
     </ul>

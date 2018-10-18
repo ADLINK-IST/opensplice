@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,7 +34,7 @@ import org.opensplice.cm.Topic;
  * Represents a tree node in an EntityTree. It holds a specific Entity. The
  * Entity depends on the entities that are contained by the child nodes of
  * this tree node. This class is a concrete descendant of EntityTreeNode.
- * 
+ *
  * @date Oct 4, 2004
  */
 public class DependantEntityTreeNode extends EntityTreeNode {
@@ -41,18 +42,18 @@ public class DependantEntityTreeNode extends EntityTreeNode {
     /**
      * Creates a new DependantEntityTreeNode, which holds the supplied Entity
      * and is created in the supplied tree.
-     * 
+     *
      * @param _e The Entity that the node needs to hold.
      * @param _tree The tree the node is located in.
      */
     public DependantEntityTreeNode(Entity _e, EntityTree _tree) {
         super(_e, _tree, _tree.getChildrenVisible());
     }
-    
+
     /**
      * Creates a new DependantEntityTreeNode, which holds the supplied Entity
      * and is created in the supplied tree.
-     * 
+     *
      * @param _e The Entity that the node needs to hold.
      * @param _tree The tree the node is located in.
      * @param childrenVisible Whether the children of this node should be resolved.
@@ -60,14 +61,14 @@ public class DependantEntityTreeNode extends EntityTreeNode {
     public DependantEntityTreeNode(Entity _e, EntityTree _tree, boolean childrenVisible) {
         super(_e, _tree, childrenVisible);
     }
-    
+
     /**
-     * Refreshes this node by resolving the dependant entities of the Entity
-     * that is associated with this node. When an Entity is not available 
+     * Refreshes this node by resolving the dependent entities of the Entity
+     * that is associated with this node. When an Entity is not available
      * anymore it will result in the child node being removed. When an Entity
      * was found that is not already a child of this node, a new child node is
      * added to this node.
-     * 
+     *
      * When the Entity associated with this node is not available anymore, the
      * parent node of this node will be refreshed.
      */
@@ -76,13 +77,13 @@ public class DependantEntityTreeNode extends EntityTreeNode {
         Entity entity = (Entity)userObject;
         Entity[] entities = null;
         boolean proceed;
-        
+
         if(this.childrenVisible){
             Object rootNode = tree.getTreeModel().getRoot();
-            
+
             /*
-             * Determine whether to resolve dependant entities here. There is
-             * a cyclomatic reference in the dependant entities. This is as
+             * Determine whether to resolve dependent entities here. There is
+             * a cyclomatic reference in the dependent entities. This is as
              * expected, but tooling should not display it.
              */
             if(this.getParent() instanceof RootTreeNode){
@@ -94,7 +95,7 @@ public class DependantEntityTreeNode extends EntityTreeNode {
             } else {
                 proceed = true;
             }
-            
+
             if(proceed){
                 try {
                     entities = entity.getDependantEntities(EntityFilter.ENTITY);
@@ -107,21 +108,36 @@ public class DependantEntityTreeNode extends EntityTreeNode {
                     /*
                      * Don't refresh the parent, because it potentially makes the
                      * application get into a deadlock, when the entity of this node
-                     * is being created and deleted in the splice kernel in the same 
+                     * is being created and deleted in the splice kernel in the same
                      * frequency as the refresh action.
                      */
-                    //p.refresh();
                     return;
                 }
                 int childCount = entities.length;
-                
+
                 for(int i=0; i<childCount; i++){
-                    DependantEntityTreeNode child = (DependantEntityTreeNode)(this.resolveChildNode(entities[i]));
-                    
+
+                    Entity childEntity = entities[i];
+
+                    DependantEntityTreeNode child = (DependantEntityTreeNode)(this.resolveChildNode(childEntity));
+
+                    if (childEntity instanceof Topic){
+                        boolean isFilteredTopic = TopicFilter.getInstance().isFilteredOutTopic(childEntity);
+
+                      //if the topic meets the topic filter criteria, do not include in tree
+                        if (isFilteredTopic){
+                            if (child != null){
+                                child.remove();
+                            }
+                            childEntity.free();
+                            continue;
+                        }
+                    }
+
                     if(child != null){
-                        entities[i].free();
+                        childEntity.free();
                     } else {
-                        child = new DependantEntityTreeNode(entities[i], tree, this.recursiveVisible);//tree.getChildrenVisible());
+                        child = new DependantEntityTreeNode(childEntity, tree, this.recursiveVisible);
                         tree.addNode(child, this);
                     }
                     if(this.isExpanded()){

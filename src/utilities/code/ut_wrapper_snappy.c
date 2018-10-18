@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,8 +44,7 @@ typedef struct wrapper_snappy {
     _snappy_max_compressed_length max_compressed_length;
 } wrapper_snappy;
 
-/*
- * The lzf compress wrapper will return a buffer which the
+/* The lzf compress wrapper will return a buffer which the
  * following layout:
  * +=============================
  * |  0  |  1  |  2  | ... |  n
@@ -288,6 +288,8 @@ ut__wrapper_snappy_init (
                       "At least one of required functions 'snappy_init_env,snappy_free_env,snappy_uncompress"
                       ",snappy_compress,snappy_uncompressed_length,snappy_max_compressed_length' not found");
         }
+    } else {
+        os_free(wrapper);
     }
 
     return result;

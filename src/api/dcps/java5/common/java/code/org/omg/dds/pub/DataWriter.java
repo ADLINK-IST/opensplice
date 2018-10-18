@@ -70,7 +70,7 @@ import org.omg.dds.topic.Topic;
  * DataWriterQos dwq  = myPub.copyFromTopicQos(myPub.getDefaultDataWriterQos(), fooTopic.getQos()
  * DataWriter&lt;Foo&gt; fooDW = myPub.createDataWriter(fooTopic,dwq);
  * // Instantiate and initialize a sample of type Foo.
- * Foo myFoo = new Foo(10, "Vortex OpenSplice DDS");
+ * Foo myFoo = new Foo(10, "Vortex OpenSplice);
  * // Register this instance in the DataWriter and write the 1st sample.
  * InstanceHandle myHandle = fooDW.registerInstance(myFoo);
  *

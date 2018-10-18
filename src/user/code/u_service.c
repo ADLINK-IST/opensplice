@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -48,10 +49,6 @@
 
 #define SERVICE_PATH "Domain/Service[@name='%s']"
 
-/**************************************************************
- * global data
- **************************************************************/
-
 struct atExitInfo {
     u_service service;
     u_serviceAtExitAction action;
@@ -61,10 +58,6 @@ struct atExitInfo {
 static c_iter atExitInfoList = NULL;
 static os_mutex atExitMutex;
 
-/**************************************************************
- * private functions
- **************************************************************/
-
 static c_ulong
 u_serviceSpliceListener(
     const u_observable o,
@@ -72,16 +65,16 @@ u_serviceSpliceListener(
     const c_voidp usrData)
 {
     v_serviceStateKind kind;
-    u_serviceManager serviceManager = u_serviceManager(usrData);
+    u_service service = u_service(usrData);
 
     OS_UNUSED_ARG(o);
     OS_UNUSED_ARG(event);
 
-    assert(serviceManager != NULL);
+    assert(service != NULL);
 
-    kind = u_serviceManagerGetServiceStateKind(serviceManager, V_SPLICED_NAME);
+    kind = u_serviceManagerGetServiceStateKind(service->serviceManager, V_SPLICED_NAME);
     if ((kind != STATE_INITIALISING) && (kind != STATE_OPERATIONAL)) {
-        serviceManager->callback(kind, serviceManager->usrData);
+        service->callback(kind, service->usrData);
     }
     return V_EVENT_SERVICESTATE_CHANGED;
 }
@@ -168,7 +161,8 @@ serviceAtExitInfoRemove(
     struct atExitInfo *info;
 
     /* See the comment at the start of u_service.h for more
-     * information about serviceAtExit functionality. */
+     * information about serviceAtExit functionality.
+     */
 
     os_mutexLock(&atExitMutex);
     info = c_iterTakeAction(atExitInfoList,
@@ -191,14 +185,14 @@ serviceAtExitInfoAdd(
     struct atExitInfo *info;
 
     /* See the comment at the start of u_service.h for more
-     * information about serviceAtExit functionality. */
+     * information about serviceAtExit functionality.
+     */
 
     info = os_malloc(sizeof(struct atExitInfo));
 
-    /* Don't c_keep this service, otherwise it will never be
-     * freed.
-     * Anyway, it will be removed from the list in the related
-     * deinit anyway. */
+    /* Don't c_keep this service, otherwise it will never be freed.
+     * Anyway, it will be removed from the list in the related deinit anyway.
+     */
     info->service  = _this;
     info->action   = action;
     info->data     = privateData;
@@ -223,66 +217,6 @@ serviceAtExitWalkAction(
     info->action(info->service, info->data);
 }
 
-
-#if 0 /* need to review if this is still needed */
-static void
-freeKernelServiceObject (
-    v_public e,
-    c_voidp argument)
-{
-    OS_UNUSED_ARG(argument);
-    v_serviceFree(v_service(e));
-}
-
-static os_result
-u__serviceExceptionCallbackWrapper(
-        void * arg)
-{
-    os_result result = os_resultSuccess;
-    u_observable serviceEntity = (u_observable)arg;
-    v_participant kp;
-    v_leaseManager lm;
-
-    assert(serviceEntity);
-
-    /* do not detach when using single process as this does not function correctly for single process*/
-    if(!os_serviceGetSingleProcess()) {
-        OS_REPORT(OS_ERROR, "u__serviceExceptionCallbackWrapper", U_RESULT_INTERNAL_ERROR,
-                "Exception occurred, will detach service from domain.");
-
-        /* before freeing the service object be sure the attached processes from the lease manager and resend manager are stopped */
-        if (U_RESULT_OK == u_participantReadClaim(u_entity(serviceEntity), (v_entity*)(&kp))) {
-            if (kp != NULL) {
-                lm = v_participantGetLeaseManager(kp);
-                if (lm != NULL) {
-                    v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
-
-                }
-                v_participantResendManagerQuit(kp);
-                if (lm != NULL) {
-                    os_threadWaitExit(u_participant(serviceEntity)->threadId, NULL);
-                    c_free(lm);
-                } else {
-                    OS_REPORT(OS_ERROR, "v_participantGetLeaseManager",
-                              U_RESULT_INTERNAL_ERROR, "Access to lease manager failed.");
-                }
-                os_threadWaitExit(u_participant(serviceEntity)->threadIdResend, NULL);
-                u_participantRelease(serviceEntity);
-            }
-        }
-        /* calling the kernel service free directly because only the kernel administration needs to be removed */
-        if (u_observableAction(serviceEntity,freeKernelServiceObject,NULL) != U_RESULT_OK){
-            result = os_resultFail;
-        }
-    }
-    return result;
-}
-#endif
-
-/**************************************************************
- * internal public funcions
- **************************************************************/
-
 void
 u__serviceInitialise(void)
 {
@@ -306,7 +240,7 @@ u__serviceExit(
         /* Wait for the services to be terminated. */
         while (c_iterLength(atExitInfoList) > 0) {
             os_mutexUnlock(&atExitMutex);
-            os_sleep(delay);
+            ospl_os_sleep(delay);
             os_mutexLock(&atExitMutex);
         }
 
@@ -318,11 +252,6 @@ u__serviceExit(
     /* Never need the mutex anymore. */
     os_mutexDestroy(&atExitMutex);
 }
-
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 
 u_result
 u__serviceDeinitW(
@@ -399,6 +328,7 @@ u_serviceNewSpecialized (
     }
 
     c_free(kQos);
+    c_free(kService);
     u_observableRelease(u_observable(domain), C_MM_RESERVATION_HIGH);
     return service;
 
@@ -459,7 +389,7 @@ u_serviceInit(
     if (r == U_RESULT_OK) {
         name = v_serviceGetName(ks);
         if (name != NULL) {
-            path = (c_char *)os_malloc(strlen(SERVICE_PATH) + strlen(name));
+            path = (c_char *)os_malloc(strlen(SERVICE_PATH) + strlen(name) + 1);
             /* NULL terminator is covered by '%s' in SERVICE_PATH constant */
             os_sprintf(path, SERVICE_PATH, name);
             if (lockPages(v_objectKernel(ks), path)) {
@@ -486,9 +416,6 @@ u_serviceInit(
     return r;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 u_bool
 u_serviceChangeState(
     const u_service _this,
@@ -545,30 +472,18 @@ u_serviceWatchSpliceDaemon(
     const void *usrData)
 {
     u_result r = U_RESULT_OK;
-    u_eventMask mask;
 
     assert(_this != NULL);
 
-    r = u_observableGetListenerMask(u_observable(_this), &mask);
-    if (r == U_RESULT_OK) {
-        if (listener == NULL) {
-            r = u_observableRemoveListener(u_observable(_this),u_serviceSpliceListener);
-            if (r == U_RESULT_OK) {
-                mask &= ~V_EVENT_SERVICESTATE_CHANGED;
-                r = u_serviceManagerSetListener(_this->serviceManager, NULL, NULL);
-            }
-        } else {
-            r = u_serviceManagerSetListener(_this->serviceManager, listener, usrData);
-            if (r == U_RESULT_OK) {
-                mask |= V_EVENT_SERVICESTATE_CHANGED;
-                r = u_observableAddListener(u_observable(_this),
-                                            u_serviceSpliceListener,
-                                            _this->serviceManager);
-            }
-        }
-        if (r == U_RESULT_OK) {
-            r = u_observableSetListenerMask(u_observable(_this), mask);
-        }
+    if (listener == NULL) {
+        r = u_observableRemoveListener(u_observable(_this),u_serviceSpliceListener);
+    } else {
+        _this->callback = listener;
+        _this->usrData = (void *)usrData;
+        r = u_observableAddListener(u_observable(_this),
+                                    V_EVENT_SERVICESTATE_CHANGED,
+                                    u_serviceSpliceListener,
+                                    _this);
     }
     return r;
 }
@@ -612,7 +527,8 @@ u_serviceAtExit(
     assert(action != NULL);
 
     /* See the comment at the start of u_service.h for more
-     * information about serviceAtExit functionality. */
+     * information about serviceAtExit functionality.
+     */
 
     r = u_observableWriteClaim(u_observable(_this), (v_public *)(&kernelService), C_MM_RESERVATION_ZERO);
     if(r == U_RESULT_OK)
@@ -657,7 +573,7 @@ u_serviceThreadSetDomainId(
         domain = u_userLookupDomain(domainId);
         if (domain) {
             u_domainIdSetThreadSpecific(domain);
-            u_domainClose(domain);
+            (void)u_domainClose(domain);
         }
     }
 }
@@ -706,7 +622,7 @@ u_serviceThreadWrapper(
         domain = u_userLookupDomain(tinfo->domainId);
         if (domain) {
             u_domainIdSetThreadSpecific(domain);
-            u_domainClose(domain);
+            (void)u_domainClose(domain);
         }
     }
 
@@ -738,3 +654,24 @@ u_serviceThreadCreate(
 
     return r;
 }
+
+u_result
+u_serviceFillNewGroups(
+    const u_service _this)
+{
+    u_result r;
+    v_service kservice;
+
+    assert(_this != NULL);
+
+    r = u_observableReadClaim(u_observable(_this), (v_public *)(&kservice), C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK) {
+        assert(kservice);
+        v_serviceFillNewGroups(kservice);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_serviceFillNewGroups", r, "Failed to claim service.");
+    }
+    return r;
+}
+

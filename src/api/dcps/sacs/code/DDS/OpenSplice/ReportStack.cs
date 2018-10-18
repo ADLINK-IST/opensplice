@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
 
 using DDS;
 using DDS.OpenSplice.OS;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -93,6 +95,11 @@ namespace DDS.OpenSplice
             return fileName;
         }
 
+        internal static void Start()
+        {
+            Start(null, 0, null, IntPtr.Zero);
+        }
+
         internal static void Flush(SacsSuperClass obj, bool valid)
         {
             if (FlushRequired(valid) != 0) {
@@ -115,6 +122,7 @@ namespace DDS.OpenSplice
                    getFileName(callStack),
                    callStack.GetFileLineNumber(),
                    returnCode,
+                   -1, true,
                    GetReturnCodePrefix(returnCode) + description);
         }
 
@@ -128,6 +136,7 @@ namespace DDS.OpenSplice
                    getFileName(callStack),
                    callStack.GetFileLineNumber(),
                    DDS.ReturnCode.Ok,
+                   -1, true,
                    description);
         }
 
@@ -141,20 +150,21 @@ namespace DDS.OpenSplice
                    getFileName(callStack),
                    callStack.GetFileLineNumber(),
                    DDS.ReturnCode.Ok,
+                   -1, true,
                    description);
         }
 
 
-        [DllImport("ddskernel", EntryPoint = "os_report_stack", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Start();
+        [DllImport("ddskernel", EntryPoint = "os_report_stack_open", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void Start(string fileName, int lineNumber, string signature, IntPtr userInfo);
 
-        [DllImport("ddskernel", EntryPoint = "os_report_stack_unwind", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ddskernel", EntryPoint = "os_report_flush", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Flush(bool valid, string reportContext, string fileName, int lineNumber, int domainId);
 
         [DllImport("ddskernel", EntryPoint = "os_report", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Report(ReportType type, string reportContext, string fileName, int lineNo, DDS.ReturnCode reportCode, string description);
+        internal static extern void Report(ReportType type, string reportContext, string fileName, int lineNo, DDS.ReturnCode reportCode, int domainId, bool stack, string description);
 
-        [DllImport("ddskernel", EntryPoint = "os_report_stack_flush_required", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ddskernel", EntryPoint = "os_report_status", CallingConvention = CallingConvention.Cdecl)]
         internal static extern int FlushRequired(bool valid);
     }
 }

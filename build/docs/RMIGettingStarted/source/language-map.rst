@@ -143,6 +143,14 @@ IDL sequences are mapped as specified by the DDS standard.
   string               DDS::String
   ===================  ==============
 
+|caution| |cpp|
+  Please be aware that the RMI middleware assumes ownership of any
+  ``DDS::String`` that is provided to it (either by an in/inout argument
+  or return value). This also means that it'll free the given string. This
+  can cause issues when the application keeps using the provided string after
+  the RMI call or if RMI is called with a const string literal. It is advised
+  to apply ``DDS::string_dup(str)`` when using strings in conjunction with
+  RMI. This is also applicable to sequences of strings.
 
 
 

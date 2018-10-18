@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,6 +39,7 @@
 #include "os_report.h"
 #include "os_uniqueNodeId.h"
 #include "os_atomics.h"
+#include "os_signalHandler.h"
 
 /** \brief Counter that keeps track of number of times os-layer is initialized */
 static pa_uint32_t _ospl_osInitCount = PA_UINT32_INIT(0);
@@ -88,6 +90,7 @@ os_osExit (
     initCount = pa_dec32_nv(&_ospl_osInitCount);
 
     if (initCount == 0) {
+
         os_condModuleExit();
 #ifndef LITE
         os_sharedMemoryExit();
@@ -121,6 +124,7 @@ os__osExit(
         void)
 {
     os_osExit();
+    return;
 }
 
 #include "../common/code/os_service.c"

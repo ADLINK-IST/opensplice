@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,9 +46,9 @@
 
 /** Text indentation level (4 spaces per indent) */
 static c_long loopIndent;
-    /** Index for array loop variables, incremented for each array dimension */
+/** Index for array loop variables, incremented for each array dimension */
 static c_long varIndex;
-    /** Indicates if the generation of a type should be skipped until the following type */
+/** Indicates if the generation of a type should be skipped until the following type */
 static c_bool skip;
 
 
@@ -440,10 +441,6 @@ idl_structureMemberOpenClose(
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_cxxId(name));
         /* QAC EXPECT 3416; No side effect here */
-#if 0
-    } else if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
-               (idl_typeSpecType(typeSpec) == idl_tunion)) {
-#endif
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
         IDL_PRINTLINE(indent);
         idl_printIndent(indent);
@@ -477,8 +474,6 @@ idl_structureMemberOpenClose(
                 snprintf(sname, sizeof(sname), "_%s_seq", idl_cxxId(name));
                 idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType",
                         tmp_string);
-//                idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType",
-//                        idl_scopeStack(idl_typeUserScope(idl_typeUser(subType)), "::", sname));
             } else {
                 idl_fileOutPrintf (idl_fileCur(), "    typedef %s _SrcType", tmp_string);
             }

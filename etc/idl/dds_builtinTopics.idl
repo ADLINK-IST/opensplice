@@ -1,10 +1,9 @@
 #ifndef OSPL_DDS_BUILTINTOPICS_IDL
 #define OSPL_DDS_BUILTINTOPICS_IDL
 
-/*
-This file was the one orginally in ./src/api/dcps/saj/code/.
-(and therefore by implication ./src/api/dcps/cj/java/code).
-*/
+/* This file was the one orginally in ./src/api/dcps/saj/code/.
+ * (and therefore by implication ./src/api/dcps/cj/java/code).
+ */
 
 #define BUILTIN_TOPIC_KEY_TYPE_NATIVE   long
 

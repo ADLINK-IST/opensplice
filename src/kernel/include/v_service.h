@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -116,20 +117,6 @@ v_serviceFree(
  */
 OS_API void
 v_serviceDeinit(
-    v_service service);
-
-/**
- * \brief Returns the state of the service.
- *
- * Each service has a state, whose validity must be confirmed periodically.
- *
- * \param service the service object to operate on.
- *
- * \return a reference to the <code>v_serviceState</code> object of
- *         this service.
- */
-OS_API v_serviceState
-v_serviceGetState(
     v_service service);
 
 /**

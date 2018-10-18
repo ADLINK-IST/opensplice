@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -82,14 +83,13 @@ os_malloc (
 #else
     ptr = ptr_malloc(size);
 #endif
-    assert((((char *)ptr)-(char *)0)%8 == 0);
+
     if(size == 0 && !ptr) {
         /* os_malloc() should never return NULL. Although it is not allowed to
          * pass size 0, this fallback assures code continues to run if the
          * os_malloc(0) isn't caught in a DEV-build. */
         ptr = ptr_malloc(1);
     }
-    assert((((char *)ptr)-(char *)0)%8 == 0);
 
     if(ptr == NULL) {
         /* Heap exhausted */
@@ -133,7 +133,6 @@ os_realloc(
 #endif
 
     ptr = ptr_realloc(ptr, size);
-    assert((((char *)ptr)-(char *)0)%8 == 0);
 
 #ifdef OSPL_STRICT_MEM
     if ( size > 0 && ptr != NULL )
@@ -169,8 +168,6 @@ os_free (
 {
     if (ptr != NULL)
     {
-       assert((((char *)ptr)-(char *)0)%8 == 0);
-
 #ifdef OSPL_STRICT_MEM
         {
           size_t i;

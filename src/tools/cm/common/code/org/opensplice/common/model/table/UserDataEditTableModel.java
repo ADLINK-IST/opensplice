@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,7 +33,7 @@ import org.opensplice.common.controller.UserDataEditTableEditor;
 /**
  * Table model which contains one instance of UserData and offers facilities to
  * edit the values of the fields in the data.
- * 
+ *
  * @date Oct 28, 2004
  */
 public class UserDataEditTableModel extends UserDataSingleTableModel {
@@ -45,7 +46,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
      * Creates a new table model, which makes it possible to edit values of
      * fields in UserData instances. The UserData type must be the same as the
      * supplied type.
-     * 
+     *
      * @param _userDataType
      *            The type of the UserData that can be edited.
      */
@@ -66,10 +67,10 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
 
     /**
      * Called when user wants to edit a field in the table.
-     * 
+     *
      * Returns true if the user wants to edit one of the value fields and the
      * editor is set, false otherwise.
-     * 
+     *
      * @param row
      *            The row to edit.
      * @param column
@@ -109,7 +110,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
 
     /**
      * Provides access to the UserData, that is currently in the table.
-     * 
+     *
      * @return The current UserData.
      */
     @Override
@@ -131,7 +132,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
 
     /**
      * Provides stops the table edit so edited data can be written.
-     * 
+     *
      */
     @Override
     public void stopEdit() throws CommonException {
@@ -145,43 +146,47 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         }
     }
 
-    public boolean setData(UserData data){
+    public boolean setData(UserData data) {
         boolean result = false;
-        if(data != null){
-            ud.getUserData().putAll(data.getUserData());
 
-            int rowCount = this.getRowCount();
-            LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
-            for (int i = 0; i < rowCount; i++) {
-                String fieldName = (String) this.getValueAt(i, 1);
-                if (ud.getUserDataType().getField(fieldName).getTypeName().startsWith("C_SEQUENCE")) {
-                    this.setValueAt(ud.getFieldValue(fieldName), i, 2);
-                    result = true;
-                } else {
-                    StringBuilder fieldValue = new StringBuilder();
-                    LinkedHashSet<String> tmpS = new LinkedHashSet<String>(s);
-                    for (String key : tmpS) {
-                        String value = (data.getUserData().get(key));
-                        String newKey = key.replaceAll("[\\[0-9]*]", "");
-                        /*
-                         * if the key is equal to the fieldName we got the same data
-                         * so ignore for GUI
-                         */
-                        if (newKey.startsWith(fieldName)) {
-                            if (fieldValue.length() != 0) {
-                                fieldValue.append(",");
+            if(data != null){
+                ud.getUserData().putAll(data.getUserData());
+                int rowCount = this.getRowCount();
+                LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
+                for (int i = 0; i < rowCount; i++) {
+                    String fieldName = (String) this.getValueAt(i, 1);
+                    try {
+                        if (ud.getUserDataType() != null && fieldName != null && ud.getUserDataType().getField(fieldName).getTypeName().startsWith("C_SEQUENCE")) {
+                            this.setValueAt(ud.getFieldValue(fieldName), i, 2);
+                            result = true;
+                        } else {
+                            StringBuilder fieldValue = new StringBuilder();
+                            LinkedHashSet<String> tmpS = new LinkedHashSet<String>(s);
+                            for (String key : tmpS) {
+                                String value = (data.getUserData().get(key));
+                                String newKey = key.replaceAll("[\\[0-9]*]", "");
+                                /*
+                                 * if the key is equal to the fieldName we got the same data
+                                 * so ignore for GUI
+                                 */
+                                if (newKey.startsWith(fieldName)) {
+                                    if (fieldValue.length() != 0) {
+                                        fieldValue.append(",");
+                                    }
+                                    fieldValue.append(value);
+                                    s.remove(key);
+                                }
                             }
-                            fieldValue.append(value);
-                            s.remove(key);
+                            if (fieldValue.length() != 0) {
+                                this.setValueAt(fieldValue.toString(), i, 2);
+                            }
                         }
-                    }
-                    if (fieldValue.length() != 0) {
-                        this.setValueAt(fieldValue.toString(), i, 2);
+                    } catch (NullPointerException npe) {
+                        // ignore see OSPL-10362
                     }
                 }
+                result = true;
             }
-            result = true;
-        }
         return result;
     }
 
@@ -231,7 +236,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
 
     /**
      * Sets the supplied editor as the editor for data in this model.
-     * 
+     *
      * @param _editor
      *            The new editor.
      */

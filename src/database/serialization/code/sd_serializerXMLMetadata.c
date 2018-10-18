@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -853,8 +854,6 @@ sd_createOrLookupType(
     *actualType = NULL;
     *typeExisted = FALSE;
 
-    /* Free the abstract type that was created before */
-    /* c_free(*objectPtr); */
     helperPtrPtr = &dataPtr;
 
     kindPtrPtr = &kindPtr;
@@ -1039,7 +1038,8 @@ sd_XMLMetadataDeserCallbackPre(
     typeAction = sd_matchesAbstractTypeAddresses(special, c_typeActualType(type));
     if (typeAction) {
         /* This is an abstract type. Lookup the concrete instance type and
-         * create it, if it does not exist */
+         * create it, if it does not exist
+         */
         if (!sd_createOrLookupType(objectPtr, *dataPtrPtr, &actualType, &typeExisted, errorInfo, special)) {
             return FALSE;
         }
@@ -1240,7 +1240,8 @@ sd_XMLMetadataDeserHook(
                     /* This is a special case. The type has already been set
                      * before the deserializer has processed it. The only known
                      * situation for this is c_string: c_stringNew sets the
-                     * subtype. */
+                     * subtype.
+                     */
                     special->currentContext.existingType = c_type(typeInstance);
                     special->currentContext.doCompare = TRUE;
                     if (!doSerHook(doRecurse, name, propOrMem, objectPtr, dataPtrPtr, errorInfo, special)) {

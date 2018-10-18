@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -768,7 +769,7 @@ void
 dds_qset_durability (dds_qos_t *qos, dds_durability_kind_t kind)
 {
     if (qos) {
-        qos->durability.kind = kind;
+        qos->durability.kind = (DDS_DurabilityQosPolicyKind)kind;
         QOS_POLICY_SET(qos, QOS_POLICY_DURABILITY);
     }
 }
@@ -777,7 +778,7 @@ void
 dds_qset_history (dds_qos_t *qos, dds_history_kind_t kind, int32_t depth)
 {
     if (qos) {
-        qos->history.kind = kind;
+        qos->history.kind = (DDS_HistoryQosPolicyKind)kind;
         qos->history.depth = depth;
         QOS_POLICY_SET(qos, QOS_POLICY_HISTORY);
     }
@@ -798,7 +799,7 @@ void
 dds_qset_presentation (dds_qos_t *qos, dds_presentation_access_scope_kind_t access_scope, bool coherent_access, bool ordered_access)
 {
     if (qos) {
-        qos->presentation.access_scope = access_scope;
+        qos->presentation.access_scope = (DDS_PresentationQosPolicyAccessScopeKind)access_scope;
         qos->presentation.coherent_access = coherent_access;
         qos->presentation.ordered_access = ordered_access;
         QOS_POLICY_SET(qos, QOS_POLICY_PRESENTATION);
@@ -836,7 +837,7 @@ void
 dds_qset_ownership (dds_qos_t *qos, dds_ownership_kind_t kind)
 {
     if (qos) {
-        qos->ownership.kind = kind;
+        qos->ownership.kind = (DDS_OwnershipQosPolicyKind)kind;
         QOS_POLICY_SET(qos, QOS_POLICY_OWNERSHIP);
     }
 }
@@ -854,7 +855,7 @@ void
 dds_qset_liveliness (dds_qos_t *qos, dds_liveliness_kind_t kind, dds_duration_t lease_duration)
 {
     if (qos) {
-        qos->liveliness.kind = kind;
+        qos->liveliness.kind = (DDS_LivelinessQosPolicyKind)kind;
         qos->liveliness.lease_duration = dds_duration_to_sac(lease_duration);
         QOS_POLICY_SET(qos, QOS_POLICY_LIVELINESS);
     }
@@ -896,7 +897,7 @@ void
 dds_qset_reliability (dds_qos_t *qos, dds_reliability_kind_t kind, dds_duration_t max_blocking_time)
 {
     if (qos) {
-        qos->reliability.kind = kind;
+        qos->reliability.kind = (DDS_ReliabilityQosPolicyKind)kind;
         qos->reliability.max_blocking_time = dds_duration_to_sac(max_blocking_time);
         qos->reliability.synchronous = false;
         QOS_POLICY_SET(qos, QOS_POLICY_RELIABLE);
@@ -916,7 +917,7 @@ void
 dds_qset_destination_order (dds_qos_t *qos, dds_destination_order_kind_t kind)
 {
     if (qos) {
-        qos->destination_order.kind = kind;
+        qos->destination_order.kind = (DDS_DestinationOrderQosPolicyKind)kind;
         QOS_POLICY_SET(qos, QOS_POLICY_DESTINATION_ORDER);
     }
 }
@@ -960,7 +961,7 @@ dds_qset_durability_service (
 {
     if (qos) {
         qos->durability_service.service_cleanup_delay = dds_duration_to_sac(service_cleanup_delay);
-        qos->durability_service.history_kind = history_kind;
+        qos->durability_service.history_kind = (DDS_HistoryQosPolicyKind)history_kind;
         qos->durability_service.history_depth = history_depth;
         qos->durability_service.max_samples = max_samples;
         qos->durability_service.max_instances = max_instances;
@@ -998,7 +999,7 @@ dds_qget_durability (const dds_qos_t *qos, dds_durability_kind_t *kind)
 {
     if (qos) {
         if (kind) {
-            *kind = qos->durability.kind;
+            *kind = (dds_durability_kind_t)qos->durability.kind;
         }
     }
 }
@@ -1008,7 +1009,7 @@ dds_qget_history (const dds_qos_t *qos, dds_history_kind_t *kind, int32_t * dept
 {
     if (qos) {
         if (kind) {
-            *kind = qos->history.kind;
+            *kind = (dds_history_kind_t)qos->history.kind;
         }
         if (depth) {
             *depth = qos->history.depth;
@@ -1037,7 +1038,7 @@ dds_qget_presentation (const dds_qos_t *qos, dds_presentation_access_scope_kind_
 {
     if (qos) {
         if (access_scope) {
-            *access_scope = qos->presentation.access_scope;
+            *access_scope = (dds_presentation_access_scope_kind_t)qos->presentation.access_scope;
         }
         if (coherent_access) {
             *coherent_access = qos->presentation.coherent_access;
@@ -1083,7 +1084,7 @@ dds_qget_ownership (const dds_qos_t *qos, dds_ownership_kind_t *kind)
 {
     if (qos) {
         if (kind) {
-            *kind = qos->ownership.kind;
+            *kind = (dds_ownership_kind_t)qos->ownership.kind;
         }
     }
 }
@@ -1103,7 +1104,7 @@ dds_qget_liveliness (const dds_qos_t *qos, dds_liveliness_kind_t *kind, dds_dura
 {
     if (qos) {
         if (kind) {
-            *kind = qos->liveliness.kind;
+            *kind = (dds_liveliness_kind_t)qos->liveliness.kind;
         }
         if (lease_duration) {
             *lease_duration = dds_duration_from_sac(qos->liveliness.lease_duration);
@@ -1150,7 +1151,7 @@ dds_qget_reliability (const dds_qos_t *qos, dds_reliability_kind_t *kind, dds_du
 {
     if (qos) {
         if (kind) {
-            *kind = qos->reliability.kind;
+            *kind = (dds_reliability_kind_t)qos->reliability.kind;
         }
         if (max_blocking_time) {
             *max_blocking_time = dds_duration_from_sac(qos->reliability.max_blocking_time);
@@ -1173,7 +1174,7 @@ dds_qget_destination_order (const dds_qos_t *qos, dds_destination_order_kind_t *
 {
     if (qos) {
         if (value) {
-            *value = qos->destination_order.kind;
+            *value = (dds_destination_order_kind_t)qos->destination_order.kind;
         }
     }
 }
@@ -1216,7 +1217,7 @@ dds_qget_durability_service (
            *service_cleanup_delay = dds_duration_from_sac(qos->durability_service.service_cleanup_delay);
         }
         if (history_kind) {
-            *history_kind = qos->durability_service.history_kind;
+            *history_kind = (dds_history_kind_t)qos->durability_service.history_kind;
         }
         if (history_depth) {
             *history_depth = qos->durability_service.history_depth;

@@ -47,3 +47,5 @@ parseconditions:
                  'Description : Already tried to resend * message * times'
                  'Description : using network interface * selected arbitrarily from: *'
                  'Description : Failed to send * message * '
+                 'Description : writer * topic * waiting on high watermark due to reader *'
+                 'Description : Time jumps are not supported on this platform.'

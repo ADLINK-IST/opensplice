@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,7 +24,7 @@
  *
  * This header file defines the types, functions and marcos that belong to the
  * database query intermediate code component.
- * 
+ *
  * The database query constructor uses this intermediate code to specify the query.
  * Database users can generate intermediate code from a SQL statment using the
  * q_parse function provided by this interface or provide its own custom method
@@ -41,7 +42,7 @@
  *
  * Intermediate code is allocated on the heap memory of the callee. The callee
  * is responsible for freeing allocated memory.
- * 
+ *
  */
 
 #ifndef Q_EXPR_H
@@ -390,15 +391,15 @@ q_getUInt(
 OS_API c_double
 q_getDbl(
     q_expr expr);
-    
+
 OS_API c_char
 q_getChr(
     q_expr expr);
-    
+
 OS_API c_char *
 q_getStr(
     q_expr expr);
-    
+
 OS_API c_char *
 q_getId(
     q_expr expr);
@@ -406,7 +407,7 @@ q_getId(
 OS_API c_longlong
 q_getVar(
     q_expr expr);
-    
+
 OS_API c_type
 q_getTyp(
     q_expr expr);
@@ -423,7 +424,7 @@ q_getLst(
 OS_API c_bool
 q_isInt(
     q_expr expr);
-    
+
 OS_API c_bool
 q_isUInt(
     q_expr expr);
@@ -431,11 +432,11 @@ q_isUInt(
 OS_API c_bool
 q_isDbl(
     q_expr expr);
-    
+
 OS_API c_bool
 q_isStr(
     q_expr expr);
-    
+
 OS_API c_bool
 q_isId(
     q_expr expr);
@@ -443,11 +444,11 @@ q_isId(
 OS_API c_bool
 q_isVar(
     q_expr expr);
-    
+
 OS_API c_bool
 q_isTyp(
     q_expr expr);
-    
+
 OS_API c_bool
 q_isFnc(
     q_expr expr,
@@ -486,20 +487,20 @@ OS_API q_list
 q_append(
     q_list list,
     q_expr expr);
-    
+
 OS_API q_list
 q_insert(
     q_list list,
     q_expr expr);
-    
+
 OS_API q_list
 q_next(
     q_list list);
-    
+
 OS_API q_expr
 q_element(
     q_list list);
-    
+
 OS_API q_list
 q_listCopy(
     q_list list);
@@ -514,28 +515,28 @@ OS_API q_list
 q_getLst(
     q_expr expr,
     c_long index);
-    
+
 OS_API q_expr
 q_getPar(
     q_expr expr,
     c_long index);
-    
+
 OS_API q_expr
 q_takePar(
     q_expr expr,
     c_long index);
-    
+
 OS_API void
 q_swapExpr(
     q_expr oldExpr,
     q_expr newExpr);
-    
+
 OS_API q_expr
 q_swapPar(
     q_expr expr,
     c_long index,
     q_expr par);
-    
+
 OS_API void
 q_insertPar(
     q_expr expr,
@@ -552,16 +553,16 @@ OS_API q_expr
 q_newBind(
     c_char *id,
     q_expr expr);
-    
+
 OS_API q_expr
 q_newStruct(
     q_list list);
-    
+
 OS_API q_expr
 q_newIterate(
     q_expr variable,
     q_expr collection);
-    
+
 OS_API q_expr
 q_newProject(
     q_list list);
@@ -570,7 +571,7 @@ OS_API q_expr
 q_newCompr(
     q_tag  tag,
     q_list list);
-    
+
 OS_API q_expr
 q_newEqual(
     q_expr left,

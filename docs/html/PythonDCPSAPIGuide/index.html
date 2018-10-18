@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Python DCPS API Guide &mdash; Python DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Python DCPS API Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="python-dcps-api-guide">
+<h1>Python DCPS API Guide<a class="headerlink" href="#python-dcps-api-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-python-dcps-api-guide">1.1. About the Python DCPS API Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#dds">2.1. DDS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">3. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-requirements">3.1. System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#dependencies">3.2. Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#opensplice-ospl-and-python-dcps-api-installation">3.3. OpenSplice (OSPL) and Python DCPS API Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#python-dcps-api-setup">3.4. Python DCPS API Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#install-python-dcps-api-package-from-python-wheel">3.4.1. Install Python DCPS API package from python wheel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#install-python-dcps-api-package-from-source">3.4.2. Install Python DCPS API package from source</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#examples-and-documentation">3.5. Examples and Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">4. Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#example-files">4.1. Example Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#file-types">4.1.1. File Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#id2">4.1.2. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#running-examples">4.2. Running Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dds_entities.html">5. Python API for Vortex DDS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#api-usage-patterns">5.1. API Usage Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-topic">5.2. dds.Topic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-domainparticipant">5.3. dds.DomainParticipant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-publisher">5.4. dds.Publisher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-datawriter">5.5. dds.DataWriter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-subscriber">5.6. dds.Subscriber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-datareader">5.7. dds.DataReader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#dds-querycondition">5.8. dds.QueryCondition</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qos_provider.html">6. Quality of Service (QoS)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#setting-qos-using-qos-provider-xml-file">6.1. Setting QoS Using QoS Provider XML File</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qos_provider.html#qos-profile">6.1.1. QoS Profile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos_provider.html#applying-qos-profile">6.1.2. Applying QoS Profile</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#setting-qos-using-python-dcps-api-classes">6.2. Setting QoS Using Python DCPS API Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topic.html">7. Topic Generation and Discovery</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#over-the-wire-discovery">7.1. Over the Wire Discovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#static-generation-of-python-topic-classes-using-idl">7.2. Static Generation of Python Topic Classes Using IDL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#dynamic-generation-of-python-topic-classes-using-idl-and-name">7.3. Dynamic Generation of Python Topic Classes Using IDL and Name</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python_idl_mapping.html">8. Python Generation from IDL</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python_idl_mapping.html#running-idlpp">8.1. Running IDLPP</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="python_idl_mapping.html#static-generation">8.1.1. Static Generation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="python_idl_mapping.html#dynamic-generation">8.1.2. Dynamic Generation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="python_idl_mapping.html#generated-artifacts">8.1.3. Generated Artifacts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="python_idl_mapping.html#limitations-of-python-support">8.2. Limitations of Python Support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">9. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">9.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">9.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Python DCPS API Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

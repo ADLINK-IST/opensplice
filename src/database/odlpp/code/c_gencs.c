@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -66,9 +67,6 @@ static void c_unionSpec(c_union o, c_genArg context);
 static void primitiveHelper(c_primitive p, c_string name, c_genArg context);
 static c_string enumNameHelper(c_string name);
 
-
-/*****************************************************/
-
 void
 c_gen_CS(
     c_module topLevel,
@@ -77,7 +75,6 @@ c_gen_CS(
     struct c_genArg context;
 
     locale = localeconv();
-    /* c_setLocale(localeconv()); */
 
     context.scope = NULL;
     context.stream = NULL;
@@ -179,7 +176,8 @@ c_genObjectSpec(
     }
 
     /* If this meta object is defined in another module then don't
-       generate a definition but instead include that module. */
+     * generate a definition but instead include that module.
+     */
     if (scope != module) {
         /* If this scope is not processed before then include it */
         if (c_getObjectState(context,scope) == G_UNKNOWN) {
@@ -230,11 +228,9 @@ c_genObjectSpec(
                 switch(c_baseObject(o)->kind) {
                     case M_CLASS:
                         c_classFwdSpec(c_class(o), context);
-                        /* c_outi(context,0,"C_CLASS(%s);\n\n",name); */
                         break;
                     case M_TYPEDEF:
                         c_typeDefSpec(c_typeDef(o),context);
-                        /* c_genObjectSpec(c_metaObject(c_typeDef(o)->alias),context); */
                         break;
                     default:
                         break;

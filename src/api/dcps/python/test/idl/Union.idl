@@ -1,0 +1,63 @@
+module basic{
+
+	module module_Union{
+	
+		enum Color { Red, Orange, Yellow, Green, Blue, Indigo, Violet};
+	    
+	    union uone switch(Color) {
+	    case Red:
+	    case Orange:
+	    	short s;
+	    case Green: 
+	    	long l;
+	    default: 
+	    	long long ll; 
+	    };
+	    
+	    union utwo switch(Color) {
+	    case Red:
+	    case Orange:
+	    	short s;
+	    case Green: 
+	    	long l;
+	    };
+	    
+	    union uthree switch(char) {
+	    case 'a':
+	    	short sa;
+	    case 'b':
+	    	short sb;
+	    };
+	    
+	    union ufour switch(long) {
+	    case 1:
+	    	short s1;
+	    case 2:
+	    	short s2;
+	    };
+	    
+	    union ufive switch(boolean) {
+	    case True:
+	    	short sT;
+	    case False:
+	    	short sF;
+	    };
+	    
+	    union ano21 switch (short) {
+	    case 97:  long x1[20][12];
+	    case 98:  Color x2[2][3][4][6];
+	    };
+		
+		struct Union_struct{
+			long long1;
+			ano21 union1;
+		};
+		
+		#pragma keylist Union_struct long1
+	};
+	
+	
+};
+
+
+

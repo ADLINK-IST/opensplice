@@ -1,0 +1,511 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. MATLAB API for Vortex DDS Classes &mdash; The Vortex OpenSplice MATLAB Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice MATLAB Guide" href="index.html" />
+    <link rel="next" title="4. MATLAB Generation from IDL" href="IDL-MATLAB.html" />
+    <link rel="prev" title="2. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="IDL-MATLAB.html" title="4. MATLAB Generation from IDL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="matlab-api-for-vortex-dds-classes">
+<span id="matlab-dds-classes"></span><h1>3. MATLAB API for Vortex DDS Classes<a class="headerlink" href="#matlab-api-for-vortex-dds-classes" title="Permalink to this headline">¶</a></h1>
+<p>The DDS MATLAB Integration provides a class library with custom classes to read and write data with DDS.</p>
+<p>The MATLAB DDS Classes are included in a <strong>Vortex</strong> package.</p>
+<div class="section" id="api-usage-patterns">
+<h2>3.1. API Usage patterns<a class="headerlink" href="#api-usage-patterns" title="Permalink to this headline">¶</a></h2>
+<p>The typical usage pattern for the MATLAB API for Vortex DDS is the following:</p>
+<ul class="simple">
+<li>model your DDS topics using IDL</li>
+<li>using <tt class="docutils literal"><span class="pre">idlpp</span> <span class="pre">-l</span> <span class="pre">matlab</span></tt> to compile your IDL into MATLAB topic classes. See <a class="reference internal" href="IDL-MATLAB.html#matlab-generation-from-idl"><em>MATLAB Generation from IDL</em></a>.</li>
+<li>start writting your MATLAB program using the MATLAB API for Vortex DDS.</li>
+</ul>
+<p>The core classes you must use are <tt class="docutils literal"><span class="pre">Vortex.Topic</span></tt> and either <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> or <tt class="docutils literal"><span class="pre">Vortex.Writer</span></tt>.
+Other classes may be required, especially if you need to adjust the Quality of Service (QoS) defaults.
+For details on setting QoS values with the API, see <a class="reference internal" href="qos_provider.html#qos-provider"><em>QoS Provider</em></a>.
+The following list shows the sequence in which you would use the Vortex classes:</p>
+<ul class="simple">
+<li>If you require participant-level non-default QoS settings, create a <tt class="docutils literal"><span class="pre">Vortex.Participant</span></tt> instance. Pass the participant to subsequently created Vortex entities.</li>
+<li>Create one or more <tt class="docutils literal"><span class="pre">Vortex.Topic</span></tt> instances for the IDL topics your program will read or write.</li>
+<li>If you require publisher or subscriber level non-default QoS settings, create <tt class="docutils literal"><span class="pre">Vortex.Publisher</span></tt> and/or <tt class="docutils literal"><span class="pre">Vortex.Subscriber</span></tt> instances. Pass these to any created reader or writers. (The most common reason for changing publisher/subscriber QoS is to define non-default partitions.)</li>
+<li>Create <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> and/or <tt class="docutils literal"><span class="pre">Vortex.Writer</span></tt> classes from the <tt class="docutils literal"><span class="pre">Vortex.Topic</span></tt> instances that you created.</li>
+<li>If you required data filtering, create <tt class="docutils literal"><span class="pre">Vortex.Query</span></tt> objects.</li>
+<li>Create the core of program, creating instances of your topic classes and writing them; or, reading data and processing it.</li>
+</ul>
+</div>
+<div class="section" id="vortex-topic">
+<h2>3.2. Vortex.Topic<a class="headerlink" href="#vortex-topic" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB Topic class represents a DDS topic type.  The DDS topic corresponds to a single data type.  In DDS, data is distributed by publishing and subscribing topic data samples.</p>
+<p>For a DDS Topic type definition, a corresponding MATLAB class must be defined in the MATLAB workspace.
+This is either a class created by <tt class="docutils literal"><span class="pre">idlpp</span></tt> (see <a class="reference internal" href="IDL-MATLAB.html#matlab-generation-from-idl"><em>MATLAB Generation from IDL</em></a>) or a manually
+created MATLAB class (see <a class="reference internal" href="IDLless-MATLAB.html#matlab-without-idl"><em>MATLAB without IDL</em></a>).
+It is recommend that you create DDS Topic type definitions via IDL and <cite>idlpp</cite>.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain topic. Returns a topic instance, or throws a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if the topic cannot be created.</p>
+<p>Create a topic named &#8216;Circle&#8217; based on the DDS Topic type <tt class="docutils literal"><span class="pre">ShapeType</span></tt> with default participant and QoS:</p>
+<div class="highlight-python"><div class="highlight"><pre>topic = Vortex.Topic(&#39;Circle&#39;, ?ShapeType);
+</pre></div>
+</div>
+<p><strong>Note</strong>: In MATLAB, references to classes such as ShapeType are created by prefixing them with a
+question mark (?). If the class is in a MATLAB package, then the fully qualified name must be used.
+For example: <tt class="docutils literal"><span class="pre">?ShapesDemo.Topics.ShapeType</span></tt>.</p>
+<p>Create the &#8216;Circle&#8217; topic with an explicitly created participant:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+topic = Vortex.Topic(dp, &#39;Circle&#39;, ?ShapeType);
+</pre></div>
+</div>
+<p>Create the &#8216;Circle&#8217; topic with default participant and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+topic = Vortex.Topic(&#39;Circle&#39;, ?ShapeType, qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create the &#8216;Circle&#8217; topic with explicit participant and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+topic = Vortex.Topic(dp, &#39;Circle&#39;, ?ShapeType, qosFileURI, qosProfile);
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-domainparticipant">
+<h2>3.3. Vortex.DomainParticipant<a class="headerlink" href="#vortex-domainparticipant" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">Vortex.DomainParticipant</span></tt> class represents a DDS domain participant entity.</p>
+<p>In DDS - “A domain participant represents the local membership of the application in a domain.  A domain is a distributed concept that links all the applications able to communicate with each other.  It represents a communication plane: only the publishers and subscribers attached to the same domain may interact.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">Vortex.DomainParticipant</span></tt> class is optional.
+The API provides a &#8216;default participant&#8217;, which is used if no explicit domain participant is provided.
+The default participant is created on first usage, and is disposed when MATLAB exits.
+Reasons for using an explicitly created domain participant are:</p>
+<ul class="simple">
+<li>to provide non-default QoS settings.</li>
+<li>to control the timing of participant creation and destruction.</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain participant. Returns participant or throws a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if the participant cannot be created.</p>
+<p>Create a domain participant in the default DDS domain (the one specified by the OSLP_URI environment variable):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dp</span> <span class="o">=</span> <span class="n">Vortex</span><span class="o">.</span><span class="n">DomainParticipant</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a domain participant on domain, specifying a domain id:</p>
+<div class="highlight-python"><div class="highlight"><pre>% domainId: an integer value
+dp = Vortex.DomainParticipant(domainId);
+</pre></div>
+</div>
+<p><strong>Note</strong>: The underlying DCPS C99 API used by <cite>Vortex.DomainParticipant</cite> does not currently support this operation, and will result in a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> being raised.</p>
+<p>Create a participant on default domain with QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+dp = Vortex.DomainParticipant(qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create a participant on domain with QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% domainId: an integer value
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+dp = Vortex.DomainParticipant(domainId, qosFileURI, qosProfile);
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-publisher">
+<h2>3.4. Vortex.Publisher<a class="headerlink" href="#vortex-publisher" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB <tt class="docutils literal"><span class="pre">Vortex.Publisher</span></tt> class represents a DDS publisher entity.</p>
+<p>In DDS, a publisher is “an object responsible for data distribution.  It may publish data of different data types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">Vortex.Publisher</span></tt> class is optional.
+In it&#8217;s place, you can use a <tt class="docutils literal"><span class="pre">Vortex.DomainParticipant</span></tt> instance, or default to the <em>default domain participant</em>.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">Vortex.Publisher</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of publisher creation and deletion.</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a DDS Publisher entity. Returns publisher or throws a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if the publisher cannot be created.</p>
+<p>Create a default publisher with default participant:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pub</span> <span class="o">=</span> <span class="n">Vortex</span><span class="o">.</span><span class="n">Publisher</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a publisher with an explicit participant:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+pub = Vortex.Publisher(dp);
+</pre></div>
+</div>
+<p>Create default publisher with default participant and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+pub = Vortex.Publisher(qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create a publisher with participant and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+pub = Vortex.Publisher(dp, qosFileURI, qosProfile);
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-writer">
+<h2>3.5. Vortex.Writer<a class="headerlink" href="#vortex-writer" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB <tt class="docutils literal"><span class="pre">Vortex.Writer</span></tt> class represents a DDS data writer entity.</p>
+<p>In DDS - “The DataWriter is the object the application must use to communicate to a publisher the existence and value of data-objects of a given type.”</p>
+<p>A <tt class="docutils literal"><span class="pre">Vortex.Writer</span></tt> class is required in order to write data to a DDS domain.
+It may be explicitly attached to a DDS publisher or a DDS domain participant; or, it is implicitly attached to the <em>default domain participant</em>.</p>
+<p>A <tt class="docutils literal"><span class="pre">Vortex.Writer</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Vortex.Topic</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain writer. Returns writer or throws a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if the writer cannot be created.</p>
+<p>Create a writer for a topic, in the default domain participant and default QoS settings:</p>
+<div class="highlight-python"><div class="highlight"><pre>% topic: a Vortex.Topic instance
+writer = Vortex.Writer(topic);
+</pre></div>
+</div>
+<p>Create a writer within an explicitly specified publisher or domain participant:</p>
+<div class="highlight-python"><div class="highlight"><pre>% pubOrDp: a Vortex.Publisher or Vortex.DomainParticipant instance
+% topic: a Vortex.Topic instance
+writer = Vortex.Writer(pubOrDp, topic);
+</pre></div>
+</div>
+<p>Create writer for a topic with explicit QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% topic: a Vortex.Topic instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+writer = Vortex.Writer(topic, qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create a writer with publisher or participant, topic and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% pubOrDp: a Vortex.Publisher or Vortex.DomainParticipant instance
+% topic: a Vortex.Topic instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+writer = Vortex.Writer(pubOrDp, topic, qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Write a ShapeType topic class instance to a writer:</p>
+<div class="highlight-python"><div class="highlight"><pre>% writer: a Vortex.Writer instance
+% ShapeType: a &#39;topic class&#39; created manually or via IDLPP
+data = ShapeType(); % create an object instance
+% set data values...
+data.color = &#39;RED&#39;;
+% ... set other values ...
+
+ddsStatus = writer.write(data);
+</pre></div>
+</div>
+<p><strong>Note</strong>: the returned status value is 0 for success, and negative for failure. Use the <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> class to decode an failure status.</p>
+<p>Dispose a DDS topic instance:</p>
+<div class="highlight-python"><div class="highlight"><pre>% writer: a Vortex.Writer instance
+% ShapeType: a &#39;topic class&#39; created manually or via IDLPP
+data = ShapeType(); % create an object instance
+% set data key values...
+data.color = &#39;RED&#39;;
+
+ddsStatus = writer.dispose(data);
+</pre></div>
+</div>
+<p><strong>Note</strong>: the returned status value is 0 for success, and negative for failure. Use the <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> class to decode an failure status.</p>
+<p>Unregister a DDS topic instance:</p>
+<div class="highlight-python"><div class="highlight"><pre>% writer: a Vortex.Writer instance
+% ShapeType: a &#39;topic class&#39; created manually or via IDLPP
+data = ShapeType(); % create an object instance
+% set data key values...
+data.color = &#39;RED&#39;;
+
+ddsStatus = writer.unregister(data);
+</pre></div>
+</div>
+<p><strong>Note</strong>: the returned status value is 0 for success, and negative for failure. Use the <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> class to decode an failure status.</p>
+</div>
+<div class="section" id="vortex-subscriber">
+<h2>3.6. Vortex.Subscriber<a class="headerlink" href="#vortex-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB <tt class="docutils literal"><span class="pre">Vortex.Subscriber</span></tt> class represents a DDS subscriber entity.</p>
+<p>In DDS, a subscriber is “an object responsible for receiving published data and making it available to the receiving application.  It may receive and dispatch data of different specified types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">Vortex.Subscriber</span></tt> class is optional.
+In it&#8217;s place, you can use a <tt class="docutils literal"><span class="pre">Vortex.DomainParticipant</span></tt> instance, or default to the <em>default domain participant</em>.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">Vortex.Subscriber</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of subscriber creation and deletion.</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain subscriber. Returns subscriber or throw a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if the subscriber cannot be created.</p>
+<p>Create a subscriber within the default domain participant:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sub</span> <span class="o">=</span> <span class="n">Vortex</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a subscriber within an explicit participant:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+sub = Vortex.Subscriber(dp);
+</pre></div>
+</div>
+<p>Create subscriber within the default domain participant and with a QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+sub = Vortex.Subscriber(qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create a subscriber with participant and QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+sub = Vortex.Subscriber(dp, qosFileURI, qosProfile);
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-reader">
+<h2>3.7. Vortex.Reader<a class="headerlink" href="#vortex-reader" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> class represents a DDS data reader entity.</p>
+<p>In DDS - “To access the received data, the application must use a typed DataReader attached to the subscriber.”</p>
+<p>A <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> class is required in order to write data to a DDS domain.
+It may be explicitly attached to a DDS subscriber or a DDS domain participant; or, it is implicitly attached to the <em>default domain participant</em>.</p>
+<p>A <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Vortex.Topic</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain reader. Returns reader or throw a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> instance if the reader cannot be created.</p>
+<p>Create a reader for a topic within the default domain participant, and with default QoS:</p>
+<div class="highlight-python"><div class="highlight"><pre>% topic: a Vortex.Topic instance
+reader = Vortex.Reader(topic);
+</pre></div>
+</div>
+<p>Create a reader for a topic within a subscriber or participant, and with default QoS:</p>
+<div class="highlight-python"><div class="highlight"><pre>% subOrDp: a Vortex.Subscriber or Vortex.DomainParticipant instance
+% topic: a Vortex.Topic instance
+reader = Vortex.Reader(subOrDp, topic);
+</pre></div>
+</div>
+<p>Create reader for a topic within the default domain participant and with a QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% topic: a Vortex.Topic instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+reader = Vortex.Reader(topic, qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Create a reader for a topic within a subscriber or participant, with with a QoS profile:</p>
+<div class="highlight-python"><div class="highlight"><pre>% subOrDp: a Vortex.Subscriber or Vortex.DomainParticipant instance
+% topic: a Vortex.Topic instance
+% qosFileURI: a char array representing a file: URI
+% qosProfile: a char array containing the name of a profile defined in the QoS File
+reader = Vortex.Reader(subOrDp, topic, qosFileURI, qosProfile);
+</pre></div>
+</div>
+<p>Take data from a data reader:</p>
+<div class="highlight-python"><div class="highlight"><pre>% reader: a Vortex.Reader
+[data, dataState] = reader.take;
+% data: an array of topic class instances (e.g. ShapeType); possibly empty
+% dataState: an struct array; each entry describes the
+%    state of the corresponding data entry
+</pre></div>
+</div>
+<p>Read data from a data reader:</p>
+<div class="highlight-python"><div class="highlight"><pre>% reader: a Vortex.Reader
+[data, dataState] = reader.read;
+% data: an array of topic class instances (e.g. ShapeType); possibly empty
+% dataState: an struct array; each entry describes the
+%    state of the corresponding data entry
+</pre></div>
+</div>
+<p>Specify a wait timeout, in seconds, before read or take will return without receiving data:</p>
+<div class="highlight-python"><div class="highlight"><pre>% reader: a Vortex.Reader
+reader.waitsetTimeout(2.0);
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-query">
+<h2>3.8. Vortex.Query<a class="headerlink" href="#vortex-query" title="Permalink to this headline">¶</a></h2>
+<p>The MATLAB <tt class="docutils literal"><span class="pre">Vortex.Query</span></tt> class represents a DDS query entity.</p>
+<p>A query is a data reader, restricted to accessing data that matches specific status conditions and/or a filter expression.</p>
+<p>A <tt class="docutils literal"><span class="pre">Vortex.Query</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a <tt class="docutils literal"><span class="pre">Vortex.Query</span></tt> instance or throw a <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> if an error occurs.</p>
+<p>Create a query based on a state mask only:</p>
+<div class="highlight-python"><div class="highlight"><pre>% reader: a Vortex.Reader
+% only receive samples that:
+%   * have not been read by this application
+%   * AND for instances that previously seen by this application
+%   * AND for which there is a live writer
+mask = Vortex.DataState.withNew().withNotRead().withAlive();
+query = Vortex.Query(reader, mask);
+</pre></div>
+</div>
+<p>Create a query based on a state mask and a filter expression:</p>
+<div class="highlight-python"><div class="highlight"><pre>% reader: a Vortex.Reader
+mask = Vortex.DataState.withAnyState();
+filter = &#39;color = %0 and x &gt; %1&#39;;
+% filter for &#39;RED&#39; shapes with x &gt; 10...
+query = Vortex.Query(reader, mask, filter, {&#39;RED&#39;, 10&#39;});
+</pre></div>
+</div>
+<p>Take data from a query:</p>
+<div class="highlight-python"><div class="highlight"><pre>% query: a Vortex.Query
+[data, dataState] = query.take;
+% data: an array of topic class instances (e.g. ShapeType); possibly empty
+% dataState: an struct array; each entry describes the
+%    state of the corresponding data entry
+</pre></div>
+</div>
+<p>Read data from a query:</p>
+<div class="highlight-python"><div class="highlight"><pre>% query: a Vortex.Query
+[data, dataState] = query.read;
+% data: an array of topic class instances (e.g. ShapeType); possibly empty
+% dataState: an struct array; each entry describes the
+%    state of the corresponding data entry
+</pre></div>
+</div>
+<p>Specify a wait timeout, in seconds, before read or take will return without receiving data:</p>
+<div class="highlight-python"><div class="highlight"><pre>% query: a Vortex.Query
+
+% specify the waitset timeout on the reader
+query.waitsetTimeout(2.0);
+
+% now, read or take &#39;query&#39;
+</pre></div>
+</div>
+</div>
+<div class="section" id="vortex-ddsexception">
+<h2>3.9. Vortex.DDSException<a class="headerlink" href="#vortex-ddsexception" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">Vortex.DDSException</span></tt> class is thrown in the case of a DDS error arising.
+The class can also be used to decode an error status code returned by methods such as <tt class="docutils literal"><span class="pre">Vortex.Writer.write</span></tt>.</p>
+<p><strong>API Examples</strong></p>
+<p>Catch a DDS error while creating a DDS entity:</p>
+<div class="highlight-python"><div class="highlight"><pre>% dp: a Vortex.DomainParticipant
+try
+  topic = Vortex.topic(&#39;Circle&#39;, ?SomeAlternateDef.ShapeType);
+catch ex
+  switch ex.identifier
+    case &#39;Vortex:DDSError&#39;
+      % it&#39;s a Vortex Error
+      fprintf([&#39;DDS reports error:\n&#39; ...
+         &#39;  %s\n&#39; ...
+         &#39;    DDS ret code: %s (%d)\n&#39;], ...
+         ex.message, char(ex.dds_ret_code), ex.dds_ret_code);
+    otherwise
+      rethrow ex;
+  end
+end
+</pre></div>
+</div>
+<p>Decode a dds status code returned by <tt class="docutils literal"><span class="pre">Vortex.Writer.write</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre>% ddsstatus: a Vortex.Writer.write return value
+ex = Vortex.DDSException(&#39;&#39;, ddsstatus);
+switch ex.dds_ret_code
+  case Vortex.DDSReturnCode.DDS_RETCODE_OK
+    % ...
+  case Vortex.DDSReturnCode.DDS_BAD_PARAMETER
+    % ...
+  case Vortex.DDSReturnCode.DDS_RETCODE_INCONSISTENT_POLICY
+    % ...
+end
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. MATLAB API for Vortex DDS Classes</a><ul>
+<li><a class="reference internal" href="#api-usage-patterns">3.1. API Usage patterns</a></li>
+<li><a class="reference internal" href="#vortex-topic">3.2. Vortex.Topic</a></li>
+<li><a class="reference internal" href="#vortex-domainparticipant">3.3. Vortex.DomainParticipant</a></li>
+<li><a class="reference internal" href="#vortex-publisher">3.4. Vortex.Publisher</a></li>
+<li><a class="reference internal" href="#vortex-writer">3.5. Vortex.Writer</a></li>
+<li><a class="reference internal" href="#vortex-subscriber">3.6. Vortex.Subscriber</a></li>
+<li><a class="reference internal" href="#vortex-reader">3.7. Vortex.Reader</a></li>
+<li><a class="reference internal" href="#vortex-query">3.8. Vortex.Query</a></li>
+<li><a class="reference internal" href="#vortex-ddsexception">3.9. Vortex.DDSException</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">2. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="IDL-MATLAB.html"
+                        title="next chapter">4. MATLAB Generation from IDL</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/DDS-Classes.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="IDL-MATLAB.html" title="4. MATLAB Generation from IDL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

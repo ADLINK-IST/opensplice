@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,7 +19,6 @@
  *
  */
 
-
 #include <dds_dcps.h>
 #include <dds_dcps_private.h>
 #include <dds.h>
@@ -28,6 +28,8 @@
 struct TopicInfo {
     struct DDS_EntityUserData_s _parent;
     dds_topiclistener_t *listener;
+
+    bool ownParticipant;
 };
 
 
@@ -97,25 +99,58 @@ dds_topic_create (
     const dds_qos_t * qos,
     const dds_topiclistener_t * listener)
 {
-    DDS_ReturnCode_t result;
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
     struct TopicInfo *info = NULL;
     struct DDS_TopicListener dpl;
     struct DDS_TopicListener *lp = NULL;
-    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : 0;
+    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : DDS_STATUS_MASK_NONE;
     DDS_TopicQos *tQos;
+    bool ownParticipant = false;
 
     DDS_REPORT_STACK();
 
-    if (pp && descriptor && name && topic) {
-        result = descriptor->register_type(pp, (void *)descriptor);
-    } else {
-        return DDS_RETCODE_BAD_PARAMETER;
-        DDS_REPORT(result, "The domain participant parameter is NULL.");
+    if (!topic) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        DDS_REPORT(result, "Given topic parameter is NULL.");
     }
-
+    if (!name) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        DDS_REPORT(result, "Given topic name is NULL.");
+    }
+    if (!descriptor) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        DDS_REPORT(result, "Given descriptor is NULL.");
+    }
     if (result == DDS_RETCODE_OK) {
-        *topic = NULL;
+        if (!pp) {
+            pp = dds_participant_lookup (DDS_DOMAIN_ID_DEFAULT);
+            if (!pp) {
+                result = dds_participant_create(&pp, DDS_DOMAIN_ID_DEFAULT, qos, NULL);
+                if (result != DDS_RETCODE_OK){
+                    DDS_REPORT(result, "Failed to create an implicit DomainParticipant.");
+                } else {
+                  ownParticipant = true;
+                }
+            }
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
+        result = descriptor->register_type(pp, (void *)descriptor);
+        if (result != DDS_RETCODE_OK) {
+          DDS_REPORT(result, "Failed to register type.");
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
         info = dds_topic_info_new();
+        if (!info) {
+            result = DDS_RETCODE_ERROR;
+            DDS_REPORT(result, "Failed to create topic info.");
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
+
+        *topic = NULL;
+        info->ownParticipant = ownParticipant;
 
         if (listener) {
             info->listener = os_malloc(sizeof(dds_topiclistener_t));
@@ -185,6 +220,36 @@ dds_topic_get_type_name (
     DDS_REPORT_FLUSH(topic, !name);
 
     return name;
+}
+
+char *
+dds_topic_get_metadescriptor (
+		dds_entity_t topic)
+{
+    char *descriptor;
+
+    DDS_REPORT_STACK();
+
+    descriptor = DDS_Topic_get_metadescription(topic);
+
+    DDS_REPORT_FLUSH(topic, !descriptor);
+
+    return descriptor;
+}
+
+char *
+dds_topic_get_keylist (
+		dds_entity_t topic)
+{
+    char *keylist;
+
+    DDS_REPORT_STACK();
+
+    keylist = DDS_Topic_get_keylist(topic);
+
+    DDS_REPORT_FLUSH(topic, !keylist);
+
+    return keylist;
 }
 
 void
@@ -277,11 +342,20 @@ dds_topic_delete(
     dds_entity_t e)
 {
     int result;
+    int ud_result;
+    struct TopicInfo *info = NULL;
     DDS_DomainParticipant participant;
 
+    ud_result = DDS_Entity_claim_user_data(e, (DDS_EntityUserData *)&info);
     participant = DDS_Topic_get_participant(e);
     if (participant) {
-        result = DDS_DomainParticipant_delete_topic(participant, e);
+      result = DDS_DomainParticipant_delete_topic(participant, e);
+      if (result == DDS_RETCODE_OK) {
+          if (ud_result == DDS_RETCODE_OK && info->ownParticipant) {
+              dds_entity_delete(participant);
+          }
+          DDS_Entity_release_user_data((DDS_EntityUserData)info);
+      }
     } else {
         result = DDS_RETCODE_ALREADY_DELETED;
     }

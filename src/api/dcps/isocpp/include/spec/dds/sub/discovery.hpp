@@ -80,7 +80,7 @@ matched_publications(const dds::sub::DataReader<T>& dr);
  * are used by the DDS implementation to locally identify the corresponding
  * matched DataWriter entities. These handles match the ones that appear
  * in the 'instance_handle' field of the SampleInfo when reading the
- * œDCPSPublications builtin topic. The operation may fail if the
+ * DCPSPublications builtin topic. The operation may fail if the
  * infrastructure does not locally maintain the connectivity information.
  */
 template <typename T, typename FwdIterator>

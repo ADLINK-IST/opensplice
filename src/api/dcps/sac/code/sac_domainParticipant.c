@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -155,7 +156,7 @@ _DomainParticipant_deinit (
         if (result == DDS_RETCODE_OK) {
             DDS_Entity_set_listener_interest (DDS_Entity(dp), 0);
 
-            /* TODO : hack, breaks encapsulation. */
+            /* TODO : breaks encapsulation. */
             if (_Entity (_this)->listenerDispatcher != NULL) {
                 result = cmn_listenerDispatcher_free (
                     _Entity (_this)->listenerDispatcher);
@@ -183,7 +184,7 @@ _DomainParticipant_deinit (
             DDS_free(dp->domainName);
             result = _Entity_deinit(_this);
             if (result != DDS_RETCODE_OK) {
-                SAC_PANIC("Could not cleanup Entity");
+                SAC_REPORT(result, "Could not cleanup Entity");
             }
         }
     } else {
@@ -607,7 +608,7 @@ DDS_DomainParticipant_create_subscriber (
         if (sub) {
             result = DDS_Subscriber_set_listener(sub, a_listener, mask);
             if (result == DDS_RETCODE_OK) {
-                if (autoEnable) {
+                if (autoEnable && !(qos->presentation.coherent_access && qos->presentation.access_scope == DDS_GROUP_PRESENTATION_QOS)) {
                     result = DDS_Entity_enable(sub);
                 }
             }
@@ -1216,11 +1217,12 @@ DDS_DomainParticipant_create_contentfilteredtopic (
                 dp->cfTopicList = c_iterInsert (dp->cfTopicList, topic);
             } else {
                 (void)DDS__free(topic);
+                topic = NULL;
             }
         } else {
             result = DDS_RETCODE_ERROR;
         }
-        result = DDS_DomainParticipantRelease(_this);
+        DDS_DomainParticipantRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
     return topic;
@@ -1642,15 +1644,14 @@ DDS_DomainParticipant_ignore_participant (
 {
     DDS_ReturnCode_t result;
     _DomainParticipant p;
-
-    OS_UNUSED_ARG(handle);
+    u_result uresult;
 
     SAC_REPORT_STACK();
 
     result = DDS_DomainParticipantClaim(_this, &p);
     if (result == DDS_RETCODE_OK) {
-        result = DDS_RETCODE_UNSUPPORTED;
-        SAC_REPORT(result, "This operation is currently unsupported");
+        uresult = u_participantIgnoreParticipant(DDS_DomainParticipant_get_user_entity(p), handle);
+        result = DDS_ReturnCode_get(uresult);
         DDS_DomainParticipantRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
@@ -1668,15 +1669,14 @@ DDS_DomainParticipant_ignore_topic (
 {
     DDS_ReturnCode_t result;
     _DomainParticipant p;
-
-    OS_UNUSED_ARG(handle);
+    u_result uresult;
 
     SAC_REPORT_STACK();
 
     result = DDS_DomainParticipantClaim(_this, &p);
     if (result == DDS_RETCODE_OK) {
-        result = DDS_RETCODE_UNSUPPORTED;
-        SAC_REPORT(result, "This operation is currently unsupported");
+        uresult = u_participantIgnoreTopic(DDS_DomainParticipant_get_user_entity(p), handle);
+        result = DDS_ReturnCode_get(uresult);
         DDS_DomainParticipantRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
@@ -1694,15 +1694,14 @@ DDS_DomainParticipant_ignore_publication (
 {
     DDS_ReturnCode_t result;
     _DomainParticipant p;
-
-    OS_UNUSED_ARG(handle);
+    u_result uresult;
 
     SAC_REPORT_STACK();
 
     result = DDS_DomainParticipantClaim(_this, &p);
     if (result == DDS_RETCODE_OK) {
-        result = DDS_RETCODE_UNSUPPORTED;
-        SAC_REPORT(result, "This operation is currently unsupported");
+        uresult = u_participantIgnorePublication(DDS_DomainParticipant_get_user_entity(p), handle);
+        result = DDS_ReturnCode_get(uresult);
         DDS_DomainParticipantRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
@@ -1720,15 +1719,14 @@ DDS_DomainParticipant_ignore_subscription (
 {
     DDS_ReturnCode_t result;
     _DomainParticipant p;
-
-    OS_UNUSED_ARG(handle);
+    u_result uresult;
 
     SAC_REPORT_STACK();
 
     result = DDS_DomainParticipantClaim(_this, &p);
     if (result == DDS_RETCODE_OK) {
-        result = DDS_RETCODE_UNSUPPORTED;
-        SAC_REPORT(result, "This operation is currently unsupported");
+        uresult = u_participantIgnoreSubscription(DDS_DomainParticipant_get_user_entity(p), handle);
+        result = DDS_ReturnCode_get(uresult);
         DDS_DomainParticipantRelease(_this);
     }
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
@@ -2572,3 +2570,81 @@ DDS_DomainParticipant_notify_listener(
     return result;
 }
 
+DDS_ReturnCode_t
+DDS_DomainParticipant_set_property(
+    DDS_DomainParticipant _this,
+    const DDS_DomainParticipantProperty *a_property)
+{
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
+    u_result uResult;
+    _DomainParticipant p;
+
+    SAC_REPORT_STACK();
+
+    if ((result == DDS_RETCODE_OK) && (_this == NULL)){
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied participant is NULL.");
+    }
+    if ((result == DDS_RETCODE_OK) && (a_property == NULL)) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied Property is NULL.");
+    }
+    if ((result == DDS_RETCODE_OK) && (a_property->value == NULL)) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied Property.value is NULL.");
+    }
+    if ((result == DDS_RETCODE_OK) && (a_property->name == NULL)) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied Property.name is NULL.");
+    }
+    
+    if (result  == DDS_RETCODE_OK) {
+        result = DDS_DomainParticipantClaim(_this, &p);
+        if (result == DDS_RETCODE_OK) {
+            uResult = u_entitySetProperty(u_entity(DDS_DomainParticipant_get_user_entity(p)), a_property->name, a_property->value);
+            result = DDS_ReturnCode_get(uResult);
+        }
+        DDS_DomainParticipantRelease(_this);
+    }
+    SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
+    return result;
+}
+
+DDS_ReturnCode_t
+DDS_DomainParticipant_get_property(
+    DDS_DomainParticipant _this,
+    DDS_DomainParticipantProperty *a_property)
+{
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
+    u_result uResult;
+    _DomainParticipant p;
+
+    SAC_REPORT_STACK();
+    
+    if ((result == DDS_RETCODE_OK) && (_this == NULL)){
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied participant is NULL.");
+    }
+    if ((result == DDS_RETCODE_OK) && (a_property == NULL)) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied Property is NULL.");
+    }
+    if ((result == DDS_RETCODE_OK) && (a_property->name == NULL)) {
+        result = DDS_RETCODE_BAD_PARAMETER;
+        SAC_REPORT(result, "Supplied Property.name is NULL.");
+    }
+
+    if (result == DDS_RETCODE_OK){
+        result = DDS_DomainParticipantClaim(_this, &p);
+        if (result == DDS_RETCODE_OK) {
+            os_char *value=NULL;
+            uResult = u_entityGetProperty(u_entity(DDS_DomainParticipant_get_user_entity(p)), a_property->name, &value);
+            a_property->value = DDS_string_dup(value);
+            os_free(value);
+            result = DDS_ReturnCode_get(uResult);
+        }
+        DDS_DomainParticipantRelease(_this);
+    }
+    SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);
+    return result;
+}
