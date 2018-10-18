@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -160,7 +161,8 @@ c_genObjectSpec(
     }
 
     /* If this meta object is defined in another module then don't
-       generate a definition but instead include that module. */
+     * generate a definition but instead include that module.
+     */
     if (scope != module) {
         /* If this scope is not processed before then include it */
         if (c_getObjectState(context,scope) == G_UNKNOWN) {
@@ -211,7 +213,6 @@ c_genObjectSpec(
                 switch(c_baseObject(o)->kind) {
                     case M_CLASS:
                         c_classFwdSpec(c_class(o), context);
-                        /* c_outi(context,0,"C_CLASS(%s);\n\n",name); */
                         break;
                     case M_TYPEDEF:
                         c_typeDefSpec(c_typeDef(o),context);
@@ -242,11 +243,12 @@ c_genObjectBody(
     } else {
         module = c_metaModule(context->scope);
     }
-        /* Get the module that contains the processed object. */
+    /* Get the module that contains the processed object. */
     scope = c_metaModule(o);
 
     /* Check if this meta object is a c_base type, if true then skip
-       the generation */
+     * the generation
+     */
     if (scope == NULL) {
         return;
     }
@@ -257,7 +259,8 @@ c_genObjectBody(
     }
 
     /* If this meta object is defined in another module then don't
-       generate a definition but instead include that module. */
+     * generate a definition but instead include that module.
+     */
     if (scope != module) {
         /* If this scope is not processed before then load it */
         if (c_getObjectState(context,scope) == G_UNKNOWN) {
@@ -270,7 +273,8 @@ c_genObjectBody(
     }
 
     /* If this meta object is processed before then don't generate
-       a definition */
+     * a definition
+     */
     switch (c_getObjectState(context,o)) {
     case G_UNDECLARED:
         name = c_metaName(o);
@@ -597,7 +601,6 @@ c_moduleBody(
     newContext.stream      = fopen(streamName,"w");
     newContext.scope       = c_metaObject(o);
 
-    /* newContext.processing  = context->processing; */
     newContext.processing = c_iterNew(NULL);
 
     newContext.action      = c_genObjectBody;
@@ -978,7 +981,6 @@ c_enumerationSpec(
     for (i=0, value=i; i<size; i++, value++) {
         label = c_getContextScopedConstName(c_constant(o->elements[i]),
                                             "_", FALSE, context);
-        /* label = c_metaName(c_metaObject(o->elements[i])); */
         literal = c_literal(c_constant(o->elements[i])->operand);
 
         assert (literal->value.kind == V_LONG ||
@@ -1577,9 +1579,10 @@ operandPrint(
             };
         break;
         case E_MINUS:
-          /* Special case: the last operand of E_MINUS sometimes
-             has to be surrounded by parentheses, even if the
-             precedence is the same */
+            /* Special case: the last operand of E_MINUS sometimes
+             * has to be surrounded by parentheses, even if the
+             * precedence is the same
+             */
             switch(c_arraySize(expression->operands)){
             case 1:
                 c_out(context, "-");

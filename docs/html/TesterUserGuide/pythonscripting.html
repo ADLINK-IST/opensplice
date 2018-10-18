@@ -78,12 +78,12 @@ Jython is an Java-based implementation of the Python scripting language.</p>
 <div class="section" id="prerequisites">
 <h3>9.2.1. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
 <p>A Java 7 or later runtime (JRE) is required. The JAVA_HOME environment variable must be set to the JRE installation directory.</p>
-<p>Check that the following command yields a Java version of 1.7 or later. On Linux systems, use:</p>
-<div class="highlight-python"><div class="highlight"><pre>$JAVA_HOME/bin/java -version
-</pre></div>
-</div>
-<p>On Windows systems, use:</p>
-<div class="highlight-python"><div class="highlight"><pre>%JAVA_HOME%\bin\java -version
+<p>Check that the following command yields a Java version of 1.7 or later:</p>
+<div class="highlight-python"><div class="highlight"><pre>#Linux
+$JAVA_HOME/bin/java -version
+
+#Windows
+&quot;%JAVA_HOME%\bin\java&quot; -version
 </pre></div>
 </div>
 <p>Note that during the installation, it is assumed the the environment variable OSPL_HOME refers the the fully qualified
@@ -94,36 +94,99 @@ path of the Vortex OpenSplice installation.</p>
 <p>The Tester Scripting package does not include the Jython scripting engine - it must be downloaded.
 Jython is an open source project licensed under the Python Software Foundation License Version 2 (<a class="reference external" href="http://www.jython.org/license.html">http://www.jython.org/license.html</a>).
 The license is OSI Approved (<a class="reference external" href="https://opensource.org/licenses/alphabetical">https://opensource.org/licenses/alphabetical</a>).</p>
-<p>Tester Scripting requires Jython 2.7.0 or later. Follow the following steps to download and install Jython:</p>
+<p>Tester Scripting requires Jython 2.7.0 or later. Download the Jython 2.7.0 Installer from the Jython Download page (<a class="reference external" href="http://www.jython.org/downloads.html">http://www.jython.org/downloads.html</a>).</p>
+<div class="section" id="automated-installation-and-configuration">
+<h4>9.2.2.1. Automated installation and configuration<a class="headerlink" href="#automated-installation-and-configuration" title="Permalink to this headline">¶</a></h4>
+<p>Once the Jython installer has been downloaded, the osplscript command can be used to install Jython in your
+Vortex OpenSpice home directory. Follow the following steps:</p>
 <ol class="arabic">
-<li><p class="first">Download the Jython 2.7.0 Installer from the Jython Download page (<a class="reference external" href="http://www.jython.org/downloads.html">http://www.jython.org/downloads.html</a>).</p>
+<li><p class="first">Start a command prompt (Windows) or Terminal window (Linux). The Vortex OpenSplice Launcher can create a Console window that eliminates the need for the step 2.</p>
 </li>
-<li><p class="first">Install Jython. It is recommended, but not necessary that Jython be installed in the $OSPL_HOME/jython directory (linux) or the %OSPL_HOME%jython directory (Windows). The following command line will install the standard Jython distribution:</p>
-<div class="highlight-python"><div class="highlight"><pre># for Linux systems
-$JAVA_HOME/bin/java -jar jython-installer-2.7.0.jar -s -d $OSPL_HOME/jython -t standard
+<li><p class="first">Ensure that the OSPL_HOME environment variable is set by running the release script. On Linux run:</p>
+<div class="highlight-python"><div class="highlight"><pre>#linux
+source $OSPL_HOME/release.com
 
-# For Windows Systems
-&quot;%JAVA_HOME%\bin\java&quot; -jar jython-installer.2.7.0.jar -s -d &quot;%OSPL_HOME%\jython&quot; -t standard
+#Windows
+&quot;%OSPL_HOME%\release.bat&quot;
 </pre></div>
 </div>
 </li>
-<li><p class="first">Change to the OSPL_HOME directory.</p>
+<li><p class="first">Change to the directory containing the Jython 2.7.0 installer, jython-installer-2.7.0.jar</p>
 </li>
-<li><p class="first">Install the Tester Scripting python package. Use the following command:</p>
-<div class="highlight-python"><div class="highlight"><pre># for Linux systems
-jython/bin/easy_install tools/scripting/OSPLScript-1.0.0.tar.gz
-
-# for Windows systems
-jython\bin\easy_install tools\scripting\OSPLScript-1.0.0.tar.gz
+<li><p class="first">Enter the command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">osplscript</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The command will display a message similar to the following, and then prompt you to continue:</p>
+<div class="highlight-python"><div class="highlight"><pre>**************************************************************
+Your OSPL installation has not been configured for osplscript;
+no Jython installation was found in the OSPL install directory:
+  &lt;your-install-directory&gt;
+A jython installer has been found in the current directory.
+Do you wish to install Jython and configure osplscript? [yes|no]:
+</pre></div>
+</div>
+</li>
+<li><p class="first">Enter &#8216;yes&#8217; (without the quotes), and press Enter; osplscript will be configured.</p>
+</li>
+<li><p class="first">When completed, the Jython interpreter will be started. Either type &#8216;exit()&#8217; or continue on to verifying the installation with the instructions in the next secion.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="manual-installation-and-configuration">
+<h4>9.2.2.2. Manual installation and configuration<a class="headerlink" href="#manual-installation-and-configuration" title="Permalink to this headline">¶</a></h4>
+<p>If you do not want place a Jython interpreter in the OSPL_HOME directory, or if you already
+have Jython interpreter installed in another location, you can use the following manual installation
+and configuration procedure.</p>
+<div class="section" id="install-a-jython-interpreter-in-a-location-of-your-choice">
+<h5>9.2.2.2.1. Install a Jython interpreter in a location of your choice<a class="headerlink" href="#install-a-jython-interpreter-in-a-location-of-your-choice" title="Permalink to this headline">¶</a></h5>
+<p>If you want to install Jython in another location, do the following steps:</p>
+<ol class="arabic">
+<li><p class="first">Start a command prompt (Windows) or Terminal window (Linux).</p>
+</li>
+<li><p class="first">Ensure that your JAVA_HOME environment variable refers to an appropriate Java installation (Java 7 or later).</p>
+</li>
+<li><p class="first">From the directory containing the downloaded Jython installer, enter the following command:</p>
+<div class="highlight-python"><div class="highlight"><pre>jython-installer-2.7.0.jar -s -d &lt;desired-install-directory&gt; -t standard
 </pre></div>
 </div>
 </li>
 </ol>
+<p>If you prefer, you can remove the (-s) option (silent install), in which case, a graphical installation
+wizard will appear. Proceed through the wizard to select a &#8216;Standard&#8217; installation.</p>
+</div>
+<div class="section" id="configure-the-jython-interpreter-with-osplscript-package">
+<h5>9.2.2.2.2. Configure the Jython interpreter with OSPLScript package<a class="headerlink" href="#configure-the-jython-interpreter-with-osplscript-package" title="Permalink to this headline">¶</a></h5>
+<p>To your Jython interpreter for Python scripting, you must install the OSPLScript Python package. Follow these steps:</p>
+<ol class="arabic">
+<li><p class="first">Ensure that the Jython &#8216;bin&#8217; directory in the system PATH environment variable.</p>
+</li>
+<li><p class="first">Start a command prompt (Windows) or terminal window (Linux). The Vortex OpenSplice Launcher can create a Console window that eliminates the need for the step 3.</p>
+</li>
+<li><p class="first">Ensure the Vortex OpenSplice environment variables are set by running the &#8216;release&#8217; script.</p>
+</li>
+<li><p class="first">Start the Jython easy_install program. The following command line will install the standard Jython distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre># for Linux systems
+easy_install &quot;$OSPL_HOME/tools/scripting/OSPLScript-1.0.0.tar.gz&quot;
+
+# for Windows systems
+easy_install &quot;%OSPL_HOME%\tools\scripting\OSPLScript-1.0.0.zip&quot;
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Once the package installation has completed, you may proceed with verifying the installation.</p>
+</div>
+</div>
 </div>
 <div class="section" id="verifying-the-installation">
 <h3>9.2.3. Verifying the installation<a class="headerlink" href="#verifying-the-installation" title="Permalink to this headline">¶</a></h3>
-<p>The following steps will verify that the Jython installation is correctly configured.</p>
+<p>The following steps will verify that the Jython installation is correctly configured. The following steps
+are done from a command window:</p>
 <ol class="arabic">
+<li><p class="first">Ensure that the Vortex OpenSplice environment variables are set by running the &#8216;release&#8217; command script.</p>
+</li>
 <li><p class="first">Ensure OpenSplice is running by issuing the following command:</p>
 <div class="highlight-python"><div class="highlight"><pre>ospl start
 </pre></div>
@@ -135,11 +198,7 @@ jython\bin\easy_install tools\scripting\OSPLScript-1.0.0.tar.gz
 </div>
 </li>
 <li><p class="first">Start the Jython interpreter:</p>
-<div class="highlight-python"><div class="highlight"><pre># for Linux systems
-jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
-
-# for Windows systems
-jython\bin\jython -Djava.ext.dirs=%OSPL_HOME%\jar
+<div class="highlight-python"><div class="highlight"><pre><span class="n">osplscript</span>
 </pre></div>
 </div>
 </li>
@@ -175,10 +234,16 @@ jython\bin\jython -Djava.ext.dirs=%OSPL_HOME%\jar
 <div class="section" id="id2">
 <h3>9.3.1. Prerequisites<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>This demo assumes a shell instance that has been initialized with the release.com script found in the OSPL installation directory.
-In particular, the quick tour relies on the $OSPL_HOME, $OSPL_URI and $LD_LIBRARY_PATH variables being appropriately set.
-To run the script, do the following:</p>
-<div class="highlight-python"><div class="highlight"><pre>cd OSPL-install-directory
+In particular, the quick tour relies on the following environment variables be set: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH.
+The easiest way to set these variables is to use the Vortex OpenSplice launcher to start a Console window.
+Alternatively, run the &#8216;release&#8217; script in your Vortex OpenSplice installation directory. To run the script, do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre># linux
+cd OSPL-install-directory
 . release.com
+
+# Windows
+cd OSPL-install-directory
+release.bat
 </pre></div>
 </div>
 </div>
@@ -196,9 +261,8 @@ To run the script, do the following:</p>
 </div>
 <div class="section" id="writing-and-reading-samples">
 <h3>9.3.3. Writing and Reading samples<a class="headerlink" href="#writing-and-reading-samples" title="Permalink to this headline">¶</a></h3>
-<p>The instructions below assume that you have installed and configured Jython in $OSPL_HOME/jython.
-Start the OSPL Scripting engine:</p>
-<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+<p>Start the OSPL Scripting engine:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">osplscript</span>
 </pre></div>
 </div>
 <p>You will see a standard start up banner from the Jython engine similar to the following:</p>
@@ -306,22 +370,27 @@ You can view help on QoS classes and policies via the help function:</p>
 <p>OSPL Scripting implements DDS wait sets with read conditions, query conditions and status conditions. This allows your code to block until data is
 available on a data reader. Here is a simple example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader and wait set</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader and wait set</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a read condition of Alive, NotRead, New samples</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a read condition of Alive, NotRead, New samples</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rc</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">readCondition</span><span class="p">(</span><span class="n">dds</span><span class="o">.</span><span class="n">DataState</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">())</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># attach the read condition to the wait set</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># attach the read condition to the wait set</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">rc</span><span class="p">)</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># wait...</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># wait...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># waiting returned, we have a sample</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># waiting returned, we have a sample</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sample</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c"># do something with the sample</span>
 </pre></div>
@@ -337,12 +406,14 @@ available on a data reader. Here is a simple example:</p>
 <p>A selector is created via a reader&#8217;s newSelectBuilder() method. A &#8216;select builder&#8217; allows you to specify state conditions as well as an optional query expression.
 The following example creates a selector:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">newSelectBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">()</span> \
 <span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;index = 100&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 </pre></div>
@@ -385,12 +456,14 @@ for accessing the filtered data.</p>
 substitution parameters of the form {n}, where n is a zero-based index into an list of string parameter values.
 For example, we could filter OsplTestTopic&#8217;s index value to be between an upper and lower bound, and specify the query as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">newSelectBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">()</span> \
 <span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;index &gt;= {0} and index &lt; {1}&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;100&#39;</span><span class="p">,</span> <span class="s">&#39;200&#39;</span><span class="p">])</span> \
 <span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
@@ -438,15 +511,18 @@ that the publisher wrote them.</p>
 <p>To establish a publisher or subscriber with coherent access, use the Presentation Policy when creating the
 publisher or subscriber QoS:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span><span class="p">,</span> <span class="n">qos</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a presentation policy, enabling Group coherence and ordered access</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a presentation policy, enabling Group coherence and ordered access</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">groupPresentation</span> <span class="o">=</span> <span class="n">qos</span><span class="o">.</span><span class="n">Presentation</span><span class="p">()</span><span class="o">.</span><span class="n">withCoherentAccess</span><span class="p">()</span><span class="o">.</span><span class="n">withGroup</span><span class="p">()</span> \
 <span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">withOrderedAccess</span><span class="p">()</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a publisher with the policy</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a publisher with the policy</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pub</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">PublisherQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span><span class="n">groupPresentation</span><span class="p">))</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a subscriber with the policy</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a subscriber with the policy</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sub</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">SubscriberQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span><span class="n">groupPresentation</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -499,13 +575,15 @@ In other words, the following will not work:</p>
 <p>As a work around, attached status conditions from each of the subscriber&#8217;s readers to the wait set:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># This will work</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># do this for each reader (dr) you care about</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># do this for each reader (dr) you care about</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">statusCondition</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span><span class="o">.</span><span class="n">setEnabledStatuses</span><span class="p">([</span><span class="n">status</span><span class="o">.</span><span class="n">DataAvailableStatus</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
-<span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -555,7 +633,7 @@ Start by created a text file in your favourite editor. Call the file firstUnitTe
 </pre></div>
 </div>
 <p>This test case essentially repeats the test we created in the interpreter. To run the test, enter the following command in your shell command prompt:</p>
-<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar firstUnitTest.py
+<div class="highlight-python"><div class="highlight"><pre>osplscript firstUnitTest.py
 </pre></div>
 </div>
 <p>The script engine will respond with output like the following:</p>
@@ -574,7 +652,7 @@ Experiment with the test to introduce a failure, and see how the output changes.
 <p>The OsplTestTopic used above is simple. This section examines working with more complex topics – ones that include sequences, arrays, nested structures and unions.
 As with the preceding examples, Tester should be running, as it creates the samples that are used in this example.
 If OSPL Scripting is not running, start it:</p>
-<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+<div class="highlight-python"><div class="highlight"><pre><span class="n">osplscript</span>
 </pre></div>
 </div>
 <p>The use the following Python to find the OsplSequenceTopic DDS topic and create a Python class from it:</p>
@@ -650,16 +728,13 @@ right-hand side of the page under <strong>Quick Install</strong> &gt; <strong>Up
 <li>Enter a name for the Jython interpreter. Example: Tester Script</li>
 <li>Browser for the jython.jar file in the root directory of the Tester Script Jython installation.</li>
 <li>Click OK.</li>
+<li>Still in the Preferences dialog on the PyDev &gt; Interpreters &gt; Jython interpreters page, select your newly created interpreter entry in the upper list. Then click the <strong>Environment</strong> tab in the lower half of the dialog.</li>
+<li>Add the following environment variables: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH. Their values should be the same as those found in your command line environment.</li>
+<li>Click the <strong>Libraries</strong> tab in the lower half of the dialog.</li>
+<li>Click <strong>New Folder</strong> and browse for and select the <strong>jar</strong> directory under your Vortex OpenSplice installation directory.</li>
+<li>Click <strong>OK</strong> to complete the folder selection.</li>
+<li>Click <strong>OK</strong> to close the preferences dialog.</li>
 </ol>
-<p>8. Still in the Preferences dialog on the PyDev &gt; Interpreters &gt; Jython interpreters page, select your
-newly created interpreter entry in the upper list. Then click the <strong>Environment</strong> tab in the lower half
-of the dialog.
-9. Add the following environment variables: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH. Their values should
-be the same as those found in your command line environment.
-10. Click the <strong>Libraries</strong> tab in the lower half of the dialog.
-11. Click <strong>New Folder</strong> and browse for and select the <strong>jar</strong> directory under your Vortex OpenSplice installation directory.
-12. Click <strong>OK</strong> to complete the folder selection.
-13. Click <strong>OK</strong> to close the preferences dialog.</p>
 <p>You are new ready to create a new Jython project.</p>
 </div>
 <div class="section" id="creating-a-pydev-project">
@@ -819,7 +894,15 @@ are to be executed when the file is run. To create a Python file:</p>
 </li>
 <li><a class="reference internal" href="#configuration">9.2. Configuration</a><ul>
 <li><a class="reference internal" href="#prerequisites">9.2.1. Prerequisites</a></li>
-<li><a class="reference internal" href="#download-and-install-jython">9.2.2. Download and install Jython</a></li>
+<li><a class="reference internal" href="#download-and-install-jython">9.2.2. Download and install Jython</a><ul>
+<li><a class="reference internal" href="#automated-installation-and-configuration">9.2.2.1. Automated installation and configuration</a></li>
+<li><a class="reference internal" href="#manual-installation-and-configuration">9.2.2.2. Manual installation and configuration</a><ul>
+<li><a class="reference internal" href="#install-a-jython-interpreter-in-a-location-of-your-choice">9.2.2.2.1. Install a Jython interpreter in a location of your choice</a></li>
+<li><a class="reference internal" href="#configure-the-jython-interpreter-with-osplscript-package">9.2.2.2.2. Configure the Jython interpreter with OSPLScript package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#verifying-the-installation">9.2.3. Verifying the installation</a></li>
 </ul>
 </li>
@@ -906,7 +989,7 @@ are to be executed when the file is run. To create a Python file:</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

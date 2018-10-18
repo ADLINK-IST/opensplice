@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -201,71 +202,6 @@ s_configurationValueLong(
     c_iterFree(iter);
 }
 
-#if 0
-static void
-s_configurationValueULong(
-    s_configuration configuration,
-    u_cfElement     element,
-    const char      *tag,
-    void            (* const setAction)(s_configuration config, c_ulong longValue))
-{
-    c_iter   iter;
-    u_cfData data;
-    c_long   longValue;
-    c_ulong  ulongValue;
-    c_bool   found;
-
-    iter = u_cfElementXPath(element, tag);
-    data = u_cfData(c_iterTakeFirst(iter));
-    while (data != NULL) {
-        found = u_cfDataLongValue(data, &longValue);
-        /* QAC EXPECT 2100; */
-        if (found == TRUE) {
-            if (longValue < 0) {
-                longValue = -longValue;
-                if (longValue < 0) {
-                    longValue++;
-                    longValue = -longValue;
-                }
-            }
-            ulongValue = (c_ulong)longValue;
-            setAction(configuration, ulongValue);
-        }
-        u_cfDataFree(data);
-        data = u_cfData(c_iterTakeFirst(iter));
-    }
-    c_iterFree(iter);
-}
-#endif
-
-#if 0
-static void
-s_configurationValueSize(
-    s_configuration configuration,
-    u_cfElement     element,
-    const char      *tag,
-    void            (* const setAction)(s_configuration config, c_size size))
-{
-    c_iter   iter;
-    u_cfData data;
-    c_size  size;
-    c_bool   found;
-
-    iter = u_cfElementXPath(element, tag);
-    data = u_cfData(c_iterTakeFirst(iter));
-    while (data != NULL) {
-        found = u_cfDataSizeValue(data, &size);
-        /* QAC EXPECT 2100; */
-        if (found == TRUE) {
-            setAction(configuration, size);
-        }
-        u_cfDataFree(data);
-        data = u_cfData(c_iterTakeFirst(iter));
-    }
-    c_iterFree(iter);
-}
-#endif
-
 static void
 s_configurationValueFloat(
     s_configuration configuration,
@@ -386,7 +322,7 @@ s_configurationSetHeartbeatExpiryTime(
  * Sets the heartbeat update interval, which is defined by
  * Heartbeat.ExpiryTime * Heartbeat.ExpiryTime@update_factor.
  * After this call the renewal period will be set to
- *  Heartbeat.ExpiryTime * MIN(S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM,
+ * Heartbeat.ExpiryTime * MIN(S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM,
  * MAX(S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM, update_factor)).
  * @param config The configuration struct to store the heartbeat update interval in
  * @param update_factor The update-factor that needs to be applied to the ExpiryTime
@@ -827,7 +763,6 @@ s_configurationInit(
     config->enableCandMCommandThread    = TRUE;
     config->durablePolicies             = NULL;
 
-    /*s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");*/
     s_configurationSetDuration(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
     s_configurationSetLeasePeriod(config, S_CFG_LEASE_EXPIRYTIME_DEFAULT);
     s_configurationSetLeaseRenewalPeriod(config, S_CFG_LEASE_UPDATE_FACTOR_DEFAULT);

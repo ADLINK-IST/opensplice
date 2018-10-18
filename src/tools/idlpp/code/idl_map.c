@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -155,7 +156,7 @@ idl_mapRemove (
     }
     return;
 }
-                                                                                                                          
+
 int
 idl_mapIsEmpty (
     idl_map map
@@ -314,7 +315,7 @@ idl_mapIterRemove (
 
     idl_mapRemove(mapIter->map,mapIter->key);
     mapIter->length = os_iterLength (mapIter->map->map);
-    
+
     if (mapIter->index < (mapIter->length)) {
         entry = os_iterObject (mapIter->map->map, mapIter->index);
         mapIter->key = entry->key;

@@ -69,7 +69,7 @@ public enum TypeKind
         public static final int COLLECTION_TYPE_VALUE   = 0x0200;
         public static final int AGGREGATION_TYPE_VALUE  = 0x0100;
         public static final int ANNOTATION_TYPE_VALUE   = 0x0080;
-        
+
         public static final int BOOLEAN_TYPE_VALUE     =  PRIMITIVE_TYPE_VALUE | 0x1;
         public static final int BYTE_TYPE_VALUE        =  PRIMITIVE_TYPE_VALUE | 0x2;
         public static final int INT_16_TYPE_VALUE      =  PRIMITIVE_TYPE_VALUE | 0x3;

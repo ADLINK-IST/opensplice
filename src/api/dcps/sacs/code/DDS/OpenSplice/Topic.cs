@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,7 +33,6 @@ namespace DDS.OpenSplice
 {
     internal class Topic : Entity, ITopic, ITopicDescriptionImpl
     {
-//        private readonly TopicListenerHelper listenerHelper;
         private DomainParticipant domainParticipant;
         private TypeSupport typeSupport;
         private string topicName;
@@ -194,7 +194,7 @@ namespace DDS.OpenSplice
 
             if (qExpr != IntPtr.Zero)
             {
-                if (User.Topic.ContentFilterValidate2(rlReq_UserPeer, qExpr, qParams) != 0)
+                if (User.Topic.ContentFilterValidate2(rlReq_UserPeer, qExpr, qParams, Convert.ToUInt32(length)) != 0)
                 {
                     result = DDS.ReturnCode.Ok;
                 }

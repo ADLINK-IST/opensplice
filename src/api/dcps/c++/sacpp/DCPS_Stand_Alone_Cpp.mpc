@@ -26,6 +26,7 @@ project (Build*Lib) : ospl_build_lib, dcps_typesupport_base, ospl_base, ospl_dds
         $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
         $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
         $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+        $(OSPL_HOME)/etc/idl/dds_cdrBlob.idl
     }
 
     // Put the headers and inline code into the include dir

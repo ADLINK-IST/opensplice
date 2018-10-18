@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -328,15 +329,11 @@ SAJ_FUNCTION(jniIgnoreParticipant) (
     jlong uParticipant,
     jlong handle)
 {
-    saj_returnCode result = SAJ_RETCODE_UNSUPPORTED;
-    SAJ_REPORT(result, "Ignore Participant not supported");
-
+    u_result uResult;
     OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(this);
-    OS_UNUSED_ARG(uParticipant);
-    OS_UNUSED_ARG(handle);
-
-    return (jint)result;
+    uResult = u_participantIgnoreParticipant(SAJ_VOIDP(uParticipant),handle);
+    return saj_retcode_from_user_result(uResult);
 }
 
 JNIEXPORT jint JNICALL
@@ -346,14 +343,11 @@ SAJ_FUNCTION(jniIgnoreSubscription) (
     jlong uParticipant,
     jlong handle)
 {
-    saj_returnCode result = SAJ_RETCODE_UNSUPPORTED;
-    SAJ_REPORT(result, "Ignore Subscription not supported");
+    u_result uResult;
     OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(this);
-    OS_UNUSED_ARG(uParticipant);
-    OS_UNUSED_ARG(handle);
-
-    return (jint)result;
+    uResult = u_participantIgnoreSubscription(SAJ_VOIDP(uParticipant),handle);
+    return saj_retcode_from_user_result(uResult);
 }
 
 JNIEXPORT jint JNICALL
@@ -363,14 +357,11 @@ SAJ_FUNCTION(jniIgnoreTopic) (
     jlong uParticipant,
     jlong handle)
 {
-    saj_returnCode result = SAJ_RETCODE_UNSUPPORTED;
-    SAJ_REPORT(result, "Ignore Topic not supported");
+    u_result uResult;
     OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(this);
-    OS_UNUSED_ARG(uParticipant);
-    OS_UNUSED_ARG(handle);
-
-    return (jint)result;
+    uResult = u_participantIgnoreTopic(SAJ_VOIDP(uParticipant),handle);
+    return saj_retcode_from_user_result(uResult);
 }
 
 JNIEXPORT jint JNICALL
@@ -380,14 +371,11 @@ SAJ_FUNCTION(jniIgnorePublication) (
     jlong uParticipant,
     jlong handle)
 {
-    saj_returnCode result = SAJ_RETCODE_UNSUPPORTED;
-    SAJ_REPORT(result, "Ignore Publication not supported");
+    u_result uResult;
     OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(this);
-    OS_UNUSED_ARG(uParticipant);
-    OS_UNUSED_ARG(handle);
-
-    return (jint)result;
+    uResult = u_participantIgnorePublication(SAJ_VOIDP(uParticipant),handle);
+    return saj_retcode_from_user_result(uResult);
 }
 
 /*
@@ -579,6 +567,99 @@ SAJ_FUNCTION(jniDeleteHistoricalData) (
     }
 
     return (jint)retcode;
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/*
+ * Class:     org_opensplice_dds_dcps_DomainparticipantImpl
+ * Method:    jniSetProperty
+ * Signature: (LDDS/Property;)I
+ */
+
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniSetProperty) (
+    JNIEnv * env,
+    jobject this,
+    jlong uParticipant,
+    jobject jprop)
+{
+    saj_returnCode retcode = SAJ_RETCODE_OK;
+    jstring jname, jvalue;
+    const char *name, *value;
+
+    OS_UNUSED_ARG(this);
+    assert(jprop != NULL);
+
+    jname = GET_OBJECT_FIELD(env, jprop, property_name);
+    if (jname != NULL) {
+        name = GET_STRING_UTFCHAR(env, jname, 0);
+        jvalue = GET_OBJECT_FIELD(env, jprop, property_value);
+        if (jvalue != NULL) {
+            value = GET_STRING_UTFCHAR(env, jvalue, 0);
+            retcode = saj_retcode_from_user_result(u_entitySetProperty(SAJ_VOIDP(uParticipant), name, value));
+            RELEASE_STRING_UTFCHAR(env, jvalue, value);
+            DELETE_LOCAL_REF(env, jvalue);
+        } else {
+            retcode = SAJ_RETCODE_BAD_PARAMETER;
+        } 
+        RELEASE_STRING_UTFCHAR(env, jname, name);
+        DELETE_LOCAL_REF(env, jname);
+    } else {
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
+    }
+
+    return retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/*
+ * Class:     org_opensplice_dds_dcps_DomainparticipantImpl
+ * Method:    jniGetProperty
+ * Signature: (LDDS/Property;)I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniGetProperty) (
+    JNIEnv * env,
+    jobject this,
+    jlong uParticipant,
+    jobject jprop)
+{
+    saj_returnCode retcode = SAJ_RETCODE_OK;
+    jstring jname, jvalue;
+    jobject jpropObject;
+    const char *name;
+    char *value=NULL;
+
+    OS_UNUSED_ARG(this);
+    assert(jprop != NULL);
+    jpropObject = GET_OBJECT_FIELD(env, jprop, propertyHolder_value);
+    if (jpropObject != NULL) {
+        jname = GET_OBJECT_FIELD(env, jpropObject, property_name);
+        if (jname != NULL) {
+           name = GET_STRING_UTFCHAR(env, jname, 0);
+            retcode = saj_retcode_from_user_result(u_entityGetProperty(SAJ_VOIDP(uParticipant), name, &value));
+            if (retcode == SAJ_RETCODE_OK) {
+                jvalue = NEW_STRING_UTF(env, value);
+                if (jvalue != NULL) {
+                    SET_OBJECT_FIELD(env, jpropObject, property_value, jvalue);
+                } else {
+                    retcode = SAJ_RETCODE_ERROR;
+                }
+            }
+           RELEASE_STRING_UTFCHAR(env, jname, name);
+           DELETE_LOCAL_REF(env, jname);
+        } else {
+            retcode = SAJ_RETCODE_BAD_PARAMETER;
+        }
+        DELETE_LOCAL_REF(env, jpropObject);
+    } else {
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
+    }
+    return retcode;
+
     CATCH_EXCEPTION:
     return SAJ_RETCODE_ERROR;
 }

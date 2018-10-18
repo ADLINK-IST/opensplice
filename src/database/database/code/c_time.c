@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -102,7 +103,8 @@ c_timeAdd(
     c_time tr;
 
     /* The only valid additions are C_TIME_ABSOLUTE_TIME + C_TIME_RELATIVE_TIME
-     * or C_TIME_RELATIVE_TIME + C_TIME_RELATIVE_TIME. */
+     * or C_TIME_RELATIVE_TIME + C_TIME_RELATIVE_TIME.
+     */
     assert (CHECK_TIME(
                (C_TIME_ISABSOLUTE(t1) && C_TIME_ISRELATIVE(t2)) ||
                 (C_TIME_ISRELATIVE(t1) && C_TIME_ISABSOLUTE(t2)) ||
@@ -144,9 +146,9 @@ c_timeAdd(
         }
     }
     if (t2.seconds > 0) {
-        if (C_TIME_INFINITE.seconds - t2.seconds <= t1.seconds) { 
+        if (C_TIME_INFINITE.seconds - t2.seconds <= t1.seconds) {
             /* is identical to
-             * 'C_TIME_INFINITE.seconds <= t1.seconds + t2.seconds' 
+             * 'C_TIME_INFINITE.seconds <= t1.seconds + t2.seconds'
              * In other words the sum is larger than infinite,
              * so results must be infinite.
              */
@@ -154,8 +156,8 @@ c_timeAdd(
         }
     } else {
         if (C_TIME_MIN_INFINITE.seconds - t2.seconds >= t1.seconds) {
-            /* is identical to 
-             * '-(C_TIME_MIN_INFINITE.seconds <= t1.seconds + t2.seconds)' 
+            /* is identical to
+             * '-(C_TIME_MIN_INFINITE.seconds <= t1.seconds + t2.seconds)'
              * In other words the sum is smaller than min infinite,
              * so results must be min infinite.
              */
@@ -231,11 +233,11 @@ c_timeSub(
                     t2.nanoseconds);
         assert(C_TIME_NANOS(t2.nanoseconds) < 1000000000);
     }
-        
+
     if (t2.seconds > 0) {
-        if (C_TIME_MIN_INFINITE.seconds + t2.seconds >= t1.seconds) { 
-            /* is identical to 
-             * 'C_TIME_MIN_INFINITE.seconds >= t1.seconds - t2.seconds' 
+        if (C_TIME_MIN_INFINITE.seconds + t2.seconds >= t1.seconds) {
+            /* is identical to
+             * 'C_TIME_MIN_INFINITE.seconds >= t1.seconds - t2.seconds'
              * In other words the sum is smaller than min infinite,
              * so results must be min infinite.
              */
@@ -244,7 +246,7 @@ c_timeSub(
     } else {
         if (C_TIME_INFINITE.seconds + t2.seconds <= t1.seconds) {
             /* is identical to
-             * '-(C_TIME_INFINITE.seconds >= t1.seconds - t2.seconds)' 
+             * '-(C_TIME_INFINITE.seconds >= t1.seconds - t2.seconds)'
              * In other words the sum is larger than infinite,
              * so results must be infinite.
              */
@@ -291,18 +293,18 @@ c_timeValid(
     {
         valid = TRUE;
     } else {
-        if ( (t1.seconds == C_TIME_INFINITE.seconds) || 
+        if ( (t1.seconds == C_TIME_INFINITE.seconds) ||
              (t1.seconds == C_TIME_MIN_INFINITE.seconds)) {
             valid = FALSE;
         } else {
             if (C_TIME_NANOS(t1.nanoseconds) < 1000000000U) {
                 valid = TRUE;
-            } else { 
+            } else {
                 valid = FALSE;
             }
         }
     }
-        
+
     return valid;
 }
 
@@ -311,7 +313,7 @@ c_timeNanoSleep(
     c_time interval)
 {
     os_time t;
-    
+
     /* This call should only accept relative times. C_TIME_ISRELATIVE(...) does
      * include the INFINITE's as well, so !C_TIME_ISABSOLUTE(...) is used
      * instead. */
@@ -320,7 +322,7 @@ c_timeNanoSleep(
     t.tv_sec = interval.seconds;
     t.tv_nsec = (os_int32) C_TIME_NANOS(interval.nanoseconds);
     return (c_timeResult) os_nanoSleep(t);
-    
+
 }
 
 /** \brief return floating point representation of c_time reprersentation.

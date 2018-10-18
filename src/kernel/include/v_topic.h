@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,6 +55,9 @@ extern "C" {
 #define v_topicIsAdapter(_this)\
         (v_objectKind(_this) == K_TOPIC_ADAPTER)
 
+#define v_topicMessageExtType(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->messageExtType : v_topicImpl(o)->messageExtType)
+
 #define v_topicMessageType(o) \
         (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->messageType : v_topicImpl(o)->messageType)
 
@@ -81,10 +85,6 @@ extern "C" {
 
 OS_API void
 v_topicFree(
-    v_topic _this);
-
-OS_API v_result
-v_topicEnable(
     v_topic _this);
 
 OS_API v_topicQos

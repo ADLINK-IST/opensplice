@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,9 +36,9 @@
 #include "spliced.h"
 
 #if 0
-  #define TRACE_PKILL printf
+#define TRACE_PKILL printf
 #else
-  #define TRACE_PKILL(...)
+#define TRACE_PKILL(...)
 #endif
 
 typedef enum {
@@ -97,8 +98,7 @@ shmMonitorMain(
 
                         os_mutexUnlock(&_this->mutex);
 
-                        /*
-                         * Allow the u_splicedCleanupProcessInfo() to take as
+                        /* Allow the u_splicedCleanupProcessInfo() to take as
                          * long as MAX(leasePeriod, serviceTerminatePeriod).
                          * This is set in the threadsMonitor as the threads
                          * interval.
@@ -148,8 +148,9 @@ shmMonitorMain(
 
         } else if (result == os_resultUnavailable) {
            /* client list is empty so we need to give up some cpu time
-              in order that it can be initialised on non timesliced systems
-              e.g. vxworks kernel builds */
+            * in order that it can be initialised on non timesliced systems
+            * e.g. vxworks kernel builds
+            */
             ut_sleep(_this->thr, 100*OS_DURATION_MICROSECOND);
         }
     }
@@ -206,22 +207,37 @@ err_shmMonitor_mtx:
     return NULL;
 }
 
-void
+os_boolean
 s_shmMonitorFree(
     s_shmMonitor _this)
 {
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
+
     if (_this != NULL) {
+        config = splicedGetConfiguration(_this->spliceDaemon);
         os_mutexLock(&_this->mutex);
         _this->terminate = OS_TRUE;
         os_mutexUnlock(&_this->mutex);
         if (_this->thr != NULL) {
-            (void)ut_threadWaitExit(_this->thr, NULL);
-            _this->thr = NULL;
+            osr = ut_threadTimedWaitExit(_this->thr, config->serviceTerminatePeriod, NULL);
+            if (osr != os_resultSuccess) {
+                OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                    "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                    ut_threadGetName(_this->thr),
+                    (os_address)os_threadIdToInteger(ut_threadGetId(_this->thr)),
+                    os_resultImage(osr));
+                result = OS_FALSE;
+            }
         }
-        os_mutexDestroy(&_this->mutex);
-        os_condDestroy(&_this->cleanCondition);
-        os_free(_this);
+        if (result) {
+            os_mutexDestroy(&_this->mutex);
+            os_condDestroy(&_this->cleanCondition);
+            os_free(_this);
+        }
     }
+    return result;
 }
 
 /**

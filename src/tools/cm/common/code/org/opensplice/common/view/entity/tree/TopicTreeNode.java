@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,15 +29,15 @@ import org.opensplice.common.CommonException;
  * Concrete implementation of a RootTreeNode. It responsibility is to keep track
  * of the Participant and all the Domain objects that are available in the same
  * kernel the Participant participates in.
- *  
+ *
  * @date Oct 4, 2004
  */
 public class TopicTreeNode extends RootTreeNode {
 
     /**
-     * Creates a new TopicTreeNode by resolving all Topic entities and 
+     * Creates a new TopicTreeNode by resolving all Topic entities and
      * displaying them as children in the tree.
-     * 
+     *
      * @param _e The Participant that participates in the same kernel as the
      *           topics that need to be displayed.
      * @param _tree The tree the node is the root node of.
@@ -44,20 +45,20 @@ public class TopicTreeNode extends RootTreeNode {
     public TopicTreeNode(Participant _e, EntityTree _tree) {
         super(_e, _tree);
     }
-    
+
     /**
      * Refreshes this node and all of its expanded descendants. This is realized
-     * by resolving all Topic entities and their dependant entities. Entities
+     * by resolving all Topic entities and their dependent entities. Entities
      * that are no longer available, will be removed from the tree and new
      * entities are added to the tree.
-     * 
+     *
      * @throws CommonException Thrown when the node could not be refreshed.
      */
     @Override
     public void refresh() throws CommonException {
         Participant participant = (Participant)userObject;
         Entity[] entities = null;
-        
+
         try {
             entities = participant.resolveAllTopics();
         } catch (CMException e) {
@@ -65,22 +66,35 @@ public class TopicTreeNode extends RootTreeNode {
             throw new CommonException("Entity tree could not be refreshed.");
         }
         int childCount = entities.length;
-        
+
         for(int i=0; i<childCount; i++){
-            DependantEntityTreeNode child = (DependantEntityTreeNode)(this.resolveChildNode(entities[i]));
-            
+
+            boolean isFilteredTopic = TopicFilter.getInstance().isFilteredOutTopic(entities[i]);
+
+            DependantEntityTreeNode child = (DependantEntityTreeNode)(resolveChildNode(entities[i]));
+
+            //if the topic meets the topic filter criteria, do not include in tree
+            if (isFilteredTopic){
+                if (child != null){
+                    child.remove();
+                }
+                entities[i].free();
+                continue;
+            }
+
             if(child != null){
                 entities[i].free();
             } else {
                 child = new DependantEntityTreeNode(entities[i], tree);
                 tree.addNode(child, this);
             }
-            if(this.isExpanded()){
+
+            if(isExpanded()){
                 child.refresh();
             } else{
-                this.expand();
+                expand();
             }
         }
-        this.removeUnavailableChildren(entities);
+        removeUnavailableChildren(entities);
     }
 }

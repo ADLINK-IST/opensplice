@@ -10,7 +10,7 @@ About the Getting Started Guide
 
 The *Getting Started Guide* is included with the Vortex OpenSplice
 Documentation Set. This Guide is the starting point for anyone using,
-developing or running applications with OpenSplice DDS.
+developing or running applications with Vortex OpenSplice.
 
 *This Getting Started Guide contains:*
 
@@ -23,7 +23,7 @@ developing or running applications with OpenSplice DDS.
   information is provided in the *User* and *Deployment* Guides)
 
 - details of where additional information can be found, such as the
-  OpenSplice FAQs, Knowledge Base, bug reports, *etc.*
+  Vortex OpenSplice FAQs, Knowledge Base, bug reports, *etc.*
 
 *Intended Audience* 
 
@@ -77,4 +77,3 @@ specific use of Vortex OpenSplice.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         

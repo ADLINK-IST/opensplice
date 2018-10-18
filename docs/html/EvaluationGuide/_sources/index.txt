@@ -9,7 +9,7 @@ OpenSplice Evaluation & Benchmarking Guide
 .. toctree::
    :maxdepth: 2
    :numbered:
-      
+
    preface
    introduction
    basics
@@ -20,8 +20,8 @@ OpenSplice Evaluation & Benchmarking Guide
    tests
    biblio
 
-   contacts   
-   
+   contacts
+
 
 Indices and tables
 ==================

@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - PingPong</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -39,8 +40,8 @@ back a single message.</p>
 
 <h3>2) Design</h3>
 <p>It consists of 2 units :</p>
- <ul><li class="ex-unit"> <span class="ex-unit-key" data-langc="pong" data-langcpp="pong" data-langjava="pong" data-langcs="sacs_pingpong_pong" data-langjava5="pong">pong</span> : <span class="ex-unit-desc">Waits for messages from ping and sends the same message back</span></li>
-     <li class="ex-unit"> <span class="ex-unit-key" data-langc="ping" data-langcpp="ping" data-langjava="ping" data-langcs="sacs_pingpong_ping" data-langjava5="ping">ping</span> : <span class="ex-unit-desc">Sends a message to pong and waits for it's return</span></li></ul>
+ <ul><li class="ex-unit"> <span class="ex-unit-key" data-langc="pong" data-langcpp="pong" data-langjava="pong" data-langcs="sacs_pingpong_pong" data-langjava5="pong/target/classes/pong">pong</span> : <span class="ex-unit-desc">Waits for messages from ping and sends the same message back</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langc="ping" data-langcpp="ping" data-langjava="ping" data-langcs="sacs_pingpong_ping" data-langjava5="ping/target/classes/ping">ping</span> : <span class="ex-unit-desc">Sends a message to pong and waits for it's return</span></li></ul>
 
 <h3>3) Scenario</h3>
 
@@ -122,9 +123,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_pingpong_ping.jar </li>
-                        <li>saj5_pingpong_pong.jar </li>
-                        <li>saj5_pingpong_types.jar </li>
+                <ul><li>java5_ping.jar </li>
+                        <li>java5_pong.jar </li>
                 </ul>
 
 <h4>Running the example</h4>
@@ -154,7 +154,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
         <ul>
           <li><b><i>pong PongRead PongWrite </i></b> for C/C++  </li>
           <li><b><i>java -jar saj_pingpong_pong.jar PongRead PongWrite</i></b> for Java </li>
-          <li><b><i>java -jar saj5_pingpong_pong.jar PongRead PongWrite</i></b> for Java5 </li>
+          <li><b><i>java -jar pong/java5_pong.jar PongRead PongWrite</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
@@ -168,7 +168,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
        <ul>
           <li><b><i>ping 100 100 f PongRead PongWrite</i></b> for C/C++  </li>
           <li><b><i>java -jar saj_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java </li>
-          <li><b><i>java -jar saj5_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
+          <li><b><i>java -jar ping/java5_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
            </ul>
     </ul>
 
@@ -212,9 +212,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_pingpong_ping.jar </li>
-                        <li>saj5_pingpong_pong.jar </li>
-                        <li>saj5_pingpong_types.jar </li>
+                <ul><li>java5_ping.jar </li>
+                        <li>java5_pong.jar </li>
                 </ul>
 
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
@@ -244,7 +243,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>pong PongRead PongWrite </i></b> for C/C++  </li>
           <li><b><i>sacs_pingpong_pong PongRead PongWrite </i></b> for C# </li>
           <li><b><i>java -jar saj_pingpong_pong.jar PongRead PongWrite</i></b> for Java </li>
-          <li><b><i>java -jar saj5_pingpong_pong.jar PongRead PongWrite</i></b> for Java5 </li>
+          <li><b><i>java -jar pong/java5_pong.jar PongRead PongWrite</i></b> for Java5 </li>
         </ul>
     </li>
    </ul>
@@ -256,7 +255,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>ping 100 100 f PongRead PongWrite</i></b> for C/C++  </li>
           <li><b><i>sacs_pingpong_ping 100 100 f PongRead PongWrite</i></b> for C# </li>
           <li><b><i>java -jar saj_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java </li>
-          <li><b><i>java -jar saj5_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
+          <li><b><i>java -jar ping/java5_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>ping usage:

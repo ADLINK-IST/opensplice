@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,10 +27,13 @@
 extern "C" {
 #endif
 
+#define v_groupGIDKey(_this) \
+        (v_group(_this)->gidkey)
+
 #define V_GROUP_NAME_TEMPLATE "Group<%s,%s>"
 
 #define v_groupKeyList(_this) \
-        c_tableKeyList(v_group(_this)->instances)
+        v_group(_this)->keyList
 
 #define v_groupSampleCountIncrement(_this) \
         v_group(_this)->resourceSampleCount++;
@@ -45,11 +49,15 @@ struct v_groupFlushTransactionArg {
     v_transaction txn;
 };
 
+/* param 'id' is the sequence number of the group and is locally unique.
+ * param 'gidkey' specifies the storage spectrum is defined by topic key or instance gid key.
+ */
 v_group
 v_groupNew (
     v_partition partition,
     v_topic topic,
-    c_long id);
+    c_long id,
+    c_bool gidkey);
 
 void
 v_groupDeinit (
@@ -97,7 +105,7 @@ v_groupCreateInvalidMessage(
     os_timeW timestamp);
 
 void
-v_groupNotifyGroupCoherentPublication(
+v_groupNotifyCoherentPublication(
     v_group _this,
     v_message msg);
 
@@ -151,10 +159,6 @@ os_boolean
 v_groupIsDurable(
     v_group _this);
 
-v_transactionAdmin
-v__groupGetTransactionAdmin(
-    v_group _this);
-
 c_bool
 v_groupIsOnRequest(
     v_group _this);
@@ -167,6 +171,30 @@ void
 v_groupNotifyWriter(
     v_group _this,
     v_writer w);
+
+v_result
+v_groupSetFilter(
+    v_group _this,
+    q_expr condition,
+    const c_value params[],
+    os_uint32 nrOfParams);
+
+_Requires_lock_held_(g->mutex)
+v_alignState
+v__groupCompleteGet_nl(
+    _In_ v_group g);
+
+void
+v_groupGetOpenTransactions(
+    v_group g,
+    v_entry e,
+    c_bool groupAdmin);
+
+void
+v_groupInsertTransactionMessage(
+    v_group _this,
+    v_message msg,
+    v_groupInstance instance);
 
 #if defined (__cplusplus)
 }

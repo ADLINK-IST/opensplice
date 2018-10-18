@@ -55,21 +55,21 @@ waitForProcessTermination()
 
    PSARGS=""
    # for testing on WRLinux 7
-   ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2016-02-19 09:26:32 CET) multi-call binary.' > /dev/null
-   if [ $? != 0 ]
-   then
-      # for testing on linux on mpc8313e
-      ps -h 2>&1 |  grep 'BusyBox v1.14.1 (2015-09-23 16:49:28 CEST) multi-call binary'  > /dev/null
-      if [ $? != 0 ]
-      then
-          # for testing on linux on armv7a_vfp_neon
-          ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2015-10-16 20:13:35 BST) multi-call binary.'  > /dev/null
-          if [ $? != 0 ]
-          then
-             PSARGS="-o args"
-          fi
-      fi
-   fi
+   #ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2016-02-19 09:26:32 CET) multi-call binary.' > /dev/null
+   #if [ $? != 0 ]
+   #then
+   #   # for testing on linux on mpc8313e
+   #   ps -h 2>&1 |  grep 'BusyBox v1.14.1 (2015-09-23 16:49:28 CEST) multi-call binary'  > /dev/null
+   #   if [ $? != 0 ]
+   #   then
+   #       # for testing on linux on armv7a_vfp_neon
+   #       ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2015-10-16 20:13:35 BST) multi-call binary.'  > /dev/null
+   #       if [ $? != 0 ]
+   #       then
+   #          PSARGS="-o args"
+   #       fi
+   #   fi
+   #fi
 
    # Do as long as the process is available or until timeout
    while [ ! "x$AVAILABLE" = "x" -a ! "$TIMEOUT" = "0" ]
@@ -79,11 +79,12 @@ waitForProcessTermination()
 
       # Also sleep 1 when process was terminated to allow
       # for any piping to finish
-      sleep 1;
+      sleep 1
    done
 
    if [ ! "x$AVAILABLE" = "x" ] ; then
          echo "WARNING: Process $PROCESS not terminated within timeout!"
+         kill -9 $1 > /dev/null
    fi
 }
 
@@ -103,8 +104,7 @@ runZero()
    ./publisher > pubResult.txt $PUB_PARAMS 2>&1
    PUB_RESULT=$?
 
-   wait $cmd_pid &> /dev/null
-   SUB_RESULT=$?
+   waitForProcessTermination $cmd_pid 10
 
    sleep 5
 }
@@ -119,8 +119,7 @@ runZeroThroughput()
    ./subscriber > subResult.txt 10 2>&1
    SUB_RESULT=$?
 
-   wait $cmd_pid &> /dev/null
-   PUB_RESULT=$?
+   waitForProcessTermination $cmd_pid 30
 
    sleep 5
 }
@@ -133,11 +132,9 @@ runZeroStreamsThroughput()
 
    ./subscriber > subResult.txt 10 10 2>&1 &
    cmd_pid=$!
-
-   wait $cmd_pid &> /dev/null
    SUB_RESULT=$?
 
-   (sleep 30 ; echo "timeout: kill sub"; kill -9 $cmd_pid) &
+   (sleep 40 ; echo "timeout: kill sub"; kill -9 $cmd_pid) &
    killerPid=$!
 
    (kill -0 $killerPid 2>/dev/null && kill $killerPid) || true
@@ -169,10 +166,10 @@ runZeroThroughputJava5()
 
    echo "=== Launching Throughput "
 
-   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP publisher 1 0 1 15 > pubResult.txt 2>&1 &
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_Throughput_pub.jar 1 0 1 15 > pubResult.txt 2>&1 &
    cmd_pid=$!
 
-   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP subscriber > subResult.txt 10 2>&1
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_Throughput_sub.jar > subResult.txt 10 2>&1
    SUB_RESULT=$?
 
    wait $cmd_pid &> /dev/null
@@ -196,9 +193,9 @@ runZeroRoundTrip()
    sleep 5
 
    ./ping quit >/dev/null
-
-   wait $cmd_pid &> /dev/null
    SUB_RESULT=$?
+
+   waitForProcessTermination $cmd_pid 30
 
    sleep 5
 }
@@ -220,8 +217,6 @@ runZeroRoundTripJava()
    sleep 5
 
    LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP ping quit >/dev/null
-
-   wait $cmd_pid &> /dev/null
    SUB_RESULT=$?
 
    sleep 5
@@ -232,19 +227,17 @@ runZeroRoundTripJava5()
 
    echo "=== Launching RoundTrip "
 
-   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP pong > pongResult.txt 2>&1 &
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pong/java5_pong.jar > pongResult.txt 2>&1 &
    cmd_pid=$!
 
    sleep 10
 
-   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ping > pingResult.txt 100 0 10 2>&1
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar ping/java5_ping.jar > pingResult.txt 100 0 10 2>&1
    PUB_RESULT=$?
 
    sleep 5
 
-   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ping quit >/dev/null
-
-   wait $cmd_pid &> /dev/null
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar ping/java5_ping.jar quit >/dev/null
    SUB_RESULT=$?
 
    sleep 5
@@ -521,6 +514,7 @@ runPingPong()
    BLOKCOUNT=100
 
    $VG_PONG ./pong PongRead PongWrite &
+   cmd_pid=$!
 
    sleep 4
 
@@ -547,17 +541,20 @@ runPingPong()
    $VG_PING_T ./ping 1  10 t PongRead PongWrite
 
    sleep 4
+
+   waitForProcessTermination $cmd_pid 30
 }
 
 runTutorial()
 {
    echo start MessageBoard
    $VG_MESSAGEBOARD ./MessageBoard&
-
+   mboard_pid=$!
    sleep 7
 
    echo start UserLoad
    $VG_USERLOAD ./UserLoad&
+   uload_pid=$!
 
    sleep 2
 
@@ -570,4 +567,7 @@ runTutorial()
    $VG_CHATTER_T ./Chatter -1
 
    sleep 4
+
+   waitForProcessTermination $mboard_pid 30
+   waitForProcessTermination $uload_pid 30
 }

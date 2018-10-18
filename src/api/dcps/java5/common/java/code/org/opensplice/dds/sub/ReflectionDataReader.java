@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.cyclone.dds.core.AbstractDDSObject;
 import org.omg.dds.core.DDSObject;
 import org.omg.dds.core.Duration;
 import org.omg.dds.core.InstanceHandle;
@@ -45,7 +47,6 @@ import org.omg.dds.sub.ReadCondition;
 import org.omg.dds.sub.Sample;
 import org.omg.dds.sub.Sample.Iterator;
 import org.omg.dds.topic.PublicationBuiltinTopicData;
-import org.opensplice.dds.core.AbstractDDSObject;
 import org.opensplice.dds.core.DDSExceptionImpl;
 import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
 import org.opensplice.dds.core.InstanceHandleImpl;

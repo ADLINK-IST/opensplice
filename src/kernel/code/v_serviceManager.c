@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,7 +27,7 @@
 #include "v__serviceState.h"
 #include "v__lease.h"
 #include "v__observer.h"
-#include "v_observable.h"
+#include "v__observable.h"
 #include "v__entity.h"
 #include "v_public.h"
 #include "v_event.h"
@@ -39,9 +40,6 @@ struct collectNamesArg {
     c_iter list;
 };
 
-/****************************************************************************
- * Private functions
- ****************************************************************************/
 static c_bool
 collectNames(
     c_object s,
@@ -61,12 +59,9 @@ collectNames(
     return TRUE;
 }
 
-/****************************************************************************
- * New/Free
- ****************************************************************************/
 static void
 v_serviceManagerInit(
-    v_serviceManager sm)
+    _Inout_ v_serviceManager sm)
 {
     v_kernel k;
 
@@ -75,15 +70,17 @@ v_serviceManagerInit(
 
     k = v_objectKernel(sm);
 
-    v_entityInit(v_entity(sm), "ServiceManager", TRUE);
+    v_entityInit(v_entity(sm), "ServiceManager");
+    (void)v_entityEnable(v_entity(sm));
 
-    c_mutexInit(c_getBase(sm), &sm->mutex);
     sm->serviceStates = c_tableNew(v_kernelType(k, K_SERVICESTATE), "name");
 }
 
+_Check_return_
+_Ret_notnull_
 v_serviceManager
 v_serviceManagerNew(
-    v_kernel k)
+    _In_ v_kernel k)
 {
     v_serviceManager sm;
 
@@ -93,30 +90,6 @@ v_serviceManagerNew(
     v_serviceManagerInit(sm);
 
     return sm;
-}
-
-
-/****************************************************************************
- * Protected functions
- ****************************************************************************/
-void
-v_serviceManagerNotify(
-    v_serviceManager serviceManager,
-    v_event event,
-    c_voidp userData)
-{
-    OS_UNUSED_ARG(serviceManager);
-    OS_UNUSED_ARG(userData);
-    assert(serviceManager != NULL);
-    assert(C_TYPECHECK(serviceManager,v_serviceManager));
-
-    /* Only V_EVENT_SERVICESTATE_CHANGED is expected!
-       event may be NULL in case of termination.
-    */
-    if ((event != NULL) && (event->kind != V_EVENT_SERVICESTATE_CHANGED)) {
-        OS_REPORT(OS_WARNING, "v_serviceManager", V_RESULT_INTERNAL_ERROR, "Unexpected event");
-        assert(FALSE);
-    }
 }
 
 v_serviceState
@@ -137,7 +110,7 @@ v_serviceManagerRegister(
     kernel = v_objectKernel(serviceManager);
     state = v_serviceStateNew(kernel, v_participantName(service), extStateName);
     if (state != NULL) {
-        c_mutexLock(&serviceManager->mutex);
+        OSPL_LOCK(serviceManager);
 
         found = ospl_c_insert(serviceManager->serviceStates, state);
 
@@ -145,10 +118,11 @@ v_serviceManagerRegister(
             c_free(state);
             state = NULL;
             c_keep(found);
+        } else {
+            OSPL_ADD_OBSERVER(state, serviceManager, V_EVENT_SERVICESTATE_CHANGED, NULL);
         }
-        c_mutexUnlock(&serviceManager->mutex);
+        OSPL_UNLOCK(serviceManager);
         /* observe the state */
-        v_observableAddObserver(v_observable(found), v_observer(serviceManager), NULL);
     } else {
         found = NULL;
     }
@@ -174,12 +148,12 @@ v_serviceManagerGetServiceState(
     expr = (q_expr)q_parse("name like %0");
     params[0] = c_stringValue(c_stringNew(c_getBase(serviceManager), serviceName));
 
-    c_mutexLock(&serviceManager->mutex);
+    OSPL_LOCK(serviceManager);
     q = c_queryNew(serviceManager->serviceStates, expr, params);
     q_dispose(expr);
     list = ospl_c_select(q, 0);
     c_free(q);
-    c_mutexUnlock(&serviceManager->mutex);
+    OSPL_UNLOCK(serviceManager);
 
     c_free(params[0].is.String);
     state = c_iterTakeFirst(list);
@@ -189,9 +163,6 @@ v_serviceManagerGetServiceState(
     return state;
 }
 
-/****************************************************************************
- * Public functions
- ****************************************************************************/
 v_serviceStateKind
 v_serviceManagerGetServiceStateKind(
     v_serviceManager serviceManager,
@@ -229,9 +200,9 @@ v_serviceManagerGetServices(
     arg.kind = kind;
     arg.list = c_iterNew(NULL);
 
-    c_mutexLock(&serviceManager->mutex);
+    OSPL_LOCK(serviceManager);
     c_walk(serviceManager->serviceStates, collectNames, &arg);
-    c_mutexUnlock(&serviceManager->mutex);
+    OSPL_UNLOCK(serviceManager);
 
     return arg.list;
 }
@@ -249,7 +220,7 @@ v_serviceManagerRemoveService(
 
     state = v_serviceManagerGetServiceState(serviceManager,serviceName);
     if (state) {
-        c_mutexLock(&serviceManager->mutex);
+        OSPL_LOCK(serviceManager);
         removed = c_remove(serviceManager->serviceStates, state, NULL, NULL);
         if (state != removed) {
             OS_REPORT(OS_ERROR, "v_serviceManagerRemoveService", V_RESULT_INTERNAL_ERROR,
@@ -257,7 +228,7 @@ v_serviceManagerRemoveService(
         } else {
             result = TRUE;
         }
-        c_mutexUnlock(&serviceManager->mutex);
+        OSPL_UNLOCK(serviceManager);
     } else {
         OS_REPORT(OS_ERROR, "v_serviceManagerRemoveService", V_RESULT_INTERNAL_ERROR,
                    "Could not get the service state for service %s",serviceName);

@@ -1,0 +1,526 @@
+                 SOFTWARE LICENSE AGREEMENT
+
+This license agreement ('Agreement') is a legal agreement between
+you, a single corporate entity ('Licensee') and ADLINK Technology
+Limited or its affiliated company with which your purchase order
+is placed and accepted ('Licensor'), for use of Licensor's
+(and / or its affiliates) and / or its licensor's proprietary
+software products,which include any computer software, printed
+materials, "online" or electronic documentation and any upgrades
+or modifications thereto ("the Software").
+By placing a purchase order for the Software, installing,
+copying, or otherwise using the Software, Licensee agrees to be
+bound by the terms and conditions of this Agreement.
+IF LICENSEE DOES NOT AGREE TO THE TERMS AND CONDITIONS
+OF THIS AGREEMENT THEN DO NOT INSTALL COPY OR USE THE SOFTWARE
+and either immediately destroy the Software or return it within
+15 days of receipt to the place of purchase in exchange for a full
+refund.  Clauses 3 and 4 of this Agreement are not applicable to
+Licensee, if Licensee has not purchased the Software license(s)
+directly from Licensor, in which event use of the Software shall
+be subject to all other clauses of this Agreement.
+
+THIRD PARTY OPENSOURCE SOFTWARE ('OS SOFTWARE') MAY BE SUPPLIED
+WITH THE SOFTWARE. IN THIS EVENT SUCH OS SOFTWARE IS SUBJECT TO
+THE APPLICABLE LICENSE TERMS INCORPORATED IN THE OS SOFTWARE.
+LICENSEE ACKNOWLEDGES THAT THE OS SOFTWARE IS SUPPLIED FREE,
+WITHOUT LICENSE FEES AND IS THEREFORE PROVIDED WITH NO WARRANTIES
+OF ANY KIND INCLUDING THE WARRANTIES OF DESIGN, MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, OR ARISING
+FROM A COURSE OF DEALING, USAGE OR TRADE PRACTICE. EXCEPT TO THE
+EXTENT PROHIBITED BY APPLICABLE LAW LICENSOR SHALL HAVE NO
+LIABILITY IN RESPECT OF THE OS SOFTWARE, FOR DAMAGES OF ANY KIND
+INCLUDING ANY INDIRECT OR CONSEQUENTIAL LOSS (INCLUDING WITHOUT
+LIMITATION, LOSS OF USE; DATA; INFORMATION; BUSINESS; PRODUCTION
+OR GOODWILL), EXEMPLARY OR INCIDENTAL DAMAGES, LOST PROFITS OR
+OTHER SPECIAL OR PUNITIVE DAMAGES WHATSOEVER, WHETHER IN CONTRACT,
+TORT, (INCLUDING NEGLIGENCE, STRICT LIABILITY AND ALL OTHERS),
+WARRANTY, INDEMNITY OR UNDER STATUTE, EVEN IF LICENSOR HAS BEEN
+ADVISED OF THE LIKELIHOOD OF SAME.
+
+The following terms and conditions of this Agreement apply to the
+Software but do not apply to any OS Software that may be supplied
+with the Software:
+
+The parties hereby agree as follows:
+
+1. Grant of License
+
+1.1  The Software and all associated copyrights and other
+intellectual property rights are the property of the Licensor, its
+affiliated companies, or its licensors.  Licensee acquires no
+title, right or interest in the Software other than the license
+granted herein.
+
+1.2  Licensor hereby grants to Licensee, subject to payment of the
+appropriate license fees, the non-exclusive non-transferable
+(without the right to sub- license) license to use the Software in
+object code form only, subject to the terms and conditions of this
+Agreement.
+
+1.3  The particular Software licensed, license term, type and
+number of licenses and any additional restrictions, not contained
+herein, concerning use of the Software, such as specified Licensee
+site(s), designated computer hardware, and/or operating system, use
+in conjunction with particular other software, or the number of
+authorized users shall be in accordance with the particular
+transaction between us, as confirmed in Licensor's order
+acknowledgement.
+
+1.4  Unless otherwise agreed in writing, the following
+restrictions apply to development and deployment Software licenses
+purchased for use of Licensor's middleware products:
+
+1.4.1   Single User Development License - a per user license
+permitting a single person to use the Software for development
+purposes only, to develop and/or test Licensee applications on a
+single self contained computer hardware system, on one operating
+system platform only, on one specified project only. The term "use"
+comprises designing, developing, testing, or maintaining software
+which invokes functionality of the Software. The Software shall not
+be used for deploying a particular application created with the
+Software, for which purposes a Deployment License is required. All
+individuals who are authorized by Licensee to use the Software as
+described herein regardless of whether the individual is actively
+using the Software at any given time must be covered by a Single
+User Development License. Licenses are non-transferable between
+computer systems and users;
+
+1.4.2	Project Unlimited User Development License - a multi user
+license permitting any number of persons assigned to a specified
+project, to use the Software for development purposes only, to
+develop and/or test Licensee applications on a single self
+contained computer hardware system, on one operating system
+platform only. The term "use" comprises designing, developing,
+testing, or maintaining Licensee application software source code
+which either directly or indirectly invokes the Application
+Programming Interfaces ("APIs") of the Software. The Software
+shall not be used for deploying a particular application created
+with the Software in an production environment, for which purposes
+a Deployment License is required. Licenses are non-transferable
+between computer systems and users.
+
+1.4.3   Floating Development License - a user license permitting
+Licensee to install the Software on multiple computer hardware
+systems and to use the Software for the same purposes as under a
+Single User Development License, on one operating system only,
+on one specified project only, provided there is never more than
+one (1) concurrent user per license.
+
+1.4.4   Deployment License: a machine license permitting Licensee
+to run the Software with Licensee's applications in a live
+operational environment on a specified project.
+
+1.5     Unless otherwise agreed in writing, the following
+restrictions apply to Software licenses purchased for use of
+Licensor's development productivity tools:
+
+1.5.1   Single User Tools License - a per user license permitting
+a single person to use the Software to develop, test, and
+demonstrate Licensee applications on a single self contained host
+computer hardware system on one operating system platform only, on
+one specified project only. All individuals who are authorized by
+Licensee to use the Software as described herein regardless of
+whether the individual is actively using the Software at any given
+time must be covered by a Single User Tools License. Licenses are
+non-transferable between computer systems and users. One license
+is required per host operating system and one license is required
+per target language and per target operating system. The
+intellectual property rights in any application code generated by
+Licensee using the Software, excluding any code that is a
+derivative of the Software shall be vested immediately on its
+creation, in the Licensee.
+
+1.5.2   Floating Tools License - a license permitting Licensee to
+install the Software on multiple host computer hardware systems,
+and to use the Software for the same purposes as under a Single
+User Tools License, on one operating system platform only, on one
+specified project only, provided there is never more than one
+(1) concurrent user per license. One license is required per host
+operating system and one license is required per target language
+and per target operating system. The intellectual property rights
+in any application code generated by Licensee using the Software,
+excluding any code that is a derivative of the Software,
+shall be vested immediately on its creation, in the Licensee.
+
+1.6  Licensee acknowledges that the Software may not operate
+without a license key ('License Key') and Licensee agrees to
+provide Licensor with any necessary information requested by
+Licensor in order to generate and provide the License Key(s). Such
+information may include specific computer IP and / or Host ID
+addresses and / or other relevant information relating to the type
+and number of licenses purchased. Licensor reserves the right to
+withhold or delay the issue of any permanent License Key(s) in the
+event the Licensee is in breach of this Agreement, until such
+breach has been remedied. Licensee shall maintain records of the
+number and type of licenses purchased including appropriate
+details such as named users allocated and computers on which
+Software is installed and shall provide a copy of such records to
+Licensor on request.
+
+1.7   Licensee shall use the Software solely for its own internal
+business purposes. Licensee shall not provide or otherwise make
+available the Software in whole or in part to any third party and
+Licensee shall not permit any third party to use the Software
+without the written consent of Licensor. Licensee shall not, or
+permit any third party to, publish or disclose the results of any
+performance or benchmark tests relating to the Software without
+the written consent of Licensor.
+
+1.8  Subject to compliance with all other terms of this Agreement
+by Licensee, Licensor's consent referred to in Clauses 1.7 and
+9.1 is granted hereunder to make the Software available to third
+party contractors of Licensee provided that such contractors must
+be bound by written agreement to compliance with the terms of this
+Agreement (save for Clauses 3 and 4). Licensee shall ensure
+compliance by such third party contractors to such terms.
+
+1.9  Licensee may make a reasonable number of copies of the
+Software for back- up, archival or disaster recovery purposes. Any
+copy must include Licensor's copyright notice and is fully subject
+to the terms of this Agreement.  Licensee shall not other than as
+permitted by the Agreement or Licensor's written authorization or
+by law copy, reproduce, translate, adapt, de-compile, modify,
+reverse engineer, disassemble the Software or create derivative
+works of the Software. If Licensee requires information relating
+to the Software necessary to achieve inter-operability with an
+independently created software program, Licensee shall make a
+written request to Licensor to make available such information.
+Licensee shall not be entitled to make any copies of any hard copy
+documentation supplied by Licensor relating to the Software.
+
+1.10  In the event that the Software contains or is accompanied by
+certain third party software products such third party software is
+subject to the respective third party license terms as may be set
+forth within the third party software.
+
+2   Example Code
+
+IN THE EVENT ANY ANCILLARY EXAMPLE COMPUTER SOFTWARE SOURCE CODE
+IS SUPPLIED WITH THE SOFTWARE, (INCLUDING BUT NOT LIMITED TO JAVA
+OR C++ EXAMPLE CODE) SUCH CODE IS SUPPLIED AS IS WITHOUT WARRANTY
+OF ANY KIND. LICENSEE IS GRANTED A ROYALTY FREE LICENSE TO USE,
+COPY AND MODIFY SUCH CODE ENTIRELY AT ITS OWN RISK.  IN VIEW
+HOWEVER OF THE LIMITED NATURE OF SUCH CODE LICENSOR SHALL (EXCEPT
+AS OTHERWISE PROHIBITED BY LAW) HAVE NO LIABILITY WHATSOEVER IN
+RELATION TO ITS USE.  IN ALL OTHER RESPECTS USE OF SUCH CODE SHALL
+BE SUBJECT TO THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+
+3   License Fee
+
+3.1 Unless otherwise advised prior to acceptance of order by
+Licensor. Licensor shall grant Licensee a credit facility and
+Licensee shall pay Licensor the license fee within 30 days of the
+date of Licensor's invoice.
+
+3.2 The license fee excludes any updates, maintenance, support,
+training or consulting in respect of the Software.
+
+3.3 The license fee is exclusive of all sales or value added
+taxes, customs duties or government levies (if any) which if
+applicable shall be reimbursed by Licensee at cost to Licensor.
+
+3.4 In the event payment is not made within 30 days of invoice, by
+the Licensee, Licensor shall be entitled to charge Licensee a late
+payment fee of 1% per month, of the overdue amount during the
+period of delayed payment (both before and after any judgment)
+without prejudice to Licensor's right to receive payments on the
+due dates.
+
+3.5 In the event of non-payment by Licensee of any sum due
+hereunder by the due date, Licensor may serve notice of such
+default upon Licensee, and if Licensee fails to pay in full all
+amounts owed hereunder within a period of 30 days of receipt of
+such notice, then Licensor may immediately terminate this
+Agreement in addition to any other rights Licensor may have in
+respect of such non-payment. Licensor also reserves the right,
+without liability, to forthwith suspend the licenses granted under
+this Agreement, in the event any payment is overdue from Licensee.
+
+4   Delivery and Acceptance
+
+Further to acceptance of Licensee's order, Licensor shall deliver
+one copy of the Software in machine-readable object code form and
+applicable License Key(s), or if a copy of the Software is already
+in possession of Licensee under the terms of a prior evaluation
+license, then applicable License Key(s) only. Licensor shall use
+reasonable endeavors to deliver within two (2) working days of order
+acceptance but shall be under no liability in the event of failure
+to deliver within this time-scale, which is an estimate only.
+Unless otherwise agreed in writing delivery terms are FCA (as
+defined in IncoTerms 2000) Licensor's premises.  In the event the
+Software has been evaluated by the Licensee under the terms of an
+evaluation license, prior to purchase, the Software shall be
+deemed accepted upon use of the Software under this Agreement.  If
+the Software has not been subject to such prior evaluation,
+Licensee may reject the Software within 30 days of delivery if the
+Software does not materially comply with the user documentation
+provided and return it to Licensor in exchange for a full refund.
+
+5   Term
+
+The license under this Agreement commences upon delivery of the
+Software to Licensee or if a copy of the Software is already in
+possession of Licensee under the terms of a prior evaluation
+license, upon issue of Licensor's order acknowledgment and shall
+continue for the term specified in the particular transaction
+between us, as confirmed in Licensor?s order acknowledgement,
+unless terminated sooner in accordance with this Agreement.
+
+6   Warranty and Liability
+
+6.1 LICENSOR SPECIFICALLY DISCLAIMS ANY WARRANTY THAT USE OF THE
+SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE OR THAT THE FUNCTIONS
+CONTAINED IN THE SOFTWARE OR THE RESULTS OF USE WILL MEET
+LICENSEE'S REQUIREMENTS.
+
+6.2 IF WITHIN 90 DAYS OF DELIVERY OF THE SOFTWARE TO LICENSEE THE
+LICENSEE DISCOVERS ANY PHYSICAL DEFECTS IN THE MEDIUM ON WHICH THE
+SOFTWARE IS SUPPLIED AND LICENSOR IS GIVEN WRITTEN NOTICE OF THIS
+BY LICENSEE WITHIN THAT 90 DAY PERIOD AND THE DEFECTIVE MEDIUM IS
+RETURNED TO LICENSOR THEN LICENSOR SHALL REPLACE SUCH MEDIUM AND
+COPY OF THE SOFTWARE AT NO CHARGE TO LICENSEE.
+
+6.3 LICENSOR DOES NOT EXCLUDE OR LIMIT ITS LIABILITY IN NEGLIGENCE
+FOR DEATH OR PERSONAL INJURY, OR FOR FRAUD, OR OTHERWISE INSOFAR
+AS ANY EXCLUSION OR LIMITATION OF ITS LIABILITY IS VOID,
+PROHIBITED OR UNENFORCEABLE BY LAW.
+
+6.4 SUBJECT TO CLAUSE 6.5 BELOW, LICENSOR WILL ACCEPT LIABILITY
+FOR DAMAGE TO PHYSICAL PROPERTY CAUSED DIRECTLY BY LICENSOR OR ITS
+EMPLOYEES, NOT EXCEEDING THE SUM OF US$1,000,000 (ONE MILLION US
+DOLLARS) PER CLAIM OR SERIES OF CLAIMS.
+
+6.5 SAVE AS PROVIDED IN CLAUSE 6.3 ABOVE, IN NO EVENT WHATSOEVER
+WILL LICENSOR BE LIABLE FOR ANY INDIRECT OR CONSEQUENTIAL LOSS
+(OTHER THAN DIRECT PHYSICAL DAMAGE TO TANGIBLE PROPERTY UNDER
+CLAUSE 6.4 ABOVE) OR ECONOMIC LOSS: LOSS OF USE, DATA,
+INFORMATION, BUSINESS, REVENUE, PROFITS, PRODUCTION, GOODWILL
+OR ANTICIPATED SAVINGS), EXEMPLARY OR INCIDENTAL DAMAGES, OR OTHER
+SPECIAL OR PUNITIVE DAMAGES WHATSOEVER, WHETHER IN CONTRACT, TORT,
+(INCLUDING NEGLIGENCE, STRICT LIABILITY AND ALL OTHERS), WARRANTY,
+INDEMNITY OR UNDER STATUTE, EVEN IF LICENSOR HAS BEEN ADVISED OF
+THE LIKELIHOOD OF SAME.
+
+6.6 ANY CONDITION, REPRESENTATION OR WARRANTY WHICH MIGHT
+OTHERWISE BE IMPLIED OR INCORPORATED WITHIN THIS AGREEMENT BY
+REASON OF STATUTE OR COMMON LAW OR OTHERWISE, INCLUDING WITHOUT
+LIMITATION THE IMPLIED WARRANTIES OF MERCHANTABLE OR SATISFACTORY
+QUALITY AND FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-
+INFRINGEMENT ARE HEREBY EXPRESSLY EXCLUDED TO THE FULLEST EXTENT
+PERMITTED BY LAW.
+
+6.7 SUBJECT TO CLAUSE 6.3 ABOVE, IN THE EVENT THAT LICENSEE
+CHOOSES TO USE A VERSION OF THE SOFTWARE NO LONGER GENERALLY
+SUPPORTED BY LICENSOR UNDER THE TERMS OF LICENSOR'S SOFTWARE
+SUPPORT AGREEMENT AND DOES NOT PURCHASE AND MAINTAIN A VALID
+SUPPORT CONTRACT FOR THAT SPECIFIC VERSION THEN LICENSEE USES SUCH
+VERSION ENTIRELY AT ITS OWN RISK AND LICENSOR SHALL HAVE NO
+LIABILITY WHATSOEVER RELATED TO ITS USE.
+
+6.8 SUBJECT TO CLAUSE 6.3 ABOVE, IN THE EVENT THAT NOTWITHSTANDING
+THE PROVISIONS OF THIS AGREEMENT LICENSOR IS FOUND LIABLE FOR ANY
+LOSS OR DAMAGE SUFFERED BY LICENSEE ARISING OUT OF OR IN
+CONNECTION WITH THIS AGREEMENT, WHETHER IN CONTRACT, TORT
+(INCLUDING NEGLIGENCE, STRICT LIABILITY AND ALL OTHERS) BREACH OF
+STATUTORY DUTY OR OTHERWISE THAT LIABILITY SHALL IN NO EVENT
+EXCEED THE SUMS RECEIVED BY LICENSOR FOR THE SOFTWARE LICENSED
+UNDER THIS AGREEMENT.
+
+6.9 LICENSEE HEREBY WAIVES ANY RIGHT TO ANY OTHER REMEDIES OR
+RELIEFS NOT SET OUT IN THIS AGREEMENT AND SUCH WAIVER SHALL
+SURVIVE THE TERMINATION OF THIS AGREEMENT HOWEVER SUCH TERMINATION
+ARISES.
+
+7   Intellectual Property Rights
+
+7.1 All title, trademarks and copyrights in and pertaining to the
+Software (including but not limited to any images, photographs,
+animation, video, audio, music, text, and applets incorporated
+into the Software), and any copies of the Software are owned by
+Licensor, its affiliated companies, or licensors.  The Software is
+protected by copyright, other intellectual property rights,
+trademark laws and international treaty provisions. Licensee must
+treat the Software like any other copyrighted material for
+archival purposes, and Licensee may not copy the printed materials
+accompanying the Software.
+
+7.2 Licensee may not remove, modify or alter any Licensor
+copyright or trademark notice from any part or copies of the
+Software, including but not limited to any such notices contained
+in the physical and/or electronic media or documentation, in
+Licensor's installation dialogue or 'about' boxes, in any of the
+run-time resources and/or in any web-presence or web-enabled
+notices, code or other embodiments originally contained in or
+dynamically or otherwise created by the Software.
+
+7.3 If the Software is, or in Licensor's opinion may become, the
+subject of a claim for infringement of the intellectual property
+rights of a third party, Licensor may at its option and as
+Licensee's sole remedy:
+
+7.3.1   procure the right to continued use of the Software;
+
+7.3.2   replace or modify the Software to make it non-infringing;
+or
+
+7.3.3   repay to the Licensee the license fee (less a fair value
+for prior use) and terminate this Agreement.
+
+8   Termination
+
+8.1 Licensor may by notice in writing to Licensee terminate this
+Agreement if Licensee:
+
+8.1.1 commits a breach of this Agreement; or
+
+8.1.2 has ceased business, been adjudged bankrupt or insolvent
+under the laws of any jurisdiction, made an assignment for the
+benefit of creditors, or filed, or had filed against it, a
+petition of bankruptcy, re-organization or other insolvency
+proceeding.
+
+8.2 Within 14 days following the date of termination of this
+Agreement, Licensee shall cease to use the Software and shall at
+Licensor's direction either destroy or return to Licensor all of
+the Software including copies together with Licensee's written
+certification by a duly authorized officer that this clause has
+been complied with in full.
+
+8.3 Termination of this Agreement shall be in addition to and not
+a waiver of any remedy available to Licensor arising from
+Licensee's breach of this Agreement.
+
+9   Assignment
+
+9.1 Licensee shall not assign sub-license or otherwise transfer
+any of the rights or obligations under this Agreement without the
+prior written consent of Licensor.
+
+9.2 Licensor shall be entitled without the prior written consent
+of Licensee to assign sub-contract or otherwise transfer its
+rights and obligations under this Agreement.
+
+10  Reference
+
+Licensee permits Licensor to reference Licensee as a user of the
+Software and display Licensee's logo in Licensor's marketing
+documentation and on its worldwide web site.
+
+11  Export Regulations
+
+By downloading or using the Software, Licensee represents and
+warrants that it is not located in under the control of or a
+national or resident of any country which is subject to an
+applicable embargo or other trade restriction imposed by the U.S.
+or other government. Licensee shall not import, export, or re-
+export the Software to or from any country in contravention of any
+applicable import or export laws or regulations of the United
+States or other government.
+
+12  High Risk Activities
+
+The Software is not designed, produced or intended for fail-safe
+performance in applications used in hazardous environments in
+which the failure of the Software itself could lead directly to
+death, personal injury, or severe physical or environmental
+damage, such as in the operation of nuclear facilities, aircraft
+navigation or communication systems, air traffic control, direct
+life support machines, or weapons systems, ("High Risk
+Activities").  Licensor specifically disclaims any express or
+implied warranty of fitness for High Risk Activities and Licensee
+hereby indemnifies and holds harmless Licensor against claims of
+any nature arising from failure of the Software when used by it or
+its customers for High Risk Activities.
+
+13 Audit Rights
+
+Licensor reserves the right, with reasonable notice and at
+reasonable times, not exceeding one time per year, to conduct an
+audit of Licensee's records to the extent only that is reasonably
+necessary to confirm Licensee's compliance with the terms of this
+Agreement.  Without prejudice to any other rights of Licensor, in
+the event such audit reveals that copies of the Software have been
+made or are in use in breach of this Agreement, Licensee shall be
+liable to pay to the Licensor, as liquidated damages, Licensor's
+prevailing list price for each such copy and shall reimburse
+Licensor's costs of conducting such audit.
+
+14 US Government End Users
+
+The Software and documentation included therein are 'commercial
+items' as that term is defined in 48 C.F.R. 2.101 (October 1995)
+consisting of 'commercial computer software' and 'commercial
+computer software documentation' as such terms are used in
+48 C.F.R. 227.7202-1, 227.7202-3 and 227.7202-4 (June 1995). If
+the Licensee hereunder is the U.S. Government or any agency or
+department thereof, the Software is licensed hereunder (i) only as
+a commercial item, and (ii) with only those rights as are granted
+to all other end users pursuant to the terms and conditions of
+this Agreement.
+
+15 General
+
+15.1    If this Agreement is entered into with an ADLINK Technology
+Limited affiliated company located in the United States of America,
+then this Agreement shall be governed by and construed in
+accordance with the substantive laws of the Commonwealth of
+Massachusetts, without giving effect to the principles of conflict
+or choice of law of such Commonwealth. If this Agreement is
+entered into with an ADLINK Technology Limited affiliated company
+located in any other jurisdiction than the United States of
+America, then this Agreement: (i) shall be governed by and
+construed in accordance with the laws of England and all disputes
+arising in connection with this Agreement shall be subject to the
+non-exclusive jurisdiction of the English courts and (ii) is
+enforceable by the original parties to it and by their successors
+in title and permitted assignees. No term of this Agreement is
+enforceable under the Contracts (Rights of Third Parties) Act 1999
+by a person who is not a party to this Agreement.
+The original of this Agreement has been written in
+English.  The parties hereto waive any statute, law, or regulation
+that might provide an alternative law or forum or to have this
+Agreement written in any language other than English.
+
+15.2    Neither party shall be in breach of this Agreement if
+there is any total or partial failure of performance by it of its
+duties and obligations under this Agreement which is due to causes
+beyond its reasonable control provided that the party affected by
+such causes gives notice in writing to the other party at the
+commencement and cessation of these causes.
+
+15.3    Any notice or other communication required or permitted
+under this Agreement shall be given in writing to the address of
+the recipient as notified from time to time and will be deemed to
+have been given or made when delivered personally; if properly
+addressed and posted by prepaid certified or registered mail
+within three business days of posting; if sent by facsimile upon
+being sent, if confirmed by post; or electronically upon receipt
+if acknowledged to have been received.
+
+15.4    This Agreement contains the entire agreement between the
+Licensor and the Licensee relating to the licensing of the
+Software and subject to Clause 6.3, supersedes all prior oral or
+written understanding, arrangements, representations or agreements
+between them relating to the subject matter of this Agreement.  No
+amendment, variation or discharge of this Agreement is valid
+unless accepted in writing by both parties. The parties expressly
+agree that the terms and conditions of this Agreement shall
+prevail over any standard terms and conditions printed or referred
+to in any purchase order or other written documentation issued by
+the Licensee.
+
+15.5    The failure of either party to exercise or enforce any
+rights under this Agreement shall not amount to a waiver of those
+rights.
+
+15.6    The illegality or invalidity of any part of this Agreement
+shall not affect the legality or validity of the remainder of it.
+Any provision of the Agreement held to be to be excessively broad
+as to scope, activity, subject or otherwise so as to be
+unenforceable at law shall be constructed by limiting or reducing
+it so as to be enforceable to the maximum extent compatible with
+the applicable law then prevailing.
+
+Licenseterms Rev 2.7 2nd October 2014
+

@@ -1,9 +1,10 @@
 
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -76,7 +77,8 @@ int publisher(int argc, char *argv[])
         dds::topic::qos::TopicQos topicQos
              = dp.default_topic_qos()
                 << dds::core::policy::Durability::Transient()
-                << dds::core::policy::Reliability::Reliable();
+                << dds::core::policy::Reliability::Reliable()
+                << dds::core::policy::DestinationOrder::SourceTimestamp();
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
         dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
@@ -116,7 +118,6 @@ int publisher(int argc, char *argv[])
             dw << msftQuote;
             exampleSleepMilliseconds(1000);
         }
-
         /** A signal to terminate is sent to the subscriber */
         geQuote.price() = -1;
         msftQuote.price() = -1;
@@ -161,7 +162,8 @@ int subscriber(int argc, char *argv[])
         dds::domain::DomainParticipant dp(org::opensplice::domain::default_id());
         dds::topic::qos::TopicQos topicQos = dp.default_topic_qos()
                                                     << dds::core::policy::Durability::Transient()
-                                                    << dds::core::policy::Reliability::Reliable();
+                                                    << dds::core::policy::Reliability::Reliable()
+                                                    << dds::core::policy::DestinationOrder::SourceTimestamp();
         dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::sub::Subscriber is created on the domain participant. */
@@ -173,6 +175,7 @@ int subscriber(int argc, char *argv[])
 
         /** The dds::sub::qos::DataReaderQos are derived from the topic qos */
         dds::sub::qos::DataReaderQos drqos = topic.qos();
+
 
         /** A dds::topic::ContentFilteredTopic is created filtered on the stock ticker supplied to the
          * program as an argument */

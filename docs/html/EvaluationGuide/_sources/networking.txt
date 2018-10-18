@@ -1,29 +1,29 @@
-.. _`OpenSplice Networking Options`:
+.. _`Vortex OpenSplice Networking Options`:
 
-#############################
-OpenSplice Networking Options
-#############################
+####################################
+Vortex OpenSplice Networking Options
+####################################
 
-OpenSplice Enterprise provides several networking options for the 
+Vortex OpenSplice provides several networking options for the 
 delivery of DDS data between nodes. The networking service selection 
 is largely transparent to the user; the difference is observed 
 in the CPU consumption, networking load, and ultimately how fast and 
 efficiently the data is delivered between nodes. The most applicable 
 service is dependent on the requirements of the use case. 
 
-**OpenSplice DDSI** is the industry standard protocol providing vendor 
+**Vortex OpenSplice DDSI** is the industry standard protocol providing vendor 
 interoperability that operates using a typed 'pull' style model. 
 
-**OpenSplice RTNetworking** is an alternative to the DDSI wire protocol. 
+**Vortex OpenSplice RTNetworking** is an alternative to the DDSI wire protocol. 
 RTNetworking uses a type-less 'push' style model in 
 contrast to DDSI and is often the more performant, scalable option. 
 RTNetworking also offers prioritization of network traffic via 
-&lsquo;channels&rsquo;, partitioning to separate data flows and 
+'channels', partitioning to separate data flows and 
 optional compression for low-bandwidth environments. 
-**OpenSplice SecureRTNetworking** provides these features together 
+**Vortex OpenSplice SecureRTNetworking** provides these features together 
 with encryption and access control. 
 
-**OpenSplice DDSI2E** is the 'enhanced' version of the 
+**Vortex OpenSplice DDSI2E** is the 'enhanced' version of the 
 interoperable service. DDSI2E offers the benefits of the DDSI 
 protocol (such as its automatic unicast delivery in the case of there 
 being a single subscribing endpoint), together with some of the 
@@ -62,7 +62,7 @@ memory with any of the networking service protocols.
 |caution|
   Note that by default, the ``OSPL_URI`` environment variable refers to a 
   *DDSI* configuration, so to see the extra performance and scalability 
-  benefits of OpenSplice DDS's RTNetworking or DDSI2E it is 
+  benefits of Vortex OpenSplice's RTNetworking or DDSI2E it is 
   necessary to switch from the default. 
 
 

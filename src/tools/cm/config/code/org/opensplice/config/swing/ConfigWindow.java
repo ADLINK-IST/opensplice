@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -109,47 +110,47 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
 
     public void setDataConfiguration(DataConfiguration config){
         DataElement[] services;
-        
+
         if(this.config != null){
             this.config.removeDataConfigurationListener(this);
             int count = mainTabbedPane.getComponentCount();
-            
+
             for(int i=0; i < count; i++){
                 mainTabbedPane.remove(0);
             }
         }
         this.config = config;
-        
+
         if(this.config != null){
             this.config.addDataConfigurationListener(this);
             services  = config.getServices();
-            
+
             for(int i=0; i < services.length; i++){
                 ServicePanel servicePanel = new ServicePanel(services[i], this.statusPanel);
                 servicePanel.setTransferHandler(transferHandler);
                 mainTabbedPane.addTab(
-                        ConfigUtil.getExtendedDataElementString(services[i]), 
+                        ConfigUtil.getExtendedDataElementString(services[i]),
                         servicePanel);
             }
         }
         this.updateMenus();
     }
-    
+
     @Override
     public void nodeAdded(DataElement parent, DataNode nodeAdded) {
         this.updateMenus();
-        
+
         if(parent.equals(this.config.getRootElement())){
             if(nodeAdded instanceof DataElement){
                 final DataElement service = (DataElement)nodeAdded;
-                
+
                 Runnable worker = new Runnable(){
                     @Override
                     public void run(){
                         ServicePanel servicePanel = new ServicePanel(service, statusPanel);
                         servicePanel.setTransferHandler(transferHandler);
                         mainTabbedPane.addTab(
-                                ConfigUtil.getExtendedDataElementString(service), 
+                                ConfigUtil.getExtendedDataElementString(service),
                                 servicePanel);
                     }
                 };
@@ -161,20 +162,20 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     @Override
     public void nodeRemoved(DataElement parent, DataNode nodeRemoved) {
         this.updateMenus();
-        
+
         if(parent.equals(this.config.getRootElement())){
             if(nodeRemoved instanceof DataElement){
                 final DataElement service = (DataElement)nodeRemoved;
-                
+
                 Runnable worker = new Runnable(){
                     @Override
                     public void run(){
                         ServicePanel servicePanel;
                         boolean found = false;
-                        
+
                         for(int i=0; (i<mainTabbedPane.getTabCount()) && (!found); i++){
                             servicePanel = (ServicePanel)mainTabbedPane.getComponentAt(i);
-                            
+
                             if(servicePanel.getService().equals(service)){
                                 mainTabbedPane.removeTabAt(i);
                                 found = true;
@@ -190,33 +191,33 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     @Override
     public void valueChanged(DataValue data, Object oldValue, Object newValue) {
         ServicePanel servicePanel;
-        
+
         for(int i=0; i<this.mainTabbedPane.getTabCount(); i++){
             servicePanel = (ServicePanel)this.mainTabbedPane.getComponentAt(i);
-            this.mainTabbedPane.setTitleAt(i, 
+            this.mainTabbedPane.setTitleAt(i,
                     ConfigUtil.getExtendedDataElementString(
                             servicePanel.getService()));
         }
         this.updateMenus();
     }
-    
+
     public DataConfiguration getDataConfiguration(){
         return this.config;
     }
-    
+
     @Override
     public void disableView(){
         ServicePanel sp;
-        
+
         this.setEnabled(false);
         this.setFocusable(false);
-        
+
         for(int i=0; i<this.mainTabbedPane.getComponentCount(); i++){
             sp = (ServicePanel)this.mainTabbedPane.getComponentAt(i);
             sp.getConfigurationTable().getEditor().stopCellEditing();
         }
     }
-    
+
     public void setActionsEnabled(boolean enabled){
         ServicePanel sp;
         if(enabled){
@@ -230,7 +231,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         this.updateMenus();
     }
-    
+
     /**
      * Enables the view component.
      */
@@ -240,11 +241,11 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         this.setEnabled(true);
         this.toFront();
     }
-    
+
     public ConfigWindowController getController(){
         return this.controller;
     }
-    
+
     public void setWindowTitle (int configMode) {
         if (configMode == ConfigModeIntializer.LITE_MODE) {
             this.windowTitle = LITE_WINDOW_TITLE;
@@ -257,7 +258,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private void updateMenus(){
         this.getAddServiceMenu().removeAll();
         this.getRemoveServiceMenu().removeAll();
-        
+
         if(this.config != null){
             if(this.config.isUpToDate()){
                 this.getSaveItem().setEnabled(false);
@@ -269,9 +270,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             this.getCloseItem().setEnabled(true);
             this.getAddServiceMenu().setEnabled(true);
             this.getRemoveServiceMenu().setEnabled(true);
-            
+
             MetaNode[] mn = ((MetaElement)config.getRootElement().getMetadata()).getChildren();
-            
+
             for(MetaNode m: mn){
                 if(m instanceof MetaElement){
                     this.getAddServiceMenu().add(this.getAddServiceItem((MetaElement)m));
@@ -290,13 +291,13 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         this.updateTitle();
     }
-    
+
     private void updateTitle(){
         File f;
         String title;
         if(this.config != null){
             f = config.getFile();
-            
+
             if(f != null){
                 title = this.windowTitle + " | " + f.getAbsolutePath();
             } else {
@@ -307,13 +308,13 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         this.setTitle(title);
     }
-    
+
     private DataNodeMenuItem getAddServiceItem(MetaElement service){
         int curOcc = 0;
         DataNodeMenuItem item = new DataNodeMenuItem(
                                         service.getName(),
                                         this.config.getRootElement(), service);
-        
+
         for(DataElement s: config.getServices()){
             if(s.getMetadata().equals(service)){
                 curOcc++;
@@ -328,14 +329,14 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         item.addActionListener(this.popupSupport);
         return item;
     }
-    
+
     private DataNodeMenuItem getRemoveServiceItem(DataElement service){
         int curOcc = 0;
         MetaElement metaService = (MetaElement)service.getMetadata();
         DataNodeMenuItem item = new DataNodeMenuItem(
                             ConfigUtil.getExtendedDataElementString(service),
                             service, null);
-        
+
         for(DataElement s: config.getServices()){
             if(s.getMetadata().equals(metaService)){
                 curOcc++;
@@ -347,21 +348,22 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             item.setEnabled(false);
         }
         item.setActionCommand("removeService");
-        item.addActionListener(this.popupSupport); 
+        item.addActionListener(this.popupSupport);
         return item;
     }
-    
+
     /**
      * This method initializes this
-     * 
+     *
      * @return void
      */
     private void initialize() {
         this.setSize(800, 600);
         this.controller = new ConfigWindowController(this);
-        // setServiceLabel relies on the
-        // ConfigModeIntializer.CONFIGURATOR_MODE variable which
-        // has been set during construction of ConfigWndowController
+        /* setServiceLabel relies on the
+           ConfigModeIntializer.CONFIGURATOR_MODE variable which
+           has been set during construction of ConfigWndowController
+         */
         this.setServiceLabel();
         this.popupSupport = new DataNodePopup();
         this.transferHandler = new ConfigTransferHandler(this);
@@ -369,7 +371,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         this.setJMenuBar(getConfigMenuBar());
         this.setLocationRelativeTo(this.getParent());
         this.setContentPane(getJContentPane());
-        
+
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -399,7 +401,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
 
     /**
      * This method initializes jContentPane
-     * 
+     *
      * @return javax.swing.JPanel
      */
     private JPanel getJContentPane() {
@@ -413,10 +415,10 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes statusPanel.  
-     *  
+     * This method initializes statusPanel.
+     *
      * @return The status panel of the window.
-     */    
+     */
     @Override
     protected StatusPanel getStatusPanel() {
         if (statusPanel == null) {
@@ -424,11 +426,11 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return statusPanel;
     }
-    
+
     /**
-     * This method initializes configMenuBar	
-     * 	
-     * @return javax.swing.JMenuBar	
+     * This method initializes configMenuBar
+     *
+     * @return javax.swing.JMenuBar
      */
     private JMenuBar getConfigMenuBar() {
         if (configMenuBar == null) {
@@ -441,9 +443,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes mainTabbedPane	
-     * 	
-     * @return javax.swing.JTabbedPane	
+     * This method initializes mainTabbedPane
+     *
+     * @return javax.swing.JTabbedPane
      */
     private JTabbedPane getMainTabbedPane() {
         if (mainTabbedPane == null) {
@@ -454,9 +456,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes fileMenu	
-     * 	
-     * @return javax.swing.JMenu	
+     * This method initializes fileMenu
+     *
+     * @return javax.swing.JMenu
      */
     private JMenu getFileMenu() {
         if (fileMenu == null) {
@@ -476,7 +478,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return fileMenu;
     }
-    
+
     private JMenu getEditMenu(){
         if (editMenu == null){
             editMenu = new JMenu();
@@ -487,7 +489,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return editMenu;
     }
-    
+
     private JMenu getHelpMenu(){
         if (helpMenu == null){
             helpMenu = new JMenu();
@@ -497,7 +499,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return helpMenu;
     }
-    
+
     private JMenuItem getHelpContentsItem(){
         if (helpContentsItem == null){
             helpContentsItem = new JMenuItem();
@@ -509,7 +511,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return helpContentsItem;
     }
-    
+
     private JMenu getAddServiceMenu(){
         if (addServiceMenu == null){
             addServiceMenu = new JMenu();
@@ -518,7 +520,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
         return addServiceMenu;
     }
-    
+
     private JMenu getRemoveServiceMenu(){
         if (removeServiceMenu == null){
             removeServiceMenu = new JMenu();
@@ -529,9 +531,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes newItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes newItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getNewItem() {
         if (newItem == null) {
@@ -546,9 +548,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes openItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes openItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getOpenItem() {
         if (openItem == null) {
@@ -563,9 +565,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes saveItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes saveItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getSaveItem() {
         if (saveItem == null) {
@@ -580,9 +582,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes closeItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes closeItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getCloseItem() {
         if (closeItem == null) {
@@ -596,9 +598,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes saveAsItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes saveAsItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getSaveAsItem() {
         if (saveAsItem == null) {
@@ -612,9 +614,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes exitItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes exitItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getExitItem() {
         if (exitItem == null) {
@@ -629,9 +631,9 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     }
 
     /**
-     * This method initializes printItem	
-     * 	
-     * @return javax.swing.JMenuItem	
+     * This method initializes printItem
+     *
+     * @return javax.swing.JMenuItem
      */
     private JMenuItem getPrintItem() {
         if (printItem == null) {

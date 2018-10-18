@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,35 +26,35 @@ import javax.swing.text.EditorKit;
 
 
 /**
- * Pane that is capable of displaying several representations of an object 
+ * Pane that is capable of displaying several representations of an object
  * depending on the view type.
- * 
+ *
  * Currently supported views types:
  * - text/plain
  * - text/html
- * 
+ *
  * Currently supported objects:
  * - MetaType
  * - String
- * 
+ *
  * @date Jun 7, 2004
  */
 public class EntityInfoPane extends JEditorPane{
     /**
      * Creates a graphical pane where object information can be showed in.
      * The information depends on the view type.
-     * 
+     *
      * @param contentType The content type that specifies in which format the
-     *                    information must be shown.  
+     *                    information must be shown.
      */
     public EntityInfoPane(String contentType){
         this.setEditable(false);
         curObject = null;
         EditorKit ek = this.getEditorKitForContentType(contentType);
         this.setEditorKit(ek);
-        
+
         curContentType = ek.getContentType();
-        
+
         if("text/plain".equals(curContentType)){
             infoFormatter = new EntityInfoFormatterText();
         }
@@ -65,22 +66,22 @@ public class EntityInfoPane extends JEditorPane{
         }
         this.setText(infoFormatter.getValue(curObject));
     }
-    
-    
+
+
     /**
      * Sets the content type to the supplied type.
-     * 
+     *
      * @param contentType The content type that specifies in which format the
      *                    information must be shown.
      * @return true if succeeded, false if not .
      */
     public boolean setViewType(String contentType){
         boolean result = true;
-        
+
         if(!(curContentType.equals(contentType))){
             final EditorKit ek = this.getEditorKitForContentType(contentType);
             final EntityInfoPane ep = this;
-            
+
             /*
              * Because this is an expensive operation it is executed in a
              * new thread that is invoked later by the event-dispatching thread.
@@ -106,58 +107,44 @@ public class EntityInfoPane extends JEditorPane{
                 }
             };
             SwingUtilities.invokeLater(worker);
-            /*
-            ep.setEditorKit(ek);
-            curContentType = ek.getContentType();
-            if("text/plain".equals(curContentType)){
-                infoFormatter = new EntityInfoFormatterText();
-            }
-            else if("text/html".equals(curContentType)){
-                infoFormatter = new EntityInfoFormatterHTML();
-            }
-            else{
-                infoFormatter = new EntityInfoFormatterText();
-            }
-            ep.setText(infoFormatter.getValue(curObject));
-            */
         }
         return result;
     }
-    
+
     /**
-     * Sets selection to supplied object. This is done by asking the current 
+     * Sets selection to supplied object. This is done by asking the current
      * formatter to format the object.
-     * 
+     *
      * @param object The object to select.
      */
     public synchronized void setSelection(Object object){
         this.setText(infoFormatter.getValue(object));
         curObject = object;
     }
-    
+
     /**
      * Clears the cache of MetaType objects.
      */
     public void clearCache(){
         infoFormatter.clearCache();
     }
-    
+
     public String getCurrentContentType() {
         return curContentType;
     }
-    
+
     /**
      * Current entity formatter.
      */
     private transient EntityInfoFormatter infoFormatter;
-    
+
     /**
      * Current content type. Currently supported types:
      * - text/plain
      * - text/html
      */
     private String curContentType;
-    
+
     /**
      * The currently selected object.
      */

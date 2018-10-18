@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,7 +25,8 @@
 #include "v_entity.h"
 #include "v_public.h"
 #include "v_readerQos.h"
-#include "v_observer.h"
+#include "v__observer.h"
+#include "v__observable.h"
 
 #include "v__deliveryService.h"
 #include "v__deliveryGuard.h"
@@ -37,96 +39,18 @@
 #include "os_report.h"
 #include "os_abstract.h"
 
-static void
-deliveryServiceSubscribe(
-    void *o,
-    void *arg)
-{
-    v_partition p = v_partition(o);
-    v_deliveryServiceEntry e = v_deliveryServiceEntry(arg);
-    v_kernel kernel;
-    v_group g;
-
-    assert(C_TYPECHECK(e,v_deliveryServiceEntry));
-    assert(C_TYPECHECK(p,v_partition));
-
-    kernel = v_objectKernel(e);
-    g = v_groupSetCreate(kernel->groupSet,p,e->topic);
-
-    if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
-       v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ)
-    {
-        v_groupAddEntry(g,v_entry(e));
-    }
-    c_free(g);
-}
-
-static c_bool
-subscribe(
-    c_object entry,
-    c_voidp partition)
-{
-    v_partition p = v_partition(partition);
-    v_deliveryServiceEntry e = v_deliveryServiceEntry(entry);
-
-    deliveryServiceSubscribe(p, e);
-
-    return TRUE;
-}
-
-static void
-deliveryServiceUnSubscribe(
-    void *o,
-    void *arg)
-{
-    v_partition p = v_partition(o);
-    v_deliveryServiceEntry e = v_deliveryServiceEntry(arg);
-    v_kernel kernel;
-    v_group g;
-    c_value params[2];
-    c_iter list;
-
-    assert(C_TYPECHECK(e,v_deliveryServiceEntry));
-    assert(C_TYPECHECK(p,v_partition));
-
-    params[0] = c_objectValue(p);
-    params[1] = c_objectValue(e->topic);
-    kernel = v_objectKernel(e);
-    list = v_groupSetSelect(kernel->groupSet,
-                            "partition = %0 and topic = %1",
-                            params);
-    while ((g = c_iterTakeFirst(list)) != NULL) {
-        v_groupRemoveEntry(g,v_entry(e));
-        c_free(g);
-    }
-    c_iterFree(list);
-}
-
-static c_bool
-unsubscribe(
-    c_object entry,
-    c_voidp partition)
-{
-    v_partition p = v_partition(partition);
-    v_deliveryServiceEntry e = v_deliveryServiceEntry(entry);
-
-    deliveryServiceUnSubscribe(p, e);
-
-    return TRUE;
-}
-
 v_deliveryService
 v_deliveryServiceNew (
     v_subscriber subscriber,
     const c_char *name)
 {
     v_kernel kernel;
-    v_deliveryService _this;
+    v_deliveryService _this = NULL;
     v_readerQos q;
     v_topic topic;
     c_base base;
     c_type type;
-    v_entry entry, found;
+    v_entry entry;
 
     assert(C_TYPECHECK(subscriber,v_subscriber));
     base = c_getBase(subscriber);
@@ -141,79 +65,94 @@ v_deliveryServiceNew (
         OS_REPORT(OS_ERROR, "v_deliveryServiceNew",0,
                   "DeliveryService not created: "
                   "Could not locate topic with name DCPS_Delivery.");
-        return NULL;
+        goto err_precon;
     }
-    if(v_topicAccessMode(topic) == V_ACCESS_MODE_READ ||
-       v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
-    {
-        q = v_readerQosNew(kernel, NULL);
-        if (q == NULL) {
-            OS_REPORT(OS_ERROR, "v_deliveryServiceNew", V_RESULT_INTERNAL_ERROR,
-                      "Creation of DeliveryService <%s> failed: Cannot create reader QoS.",
-                      name);
-            return NULL;
-        }
-        _this = v_deliveryService(v_objectNew(kernel,K_DELIVERYSERVICE));
-
-        type = c_resolve(base, "kernelModuleI::v_deliveryGuard");
-        _this->guards = c_tableNew(type, "writerGID.localId");
-        c_free(type);
-
-        type = c_resolve(base, "kernelModuleI::v_subscriptionInfoTemplate");
-        _this->subscriptions = c_tableNew(type, "userData.key.systemId,userData.key.localId");
-        c_free(type);
-
-        c_mutexInit(c_getBase(_this), &_this->mutex);
-
-        q->userKey.v.enable = TRUE;
-        q->userKey.v.expression = NULL;
-        v_readerInit(v_reader(_this), name, subscriber, q, TRUE);
-        v_entityEnable(v_entity(_this));
-
-        c_free(q);
-
-        entry = v_entry(v_deliveryServiceEntryNew(_this,topic));
-        found = v_readerAddEntry(v_reader(_this),v_entry(entry));
-        c_free(entry);
-        c_free(found);
-
-        v_deliveryServiceEnable(_this);
-    } else
+    if (!(v_topicAccessMode(topic) == V_ACCESS_MODE_READ || v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE))
     {
         OS_REPORT(OS_ERROR, "v_deliveryServiceNew", V_RESULT_ILL_PARAM,
                     "Creation of DeliveryService <%s> failed. Topic DCPS_Delivery."
                     "does not have read access rights.", name);
-        _this = NULL;
+        goto err_topic;
     }
+    q = v_readerQosNew(kernel, NULL);
+    if (q == NULL) {
+        OS_REPORT(OS_ERROR, "v_deliveryServiceNew", V_RESULT_INTERNAL_ERROR,
+                  "Creation of DeliveryService <%s> failed: Cannot create reader QoS.",
+                  name);
+        goto err_topic;
+    }
+
+    _this = v_deliveryService(v_objectNew(kernel,K_DELIVERYSERVICE));
+    if (_this == NULL) {
+        c_free(q);
+        goto err_topic;
+    }
+    q->userKey.v.enable = TRUE;
+    q->userKey.v.expression = NULL;
+    v_readerInit(v_reader(_this), name, subscriber, q);
+    c_free(q);
+
+    type = c_resolve(base, "kernelModuleI::v_deliveryGuard");
+    _this->guards = c_tableNew(type, "writerGID.localId");
+    c_free(type);
+    if (_this->guards == NULL) {
+        OS_REPORT(OS_ERROR, "v_deliveryServiceNew", V_RESULT_INTERNAL_ERROR,
+                  "Creation of DeliveryService <%s> failed: create delivery guard table failed.",
+                  name);
+        goto err_init;
+    }
+
+    type = c_resolve(base, "kernelModuleI::v_subscriptionInfoTemplate");
+    _this->subscriptions = c_tableNew(type, "userData.key.systemId,userData.key.localId");
+    c_free(type);
+    if (_this->subscriptions == NULL) {
+        OS_REPORT(OS_ERROR, "v_deliveryServiceNew", V_RESULT_INTERNAL_ERROR,
+                  "Creation of DeliveryService <%s> failed: create delivery subscription table failed.",
+                  name);
+        goto err_init;
+    }
+
+    entry = v_entry(v_deliveryServiceEntryNew(_this,topic));
+    v_readerAddEntry(v_reader(_this),v_entry(entry));
+    c_free(entry);
+
+    (void)v_entityEnable(v_entity(_this));
+
     return _this;
+
+err_init:
+    c_free(_this);
+err_topic:
+    c_free(topic);
+err_precon:
+    return NULL;
 }
 
 v_result
-v_deliveryServiceEnable(
-    v_deliveryService _this)
+v__deliveryServiceEnable(
+    _Inout_ v_deliveryService _this)
 {
     v_kernel kernel;
     v_message builtinMsg, builtinCMMsg;
     v_subscriber subscriber;
     v_result result;
 
-    if (_this) {
-        result = V_RESULT_OK;
-        subscriber = v_subscriber(v_reader(_this)->subscriber);
+    subscriber = v_subscriber(v_reader(_this)->subscriber);
 
-        result = v_subscriberAddReader(subscriber,v_reader(_this));
-        if (result == V_RESULT_OK) {
-            kernel = v_objectKernel(_this);
-            builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, v_reader(_this));
-            builtinCMMsg = v_builtinCreateCMDataReaderInfo(kernel->builtin, v_reader(_this));
-            v_writeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
-            v_writeBuiltinTopic(kernel, V_CMDATAREADERINFO_ID, builtinCMMsg);
-            c_free(builtinMsg);
-            c_free(builtinCMMsg);
-        }
-    } else {
-        result = V_RESULT_ILL_PARAM;
+    result = v_subscriberAddReader(subscriber,v_reader(_this));
+    if (result == V_RESULT_OK) {
+        result = v_subscriberEnableReader (subscriber, v_reader (_this));
     }
+    if (result == V_RESULT_OK) {
+        kernel = v_objectKernel(_this);
+        builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, v_reader(_this));
+        builtinCMMsg = v_builtinCreateCMDataReaderInfo(kernel->builtin, v_reader(_this));
+        v_writeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
+        v_writeBuiltinTopic(kernel, V_CMDATAREADERINFO_ID, builtinCMMsg);
+        c_free(builtinMsg);
+        c_free(builtinCMMsg);
+    }
+
     return result;
 }
 
@@ -258,31 +197,8 @@ v_deliveryServiceDeinit (
     v_readerDeinit(v_reader(_this));
 }
 
-c_bool
-v_deliveryServiceSubscribe(
-    v_deliveryService _this,
-    v_partition d)
-{
-    assert(C_TYPECHECK(_this,v_deliveryService));
-
-    v_readerWalkEntries(v_reader(_this), subscribe, d);
-
-    return TRUE;
-}
-
-c_bool
-v_deliveryServiceUnSubscribe(
-    v_deliveryService _this,
-    v_partition d)
-{
-    assert(C_TYPECHECK(_this,v_deliveryService));
-
-    return v_readerWalkEntries(v_reader(_this), unsubscribe, d);
-}
-
 C_STRUCT(MatchingGuardsArg) {
     v_topic topic;
-    v_writer writer;
     v_deliveryGuard guard;
     c_iter groupList;
     v_gid readerGID;
@@ -312,19 +228,19 @@ updateMatchingGuards(
 {
     C_STRUCT(MatchingGuardsArg) *a = (C_STRUCT(MatchingGuardsArg) *)arg;
     c_bool result = TRUE;
+    v_writer writer;
 
-    /* select writers having equal topic and compatible qos policy.
-     */
+    /* select writers having equal topic and compatible qos policy. */
     a->guard = v_deliveryGuard(o);
-    a->writer = v_writer(v_gidClaim(a->guard->writerGID, a->kernel));
-    if (a->writer) {
-        if (a->writer->topic == a->topic) {
+    writer = v_writer(v_gidClaim(a->guard->writerGID, a->kernel));
+    if (writer) {
+        if (writer->topic == a->topic) {
             /* if this writer has groups matching the reader groups
              * then update the guards publication list.
              */
             c_type type;
             v_deliveryPublisher publication, found;
-            v_observerLock(v_observer(a->writer));
+            OSPL_LOCK(writer);
             c_mutexLock(&a->guard->mutex);
 
             type = c_subType(a->guard->publications);
@@ -337,7 +253,7 @@ updateMatchingGuards(
                     found = c_replace(a->guard->publications, publication, NULL, NULL);
                     c_free(found);
                     a->publication = publication;
-                    v_writerGroupWalkUnlocked(a->writer, updatePublication, arg);
+                    v_writerGroupWalkUnlocked(writer, updatePublication, arg);
                 } else {
                     found = c_find(a->guard->publications, publication);
                     c_free(publication);
@@ -366,15 +282,14 @@ updateMatchingGuards(
             }
 
             c_mutexUnlock(&a->guard->mutex);
-            v_observerUnlock(v_observer(a->writer));
+            OSPL_UNLOCK(writer);
         }
         v_gidRelease(a->guard->writerGID, a->kernel);
     }
     return result;
 }
 
-/*
- * This method updates the v_deliveryGuard->publications list with all synchronous
+/* This method updates the v_deliveryGuard->publications list with all synchronous
  * writers the v_deliveryService is aware of, preconditions for to be added to the list are:
  *  a) guard->writer->topic matches the sInfo->topic
  *  b) guard->writer->partitions match the sInfo->partitions
@@ -468,8 +383,7 @@ collectGuardsAction(
     c_object o,
     c_voidp arg)
 {
-    /* select writers having equal topic and compatible qos policy.
-     */
+    /* select writers having equal topic and compatible qos policy. */
     c_iterAppend((c_iter)arg, c_keep(o));
 
     return TRUE;
@@ -484,9 +398,9 @@ doGuardsAction(
     c_object guard;
     c_iter guards = c_iterNew(NULL);
 
-    c_mutexLock(&(_this->mutex));
+    OSPL_LOCK(_this);
     (void)c_walk(_this->guards, collectGuardsAction, guards);
-    c_mutexUnlock(&(_this->mutex));
+    OSPL_UNLOCK(_this);
 
     guard = c_iterTakeFirst(guards);
 
@@ -524,9 +438,9 @@ v_deliveryServiceRegister(
         return;
     }
 
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
     found = c_replace(_this->subscriptions, msg, NULL, NULL);
-    c_mutexUnlock(&(_this->mutex));
+    OSPL_UNLOCK(_this);
     c_free(found);
 
     rInfo = (v_subscriptionInfoTemplate)msg;
@@ -573,7 +487,6 @@ v_deliveryServiceRegister(
     if (arg.groupList) {
         arg.readerGID = rInfo->userData.key;
         arg.topic = topic;
-        arg.writer = NULL;
         arg.alive = TRUE;
 
         /* Need to ensure not to update the matching guards while
@@ -623,9 +536,9 @@ v_deliveryServiceUnregister(
         return;
     }
 
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
     found = c_remove(_this->subscriptions, msg, NULL, NULL);
-    c_mutexUnlock(&(_this->mutex));
+    OSPL_UNLOCK(_this);
 
     if (found) {
         rInfo = (v_subscriptionInfoTemplate)found;
@@ -667,7 +580,6 @@ v_deliveryServiceUnregister(
         if (arg.groupList) {
             arg.readerGID = rInfo->userData.key;
             arg.topic = topic;
-            arg.writer = NULL;
             arg.alive = FALSE;
 
             /* Need to ensure not to update the matching guards while
@@ -768,7 +680,7 @@ v_deliveryServiceRemoveGuard(
     assert(guard);
     assert(C_TYPECHECK(guard,v_deliveryGuard));
 
-    c_mutexLock(&(_this->mutex));
+    OSPL_LOCK(_this);
     found = c_remove(_this->guards,guard,NULL,NULL);
     if (found != guard) {
         /* This should not happen! */
@@ -780,7 +692,7 @@ v_deliveryServiceRemoveGuard(
     } else {
         result = V_RESULT_OK;
     }
-    c_mutexUnlock(&(_this->mutex));
+    OSPL_UNLOCK(_this);
     return result;
 }
 
@@ -796,7 +708,7 @@ v_deliveryServiceAddGuard(
     assert(guard);
     assert(C_TYPECHECK(guard,v_deliveryGuard));
 
-    c_mutexLock(&_this->mutex);
+    OSPL_LOCK(_this);
 
     found = c_tableInsert(_this->guards, guard);
     assert(found == guard);
@@ -805,7 +717,7 @@ v_deliveryServiceAddGuard(
     /* Now update publication list from delivery service subscriptions. */
     c_walk(_this->subscriptions, getMatchingPublications, guard);
 
-    c_mutexUnlock(&(_this->mutex));
+    OSPL_UNLOCK(_this);
 
     return V_RESULT_OK;
 }
@@ -820,9 +732,7 @@ v_deliveryServiceLookupGuard(
     assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryService));
 
-    c_mutexLock(&_this->mutex);
     found = c_find(_this->guards, template);
-    c_mutexUnlock(&(_this->mutex));
 
     return found;
 }

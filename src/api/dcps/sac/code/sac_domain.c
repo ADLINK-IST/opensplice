@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -92,7 +93,7 @@ DDS_DomainNew (
 
 /* Error handling */
 err_objInit:
-    DDS__free(_this);
+    (void) DDS__free(_this);
 err_objNew:
     (void) u_domainClose(uDomain);
 err_open:
@@ -122,11 +123,11 @@ DDS_Domain_get_domain_id(
     return domainId;
 }
 
-/*     DDS_ReturnCode_t
- *     create_persistent_snapshot(
- *         in String partition_expression,
- *         in String topic_expression,
- *         in String URI);
+/* DDS_ReturnCode_t
+ * create_persistent_snapshot(
+ *      in String partition_expression,
+ *      in String topic_expression,
+ *      in String URI);
  */
 DDS_ReturnCode_t
 DDS_Domain_create_persistent_snapshot (

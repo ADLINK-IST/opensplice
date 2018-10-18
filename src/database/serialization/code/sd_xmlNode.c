@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -61,9 +62,9 @@ sd_xmlElementFree (
     sd_xmlElement node)
 {
     sd_xmlNode n;
-    
+
     assert(node);
-    
+
     if ( node->children ) {
         n = sd_xmlNode(sd_listTakeFirst(node->children));
         while ( n ) {
@@ -85,12 +86,12 @@ sd_xmlElementFree (
     if ( node->data ) {
         sd_xmlNodeFree(node->data);
     }
-     
+
     sd_xmlNodeDeinit(sd_xmlNode(node));
 
     os_free(node);
 }
-    
+
 sd_xmlAttribute
 sd_xmlAttributeNew (
     void)
@@ -106,7 +107,7 @@ sd_xmlAttributeFree (
     sd_xmlAttribute node)
 {
     assert(node);
-    
+
     if ( node->value ) {
         os_free(node->value);
     }
@@ -115,7 +116,7 @@ sd_xmlAttributeFree (
 
     os_free(node);
 }
-        
+
 sd_xmlData
 sd_xmlDataNew (
     void)
@@ -131,7 +132,7 @@ sd_xmlDataFree (
     sd_xmlData node)
 {
     assert(node);
-    
+
     if ( node->data ) {
         os_free(node->data);
     }
@@ -225,7 +226,7 @@ sd_xmlElementAdd (
     }
 }
 
-    
+
 sd_xmlElement
 sd_xmlElementGetParent (
     sd_xmlElement node)
@@ -303,7 +304,7 @@ sd_xmlFindNodeAction (
     c_bool result = TRUE;
 
     assert(node->name);
-    
+
     if ( strcmp(node->name, argument->name) == 0 ) {
         argument->node = node;
         result = FALSE;
@@ -338,7 +339,7 @@ sd_xmlElementHasChildren (
             result = TRUE;
         }
     }
-    
+
     return result;
 }
 
@@ -353,7 +354,7 @@ sd_xmlElementHasAttributes (
             result = TRUE;
         }
     }
-    
+
     return result;
 }
 
@@ -362,7 +363,7 @@ sd_xmlElementNumAttributes (
     sd_xmlElement node)
 {
     c_ulong size = 0;
-    
+
     assert(node);
 
     if ( node->attributes ) {
@@ -370,7 +371,7 @@ sd_xmlElementNumAttributes (
     }
     return size;
 }
-    
+
 c_bool
 sd_xmlNodeEqualName (
     sd_xmlNode n1,

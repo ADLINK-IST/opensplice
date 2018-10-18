@@ -9,3 +9,9 @@ project (Build*lib) : build_ospl_dcpsisocpp2 {
 
     macros += OSPL_VERSION=$(VERSION)
 }
+
+feature(isocpp2_cxx11) {
+    specific (prop:windows) {
+        macros += OSPL_USE_CXX11
+    }
+}

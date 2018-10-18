@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -31,8 +32,6 @@
 #include "v__participant.h"
 #include "os_heap.h"
 #include "os_report.h"
-
-/* Protected */
 
 c_bool
 v_partitionExpressionIsAbsolute(
@@ -111,7 +110,8 @@ v_partitionNew(
         partition = c_iterTakeFirst(existing);
     } else {
         partition = v_partition(v_objectNew(kernel,K_DOMAIN));
-        v_entityInit(v_entity(partition),name, TRUE);
+        v_entityInit(v_entity(partition), name);
+        (void)v_entityEnable(v_entity(partition));
         found = v_addPartition(kernel,partition);
         if (found != partition) {
             v_partitionFree(partition);

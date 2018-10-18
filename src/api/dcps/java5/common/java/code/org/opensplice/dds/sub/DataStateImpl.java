@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,10 +30,10 @@ import org.omg.dds.sub.InstanceState;
 import org.omg.dds.sub.SampleState;
 import org.omg.dds.sub.Subscriber;
 import org.omg.dds.sub.Subscriber.DataState;
-import org.omg.dds.sub.ViewState;
 import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
 import org.opensplice.dds.core.OsplServiceEnvironment;
 import org.opensplice.dds.core.UnsupportedOperationExceptionImpl;
+import org.omg.dds.sub.ViewState;
 
 public class DataStateImpl implements Subscriber.DataState {
     private OsplServiceEnvironment environment;
@@ -271,7 +272,7 @@ public class DataStateImpl implements Subscriber.DataState {
     }
 
     public int getOldInstanceState() {
-        int result;
+        int result = 0;
 
         boolean alive = this.instanceState.contains(InstanceState.ALIVE);
         boolean disposed = this.instanceState
@@ -279,20 +280,20 @@ public class DataStateImpl implements Subscriber.DataState {
         boolean noWriters = this.instanceState
                 .contains(InstanceState.NOT_ALIVE_NO_WRITERS);
 
+        if (alive) {
+            result |= DDS.ALIVE_INSTANCE_STATE.value;
+        }
+        if (disposed) {
+            result |= DDS.NOT_ALIVE_DISPOSED_INSTANCE_STATE.value;
+        }
+        if (noWriters) {
+            result |= DDS.NOT_ALIVE_NO_WRITERS_INSTANCE_STATE.value;
+        }
+        
         if (alive && disposed && noWriters) {
             result = DDS.ANY_INSTANCE_STATE.value;
-        } else if (alive && (disposed || noWriters)) {
-            throw new IllegalArgumentExceptionImpl(this.environment,
-                    "Invalid InstanceState");
-        } else if (alive) {
-            result = DDS.ALIVE_INSTANCE_STATE.value;
-        } else if (disposed && noWriters) {
-            result = DDS.NOT_ALIVE_INSTANCE_STATE.value;
-        } else if (disposed) {
-            result = DDS.NOT_ALIVE_DISPOSED_INSTANCE_STATE.value;
-        } else if (noWriters) {
-            result = DDS.NOT_ALIVE_NO_WRITERS_INSTANCE_STATE.value;
-        } else {
+        }
+        if (result == 0) {
             throw new IllegalArgumentExceptionImpl(this.environment,
                     "Incomplete DataState: no InstanceState set.");
         }

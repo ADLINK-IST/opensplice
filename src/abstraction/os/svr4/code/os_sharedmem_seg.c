@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,6 +37,7 @@ os_svr4_sharedMemoryAttach (
     OS_UNUSED_ARG (sharedAttr);
     OS_UNUSED_ARG (name);
     OS_UNUSED_ARG (mapped_address);
+    OS_UNUSED_ARG (id);
     return os_resultFail;
 }
 
@@ -63,6 +65,7 @@ static os_result os_svr4_sharedMemoryDetach (const char *name, void *address, os
 {
     OS_UNUSED_ARG (address);
     OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (id);
     return os_resultFail;
 }
 
@@ -87,6 +90,13 @@ static os_int32 os_svr4_listUserProcessesFree(os_iter pidList)
 }
 
 static char * os_svr4_findKeyFileByIdAndName(const int id, const char *name)
+{
+    OS_UNUSED_ARG (id);
+    OS_UNUSED_ARG (name);
+    return NULL;
+}
+
+static char* os_svr4_findKeyFileIdentifierByIdAndName(os_int32 id, const char *name)
 {
     OS_UNUSED_ARG (id);
     OS_UNUSED_ARG (name);
@@ -165,14 +175,6 @@ static os_result os_svr4_sharedMemorySetState(const char *keyfile, os_state stat
     return os_resultUnavailable;
 }
 
-static os_result os_svr4_sharedMemoryLock() {
-    return os_resultUnavailable;
-}
-
-static void os_svr4_sharedMemoryUnlock() {
-    return;
-}
-
 #else
 
 #include "os_errno.h"
@@ -201,10 +203,6 @@ static void os_svr4_sharedMemoryUnlock() {
 
 /** Defines the file format for the database file */
 const char os_svr4_key_file_format[] = "spddskey_XXXXXX";
-
-/** Defines the file name for the shared mem creation lock file */
-const char os_svr4_key_file_creation_lock[] = "spddscreationLock";
-
 
 static mode_t
 os_svr4_get_shmumask(void)
@@ -832,7 +830,7 @@ os_svr4_sharedMemoryDestroy(
                 rv = os_resultFail;
             } else {
                 rv = os_resultSuccess;
-        }
+            }
         }
     }
     return rv;
@@ -974,56 +972,6 @@ os_svr4_sharedMemorySetState(
     os_state state)
 {
     return os_keyfile_appendInt(keyfile, (int)state);
-}
-
-/* Prevent race condition between creation and attach shared memory segment
- * create an exclusive lock file during creation.
- * Don block to long, a previous process could have created the lock file
- * and didn't clean it up properly due to an exception in creating shared memory segment
- */
-static os_result os_svr4_sharedMemoryLock() {
-    int ifileHandle = -1;
-    int iRetriesToDo = 8;
-    char *str = NULL;
-    const char *dir = NULL;
-    os_size_t len;
-
-    dir = os_getTempDir();
-    len = strlen(dir) + strlen(os_svr4_key_file_creation_lock) + 2;
-    str = os_malloc (len);
-    if (str != NULL) {
-        (void)snprintf (str, len, "%s/%s", dir, os_svr4_key_file_creation_lock);
-        while (ifileHandle == -1 && iRetriesToDo > 0) {
-            ifileHandle = open(str, O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
-            if (ifileHandle == -1) {
-                os_sleep(OS_DURATION_SECOND/2);
-            } else {
-                close(ifileHandle);
-            }
-            iRetriesToDo--;
-        }
-        os_free(str);
-    }
-    if (ifileHandle != -1) {
-        return os_resultSuccess;
-    } else {
-        return os_resultFail;
-    }
-}
-
-static void os_svr4_sharedMemoryUnlock() {
-    char *str = NULL;
-    const char *dir = NULL;
-    os_size_t len;
-
-    dir = os_getTempDir();
-    len = strlen(dir) + strlen(os_svr4_key_file_creation_lock) + 2;
-    str = os_malloc (len);
-    if (str != NULL) {
-        (void)snprintf (str, len, "%s/%s", dir, os_svr4_key_file_creation_lock);
-        remove(str);
-        os_free(str);
-    }
 }
 
 #undef OS_PERMISSION

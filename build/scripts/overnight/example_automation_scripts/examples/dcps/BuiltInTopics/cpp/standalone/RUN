@@ -7,10 +7,11 @@ startOSPL
 echo "=== Launching BuiltInTopics "
 
 ./sacpp_builtintopics_sub > subResult.txt &
+cmd_pid=$!
 sleep 1
 
 echo === Waiting for processes to terminate
-waitForProcessTermination sacpp_builtintopics_sub 30
+waitForProcessTermination $cmd_pid 30
 
 builtintopicsCheckResult
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,11 +29,12 @@
 #include "cmn_reader.h"
 #include "Constants.h"
 #include "os_atomics.h"
+#include "ccpp_dds_cdrBlob.h"
+#include "sd_cdr.h"
 
 using namespace DDS::OpenSplice::Utils;
 
 typedef void (*cxxCopyInfoOut)   (const cmn_sampleInfo from, ::DDS::SampleInfo * to);
-typedef void (*cxxCopySampleOut) (void *sample, cmn_sampleInfo info, void *arg);
 
 typedef struct readerCopyInfo_s {
     DDS::OpenSplice::FooDataReader_impl *reader;
@@ -44,9 +46,11 @@ typedef struct copyArg_s {
     ::DDS::SampleInfo   *infoSample;
     DDS::OpenSplice::FooDataReader_impl::cxxCopyDataOut copyDataOut;
     cxxCopyInfoOut      copyInfoOut;
+    void *              cdrMarshaler;
     ::DDS::ReturnCode_t result;
 
-    copyArg_s() : dataSample(NULL), infoSample(NULL), copyDataOut(NULL), copyInfoOut(NULL), result(DDS::RETCODE_ERROR) {};
+    copyArg_s() : dataSample(NULL), infoSample(NULL), copyDataOut(NULL),
+    			  copyInfoOut(NULL), cdrMarshaler(NULL), result(DDS::RETCODE_ERROR) {};
 } copyArg_t;
 
 class parallelDemarshaling {
@@ -63,6 +67,7 @@ private:
         ::DDS::SampleInfoSeq    *infoSeq;
         DDS::OpenSplice::FooDataReader_impl::cxxDataSeqGetBuffer     getDataBuffer;
         DDS::OpenSplice::FooDataReader_impl::cxxCopyDataOut          copyDataOut;
+        void                    *cdrMarshaler;
         cmn_samplesList         samplesList;
         u_entity                uEntity;
     } copyInfo_t;
@@ -76,7 +81,8 @@ public:
     ::DDS::ReturnCode_t init(
             DDS::OpenSplice::FooDataReader_impl::cxxDataSeqGetBuffer dataSeqGetBuffer,
             DDS::OpenSplice::FooDataReader_impl::cxxCopyDataOut copyDataOut,
-            cxxCopySampleOut copySampleOut);
+            DDS::OpenSplice::cxxReaderCopy readerCopy,
+            void *cdrMarshaler);
     ::DDS::ReturnCode_t deinit();
 
     ::DDS::ReturnCode_t start_workers(DDS::UShort count);
@@ -116,26 +122,29 @@ private:
 
     DDS::OpenSplice::FooDataReader_impl::cxxDataSeqGetBuffer dataSeqGetBuffer;
     DDS::OpenSplice::FooDataReader_impl::cxxCopyDataOut copyDataOut;
-    cxxCopySampleOut copySampleOut;
+    DDS::OpenSplice::cxxReaderCopy readerCopy;
+    void *cdrMarshaler;
 };
 
 struct DDS::OpenSplice::FooDataReader_impl::Implementation {
     DDS::OpenSplice::LoanRegistry *loanRegistry;
     cmn_samplesList samplesList;
 
-    DDS::OpenSplice::cxxCopyIn  copyIn;
-    DDS::OpenSplice::cxxCopyOut copyOut;
+    DDS::OpenSplice::cxxCopyIn      copyIn;
+    DDS::OpenSplice::cxxCopyOut     copyOut;
+    DDS::OpenSplice::cxxReaderCopy  readerCopy;
+    void *                          cdrMarshaler;
 
-    cxxDataSeqAlloc     dataSeqAlloc;
-    cxxDataSeqLength    dataSeqLength;
-    cxxDataSeqGetBuffer dataSeqGetBuffer;
-    cxxCopyDataOut      copyDataOut;
+    cxxDataSeqAlloc                 dataSeqAlloc;
+    cxxDataSeqLength                dataSeqLength;
+    cxxDataSeqGetBuffer             dataSeqGetBuffer;
+    cxxCopyDataOut                  copyDataOut;
 
     parallelDemarshaling *pdc;
 
     DDS::Boolean ignoreLoansOnDeletion;
 
-    static v_copyin_result rlReq_copyIn (
+    static v_copyin_result wlReq_copyIn (
         c_type type,
         void *data,
         void *to);
@@ -151,13 +160,8 @@ struct DDS::OpenSplice::FooDataReader_impl::Implementation {
         ::DDS::SampleInfoSeq & info_seq);
 
     static void copyInfoOut(
-        const cmn_sampleInfo from,
+        cmn_sampleInfo from,
         ::DDS::SampleInfo * to);
-
-    static void copySampleOut (
-        void *sample,
-        cmn_sampleInfo info,
-        void *arg);
 };
 
 DDS::OpenSplice::FooDataReader_impl::FooDataReader_impl() :
@@ -168,10 +172,13 @@ DDS::OpenSplice::FooDataReader_impl::FooDataReader_impl() :
     this->pimpl->samplesList = NULL;
     this->pimpl->copyIn = NULL;
     this->pimpl->copyOut = NULL;
+    this->pimpl->readerCopy = NULL;
+    this->pimpl->cdrMarshaler = NULL;
     this->pimpl->dataSeqAlloc = NULL;
     this->pimpl->dataSeqLength = NULL;
     this->pimpl->dataSeqGetBuffer = NULL;
     this->pimpl->copyDataOut = NULL;
+    this->pimpl->cdrMarshaler = NULL;
     this->pimpl->ignoreLoansOnDeletion = false;
 }
 
@@ -188,6 +195,8 @@ DDS::OpenSplice::FooDataReader_impl::nlReq_init(
     const char *name,
     DDS::OpenSplice::cxxCopyIn copyIn,
     DDS::OpenSplice::cxxCopyOut copyOut,
+    DDS::OpenSplice::cxxReaderCopy readerCopy,
+    void *cdrMarshaler,
     cxxDataSeqAlloc dataSeqAlloc,
     cxxDataSeqLength dataSeqLength,
     cxxDataSeqGetBuffer dataSeqGetBuffer,
@@ -210,6 +219,8 @@ DDS::OpenSplice::FooDataReader_impl::nlReq_init(
 
         this->pimpl->copyIn = copyIn;
         this->pimpl->copyOut = copyOut;
+        this->pimpl->readerCopy = readerCopy;
+        this->pimpl->cdrMarshaler = cdrMarshaler;
 
         this->pimpl->dataSeqAlloc = dataSeqAlloc;
         this->pimpl->dataSeqLength = dataSeqLength;
@@ -894,8 +905,8 @@ DDS::OpenSplice::FooDataReader_impl::lookup_instance (
         uResult = u_dataReaderLookupInstance(
                 uReader,
                 (void *)&data,
-                (u_copyIn)this->pimpl->rlReq_copyIn,
-                &handle);
+                (u_copyIn)this->pimpl->wlReq_copyIn,
+                (u_instanceHandle *) &handle);
         result = uResultToReturnCode(uResult);
     }
 
@@ -1009,7 +1020,7 @@ DDS::OpenSplice::FooDataReader_impl::wlReq_set_workers (
             /* ParallelDemarshaling not yet active, start it now.
              */
             pdc = new parallelDemarshaling();
-            pdc->init(this->pimpl->dataSeqGetBuffer, this->pimpl->copyDataOut, this->pimpl->copySampleOut);
+            pdc->init(this->pimpl->dataSeqGetBuffer, this->pimpl->copyDataOut, this->pimpl->readerCopy, this->pimpl->cdrMarshaler);
             this->pimpl->pdc = pdc;
             start = TRUE;
         }
@@ -1044,11 +1055,36 @@ DDS::OpenSplice::FooDataReader_impl::rlReq_get_ignoreOpenLoansAtDeletionStatus (
     return this->pimpl->ignoreLoansOnDeletion;
 }
 
+void
+DDS::OpenSplice::FooDataReader_impl::copySampleOut (
+    void *sample,
+    void *info,
+    void *arg)
+{
+    copyArg_t *copyArg = reinterpret_cast<copyArg_t *>(arg);
+
+    copyArg->copyDataOut(sample, copyArg->dataSample);
+    DDS::OpenSplice::FooDataReader_impl::Implementation::copyInfoOut((cmn_sampleInfo) info, copyArg->infoSample);
+}
+
+void
+DDS::OpenSplice::FooDataReader_impl::copyCDRSampleOut (
+    void *sample,
+    void *info,
+    void *arg)
+{
+    copyArg_t *copyArg = reinterpret_cast<copyArg_t *>(arg);
+    DDS::CDRSample *to = (DDS::CDRSample *) copyArg->dataSample;
+
+    (void) (sd_cdrSerializeControl((sd_cdrInfo *) copyArg->cdrMarshaler, &to->blob, sample) + 1);
+    DDS::OpenSplice::FooDataReader_impl::Implementation::copyInfoOut((cmn_sampleInfo) info, copyArg->infoSample);
+}
+
 /*
  * Implementation
  */
 v_copyin_result
-DDS::OpenSplice::FooDataReader_impl::Implementation::rlReq_copyIn (
+DDS::OpenSplice::FooDataReader_impl::Implementation::wlReq_copyIn (
     c_type type,
     void *data,
     void *to)
@@ -1115,6 +1151,7 @@ DDS::OpenSplice::FooDataReader_impl::Implementation::singleThreadedCopy (
     copyArg_t copyArg;
 
     copyArg.copyDataOut = this->copyDataOut;
+    copyArg.cdrMarshaler = this->cdrMarshaler;
     copyArg.result = DDS::RETCODE_OK;
     length = cmn_samplesList_length(samplesList);
     for (i = 0; i < length; i++) {
@@ -1123,7 +1160,7 @@ DDS::OpenSplice::FooDataReader_impl::Implementation::singleThreadedCopy (
 
         uResult = u_readerProtectCopyOutEnter(uEntity);
         if (uResult == U_RESULT_OK) {
-            res = cmn_samplesList_read(samplesList, i, this->copySampleOut, &copyArg);
+            res = cmn_samplesList_read(samplesList, i, (cmn_sampleList_copy_func) this->readerCopy, &copyArg);
             u_readerProtectCopyOutExit(uEntity);
             if ((copyArg.result != DDS::RETCODE_OK) || (res != 1)) {
                 result = copyArg.result;
@@ -1140,20 +1177,8 @@ DDS::OpenSplice::FooDataReader_impl::Implementation::singleThreadedCopy (
 }
 
 void
-DDS::OpenSplice::FooDataReader_impl::Implementation::copySampleOut (
-    void *sample,
-    cmn_sampleInfo info,
-    void *arg)
-{
-    copyArg_t *copyArg = reinterpret_cast<copyArg_t *>(arg);
-
-    copyArg->copyDataOut(sample, copyArg->dataSample);
-    DDS::OpenSplice::FooDataReader_impl::Implementation::copyInfoOut(info, copyArg->infoSample);
-}
-
-void
 DDS::OpenSplice::FooDataReader_impl::Implementation::copyInfoOut(
-    const cmn_sampleInfo from,
+    cmn_sampleInfo from,
     ::DDS::SampleInfo * to)
 {
     to->sample_state                 = static_cast<DDS::SampleStateKind>(from->sample_state);
@@ -1178,7 +1203,7 @@ parallelDemarshaling::parallelDemarshaling () :
     tids(NULL),
     parity(FALSE),
     terminate(FALSE),
-    copySampleOut(NULL)
+    readerCopy(NULL)
 {
     this->heuristics.threshold = 2;
     this->heuristics.block = 1;
@@ -1202,11 +1227,12 @@ parallelDemarshaling::~parallelDemarshaling ()
 parallelDemarshaling::init (
     DDS::OpenSplice::FooDataReader_impl::cxxDataSeqGetBuffer dataSeqGetBuffer,
     DDS::OpenSplice::FooDataReader_impl::cxxCopyDataOut copyDataOut,
-    cxxCopySampleOut copySampleOut)
+    DDS::OpenSplice::cxxReaderCopy readerCopy,
+    void *cdrMarshaler)
 {
     assert(dataSeqGetBuffer);
     assert(copyDataOut);
-    assert(copySampleOut);
+    assert(readerCopy);
 
     if (os_mutexInit(&this->mtx, NULL) != os_resultSuccess) {
         goto err_mtx;
@@ -1222,7 +1248,8 @@ parallelDemarshaling::init (
 
     this->dataSeqGetBuffer = dataSeqGetBuffer;
     this->copyDataOut   = copyDataOut;
-    this->copySampleOut = copySampleOut;
+    this->readerCopy = readerCopy;
+    this->cdrMarshaler = cdrMarshaler;
 
     return DDS::RETCODE_OK;
 
@@ -1348,6 +1375,7 @@ parallelDemarshaling::do_copy ()
     assert(this->copyInfo.uEntity);
 
     copyArg.copyDataOut = this->copyInfo.copyDataOut;
+    copyArg.cdrMarshaler = this->copyInfo.cdrMarshaler;
     copyArg.result = DDS::RETCODE_OK;
 
     while ((i = pa_inc32_nv(&this->copyInfo.nextIndex) - 1) < this->copyInfo.length) {
@@ -1355,7 +1383,10 @@ parallelDemarshaling::do_copy ()
         copyArg.infoSample = &(this->copyInfo.infoSeq->get_buffer()[i]);
 
         if (u_readerProtectCopyOutEnter(this->copyInfo.uEntity) == U_RESULT_OK) {
-            res = cmn_samplesList_read(this->copyInfo.samplesList, i, this->copySampleOut, &copyArg);
+            res = cmn_samplesList_read(
+                    this->copyInfo.samplesList, i,
+                    (cmn_sampleList_copy_func) this->readerCopy,
+                    &copyArg);
             u_readerProtectCopyOutExit(this->copyInfo.uEntity);
             if ((copyArg.result != DDS::RETCODE_OK) || (res != 1)) {
                 result = FALSE;
@@ -1403,6 +1434,7 @@ parallelDemarshaling::copy (
         this->copyInfo.uEntity = uEntity;
         this->copyInfo.getDataBuffer = this->dataSeqGetBuffer;
         this->copyInfo.copyDataOut = this->copyDataOut;
+        this->copyInfo.cdrMarshaler = this->cdrMarshaler;
 
         os_condBroadcast(&this->startCond);
         os_mutexUnlock(&this->mtx);

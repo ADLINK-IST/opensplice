@@ -8,11 +8,11 @@ startOSPL
 
 echo "=== Launching ContentFilteredTopic "
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ContentFilteredTopicDataSubscriber GE > subResult.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_ContentFilteredTopic_sub.jar GE > subResult.txt &
 
 sleep 2
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ContentFilteredTopicDataPublisher
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_ContentFilteredTopic_pub.jar
 
 sleep 5
 

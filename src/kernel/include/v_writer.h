@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,6 +26,7 @@
 #include "v_publisher.h"
 #include "v_topic.h"
 #include "v_status.h"
+#include "v_builtin.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -232,6 +234,33 @@ v_writerCoherentEnd (
     c_ulong publisherId,
     c_ulong transactionId,
     c_array tidList);
+
+/* This function is made public accessible only
+ * for the purpose to be used in design based testing.
+ */
+OS_API c_ulong
+v_writerAllocSequenceNumber (
+    v_writer _this);
+
+/* This operation will visit the kernel discovered subscriptions and invoke
+ * the given action routine on each available matching subscription message.
+ */
+OS_API v_result
+v_writerReadMatchedSubscriptions(
+    v_writer _this,
+    v_subscriptionInfo_action action,
+    c_voidp arg);
+
+/* This operation will visit the kernel discovered subscriptions and lookup
+ * the subscription builtin info data identified by the given subscription gid and
+ * if found invoke the given action routine on the matching subscription message.
+ */
+OS_API v_result
+v_writerReadMatchedSubscriptionData(
+    v_writer _this,
+    v_gid subscription,
+    v_subscriptionInfo_action action,
+    c_voidp arg);
 
 #undef OS_API
 

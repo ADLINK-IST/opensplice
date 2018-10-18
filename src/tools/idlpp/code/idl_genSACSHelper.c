@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
  */
 #include "idl_genSACSHelper.h"
 #include "idl_genLanguageHelper.h"
+#include "idl_genSACSType.h"
 #include "idl_scope.h"
 #include "idl_tmplExp.h"
 #include "idl_typeSpecifier.h"
@@ -26,14 +28,19 @@
 #include "idl_genMetaHelper.h"
 
 #include <ctype.h>
+
+#include "os_abstract.h"
 #include "os_iterator.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
+
+#include "c_base.h"
+
 #include <string.h>
 
 
 /* Allocate a metaData structure used for generation of typeDescriptors outside
-   the scope of the idl_walk.
+ * the scope of the idl_walk.
  */
 idl_metaCsharp *
 idl_metaCsharpNew(c_type type, c_char *descriptor)
@@ -45,8 +52,8 @@ idl_metaCsharpNew(c_type type, c_char *descriptor)
 }
 
 /* Add a copy of the specified metadata for datatypes that serve as topics
-   (i.e. have a keylist). This list if metadata will be used for later processing,
-   when the type's lock is available again.
+ * (i.e. have a keylist). This list if metadata will be used for later processing,
+ * when the type's lock is available again.
  */
 void
 idl_metaCharpAddType(
@@ -75,8 +82,10 @@ idl_metaCsharpSerialize2XML(
     {
         c_ulong nrElements;
         size_t descrLength;
+        char * genXMLmeta = idl_genXMLmeta(metaElmnt->type, TRUE);
 
-        metaElmnt->descriptor = idl_cutXMLmeta(idl_genXMLmeta(metaElmnt->type), &nrElements, &descrLength);
+        metaElmnt->descriptor = idl_cutXMLmeta(genXMLmeta, &nrElements, &descrLength);
+        os_free(genXMLmeta);
     }
 }
 
@@ -103,7 +112,6 @@ idl_CsharpRemovePrefix (
         p = name + strlen(prefix);
         newLength = strlen(name) - strlen(prefix);
 
-        /* (for loop over new element length)  */
         for (i = 0, j = 0; i <= newLength; i++, j++) {
             if (j == 0 && p[i] == '_') {
                 /* On first underscore, skip. */
@@ -128,7 +136,8 @@ toPascalCase(c_char *name)
     }
 
     /* Now go to UpperCase when necessary.
-     * (for loop includes '\0' terminator.)  */
+     * (for loop includes '\0' terminator.)
+     */
     for (i = 0, j = 0; i <= strlen(name); i++, j++) {
         /* Start out with capital. */
         if (i == 0) {
@@ -176,9 +185,9 @@ static const c_char *Csharp_keywords[] = {
 #define NR_CSHARP_KEYWORDS sizeof(Csharp_keywords)/sizeof(c_char *)
 
 /* Translate an IDL identifier into a C# language identifier.
-   The IDL specification often states that all identifiers that
-   match a native keyword must be prepended by "_".
-*/
+ * The IDL specification often states that all identifiers that
+ * match a native keyword must be prepended by "_".
+ */
 c_char *
 idl_CsharpId(
     const c_char *identifier,
@@ -299,9 +308,51 @@ idl_toCsharpScopingOperator(c_char *scopedName)
 c_char *
 idl_scopeStackFromCType(c_type dataType)
 {
-    c_char *scopedName = os_strdup(c_metaScopedName(c_metaObject(dataType)));
+    c_char *scopedName = c_metaScopedName(c_metaObject(dataType));
     idl_toCsharpScopingOperator(scopedName);
     return scopedName;
+}
+
+c_char *
+idl_CsharpScopeStackFromCType(
+        c_type dataType,
+        c_bool customPSM,
+        c_bool isCType,
+        c_bool fullyScoped)
+{
+    c_metaObject curScope = c_metaObject(dataType);
+    c_char *fullyScopedName = NULL;
+    c_char *idlName = c_metaName(curScope);
+
+    if (idlName) {
+        fullyScopedName = idl_CsharpId(idlName, customPSM, isCType);
+    } else {
+        fullyScopedName = os_strdup("");
+    }
+
+    while (c_metaName(curScope->definedIn) != NULL &&
+            (fullyScoped || c_baseObjectKind(curScope->definedIn) != M_MODULE)) {
+        size_t newLen;
+        c_char *scopeName;
+        const c_char *template;
+        c_char *temp = fullyScopedName;
+
+        curScope = curScope->definedIn;
+        if (isCType && (c_baseObjectKind(curScope) == M_STRUCTURE || c_baseObjectKind(curScope) == M_UNION)) {
+            scopeName = idl_CsharpId(c_metaName(curScope), customPSM, TRUE);
+            template = "%s%s";
+        } else {
+            scopeName = idl_CsharpId(c_metaName(curScope), customPSM, FALSE);
+            template = "%s.%s";
+        }
+        newLen = strlen(scopeName) + strlen(template) + strlen(temp) + 1;
+        fullyScopedName = os_malloc(newLen);
+        snprintf(fullyScopedName, newLen, template, scopeName, temp);
+        os_free(scopeName);
+        os_free(temp);
+    }
+    c_free(idlName);
+    return fullyScopedName;
 }
 
 /* Build a textual presentation of the provided scope stack taking the
@@ -434,12 +485,12 @@ idl_translateIfPredefined(
 }
 
 /* Return the C# specific type identifier for the
-   specified type specification. The substPredefs
-   parameter determines whether the function should
-   attempt to translate IDL types that already have
-   a predefined representation into this predefined
-   representation.
-*/
+ * specified type specification. The substPredefs
+ * parameter determines whether the function should
+ * attempt to translate IDL types that already have
+ * a predefined representation into this predefined
+ * representation.
+ */
 c_char *
 idl_CsharpTypeFromTypeSpec (
     idl_typeSpec typeSpec,
@@ -517,7 +568,7 @@ idl_CsharpTypeFromTypeSpec (
         os_free(tmp);
     } else {
         /* if a user type is specified, build it from its scope and its name.
-           The type should be one of idl_tenum, idl_tstruct, idl_tunion.
+         * The type should be one of idl_tenum, idl_tstruct, idl_tunion.
          */
         typeName = idl_scopeStackCsharp(
                 idl_typeUserScope(idl_typeUser(typeSpec)),
@@ -537,6 +588,162 @@ idl_CsharpTypeFromTypeSpec (
     }
     return typeName;
     /* QAC EXPECT 5101; The switch statement is simple, therefore the total complexity is low */
+}
+
+c_char *
+idl_genCsharpLiteralValueImage(
+    c_value literal,
+    c_type type,
+    void *userData)
+{
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    c_char * valueImg = NULL;
+    c_char *val2;
+    int i;
+
+    if (c_baseObject(type)->kind != M_ENUMERATION) {
+        switch (literal.kind) {
+        case V_OCTET:
+            valueImg = os_malloc (40);
+            snprintf(valueImg, 40, "%d", literal.is.Octet);
+            break;
+        case V_FLOAT:
+        case V_DOUBLE:
+            val2 = os_malloc(45);
+            valueImg = os_malloc(45);
+            snprintf(val2, 45, "%40.17g", literal.is.Double);
+            i = 0;
+            while (val2[i] == ' ') {
+                i++;
+            }
+            os_strncpy(valueImg, &val2[i], 40);
+            os_free(val2);
+            if ((strchr(valueImg, '.') == NULL) && (strchr(valueImg, 'E') == NULL)) {
+                strcat(valueImg, ".0");
+            }
+            break;
+        case V_STRING:
+            valueImg = os_malloc(strlen(literal.is.String)+3);
+            snprintf(valueImg, strlen(literal.is.String)+3, "\"%s\"", literal.is.String);
+            break;
+        case V_BOOLEAN:
+            valueImg = os_malloc(40);
+            if (literal.is.Boolean) {
+                snprintf(valueImg, 40, "true");
+            } else {
+                snprintf (valueImg, 40, "false");
+            }
+            break;
+        case V_LONGLONG:
+            valueImg = os_malloc(40);
+            switch (c_primitive(type)->kind) {
+                case P_SHORT:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%hu", (c_short)literal.is.LongLong);
+                    break;
+                case P_USHORT:
+                    snprintf(valueImg, 40, "%hu", (c_short)literal.is.LongLong);
+                    break;
+                case P_LONG:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%u", (c_long)literal.is.LongLong);
+                    break;
+                case P_ULONG:
+                    snprintf(valueImg, 40, "%u", (c_long)literal.is.LongLong);
+                    break;
+                case P_LONGLONG:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%"PA_PRIu64"L", (c_longlong)literal.is.LongLong);
+                    break;
+                case P_ULONGLONG:
+                    snprintf(valueImg, 40, "%"PA_PRIu64"UL", (c_longlong)literal.is.LongLong);
+                    break;
+                case P_CHAR:
+                    snprintf(valueImg, 40, "%d", (unsigned char)literal.is.LongLong);
+                    break;
+                case P_OCTET:
+                    snprintf(valueImg, 40, "%d", (unsigned char)literal.is.LongLong);
+                    break;
+                case P_ADDRESS:
+                    snprintf(valueImg, 40, PA_ADDRFMT, (PA_ADDRCAST)literal.is.LongLong);
+                    break;
+                case P_UNDEFINED:
+                case P_BOOLEAN:
+                case P_WCHAR:
+                case P_FLOAT:
+                case P_DOUBLE:
+                case P_VOIDP:
+                case P_MUTEX:
+                case P_LOCK:
+                case P_COND:
+                case P_COUNT:
+                case P_PA_UINT32:
+                case P_PA_UINTPTR:
+                case P_PA_VOIDP:
+                    /* Do nothing */
+                    break;
+            }
+            break;
+        case V_SHORT:
+            /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%hu", literal.is.Short);
+            break;
+        case V_LONG:
+            /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%u", (c_long)literal.is.Long);
+            break;
+        case V_USHORT:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%hu", (c_short)literal.is.UShort);
+            break;
+        case V_ULONG:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%u", (c_long)literal.is.ULong);
+            break;
+        case V_ULONGLONG:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%" PA_PRIu64, (c_longlong)literal.is.ULongLong);
+            break;
+        case V_ADDRESS:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, PA_ADDRFMT, (PA_ADDRCAST)literal.is.Address);
+            break;
+        case V_CHAR:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%u", (unsigned char)literal.is.Char);
+            break;
+        case V_UNDEFINED:
+        case V_WCHAR:
+        case V_WSTRING:
+        case V_FIXED:
+        case V_VOIDP:
+        case V_OBJECT:
+        case V_COUNT:
+            /* Invalid types for literal constants*/
+            /* FALL THROUGH */
+        default:
+            valueImg = NULL;
+            break;
+        }
+    } else {
+        const char *ENUM_TEMPLATE = "%s.%s";
+        char *csEnumTp = idl_CsharpId(
+                c_metaObject(type)->name,
+                csUserData ? csUserData->customPSM : FALSE,
+                FALSE);
+        char *csEnumLabel = idl_CsharpId(
+                c_metaObject(c_enumeration(type)->elements[literal.is.Long])->name,
+                csUserData ? csUserData->customPSM : FALSE,
+                FALSE);
+        size_t valLen = strlen(csEnumTp) + strlen(csEnumLabel) + strlen(ENUM_TEMPLATE) + 1;
+        valueImg = os_malloc(valLen);
+        snprintf(valueImg, valLen, ENUM_TEMPLATE, csEnumTp, csEnumLabel);
+        os_free(csEnumTp);
+        os_free(csEnumLabel);
+    }
+    return valueImg;
 }
 
 c_char *
@@ -656,4 +863,25 @@ idl_arrayCsharpIndexString (
     }
 
     return str;
+}
+
+c_char *
+idl_labelCsharpEnumVal (
+    const char *typeEnum,
+    idl_labelEnum labelVal,
+    c_bool customPSM)
+{
+    c_char *name;
+    c_char *scopedName;
+
+    name = os_malloc(strlen(typeEnum) + strlen(idl_labelEnumImage(labelVal)) + 2);
+    os_strcpy(name, typeEnum);
+    os_strcat(name, ".");
+    os_strcat(name,idl_labelEnumImage(labelVal));
+
+    scopedName = idl_CsharpId(name, customPSM, FALSE);
+
+    os_free(name);
+
+    return scopedName;
 }

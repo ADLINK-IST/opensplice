@@ -322,18 +322,6 @@ gcc_check ()
         set_var GCC_HAS_NO_MAYBE_UNINITIALIZED yes
     fi
 
-    # GCC >= 4.8 supports building Fujitsu system-tests (except when cross-compiling)
-    if echo $GCC_FULLVERSION | gawk '{ exit $1 >= 4.8 ? 0 : 1 }'; then
-        if [ ${SPLICE_TARGET} = ${SPLICE_HOST} ]; then
-            echo "  NOTE - Building Fujitsu system-tests"
-            set_var INCLUDE_FUJITSU_ST_TEST yes
-        else
-            echo "  NOTE - Not building Fujitsu system-tests (cross-compile not supported)"
-        fi
-    else
-        echo "  NOTE - Not building Fujitsu system-tests (requires GCC >= 4.8)"
-    fi
-
     return 0
 }
 
@@ -937,6 +925,47 @@ no_javac()
    fi
 }
 
+key_value_store_check()
+{
+    echo -n "Key-value store implementations - SQLITE: "
+    if [ -n "$SQLITE_HOME" -a -f "$SQLITE_HOME/sqlite3.c" ]
+    then
+        echo -n "OK, "
+        set_var INCLUDE_SQLITE "yes"
+    elif [ "$STRICT_CHECKS" = "yes" ]
+    then
+        echo "ERROR - sqlite source not found."
+        return 1
+    else
+        echo -n "Warning - Not found, "
+        unset_var INCLUDE_SQLITE
+    fi
+    echo -n "LEVELDB: "
+    case `uname` in
+        CYGWIN_NT-*)
+            echo "Disabled pending Windows port"
+            ;;
+        SunOS)
+            echo "Disabled for Solaris : OSPL-4283"
+            ;;
+        *)
+            if [ -n "$LEVELDB_HOME" -a -f "$LEVELDB_HOME/Makefile" ]
+            then
+                echo "OK"
+                set_var INCLUDE_LEVELDB "yes"
+            elif [ "$STRICT_CHECKS" = "yes" ]
+            then
+                echo "ERROR - library not found"
+                return 1
+            else
+                echo "Warning - Not found"
+                unset_var INCLUDE_LEVELDB
+            fi
+            ;;
+    esac
+    return 0
+}
+
 gmcs_check()
 {
    if [ "$STRICT_CHECKS" = "yes" ]
@@ -1280,8 +1309,6 @@ c99_check()
 
 no_protoc()
 {
-   set_var INCLUDE_FUJITSU_ST_TEST no
-   export INCLUDE_FUJITSU_ST_TEST
    if [ "$STRICT_CHECKS" = "yes" ]
    then
        # this needs to be to an error before protobuf functionality is released
@@ -1431,6 +1458,207 @@ protoc_check()
 
 }
 
+python3_check()
+{
+    echo -n "Python3: "
+
+    # the component depends on C99 api, so check that first
+    if [ "$INCLUDE_API_DCPS_C99" != "yes" ]
+    then
+        echo "Warning: C99 API not included in setup. Cannot build Python DCPS API."
+        set_var INCLUDE_API_DCPS_PYTHON no
+        return 0
+    fi
+
+    result=1
+    # Check explicitly defined location for python installs
+    if [ -n "$PYTHON3_HOME" ]
+    then
+        for pyexec in $(echo "$PYTHON3_HOME" | tr ":" "\n")
+        do
+            python3_check_fn "$pyexec" && \
+                    result=0; python3_tmps="$python3_tmps:$pyexec"; set_undefined_var PYTHON3_EXEC $pyexec
+        done
+        set_var PYTHON3_EXECS $python3_tmps
+        python3_tmps=
+    # Else check if python3 is installed normally in host env
+    else
+        pyexec=$(which python3 2> /dev/null)
+        python3_check_fn "$pyexec" && \
+                result=0; set_var PYTHON3_EXECS $pyexec; set_var PYTHON3_EXEC=$pyexec
+    fi
+
+    if [ $result -eq 0 ]
+    then
+        set_var INCLUDE_API_DCPS_PYTHON yes
+        set_var INCLUDE_DBT_API_DCPS_PYTHON yes
+    else
+        set_var INCLUDE_API_DCPS_PYTHON no
+    fi
+
+}
+
+python3_check_fn()
+{
+    pyexec="$1"
+    if [ -x "$pyexec" ]
+    then
+        (echo "import platform";
+        echo "import sys";
+        echo "if platform.system().find('Windows') == 0:";
+        echo "  ver=[3,5,0]";
+        echo "elif platform.system().find('CYGWIN') == 0:";
+        echo "  print('Warning: Cygwin python3 detected, this is invalid for DCPS Python api')";
+        echo "  sys.exit(1)";
+        echo "else:";
+        echo "  ver=[3,4,0]";
+        echo "if [int(num) for num in platform.python_version().split('.')] <= ver:";
+        echo "  print('Warning: Your version of python is below {0}.{1}.{2}'.format(ver[0],ver[1],ver[2]))";
+        echo "  sys.exit(1)") | $pyexec;
+        if [ $? -eq 0 ]
+        then
+            #Already a good version of python available
+            pyver=`$pyexec -c "import platform; print(platform.python_version())"`
+            echo "OK - Using `which $pyexec` v$pyver"
+            modules_ok=0
+            declare -a modules=("Cython" "wheel")
+            for m in "${modules[@]}"
+            do
+                mod_version=$(python3_module_check $pyexec $m)
+                if [ $? -eq 0 ]
+                then
+                    echo "    $m OK - using $m v$mod_version"
+                else
+                    echo "    Warning: $m module not found. Cannot build Python DCPS API"
+                    set_var INCLUDE_API_DCPS_PYTHON no
+                    modules_ok=1
+                fi
+            done
+            return $modules_ok
+        fi
+    else
+        echo "Warning: Python3 not available. Cannot build Python DCPS API."
+        set_var INCLUDE_API_DCPS_PYTHON no
+    fi
+    return 1
+}
+
+maven_check_inner()
+{
+    echo -n "MAVEN: "
+
+    # first check whether there is any maven in the path
+    MAVEN_FOUND=`which mvn 2> /dev/null`
+
+    if [ -z "$MAVEN_FOUND" ]
+    then
+        # No, it is not yet in the path
+
+        if [ -n "$M2_HOME" ]
+        then
+            if [ ! -x "$M2_HOME/bin/mvn" ]
+            then
+                echo "Error - $M2_HOME is invalid"
+                return 1
+            fi
+            MAVEN_FOUND="$M2_HOME/bin/mvn"
+            PATH="$M2_HOME/bin:$PATH"
+            set_var PATH "$PATH"
+        fi
+    fi
+
+    if [ -z "$MAVEN_FOUND" ]
+    then
+        # Maven was not found
+        echo "maven is not installed (properly):"
+        echo "   mvn not found in path"
+        echo "   M2_HOME variable not set"
+    else
+        # maven was found, now check the version number
+        MAVEN_CHECK=`mvn --version | grep "Apache Maven 3."`
+        if [ -z "$MAVEN_CHECK" ]
+        then
+            # found unsupported version
+            MAVEN_CHECK=`mvn --version | grep "Apache Maven"`
+            echo "   Found maven version $MAVEN_CHECK"
+            echo "   WARNING - Maven version 3 would be better"
+         else
+            echo "OK - Using $MAVEN_CHECK"
+         fi
+    fi
+
+    unset MAVEN_FOUND MAVEN_CHECK
+    return 0
+}
+
+python3_module_check()
+{
+    interp=$1
+    module=$2
+    (echo "modversion=''";
+    echo "try:";
+    echo "  import $module";
+    echo "  try:";
+    echo "      modversion=str($module.__version__)";
+    echo "  except AttributeError:";
+    echo "      modversion=str('.'.join(map(str,$module.VERSION)))";
+    echo "except ImportError:";
+    echo "  print('Warning: Invalid python module')";
+    echo "  exit(1)";
+    echo "if modversion == '':";
+    echo "  exit(-1)";
+    echo "print(modversion)") | $interp
+    return $?
+}
+
+nodejs_check()
+{
+    chkmsg="OK"
+
+    # first check whether the NODEJS install directory exists
+    if [ ! -d "$NODEJS_HOME" ]
+    then
+        chkmsg="nodejs install dir not found"
+    fi
+
+    # the component depends on C99 api, so check that too
+    if [ "$INCLUDE_API_DCPS_C99" != "yes" ]
+    then
+        chkmsg="C99 API not included in setup"
+    fi
+
+	# DBT's depend on python, so check for existing native python
+	PYTHON_FOUND=`which python 2> /dev/null`
+	if [ ! -x "$PYTHON_FOUND" ]
+	then
+		chkmsg="Python not found"
+	fi
+
+    if [ "$chkmsg" != "OK" ]
+    then
+        chkmsg="$chkmsg - skipping build of NodeJS DCPS API and unit tests."
+    else
+        chkmsg="$chkmsg - NODEJS DCPS API will be built. NODEJS unit tests enabled."
+        set_var INCLUDE_API_DCPS_NODEJS "yes"
+        set_var INCLUDE_DBT_API_DCPS_NODEJS "yes"
+        convert_windows_path "$NODEJS_HOME"
+		case `uname` in
+        CYGWIN_NT-*)
+        	PATH="$UNIX_CONV_PATH:$PATH"
+        	set_var PATH "$PATH"
+	        ;;
+	    esac
+        case `uname` in
+        Linux)
+        	PATH="$UNIX_CONV_PATH/bin:$PATH"
+        	set_var PATH "$PATH"
+	        ;;
+	    esac
+    fi
+    echo "NODEJS: $chkmsg"
+    return 0
+}
+
 cleanup_checks ()
 {
     unset msvs_check
@@ -1451,7 +1679,10 @@ cleanup_checks ()
     unset protoc_check
     unset no_protoc
     unset c99_check
+    unset python3_check
+    unset python3_module_check
     unset launch4j_check
+    unset maven_check_inner
     unset PATHCHECK_FOUND
     unset GCC_FULLVERSION BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION
     unset GMCS_VERSION GMCS_REAL_VERSION GMCS_VERSION_OUTPUT GMCS_REQUIRED_VERSION GMCS_REQUIRED_VER

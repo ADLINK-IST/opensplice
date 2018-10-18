@@ -1,0 +1,40 @@
+//
+// From comment on 4/Dec/2015
+//
+
+module mod_X {
+  typedef short A;
+  typedef short B;
+};
+
+module mod_Y {
+  typedef short B;
+  typedef short A;
+  typedef short C;
+};
+
+module mod_Z {
+  typedef short B;
+  typedef short A;
+};
+
+
+module declaration_order {
+
+  typedef short A;
+  typedef short B;
+    
+  struct S11 {
+    mod_X::B xb;
+    mod_Z::A za;
+    mod_Y::A ya;
+    B        b;
+    mod_X::A xa;
+    mod_Y::B yb;
+    mod_Z::B zb;
+    mod_Y::C yc;
+    A        a;
+  };
+#pragma keylist S11 xb
+
+};

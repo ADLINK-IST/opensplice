@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -542,7 +543,7 @@ c__metaDefineCommon(
         }
         assert(o);
         o->kind = kind;
-        c_mutexInit(base, &c_module(o)->mtx);
+        (void)c_mutexInit(base, &c_module(o)->mtx);
     break;
     case M_ANNOTATION:
     case M_CLASS:
@@ -686,63 +687,23 @@ c_typeInit(
     c_type(o)->size = size;
 }
 
-
 static void
-getProperties(
+getPropertiesScopeWalkAction(
     c_metaObject o,
-    c_scopeWalkActionArg iter)
+    c_scopeWalkActionArg arg)
 {
-    assert(iter);
+    c_iter *iter = (c_iter *)arg;
     switch(c_baseObjectKind(o)) {
     case M_ATTRIBUTE:
     case M_RELATION:
     case M_MEMBER:
     case M_UNIONCASE:
-        (void)c_iterInsert((c_iter)iter,o);
+        *iter = c_iterInsert(*iter, o);
     break;
     default:
     break;
     }
 }
-
-static void
-getPropertiesScopeWalkAction(
-    c_metaObject o,
-    c_scopeWalkActionArg arg /* c_iter */)
-{
-    getProperties(o, (c_iter)arg);
-}
-#if 0
-static c_long
-c_compareMembers(
-    c_member *m1,
-    c_member *m2)
-{
-    c_type t1,t2;
-#define _ALIGN_(m) (c_specifier(m)->type->alignment)
-#define _KIND_(m)  (c_baseObjectKind(c_specifier(m)->type))
-    if (*m1 == *m2) return 0;
-    if (*m1 == NULL) return 1;
-    if (*m2 == NULL) return -1;
-    t1 = c_specifier(*m1)->type;
-    while (c_baseObjectKind(t1) == M_TYPEDEF) {
-        t1 = c_typeDef(t1)->alias;
-    }
-    t2 = c_specifier(*m2)->type;
-    while (c_baseObjectKind(t2) == M_TYPEDEF) {
-        t2 = c_typeDef(t2)->alias;
-    }
-    if ((c_baseObjectKind(t1) == M_COLLECTION) &&
-        (c_baseObjectKind(t2) != M_COLLECTION)) return 1;
-    if ((c_baseObjectKind(t1) != M_COLLECTION) &&
-        (c_baseObjectKind(t2) == M_COLLECTION)) return -1;
-    if (_ALIGN_(*m1) > _ALIGN_(*m2)) return -1;
-    if (_ALIGN_(*m1) < _ALIGN_(*m2)) return 1;
-    return strcmp(c_specifier(*m1)->name,c_specifier(*m2)->name);
-#undef _KIND_
-#undef _ALIGN_
-}
-#endif
 
 static c_long
 c_compareProperty(
@@ -1082,7 +1043,7 @@ _c_metaCompare (
         if (result != E_EQUAL) {
             return result;
         }
-        if (c_union(o)->cases == c_union(o)->cases) {
+        if (c_union(object)->cases == c_union(o)->cases) {
             return E_EQUAL; /* used to identify both being NULL */
         }
         length = c_arraySize(c_union(object)->cases);
@@ -1140,7 +1101,7 @@ _c_metaCompare (
     case M_ANNOTATION:
     {
         c_property property,p;
-        c_iter iter;
+        c_iter iter = NULL;
 
         if (c_baseObjectKind(o) == M_CLASS) {
             result = _c_metaCompare(c_metaObject(c_class(object)->extends),
@@ -1154,8 +1115,7 @@ _c_metaCompare (
         if (metaScopeCount(c_metaObject(o)) != metaScopeCount(c_metaObject(object))) {
             return E_UNEQUAL;
         }
-        iter = c_iterNew(NULL);
-        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, iter);
+        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, &iter);
 
         length = c_iterLength(iter);
         if (length > 0) {
@@ -1191,8 +1151,7 @@ _c_metaCompare (
     return E_EQUAL;
 }
 
-/*
- * Compares two pointers.
+/* Compares two pointers.
  * Returns:
  *  - OS_EQ when pointers are equal
  *  - OS_GT when o1 is bigger than o2
@@ -1326,6 +1285,7 @@ c__metaFinalize(
                         member->offset = alignSize(size,pa);
                         ps = propertySize(type);
                         if (ps == 0) {
+                            c_iterFree(refList);
                             return S_ILLEGALRECURSION;
                         }
                         size = member->offset + ps;
@@ -1356,8 +1316,7 @@ c__metaFinalize(
         c_iter refList;
         c_ulong length;
 
-        /*
-         * A union has the following C syntax:
+        /* A union has the following C syntax:
          * struct union {
          *   <discriminant> _d;
          *   <the union>    _u;
@@ -1411,6 +1370,7 @@ c__metaFinalize(
                         }
                         ps = propertySize(type);
                         if (ps == 0) {
+                            c_iterFree(refList);
                             return S_ILLEGALRECURSION;
                         }
                         if (ps > size) {
@@ -1420,7 +1380,6 @@ c__metaFinalize(
                     }
                 }
             }
-            /*size += c_union(o)->switchType->size + alignSize(c_union(o)->switchType->size, alignment);*/
             size += alignSize(c_union(o)->switchType->size, alignment);
             if (refList != NULL) {
                 i=0;
@@ -1514,7 +1473,7 @@ c__metaFinalize(
     case M_CLASS:
     {
         c_property property;
-        c_iter iter;
+        c_iter iter = NULL;
         c_type type;
         c_property *properties;
         os_size_t offset;
@@ -1531,8 +1490,7 @@ c__metaFinalize(
                 assert(alignment > 0);
             }
         }
-        iter = c_iterNew(NULL);
-        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, iter);
+        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, &iter);
         if (c_interface(o)->inherits != NULL) {
             length = c_arraySize(c_interface(o)->inherits);
             for (i=0; i<length; i++) {
@@ -1594,6 +1552,10 @@ c__metaFinalize(
                         }
                         ps = propertySize(property->type);
                         if (ps == 0) {
+                            os_free(properties);
+                            if (refList != NULL) {
+                                c_iterFree(refList);
+                            }
                             return S_ILLEGALRECURSION;
                         }
                         size = property->offset + ps;
@@ -2793,9 +2755,7 @@ c_isBaseObjectType(
 }
 
 
-/*
- * Returns TRUE is obj is a c_baseObject.
- */
+/* Returns TRUE is obj is a c_baseObject. */
 c_bool
 c_isBaseObject(c_object obj)
 {

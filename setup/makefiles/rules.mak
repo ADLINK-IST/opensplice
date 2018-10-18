@@ -8,7 +8,7 @@ endif
 CLASS_DIR ?=bld/$(SPLICE_TARGET)
 JCODE_DIR ?=code
 JCODE_PATH ?= $(JCODE_DIR)
-JCFLAGS    +=-sourcepath '$(JCODE_PATH)'
+JCFLAGS    +=-source 1.6 -target 1.6 -sourcepath '$(JCODE_PATH)'
 
 MANIFEST_TARGET := manifest/$(SPLICE_TARGET)
 MANIFEST     = $(MANIFEST_TARGET)/manifest.mf
@@ -326,7 +326,7 @@ ifneq (,$(OSPL_OUTER_REV))
 CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION_1)/$(OSPL_OUTER_REV)")
 endif
 else
-CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION), non-PrismTech build")
+CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION), non-ADLINK build")
 endif
 
 $(MANIFEST_TARGET):

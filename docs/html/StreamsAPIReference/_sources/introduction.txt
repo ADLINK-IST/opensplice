@@ -23,14 +23,14 @@ Getting Started
 
 The Vortex OpenSplice Streams API is divided in two main components:
 
-+ type-specific code that can be generated using the OpenSplice 
++ type-specific code that can be generated using the Vortex OpenSplice
   IDL Pre-Processor
   
 + a Streams library. 
 
 Applications that wish to use the Streams API are required to do two things:
 
-1. Link against *one* of the OpenSplice Streams libraries available
+1. Link against *one* of the Vortex OpenSplice Streams libraries available
    within the Vortex OpenSplice distribution. There are separate libraries for
    either *CORBA-Cohabitation* mode or *Standalone C++* mode.
 
@@ -81,7 +81,7 @@ model for ``Foo``:
 It is recommended to use smart references to the ``StreamDataWriter`` and
 ``StreamDataReader`` classes in applications. The regular Vortex OpenSplice C++
 smart-pointer ``<class>_var`` types are available for this purpose. See
-the section on *Memory Management* in the Vortex OpenSplice DDS *C++ Reference
+the section on *Memory Management* in the Vortex OpenSplice *C++ Reference
 Guide* for more information.
 
 CORBA Cohabitation Mode
@@ -96,7 +96,7 @@ First ``idlpp`` is executed on the ``Space.idl`` file:
 
    $ idlpp -I$OSPL_HOME/etc/idl -l cpp -C Space.idl
 
-The standard Vortex OpenSplice DDS IDL directory is referenced as ``include-path``,
+The standard Vortex OpenSplice IDL directory is referenced as ``include-path``,
 since it contains definitions of some basic data-types and interfaces
 that are required if DDS Topics are created for any of the types in the
 IDL file. The other parameters are used to put ``idlpp`` in C++
@@ -125,7 +125,7 @@ Standalone Mode
 
 In *Standalone C++* mode, the generated interfaces are *not* required to be
 processed by an IDL compiler. Instead, ``idlpp`` will use the ``cppgen``
-code-generator that is part of the Vortex OpenSplice DDS distribution. ``idlpp``
+code-generator that is part of the Vortex OpenSplice distribution. ``idlpp``
 will automatically call ``cppgen`` to process certain files; the user is
 only required to execute ``idlpp``, first on the original IDL file:
 
@@ -168,4 +168,4 @@ streams, interfaces should not be ignored.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+

@@ -35,12 +35,12 @@ additional information describing how VxWorks kernels can be built.
 + Operating system components
 
   - POSIX components
-  
+
     * POSIX timers
     * POSIX threads
 
   - File System and Disk Utilities
-  
+
     * File System and Disk Utilities
 
 
@@ -53,11 +53,11 @@ deploying from the Tornado front end:
 + Development tool components
 
   - WDB agent components
-  
+
     * WDB agent services
 
   - WDB target server file system
-  
+
     * symbol table components
 
 
@@ -66,7 +66,7 @@ deploying from the Tornado front end:
   - synchronize host and target symbol tables
 
   - target shell components
-  
+
     * target shell
 
 
@@ -169,7 +169,7 @@ pre-loaded by the user.
 Running the Examples
 ********************
 
-If you included the additional modules listed above 
+If you included the additional modules listed above
 (see `Building a VxWorks Kernel`_) in the kernel, deployment
 is done *via* the target server setup from the Tornado
 shell connection.
@@ -320,8 +320,8 @@ The osplconf2c command
 The OpenSplice Examples (Alternative scenario, with multiple DKMs)
 ******************************************************************
 
-|caution| 
-  Loading separate DKMs is not recommended by PrismTech.
+|caution|
+  Loading separate DKMs is not recommended by ADLINK.
 
 
 
@@ -369,7 +369,7 @@ point can then be invoked to start OpenSplice.
 
 |caution|
   Please note that in order to deploy the cmsoap service for use with the
-  OpenSplice DDS Tuner, it must be configured in ``ospl.xml`` and the
+  Vortex OpenSplice Tuner, it must be configured in ``ospl.xml`` and the
   libraries named ``libcmxml.so`` and ``libddsrrstorage.so`` must be
   pre-loaded:
 

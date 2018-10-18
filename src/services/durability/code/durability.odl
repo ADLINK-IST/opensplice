@@ -1,0 +1,401 @@
+/* -*- c++ -*- */
+#include "v_kernel.odl"
+
+
+/**
+ * \file durability.odl
+ *
+ * This file contains data definitions for durability protocol messages.
+ *  
+ */
+module durabilityModule2 {
+    typedef c_time   d_timestamp;
+    typedef c_time   d_qualityExt;
+    typedef c_string d_name;
+    typedef c_string d_partition;
+    typedef c_string d_topic;
+
+    /**
+     * Each entity is globally uniquely identified by a global id, the following
+     * durability network address data structure holds the attributes that together
+     * implement the globally unique id. This structure is used in protocol messages
+     * to identify the durability service (that sends messages, i.e. the source, or
+     * that shall receive the message i.e. destination).
+     */
+    struct d_networkAddress_s {
+        c_ulong systemId;
+        c_ulong localId;
+        c_ulong lifecycleId;
+    };
+
+    /**
+     * Name-value pairs are used as generic extension attributes of messages.
+     * The use of name-value pairs are NOT part of the 'old' durability
+     * protocol. It is a good pratice to use extensions in topics that are
+     * newly defined, unless there are reasons not to use it.
+     */
+    struct d_nameValue_s {
+        c_string name;
+        sequence<c_octet> value;
+    };
+
+    /**
+     * The service state specifies the operational state of the durability service and is
+     * an attribute of all protocol messages.
+     * The operational state will start with INIT and then progress trough several states
+     * which identify the steps to get the state of the data aligned with the rest of the
+     * system until it gets to the COMPLETE state.
+     * The Complete state is the normal (full) operational state, from this state it has
+     * all data and can align others.
+     * The service will end in the TERMINATED state, it can reach this state from any
+     * other state going through the terminating state.
+     */
+    enum d_serviceState {
+        D_STATE_INIT,
+        D_STATE_DISCOVER_FELLOWS_GROUPS,
+        D_STATE_DISCOVER_LOCAL_GROUPS,
+        D_STATE_DISCOVER_PERSISTENT_SOURCE,
+        D_STATE_INJECT_PERSISTENT,
+        D_STATE_FETCH_INITIAL,
+        D_STATE_COMPLETE,
+        D_STATE_FETCH,
+        D_STATE_ALIGN,
+        D_STATE_FETCH_ALIGN,
+        D_STATE_TERMINATING,
+        D_STATE_TERMINATED
+    };
+
+    /**
+     * This enumeration is used by several protocol messages to indicate the state of a group.
+     * The completeness of a group tells if the durability service has and knows he has all
+     * the data in the system belonging to the group.
+     */
+    enum d_completeness {
+        D_GROUP_KNOWLEDGE_UNDEFINED,
+        D_GROUP_UNKNOWN,
+        D_GROUP_INCOMPLETE,
+        D_GROUP_COMPLETE
+    };
+
+    /**
+     * This enumeration is used by several protocol messages to indicate the durability quality
+     * of service applicable in for that protocol message. So the exact meaning depends on the
+     * protocol, it can be used as an exact value or as a limitation value.
+     * When used as a limitation value it defines the maximum durability strength of a range,
+     * e.g. if the value is D_DURABILITY_TRANSIENT it implies also TRANSIENT_LOCAL and VOLATILE.
+     */
+    enum d_durabilityKind {
+        D_DURABILITY_VOLATILE,
+        D_DURABILITY_TRANSIENT_LOCAL,
+        D_DURABILITY_TRANSIENT,
+        D_DURABILITY_PERSISTENT,
+        D_DURABILITY_ALL
+    };
+
+    /**
+     * This enumeration is used by the namespace exchange protocol to communicate the
+     * alignment policy used by the fellow durability service sending the namespace information.
+     */
+    enum d_alignmentKind {
+        D_ALIGNEE_INITIAL,
+        D_ALIGNEE_LAZY,
+        D_ALIGNEE_ON_REQUEST
+    };
+
+    enum d_mergePolicy {
+        D_MERGE_IGNORE,
+        D_MERGE_MERGE,
+        D_MERGE_DELETE,
+        D_MERGE_REPLACE,
+        D_MERGE_CATCHUP
+    };
+
+    struct d_mergeState_s {
+        d_name role;
+        c_ulong value;
+    };
+
+    /**
+     * The d_message_s structure defines the header of all durability protocol messages.
+     * All protocol messages define the first field to be of this type and named: parentMsg.
+     *
+     * Although the productionTimestamp is a timestamp it is not used as such. Instead, various
+     * bits in the productionTimestamp have special meanings.
+     *
+     * Bit 31 in the nanoseconds field of the production timestamp
+     *    If bit 31 is set, then the durability service has a reader for capability topic.
+     *    Durability services that receive a message from a fellow durability service where
+     *    this bit is set now know that they can send their capabilities to this fellow.
+     *
+     * Bit 30 in the nanoseconds field of the production timestamp.
+     *    If bit 30 is set, then the seconds field in the production timestamp will contains
+     *    a 32-bit unsigned service-specific sequence number. Fellow durability services can use
+     *    this sequence number to order message from the fellow. The maximum allowed valid
+     *    sequence number is 0xFFFFFFFE. Sequence number wrapping is supported.
+     *
+     *    Furthermore, if bit 30 is set, then all times in durability messages are capable
+     *    to specify times until approximately 2262. This holds for example of the beginTime
+     *    and endTime in sampleRequests, and the quality of namespaces and groups.
+     *    See https://confluence.prismtech.com/display/VO/Durability+and+timestamps+beyond+2038
+     *    for a detailed explanation how 64-bit times are implemented.
+     */
+    struct d_message_s {
+        d_networkAddress_s addressee;           /* the destination (fellow durability service) */
+        d_networkAddress_s senderAddress;       /* the source (this durability service)        */
+        d_serviceState     senderState;         /* the state of this durability service        */
+        d_timestamp        productionTimestamp; /* publication time at this durability service */
+        c_ulong            sequenceNumber;      /* a durability service and protocol message type specific sequence number. */
+    };
+
+    struct d_status_s {
+        d_message_s        parentMsg;
+    };
+
+    /**
+     * The following two protocol message types are exchanged between the durability service
+     * and a (aligner) fellow to align namespace information.
+     * The durability service sends a d_nameSpacesRequest_s message to a fellow durability service
+     * and the fellow will respond with a d_nameSpace_s message per namespace.
+     * Note that a non-aligner fellow will not send any information.
+     * The namespace message describes the definition of the namespace (topic and partition definitions)
+     * and describes how the durability service manages the namespace and the actual state of the namespace.
+     */
+    struct d_nameSpacesRequest_s{
+        d_message_s        parentMsg;
+    };
+
+    struct d_nameSpaces_s{
+        d_message_s              parentMsg;
+        c_string                 name;
+        c_string                 partitions;
+        d_durabilityKind         durabilityKind;
+        c_bool                   aligner;
+        d_alignmentKind          alignmentKind;
+        d_qualityExt             initialQuality;
+        c_ulong                  total;
+        d_networkAddress_s       master;
+        c_bool                   isComplete;
+        c_bool                   masterConfirmed;
+        d_mergeState_s           state;
+        sequence<d_mergeState_s> mergedStates;
+        c_ulong                  mergedStatesCount;
+    };
+   
+    /**
+     * The following two protocol message types are exchanged between the durability service
+     * and a (aligner) fellow to lookup group information of the fellow.
+     * The durability service sends a d_groupRequest_s message to a fellow durability service
+     * on which the fellow will respond by sending a d_newGroup message for each group.
+     * Note that a non-aligner fellow will not send any information.
+     */
+    struct d_groupsRequest_s {
+        d_message_s        parentMsg;
+        d_partition        partition;
+        d_topic            topic;
+    };
+
+    struct d_newGroup_s {
+        d_message_s       parentMsg;
+        d_partition       partition;
+        d_topic           topic;
+        d_completeness    completeness;
+        d_durabilityKind  durabilityKind;
+        d_qualityExt      quality;
+        c_ulong           alignerCount;
+    };
+
+    /**
+     * The following two protocol message types are exchanged between the durability service
+     * and a (aligner) fellow to align data from a group from the fellow.
+     * The durability service sends a d_sampleRequest_s message to a fellow durability service
+     * to request data for a specific group and the fellow will respond by sending a
+     * chain of d_sampleChain_s messages for each group.
+     * The chain consists of d_sampleChain_s messages each containing a data message and
+     * together contain all data from a group. The last d_sampleChain message doesn't contain
+     * data but instead the number of messages the chain contains, this is needed by the receiving
+     * durability service to verify if the chain is completely received.
+     * Note that a non-aligner fellow will not send any information.
+     */
+    struct d_sampleRequest_s {
+        d_message_s        parentMsg;
+        d_partition        partition;
+        d_topic            topic;
+        d_durabilityKind   durabilityKind;
+        d_timestamp        requestTime;
+        c_bool             withTimeRange;
+        d_timestamp        beginTime;
+        d_timestamp        endTime;
+        d_networkAddress_s source;
+        c_string           filter;
+        sequence<c_string> filterParams;
+        c_ulong            filterParamsCount;
+        c_long             maxSamples;
+        c_long             maxInstances;
+        c_long             maxSamplesPerInstance;
+    };
+
+    struct d_sampleChainBead {
+        sequence<c_octet> value;
+        c_long            size;
+    };
+
+    /**
+     * This value is used by the d_sampleChainTrailer messages to indicate groups are equal.
+     * When this value is sent as nrSamples this indicates that no samples will be aligned
+     * as the samples on the aligner and alignee are equal.
+     */
+    const c_ulong D_GROUP_IS_EQUAL = 0xffffffff;
+
+    struct d_sampleChainTrailer {
+        c_ulong           nrSamples;
+        d_completeness    completeness;
+    };
+
+    struct d_sampleChain_s {
+        d_message_s                  parentMsg;
+        c_string                     partition;
+        c_string                     topic;
+        d_durabilityKind             durabilityKind;
+        sequence<d_networkAddress_s> addressees;
+        c_ulong                      addresseesCount;
+        d_networkAddress_s           source;
+
+        union messageContent switch ( enum content { BEAD, LINK } )
+        {
+            case BEAD:
+                d_sampleChainBead    bead;
+            case LINK:
+                d_sampleChainTrailer link;
+        } msgBody;
+    };
+   
+    /**
+     * The following protocol message type is send from the durability service to
+     * all other fellow durability services. When a durability service receives a
+     * local dispose data request it will perform the dispose action locally and
+     * send this message to the rest to perform a system wide action.
+     */
+    struct d_deleteData_s {
+        d_message_s        parentMsg;
+        d_timestamp        actionTime;
+        c_string           partitionExpr;
+        c_string           topicExpr;
+    };
+
+    /* XML, KV store: retain compatibility with stores written using
+       v_topicQos rather than v_topicInfo.  The values of
+       kernelModuleI::v_qosKind are mostly irrelevant, the XML
+       representation simply requires that V_TOPIC_QOS is among them. */
+
+    struct d_persistentTopicDataPolicyV0 {
+        ARRAY<c_octet>            value;
+        c_long                    size;
+    };
+
+    class d_persistentQosV0 {
+        attribute kernelModuleI::v_qosKind kind;
+    };
+
+    class d_persistentTopicQosV0 extends d_persistentQosV0 {
+        attribute d_persistentTopicDataPolicyV0           topicData;
+        attribute kernelModule::v_durabilityPolicy        durability;
+        attribute kernelModule::v_durabilityServicePolicy durabilityService;
+        attribute kernelModule::v_deadlinePolicy          deadline;
+        attribute kernelModule::v_latencyPolicy           latency;
+        attribute kernelModule::v_livelinessPolicy        liveliness;
+        attribute kernelModule::v_reliabilityPolicy       reliability;
+        attribute kernelModule::v_orderbyPolicy           orderby;
+        attribute kernelModule::v_historyPolicy           history;
+        attribute kernelModule::v_resourcePolicy          resource;
+        attribute kernelModule::v_transportPolicy         transport;
+        attribute kernelModule::v_lifespanPolicy          lifespan;
+        attribute kernelModule::v_ownershipPolicy         ownership;
+    };
+
+    /**
+     * The capability protocol message types are used to communicate capabilities
+     * between durability services. When a durability services receives a
+     * d_message where the most significant bit of the productionTimestamp 
+     * attribute is set, then the sending durability service supports the
+     * capabilities interface. This means that the sending durability service
+     * has implemented a reader and writer for the d_capability topic.
+     * When the isRequest attribute of the topic i set to TRUE, then the
+     * message is considered a reuqest, otherwise it is a response.
+     * The capabilityMask attribute is a mask that specifies the categories
+     * of capabilities (there can be 32 of them).
+     * The capabilities attribute contain the attributes.
+     */
+    struct d_capability_s {
+        d_message_s              parentMsg;
+        sequence<d_nameValue_s>  capabilities;
+    };
+
+    /*****************************/
+    /* KV store data definitions */
+    /*****************************/
+
+    /* d_storeKV wants to have everything serialisable with the same
+       serialisers (but unfortunately, the regular serialiser can't
+       handle c_types, so we need to treat the topic type specially).
+
+       Note: table to integer mapping is
+      V = 0
+      T = 1 TT = 2
+      N = 3 NQ = 4 NC = 5
+      G = 6
+      M = 7
+    We reserve 8 bits, just in case. Note also that this means the
+    version tag is key 0:0:0:0. */
+    enum d_encodingKV {
+        /* Encoding of payload; encoding of types, file format in
+           general is up to the underlying KV store.  The
+           {XML,BIGE{,CDR}_XML} versions use v_messageExt and
+           d_topicKV/v_topicQos; BIGECDR_XML_V1 intentionally uses the
+           internal v_message type to avoid an extra copy, and uses
+           v_topicInfo to represent the topic information. */
+        D_ENCODINGKV_XML_XML, /* data XML, v_messageExt, d_topicKV, d_topicTypeKV */
+        D_ENCODINGKV_BIGE_XML, /* data BigE, v_messageExt, d_topicKV, d_topicTypeKV */
+        D_ENCODINGKV_BIGECDR_XML, /* data BigE CDR, v_messageExt, d_topicKV, d_topicTypeKV */
+        D_ENCODINGKV_BIGECDR_V1 /* data BigE CDR, v_message, d_topicInfoKV  */
+    };
+    enum d_compressionKV {
+        D_COMPRESSION_NONE,
+        D_COMPRESSION_LZF,
+        D_COMPRESSION_SNAPPY,
+        D_COMPRESSION_ZLIB,
+        D_COMPRESSION_CUSTOM
+    };
+    struct d_versionKV { /* key = V:0:0:0; payload is encoded as CDR BE */
+        c_ulong version;
+        d_encodingKV encoding;
+        d_compressionKV compression;
+    };
+    struct d_topicKV { /* key = T:topic_id:0:0 */
+        string name;
+        string type_name;
+        string keylist;
+        d_persistentTopicQosV0 qos;
+    };
+    struct d_topicTypeKV { /* key = TT:topic_id:0:0; uses a special serialiser => no payload other than type */
+        c_type type;
+    };
+    struct d_topicInfoKV { /* key = T:topic_id:0:0 */
+        kernelModule::v_topicInfo info;
+    };
+    struct d_namespaceKV { /* key = N:namespace_id:namespace_version:0 */
+        string name;
+    };
+    struct d_namespaceQualityKV { /* key = NQ:namespace_id:namespace_version:0 */
+    d_qualityExt quality;
+    };
+    struct d_namespaceCompletenessKV { /* key = NC:namespace_id:namespace_version:0 */
+    c_bool complete;
+    };
+    struct d_groupKV { /* key = G:group_id:0:0 */
+    c_ulong topic_id;
+    c_ulong namespace_id;
+        c_ulong namespace_version;
+        string partition;
+    string topic;
+    };
+};

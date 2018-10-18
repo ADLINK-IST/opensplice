@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -126,7 +127,7 @@ Vortex::FACE::report_stack_close(
     assert (file != NULL);
     assert (signature != NULL);
 
-    if (os_report_stack_flush_required((os_boolean)flush)) {
+    if (os_report_status((os_boolean)flush)) {
         const char *_file = file;
         int32_t _line = line;
         const char *_signature = signature;
@@ -150,7 +151,7 @@ Vortex::FACE::report_stack_close(
                 }
             }
         }
-        os_report_stack_unwind((os_boolean)flush, function, _file, _line, domainId);
+        os_report_flush((os_boolean)flush, function, _file, _line, domainId);
     }
 }
 
@@ -169,20 +170,15 @@ Vortex::FACE::report(
     char buffer[OS_REPORT_BUFLEN];
     const char *function;
     std::string retcode;
-    os_size_t offset = 0;
     va_list args;
 
     assert (file != NULL);
     assert (signature != NULL);
     assert (format != NULL);
 
-    /* Prepare error description. */
     retcode = returnCodeToString(code);
-    offset = snprintf(buffer, OS_REPORT_BUFLEN, "%s: ", retcode.c_str());
 
-    va_start(args, format);
-    (void)os_vsnprintf(buffer + offset, sizeof(buffer) - offset, format, args);
-    va_end(args);
+    snprintf(buffer, OS_REPORT_BUFLEN, "%s: %s", retcode.c_str(), format);
 
     /* Prettify function name. */
     std::string s(signature);
@@ -193,5 +189,7 @@ Vortex::FACE::report(
     }
 
     /* Add this report to the logs. */
-    os_report_noargs(reportType, function, file, line, (os_int32)code, buffer);
+    va_start(args, format);
+    os_report_va(reportType, function, file, line, (os_int32)code, -1, OS_TRUE, (os_char *)buffer, args);
+    va_end(args);
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -945,23 +946,6 @@ C_STRUCT(idl_labelVal) {
     idl_labelType labelType;
 };
 
-#if 0
-/** @brief create a new idl_labelVal instance for the default case
- *
- * @return A new label representing the "default" label
- */
-idl_labelVal
-idl_labelValDefault (
-    idl_labelVal alternativeValue)
-{
-    idl_labelVal labelVal = os_malloc(C_SIZEOF(idl_labelVal));
-
-    labelVal->labelType = idl_ldefault;
-
-    return labelVal;
-}
-#endif
-
 /** @brief free an idl_labelVal instance
  *
  * @param labelVal Class to operate on
@@ -1194,7 +1178,8 @@ idl_isContiguous(
              * vector<bool> for size. One bit per bool apparently. */
             return FALSE;
         }
-        /* Drop through... */
+        return TRUE;
+    break;
     case M_ENUMERATION:
         return TRUE;
     break;

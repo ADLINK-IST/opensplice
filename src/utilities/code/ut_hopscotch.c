@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -167,8 +168,9 @@ void ut_chhFree (struct ut_chh * UT_HH_RESTRICT hh)
 static void ut_chhLockBucket (struct ut_chh *rt, os_uint32 bidx)
 {
     /* Lock: MSB <=> LOCKBIT, LSBs <=> wait count; note that
-       (o&LOCKBIT)==0 means a thread can sneak in when there are
-       already waiters, changing it to o==0 would avoid that. */
+     * (o&LOCKBIT)==0 means a thread can sneak in when there are
+     * already waiters, changing it to o==0 would avoid that.
+     */
     struct ut_chhBucketArray * const bsary = pa_ldvoidp (&rt->buckets);
     struct ut_chhBucket * const b = &bsary->bs[bidx];
     struct ut_chhBackingLock * const s = &rt->backingLocks[bidx % N_BACKING_LOCKS];
@@ -214,11 +216,12 @@ static void ut_chhUnlockBucket (struct ut_chh *rt, os_uint32 bidx)
     } else {
         os_mutexLock (&s->lock);
         /* Need to broadcast because the CV is shared by multiple buckets
-           and the kernel wakes an arbitrary thread, it may be a thread
-           waiting for another bucket's lock that gets woken up, and that
-           can result in all threads waiting with all locks unlocked.
-           Broadcast avoids that, and with significantly more CVs than
-           cores, it shouldn't happen often. */
+         * and the kernel wakes an arbitrary thread, it may be a thread
+         * waiting for another bucket's lock that gets woken up, and that
+         * can result in all threads waiting with all locks unlocked.
+         * Broadcast avoids that, and with significantly more CVs than
+         * cores, it shouldn't happen often.
+         */
         os_condBroadcast (&s->cv);
         os_mutexUnlock (&s->lock);
     }
@@ -246,8 +249,9 @@ static void *ut_chhLookupInternal (struct ut_chh * rt, const os_uint32 bucket, c
     } while (timestamp != pa_ld32 (&bs[bucket].timestamp) && ++try_counter < CHH_MAX_TRIES);
     if (try_counter == CHH_MAX_TRIES) {
         /* Note: try_counter would not have been incremented to
-           CHH_MAX_TRIES if we ended the loop because the two timestamps
-           were equal, but this avoids loading the timestamp again */
+         * CHH_MAX_TRIES if we ended the loop because the two timestamps
+         * were equal, but this avoids loading the timestamp again
+         */
         for (idx = 0; idx < HH_HOP_RANGE; idx++) {
             const os_uint32 bidx = (bucket + idx) & idxmask;
             void *data = pa_ldvoidp (&bs[bidx].data);
@@ -318,10 +322,11 @@ static os_uint32 ut_chhFindCloserFreeBucket (struct ut_chh *rt, os_uint32 free_b
 static void ut_chhResize (struct ut_chh *rt)
 {
     /* doubles the size => bucket index gains one bit at the msb =>
-       start bucket is unchanged or moved into the added half of the set
-       => those for which the (new) msb is 0 are guaranteed to fit, and
-       so are those for which the (new) msb is 1 => never have to resize
-       recursively */
+     * start bucket is unchanged or moved into the added half of the set
+     * => those for which the (new) msb is 0 are guaranteed to fit, and
+     * so are those for which the (new) msb is 1 => never have to resize
+     * recursively
+     */
     struct ut_chhBucketArray * const bsary0 = pa_ldvoidp (&rt->buckets);
     struct ut_chhBucket * const bs0 = bsary0->bs;
     struct ut_chhBucketArray *bsary1;
@@ -343,8 +348,7 @@ static void ut_chhResize (struct ut_chh *rt)
     idxmask1 = bsary1->size - 1;
     for (i = 0; i < bsary0->size; i++) {
         void *data = pa_ldvoidp (&bs0[i].data);
-        assert (data != CHH_BUSY);
-        if (data) {
+        if (data && data != CHH_BUSY) {
             const os_uint32 hash = rt->hash (data);
             const os_uint32 old_start_bucket = hash & idxmask0;
             const os_uint32 new_start_bucket = hash & idxmask1;
@@ -569,6 +573,7 @@ static os_uint32 ut_hhFindCloserFreeBucket (struct ut_hh *rt, os_uint32 free_buc
             os_uint32 new_free_bucket = (move_bucket + move_free_distance) & idxmask;
             rt->buckets[move_bucket].hopinfo |= 1u << free_dist;
             rt->buckets[free_bucket].data = rt->buckets[new_free_bucket].data;
+            rt->buckets[new_free_bucket].data = NULL;
             rt->buckets[move_bucket].hopinfo &= ~(1u << move_free_distance);
             *free_distance -= free_dist - move_free_distance;
             return new_free_bucket;
@@ -809,7 +814,7 @@ static os_uint32 ut_ehhFindCloserFreeBucket (struct ut_ehh *rt, os_uint32 free_b
             mb->hopinfo |= 1u << free_dist;
             fb->inuse = 1;
             memcpy (fb->data, nfb->data, rt->elemsz);
-            fb->inuse = 0; /* FIXME: without this, I think the case where hopping ultimately fails otherwise leaks an element (see also other impls, they should suffer from the same) */
+            nfb->inuse = 0;
             mb->hopinfo &= ~(1u << move_free_distance);
             *free_distance -= free_dist - move_free_distance;
             return new_free_bucket;

@@ -4,11 +4,13 @@ export VS_HOME='/cygdrive/C/Program Files (x86)/Microsoft Visual Studio 14.0'
 export WINDOWSSDKDIR='/cygdrive/C/Program Files (x86)/Windows Kits/10'
 export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
 export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap-v2.7
-export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
-export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0/src
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-vs2015
 export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
-export PATH=$PROTOBUF_HOME/bin:$PATH
+export PATH=/usr/local/bin:$PROTOBUF_HOME/bin:$PATH
 
 #There is no TAO for VS2015
 unset TAO_ROOT
 export OVERRIDE_STRICT_CHECKS=no
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3
+export SQLITE_HOME=/home/dds/INSTALLED_FOR_DDS/sqlite-amalgamation-3071602
+export PYTHON_HOME=/home/dds/INSTALLED_FOR_DDS/portablepython-2.7.3.1

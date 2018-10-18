@@ -21,7 +21,7 @@ Vortex OpenSplice RMI User Guide
    qos-policies
 
    contacts
-      
+
 
 Indices and tables
 ==================

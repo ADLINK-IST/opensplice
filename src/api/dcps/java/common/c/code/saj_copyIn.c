@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -4234,7 +4235,7 @@ saj_cfuiBStringToArrCharSupported (
 
     if(result == OS_RETCODE_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, str));
-        saj_cfoiBStringToArrChar (ch, str, dst, ctx);
+        result = saj_cfoiBStringToArrChar (ch, str, dst, ctx);
         if(result != OS_RETCODE_OK) {
             saj_reportCopyInFail(javaObject, caseID, ctx);
         }

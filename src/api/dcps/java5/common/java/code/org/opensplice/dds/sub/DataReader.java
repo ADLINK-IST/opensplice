@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,7 +45,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -70,7 +71,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -81,6 +82,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, Time minSourceTimestamp,
@@ -104,7 +108,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -127,7 +131,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -138,6 +142,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, Time minSourceTimestamp,
@@ -160,7 +167,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -178,7 +185,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -189,6 +196,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, ResourceLimits resourceLimits,
@@ -211,7 +221,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -226,7 +236,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -237,6 +247,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, Duration maxWait)
@@ -259,7 +272,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param minSourceTimestamp
      *            Filter out all data published before this time. The special
      *            org.omg.dds.core.Time.invalidTime() can be used when no
@@ -274,7 +287,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -285,6 +298,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(Time minSourceTimestamp,
             Time maxSourceTimestamp, ResourceLimits resourceLimits,
@@ -307,7 +323,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param minSourceTimestamp
      *            Filter out all data published before this time. The special
      *            org.omg.dds.core.Time.invalidTime() can be used when no
@@ -319,7 +335,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -330,6 +346,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(Time minSourceTimestamp,
             Time maxSourceTimestamp, Duration maxWait) throws TimeoutException;
@@ -351,14 +370,14 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param resourceLimits
      *            Specifies limits on the maximum amount of historical data that
      *            may be received.
      * @param maxWait
      *            The maximum duration the application thread is blocked during
      *            this operation.
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -369,6 +388,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(
             ResourceLimits resourceLimits, Duration maxWait)
@@ -391,7 +413,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -420,7 +442,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -431,6 +453,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, Time minSourceTimestamp,
@@ -454,7 +479,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -480,7 +505,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -491,6 +516,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, Time minSourceTimestamp,
@@ -514,7 +542,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -535,7 +563,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -546,6 +574,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, ResourceLimits resourceLimits,
@@ -568,7 +599,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param filterExpression
      *            the SQL expression (subset of SQL), which defines the
      *            filtering criteria (null when no SQL filtering is needed).
@@ -586,7 +617,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -597,6 +628,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(String filterExpression,
             List<String> filterParameters, long maxWait, TimeUnit unit)
@@ -619,7 +653,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param minSourceTimestamp
      *            Filter out all data published before this time. The special
      *            org.omg.dds.core.Time.invalidTime() can be used when no
@@ -637,7 +671,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -648,6 +682,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(Time minSourceTimestamp,
             Time maxSourceTimestamp, ResourceLimits resourceLimits,
@@ -670,7 +707,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param minSourceTimestamp
      *            Filter out all data published before this time. The special
      *            org.omg.dds.core.Time.invalidTime() can be used when no
@@ -685,7 +722,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -696,6 +733,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(Time minSourceTimestamp,
             Time maxSourceTimestamp, long maxWait, TimeUnit unit)
@@ -718,7 +758,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * {@link org.omg.dds.core.policy.Durability.Kind#VOLATILE} to ensure that
      * historical data that potentially is available already at creation time is
      * not immediately delivered to the DataReader at that time.
-     * 
+     *
      * @param resourceLimits
      *            Specifies limits on the maximum amount of historical data that
      *            may be received.
@@ -728,7 +768,7 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @param unit
      *            The TimeUnit which the maxWait describes (i.e.
      *            TimeUnit.SECONDS or TimeUnit.MILLISECONDS)
-     * 
+     *
      * @throws TimeoutException
      *             thrown when maxWait has expired before the applicable
      *             historical data has successfully been obtained.
@@ -739,6 +779,9 @@ public interface DataReader<TYPE> extends org.omg.dds.sub.DataReader<TYPE> {
      * @throws org.omg.dds.core.OutOfResourcesException
      *             The Data Distribution Service ran out of resources to
      *             complete this operation.
+     * @throws org.omg.dds.core.PreconditionNotMetException
+     *             Can happen when requesting conditional alignment on non-volatile readers or
+     *             Historical data request already in progress or complete.
      */
     public void waitForHistoricalData(
             ResourceLimits resourceLimits, long maxWait, TimeUnit unit)

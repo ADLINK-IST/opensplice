@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,9 +23,9 @@ package org.opensplice.dds.domain;
 import org.omg.dds.core.policy.EntityFactory;
 import org.omg.dds.core.policy.QosPolicy.ForDomainParticipantFactory;
 import org.omg.dds.domain.DomainParticipantFactoryQos;
+import org.opensplice.dds.core.EntityQosImpl;
 import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
 import org.opensplice.dds.core.OsplServiceEnvironment;
-import org.opensplice.dds.core.EntityQosImpl;
 import org.opensplice.dds.core.policy.EntityFactoryImpl;
 
 public class DomainParticipantFactoryQosImpl extends
@@ -43,15 +44,19 @@ public class DomainParticipantFactoryQosImpl extends
 
     @Override
     protected void setupMissingPolicies() {
-        if (!this.policies.containsKey(EntityFactory.class)) {
-            this.policies.put(EntityFactory.class, new EntityFactoryImpl(
-                    environment));
+        synchronized (this.policies) {
+            if (!this.policies.containsKey(EntityFactory.class)) {
+                this.policies.put(EntityFactory.class, new EntityFactoryImpl(
+                        environment));
+            }
         }
     }
 
     @Override
     public EntityFactory getEntityFactory() {
-        return (EntityFactory) this.policies.get(EntityFactory.class);
+        synchronized (this.policies) {
+            return (EntityFactory) this.policies.get(EntityFactory.class);
+        }
     }
 
     public static DomainParticipantFactoryQosImpl convert(
@@ -90,10 +95,12 @@ public class DomainParticipantFactoryQosImpl extends
     @Override
     public DomainParticipantFactoryQos withPolicies(
             ForDomainParticipantFactory... policy) {
+
         DomainParticipantFactoryQosImpl result = new DomainParticipantFactoryQosImpl(
                 this.environment);
-
-        result.putAll(this.policies);
+        synchronized (this.policies) {
+            result.putAll(this.policies);
+        }
 
         for (ForDomainParticipantFactory f : policy) {
             result.put(getClassIdForPolicy(f), f);

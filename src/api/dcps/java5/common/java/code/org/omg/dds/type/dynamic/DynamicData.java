@@ -42,10 +42,10 @@ public interface DynamicData extends DDSObject, Cloneable
     public void clearNonkeyValues();
     public void clearValue(int id);
     public void clearValue(String name);
-    
+
     public <T> void setValue (int id, T value, Class<T> type);
     public <T> void setValue (String name, T value, Class<T> type);
-    
+
     public <T> T getValue (int id, Class<T> type);
     public <T> T getValue (String name, Class<T> type);
 

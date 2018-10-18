@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -86,83 +87,115 @@ org.opensplice.dds.sub.DataReaderQos {
 
     @Override
     public Durability getDurability() {
-        return (Durability) this.policies.get(Durability.class);
+        synchronized (this.policies) {
+            return (Durability) this.policies.get(Durability.class);
+        }
     }
 
     @Override
     public Deadline getDeadline() {
-        return (Deadline) this.policies.get(Deadline.class);
+        synchronized (this.policies) {
+            return (Deadline) this.policies.get(Deadline.class);
+        }
     }
 
     @Override
     public LatencyBudget getLatencyBudget() {
-        return (LatencyBudget) this.policies.get(LatencyBudget.class);
+        synchronized (this.policies) {
+            return (LatencyBudget) this.policies.get(LatencyBudget.class);
+        }
     }
 
     @Override
     public Liveliness getLiveliness() {
-        return (Liveliness) this.policies.get(Liveliness.class);
+        synchronized (this.policies) {
+            return (Liveliness) this.policies.get(Liveliness.class);
+        }
     }
 
     @Override
     public Reliability getReliability() {
-        return (Reliability) this.policies.get(Reliability.class);
+        synchronized (this.policies) {
+            return (Reliability) this.policies.get(Reliability.class);
+        }
     }
 
     @Override
     public DestinationOrder getDestinationOrder() {
-        return (DestinationOrder) this.policies.get(DestinationOrder.class);
+        synchronized (this.policies) {
+            return (DestinationOrder) this.policies.get(DestinationOrder.class);
+        }
     }
 
     @Override
     public History getHistory() {
-        return (History) this.policies.get(History.class);
+        synchronized (this.policies) {
+            return (History) this.policies.get(History.class);
+        }
     }
 
     @Override
     public ResourceLimits getResourceLimits() {
-        return (ResourceLimits) this.policies.get(ResourceLimits.class);
+        synchronized (this.policies) {
+            return (ResourceLimits) this.policies.get(ResourceLimits.class);
+        }
     }
 
     @Override
     public UserData getUserData() {
-        return (UserData) this.policies.get(UserData.class);
+        synchronized (this.policies) {
+            return (UserData) this.policies.get(UserData.class);
+        }
     }
 
     @Override
     public Ownership getOwnership() {
-        return (Ownership) this.policies.get(Ownership.class);
+        synchronized (this.policies) {
+            return (Ownership) this.policies.get(Ownership.class);
+        }
     }
 
     @Override
     public TimeBasedFilter getTimeBasedFilter() {
-        return (TimeBasedFilter) this.policies.get(TimeBasedFilter.class);
+        synchronized (this.policies) {
+            return (TimeBasedFilter) this.policies.get(TimeBasedFilter.class);
+        }
     }
 
     @Override
     public ReaderDataLifecycle getReaderDataLifecycle() {
-        return (ReaderDataLifecycle) this.policies
+        synchronized (this.policies) {
+            return (ReaderDataLifecycle) this.policies
                 .get(ReaderDataLifecycle.class);
+        }
     }
 
     @Override
     public DataRepresentation getRepresentation() {
-        return (DataRepresentation) this.policies.get(DataRepresentation.class);
+        synchronized (this.policies) {
+            return (DataRepresentation) this.policies.get(DataRepresentation.class);
+        }
     }
 
     @Override
     public ReaderLifespan getReaderLifespan() {
-        return (ReaderLifespan) this.policies.get(ReaderLifespan.class);
+        synchronized (this.policies) {
+            return (ReaderLifespan) this.policies.get(ReaderLifespan.class);
+        }
     }
 
     @Override
     public Share getShare() {
-        return (Share) this.policies.get(Share.class);
+        synchronized (this.policies) {
+            return (Share) this.policies.get(Share.class);
+        }
     }
 
     @Override
     public SubscriptionKeys getSubscriptionKeys() {
-        return (SubscriptionKeys) this.policies.get(SubscriptionKeys.class);
+        synchronized (this.policies) {
+            return (SubscriptionKeys) this.policies.get(SubscriptionKeys.class);
+        }
     }
 
     @Override
@@ -177,61 +210,65 @@ org.opensplice.dds.sub.DataReaderQos {
 
     @Override
     public DataReaderQos withPolicies(ForDataReader... policy) {
-        return new DataReaderQosImpl(this, policy);
+        synchronized (this.policies) {
+            return new DataReaderQosImpl(this, policy);
+        }
     }
 
     @Override
     protected void setupMissingPolicies() {
-        if (!this.policies.containsKey(Durability.class)) {
-            this.policies.put(Durability.class, new DurabilityImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(Deadline.class)) {
-            this.policies.put(Deadline.class,
-                    new DeadlineImpl(this.environment));
-        }
-        if (!this.policies.containsKey(LatencyBudget.class)) {
-            this.policies.put(LatencyBudget.class, new LatencyBudgetImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(Liveliness.class)) {
-            this.policies.put(Liveliness.class, new LivelinessImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(Reliability.class)) {
-            this.policies.put(Reliability.class, new ReliabilityImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(DestinationOrder.class)) {
-            this.policies.put(DestinationOrder.class, new DestinationOrderImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(History.class)) {
-            this.policies.put(History.class, new HistoryImpl(this.environment));
-        }
-        if (!this.policies.containsKey(ResourceLimits.class)) {
-            this.policies.put(ResourceLimits.class, new ResourceLimitsImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(TimeBasedFilter.class)) {
-            this.policies.put(TimeBasedFilter.class, new TimeBasedFilterImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(Ownership.class)) {
-            this.policies.put(Ownership.class, new OwnershipImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(DataRepresentation.class)) {
-            this.policies.put(DataRepresentation.class,
-                    new DataRepresentationImpl(this.environment));
-        }
-        if (!this.policies.containsKey(UserData.class)) {
-            this.policies.put(UserData.class,
-                    new UserDataImpl(this.environment));
-        }
-        if (!this.policies.containsKey(ReaderDataLifecycle.class)) {
-            this.policies.put(ReaderDataLifecycle.class,
-                    new ReaderDataLifecycleImpl(this.environment));
+        synchronized (this.policies) {
+            if (!this.policies.containsKey(Durability.class)) {
+                this.policies.put(Durability.class, new DurabilityImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Deadline.class)) {
+                this.policies.put(Deadline.class,
+                        new DeadlineImpl(this.environment));
+            }
+            if (!this.policies.containsKey(LatencyBudget.class)) {
+                this.policies.put(LatencyBudget.class, new LatencyBudgetImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Liveliness.class)) {
+                this.policies.put(Liveliness.class, new LivelinessImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Reliability.class)) {
+                this.policies.put(Reliability.class, new ReliabilityImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(DestinationOrder.class)) {
+                this.policies.put(DestinationOrder.class, new DestinationOrderImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(History.class)) {
+                this.policies.put(History.class, new HistoryImpl(this.environment));
+            }
+            if (!this.policies.containsKey(ResourceLimits.class)) {
+                this.policies.put(ResourceLimits.class, new ResourceLimitsImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(TimeBasedFilter.class)) {
+                this.policies.put(TimeBasedFilter.class, new TimeBasedFilterImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Ownership.class)) {
+                this.policies.put(Ownership.class, new OwnershipImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(DataRepresentation.class)) {
+                this.policies.put(DataRepresentation.class,
+                        new DataRepresentationImpl(this.environment));
+            }
+            if (!this.policies.containsKey(UserData.class)) {
+                this.policies.put(UserData.class,
+                        new UserDataImpl(this.environment));
+            }
+            if (!this.policies.containsKey(ReaderDataLifecycle.class)) {
+                this.policies.put(ReaderDataLifecycle.class,
+                        new ReaderDataLifecycleImpl(this.environment));
+            }
         }
     }
 

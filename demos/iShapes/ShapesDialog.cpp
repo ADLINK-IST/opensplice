@@ -139,7 +139,6 @@ ShapesDialog::onPublishButtonClicked()
 
 
     QRect constr(0, 0, IS_WIDTH, IS_HEIGHT);
-    // QRect constr = this->geometry();
     int x = constr.width() * ((float)rand() / RAND_MAX);
     int y = constr.height() * ((float)rand() / RAND_MAX);
     int cIdx = mainWidget.colorList->currentIndex();

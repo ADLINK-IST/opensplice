@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CURR_YEAR=2017
+CURR_YEAR=2018
 
 . buildsys/functions
 

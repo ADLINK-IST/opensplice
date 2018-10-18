@@ -1,0 +1,14 @@
+module basic {
+	module module_StringTypes {
+		typedef string<5> string5;
+		struct StringTypes_struct {
+			long long1;
+			string string1;
+			string<5> string2;
+			string string_array[3];
+			sequence<string> string_seq1;
+			sequence<string5> string_seq2;
+		};
+		#pragma keylist StringTypes_struct long1
+	};
+};

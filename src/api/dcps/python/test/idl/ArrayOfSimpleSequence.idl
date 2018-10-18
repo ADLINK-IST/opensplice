@@ -1,0 +1,15 @@
+module basic{
+
+	typedef sequence<long> longSeq;
+
+	module module_ArrayOfSimpleSequence{
+	
+		struct ArrayOfSimpleSequence_struct{
+			long long1;
+			longSeq array1[2];			
+		};
+		
+		#pragma keylist ArrayOfSimpleSequence_struct long1
+	};
+};
+		

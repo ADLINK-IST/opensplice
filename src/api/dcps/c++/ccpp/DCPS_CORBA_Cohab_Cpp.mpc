@@ -44,6 +44,7 @@ project (Build*Lib) : ospl_build_lib, taoidldefaults, taolib, dcps_typesupport_b
         $(OSPL_HOME)/etc/idl/dds_dcps_interfaces.idl
         $(OSPL_HOME)/etc/idl/dds_dcps.idl
         $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+        $(OSPL_HOME)/etc/idl/dds_cdrBlob.idl
         // + automatically the generated TypeSupport IDL
     }
 
@@ -61,6 +62,7 @@ project (Build*Lib) : ospl_build_lib, taoidldefaults, taolib, dcps_typesupport_b
         $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
         $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
         $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+        $(OSPL_HOME)/etc/idl/dds_cdrBlob.idl
     }
 
     Documentation_Files {

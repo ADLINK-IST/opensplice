@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,9 +21,9 @@
 package org.opensplice.dds.sub;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.omg.dds.core.InstanceHandle;
 import org.omg.dds.core.status.Status;
@@ -37,8 +38,8 @@ import org.opensplice.dds.core.status.StatusConverter;
 import org.opensplice.dds.topic.TopicDescriptionExt;
 
 public class DataReaderImpl<TYPE> extends AbstractDataReader<TYPE> {
-    private final ConcurrentHashMap<List<Sample<TYPE>>, PreAllocatorImpl<TYPE>> preallocated;
     private final ReflectionDataReader<TYPE, TYPE> reflectionReader;
+    private final ArrayList<PreAllocatorImpl<TYPE>> preallocteList;
 
     public DataReaderImpl(OsplServiceEnvironment environment,
             SubscriberImpl parent, TopicDescriptionExt<TYPE> topicDescription,
@@ -48,7 +49,8 @@ public class DataReaderImpl<TYPE> extends AbstractDataReader<TYPE> {
         this.reflectionReader = new ReflectionDataReader<TYPE, TYPE>(
                 this.environment, this, topicDescription.getTypeSupport()
                         .getType());
-        this.preallocated = new ConcurrentHashMap<List<Sample<TYPE>>, PreAllocatorImpl<TYPE>>();
+        this.preallocteList = new ArrayList<PreAllocatorImpl<TYPE>>();
+
         this.topicDescription.retain();
     }
 
@@ -93,7 +95,7 @@ public class DataReaderImpl<TYPE> extends AbstractDataReader<TYPE> {
         this.reflectionReader = new ReflectionDataReader<TYPE, TYPE>(
                 this.environment, this, topicDescription.getTypeSupport()
                         .getType());
-        this.preallocated = new ConcurrentHashMap<List<Sample<TYPE>>, PreAllocatorImpl<TYPE>>();
+        this.preallocteList = new ArrayList<PreAllocatorImpl<TYPE>>();
         this.topicDescription.retain();
 
         if (this.listener != null) {
@@ -115,21 +117,23 @@ public class DataReaderImpl<TYPE> extends AbstractDataReader<TYPE> {
     @Override
     public PreAllocator<TYPE> getPreAllocator(List<Sample<TYPE>> samples,
             Class<?> sampleSeqHolderClz, Field sampleSeqHolderValueField) {
-        PreAllocatorImpl<TYPE> pa;
+        PreAllocatorImpl<TYPE> pa = null;
 
-        synchronized (this.preallocated) {
+        synchronized (this.preallocteList) {
             if (samples != null) {
-                pa = this.preallocated.get(samples);
-            } else {
-                pa = null;
+                for (PreAllocatorImpl<TYPE> paImpl : this.preallocteList) {
+                    if (paImpl.getSampleList() == samples) {
+                        pa = paImpl;
+                        break;
+                    }
+                }
             }
-
             if (pa == null) {
                 pa = new PreAllocatorImpl<TYPE>(this.environment,
                         sampleSeqHolderClz, sampleSeqHolderValueField, this
                                 .getTopicDescription().getTypeSupport()
                                 .getType(), samples);
-                this.preallocated.put(pa.getSampleList(), pa);
+                this.preallocteList.add(pa);
             } else {
                 pa.setSampleList(samples);
             }

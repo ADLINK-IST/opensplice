@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,7 +55,7 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
               dp,
               topic_name,
               "",
-              dp.default_topic_qos(),
+              dp.is_nil() ? dds::topic::qos::TopicQos() : dp.default_topic_qos(),
               NULL,
               dds::core::status::StatusMask::none()))
 {
@@ -71,12 +72,12 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
               dp,
               topic_name,
               type_name,
-              dp.default_topic_qos(),
+              dp.is_nil() ? dds::topic::qos::TopicQos() : dp.default_topic_qos(),
               NULL,
               dds::core::status::StatusMask::none())),
       ::dds::topic::TAnyTopic< DELEGATE<T> >(::dds::core::Reference< DELEGATE<T>  >::delegate())
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
 
     this->delegate()->init(this->impl_);
 }
@@ -96,7 +97,7 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
               mask)),
       ::dds::topic::TAnyTopic< DELEGATE<T> >(::dds::core::Reference< DELEGATE<T>  >::delegate())
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
 
     this->delegate()->init(this->impl_);
 }
@@ -117,7 +118,7 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
               mask)),
       ::dds::topic::TAnyTopic< DELEGATE<T> >(::dds::core::Reference< DELEGATE<T>  >::delegate())
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
 
     this->delegate()->init(this->impl_);
 }
@@ -174,7 +175,14 @@ dds::topic::detail::Topic<T>::Topic(const dds::domain::DomainParticipant& dp,
     : org::opensplice::topic::TopicDescriptionDelegate(dp, name, type_name),
       org::opensplice::topic::AnyTopicDelegate(qos, dp, name, type_name)
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
+    ISOCPP_REPORT_STACK_NC_BEGIN();
+
+    dds::domain::DomainParticipant participant = dds::core::null;
+
+    /* The dp argument can be nil. Use the participant we know isn't nil because
+     * the TopicDescriptionDelegate would have created it when needed. */
+    participant = this->domain_participant();
+
     // Set the correct (IDL) type_name in the TopicDescription.
     org::opensplice::topic::TopicDescriptionDelegate::myTypeName = org::opensplice::topic::TopicTraits<T>::getTypeName();
 
@@ -182,7 +190,7 @@ dds::topic::detail::Topic<T>::Topic(const dds::domain::DomainParticipant& dp,
     org::opensplice::topic::qos::TopicQosDelegate tQos = qos.delegate();
     tQos.check();
     u_topicQos uTopicQos = tQos.u_qos();
-    u_participant uParticipant = dp->registerType(
+    u_participant uParticipant = participant->registerType(
             org::opensplice::topic::TopicTraits<T>::getTypeName(),
             org::opensplice::topic::TopicTraits<T>::getDescriptor(),
             org::opensplice::topic::TopicTraits<T>::getDataRepresentationId(),
@@ -216,7 +224,7 @@ dds::topic::detail::Topic<T>::Topic(const dds::domain::DomainParticipant& dp,
     : org::opensplice::topic::TopicDescriptionDelegate(dp, name, type_name),
       org::opensplice::topic::AnyTopicDelegate(qos, dp, name, type_name)
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(dp);
     this->userHandle = (u_object)uTopic;
     this->listener_set((void*)NULL, dds::core::status::StatusMask::none());
 }
@@ -402,24 +410,6 @@ dds::topic::detail::Topic<T>::discover_topics(
         topics.push_back(dds::topic::Topic<T>(ref));
     }
 }
-
-
-
-#if 0
-template <typename T>
-dds::topic::TTopicDescription<org::opensplice::topic::TopicDescriptionDelegate>
-dds::topic::detail::Topic<T>::clone()
-{
-    org::opensplice::core::ScopedObjectLock scopedLock(*this);
-
-    typename dds::topic::Topic<T, Topic>::DELEGATE_REF_T ref(
-            new Topic<T>(this->myParticipant, this->myTopicName,
-                         this->myTypeName, this->qos_, NULL, dds::core::status::StatusMask::none()));
-    ref->init(ref);
-
-    return dds::topic::Topic<T, Topic>(ref);
-}
-#endif
 
 // End of implementation
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,8 +34,6 @@
 #include "v_topicQos.h"
 #include "v_entity.h"
 #include "v_filter.h"
-#include "v_observable.h"
-#include "v_observer.h"
 #include "os_report.h"
 
 #define u_topicReadClaim(_this, topic, claim) \
@@ -52,52 +51,24 @@ u__topicDeinitW(
 {
     u_result result;
     u_topic topic;
-    u_participant p;
-    v_participant kp;
-    v_topic kt;
 
     assert(_this != NULL);
 
     topic = u_topic(_this);
-    p = topic->participant;
-    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_NO_CHECK);
+
+    result = u__entityDeinitW(_this);
     if (result == U_RESULT_OK) {
-        assert(kp);
-        result = u_observableWriteClaim(u_observable(_this), (v_public *)(&kt), C_MM_RESERVATION_NO_CHECK);
-        if (result == U_RESULT_OK) {
-            assert(kt);
-            (void)v_observableRemoveObserver(v_observable(kt), v_observer(kp), NULL);
-            u_observableRelease(u_observable(_this), C_MM_RESERVATION_NO_CHECK);
-        } else {
-            OS_REPORT(OS_WARNING, "u__topicDeinitW", result,
-                        "Claim topic failed. "
-                        "Topic = 0x%"PA_PRIxADDR"", (os_address)_this);
+        if (topic->name) {
+            os_free(topic->name);
+            topic->name = NULL;
         }
-        u_observableRelease(u_observable(p), C_MM_RESERVATION_NO_CHECK);
     } else {
-        OS_REPORT(OS_WARNING, "u__topicDeinitW", result,
-                    "Claim participant failed. "
-                    "Topic = 0x%"PA_PRIxADDR"", (os_address)_this);
+        OS_REPORT(OS_WARNING,
+                    "u__topicDeinitW", result,
+                    "Operation u__topicDeinitW failed. "
+                    "Topic = 0x%"PA_PRIxADDR"",
+                    (os_address)_this);
     }
-
-    if ((result == U_RESULT_OK) ||
-        (result == U_RESULT_ALREADY_DELETED) ||
-        (result == U_RESULT_OUT_OF_MEMORY)) {
-        result = u__entityDeinitW(_this);
-        if (result == U_RESULT_OK) {
-            if (topic->name) {
-                os_free(topic->name);
-                topic->name = NULL;
-            }
-        } else {
-            OS_REPORT(OS_WARNING,
-                        "u__topicDeinitW", result,
-                        "Operation u__topicDeinitW failed. "
-                        "Topic = 0x%"PA_PRIxADDR"",
-                        (os_address)_this);
-        }
-    }
-
     return result;
 }
 
@@ -130,14 +101,7 @@ u_topicNewFromTopicInfo(
             _this = u_objectAlloc(sizeof(*_this), U_TOPIC, u__topicDeinitW, u__topicFreeW);
             if (_this != NULL) {
                 result = u_topicInit(_this,info->name,kt,p);
-                if (result == U_RESULT_OK) {
-                    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_ZERO);
-                    if (result == U_RESULT_OK) {
-                        assert(kp);
-                        v_observableAddObserver(v_observable(kt), v_observer(kp), NULL);
-                        u_observableRelease(u_observable(p), C_MM_RESERVATION_ZERO);
-                    }
-                } else {
+                if (result != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_topicNew", result,
                                 "Initialisation failed. "
                                 "For Topic: <%s>", info->name);
@@ -209,14 +173,7 @@ u_topicNew(
             _this = u_objectAlloc(sizeof(*_this), U_TOPIC, u__topicDeinitW, u__topicFreeW);
             if (_this != NULL) {
                 result = u_topicInit(_this,name,kt,p);
-                if (result == U_RESULT_OK) {
-                    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_LOW);
-                    if (result == U_RESULT_OK) {
-                        assert(kp);
-                        v_observableAddObserver(v_observable(kt), v_observer(kp), NULL);
-                        u_observableRelease(u_observable(p), C_MM_RESERVATION_LOW);
-                    }
-                } else {
+                if (result != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_topicNew", result,
                                 "Initialisation failed. "
                                 "For Topic: <%s>", name);
@@ -432,7 +389,8 @@ u_bool
 u_topicContentFilterValidate (
     const u_topic _this,
     const q_expr expr,
-    const c_value params[])
+    const c_value params[],
+    os_uint32 nrOfParams)
 {
     v_topic topic;
     u_bool result;
@@ -453,7 +411,7 @@ u_topicContentFilterValidate (
         subexpr = q_getPar(expr, i); /* get rid of Q_EXPR_PROGRAM */
         while ((term = q_getPar(subexpr, i++)) != NULL) {
             if (q_getTag(term) == Q_EXPR_WHERE) {
-                filter = v_filterNew(topic, term, params);
+                filter = v_filterNew(v_topicMessageType(topic), v_topicMessageKeyList(topic), term, params, nrOfParams);
             }
         }
         u_topicRelease(_this, C_MM_RESERVATION_LOW);
@@ -469,7 +427,8 @@ u_bool
 u_topicContentFilterValidate2 (
     const u_topic _this,
     const q_expr expr,
-    const c_value params[])
+    const c_value params[],
+    os_uint32 nrOfParams)
 {
     v_topic topic;
     u_bool result;
@@ -484,7 +443,7 @@ u_topicContentFilterValidate2 (
     uResult = u_topicReadClaim(_this, &topic, C_MM_RESERVATION_LOW);
     if (uResult == U_RESULT_OK) {
         assert(topic);
-        filter = v_filterNew(topic, expr, params);
+        filter = v_filterNew(v_topicMessageType(topic), v_topicMessageKeyList(topic), expr, params, nrOfParams);
         u_topicRelease(_this, C_MM_RESERVATION_LOW);
     }
     if (filter != NULL) {

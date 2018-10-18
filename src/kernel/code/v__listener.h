@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,12 +23,6 @@
 #define V__LISTENER_H
 
 #include "v_listener.h"
-
-#define v_listenerLock(_this) \
-        v_observerLock(v_observer(_this))
-
-#define v_listenerUnlock(_this) \
-        v_observerUnlock(v_observer(_this))
 
 /**
  * Releases all resources claimed by the referenced listener object.

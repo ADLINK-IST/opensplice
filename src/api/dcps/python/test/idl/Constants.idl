@@ -1,0 +1,38 @@
+const long TWO = 1 + 11 - 10;
+
+enum Color {
+	RED,
+	GREEN,
+	BLUE
+};
+
+const char Cchar = 'a';
+const octet Coctet = 255;
+const short Cshort = 1000;
+const unsigned short Cushort = 2000;
+const long Clong = 3000;
+const unsigned long CULong = 4000; // this is trouble
+const long long Clonglong = 5000;
+const unsigned long long Culonglong = 6000;
+const float Cfloat = 3.14;
+const double Cdouble = 9.8e55;
+const boolean Cbool = True;
+const string Cstring = "Hello";
+const Color Cenum = GREEN;
+
+module basic {
+	const long SIX = 6;
+	module module_Constants {
+		const long FIVE = 5;
+		
+		const long ADDED = Clong + Cshort + CULong;
+
+		struct Constants_struct {
+			long long1;
+			long five_array[FIVE];
+			long six_array[SIX];
+			long two_array[TWO];
+		};
+		#pragma keylist Constants_struct long1
+	};
+};

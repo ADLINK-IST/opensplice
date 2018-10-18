@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -85,7 +86,7 @@ import org.opensplice.common.view.table.StatisticsTable;
  * - Resolve and display Entity status.
  * - Resolve and display Entity QoS.
  * - Allow user to change Entity QoS.
- * 
+ *
  * @date Oct 1, 2004
  */
 public class EntityInfoFrame extends JFrame implements ActionListener, ModelListener {
@@ -123,12 +124,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     private JButton getQoSButton = null;
     private JButton setQoSButton = null;
     private String type = null;
-    
+
 	/**
 	 * This is the default constructor that creates a frame that displays
-     * information about the supplied Entity. Information about changes 
+     * information about the supplied Entity. Information about changes
      * in the view are communicated to the supplied ModelRegister.
-     * 
+     *
      * @param _entity The Entity to display.
      * @param _register The ModelRegister where to communicate changes to.
 	 */
@@ -139,21 +140,21 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         entity = _entity;
 		initialize();
 	}
-    
+
     /**
      * Provides access to the Entity of the frame.
-     * 
+     *
      * @return The Entity of the frame.
      */
     public Entity getEntity(){
         return entity;
     }
-    
-    
+
+
     /**
-     * Sets the update delay of the frame. The selected tab determines which 
+     * Sets the update delay of the frame. The selected tab determines which
      * part of the information is being updated.
-     * 
+     *
      * @param millis The update delay in milliseconds. If the supplied delay
      *               is smaller then 0, automatic updating is disabled.
      */
@@ -176,38 +177,38 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             this.fireFrameChanged("update_delay");
         }
     }
-    
+
     /**
      * Changes the content type of the EntityInfoPane that is displaying the
      * data type of the Entity.
-     * 
+     *
      * @param contentType The content type to set. Supported content types are
      *                    'text/plain' and 'text/html'.
      * @return true if applying of the data type succeeded, false otherwise.
      */
     public boolean setDataTypeContentType(String contentType){
         boolean result = false;
-        
+
         if((dataTypeView != null) && (contentType != null)){
             result = dataTypeView.getEntityInfoPane().setViewType(contentType);
-            
+
         }
         type = contentType;
         selectContentType();
         return result;
     }
-    
+
     /**
-     * This method initializes attributeTable   
-     *  
+     * This method initializes attributeTable
+     *
      * @return Table that holds the attributes of the Entity and its current
-     *         values.  
-     */    
+     *         values.
+     */
     public JTable getAttributeTable() {
         if (attributeTable == null) {
             attributeTable = new JTable(new EntityAttributeTableModel(entity));
             attributeTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-            
+
             TableColumnModel cModel = attributeTable.getColumnModel();
             cModel.getColumn(0).setPreferredWidth(100);
             cModel.getColumn(0).setMaxWidth(100);
@@ -216,20 +217,20 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return attributeTable;
     }
-    
+
     /**
      * Handles events that are triggered by the update timer. The selected tab
      * will be updated and the timer restarted.
-     * 
+     *
      * @param e The event that occurred.
      */
     @Override
     public void actionPerformed(ActionEvent e) {
         boolean success;
-        
+
         if(e.getSource().equals(updateTimer)){
             success = false;
-                        
+
             if(!iconified && !closed){
                 if(tabbedPane.getSelectedComponent().equals(statusScrollPane)){
                     try {
@@ -250,7 +251,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 } else {
                     success = true;
                 }
-                
+
                 if(!success){
                     if(updateTimer != null){
                         if(updateTimer.isRunning()){
@@ -275,10 +276,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             }
         }
     }
-    
+
     /**
      * Updates the information in the selected tab.
-     * 
+     *
      * @param msg The update message.
      */
     @Override
@@ -286,13 +287,13 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         if(msg != null){
             if("tabbed_pane_update".equals(msg)){
                 Component selected = tabbedPane.getSelectedComponent();
-                
+
                 if(selected.equals(statusScrollPane)){
                     refreshItem.setEnabled(false);
                     if(statusTable == null){
                         setCursor(new Cursor(Cursor.WAIT_CURSOR));
                         setStatus("Initializing status pane...", true, true);
-                        
+
                         Runnable worker = new Runnable(){
                             @Override
                             public void run(){
@@ -307,16 +308,16 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                                 }
                             }
                         };
-                        SwingUtilities.invokeLater(worker);    
+                        SwingUtilities.invokeLater(worker);
                     }
                     refreshItem.setEnabled(true);
                 } else if(selected.equals(dataTypeScrollPane)){
                     refreshItem.setEnabled(false);
-                    
+
                     if(dataTypeView == null){
                         setCursor(new Cursor(Cursor.WAIT_CURSOR));
                         setStatus("Initializing data type pane...", true, true);
-                        
+
                         Runnable worker = new Runnable(){
                             @Override
                             public void run(){
@@ -329,11 +330,11 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     }
                 } else if(selected.equals(qosPanel)){
                     refreshItem.setEnabled(true);
-                    
+
                     if(qosTable == null){
                         setCursor(new Cursor(Cursor.WAIT_CURSOR));
                         setStatus("Initializing QoS pane...", true, true);
-                        
+
                         Runnable worker = new Runnable(){
                             @Override
                             public void run(){
@@ -354,11 +355,11 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     }
                 } else if(selected.equals(statisticsPane)){
                     refreshItem.setEnabled(true);
-                    
+
                     if(statisticsTable == null){
                         setCursor(new Cursor(Cursor.WAIT_CURSOR));
                         setStatus("Initializing Statistics pane...", true, true);
-                        
+
                         Runnable worker = new Runnable(){
                             @Override
                             public void run(){
@@ -382,7 +383,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 iconified = true;
             } else if("window_deiconified".equals(msg)){
                 iconified = false;
-                
+
                 if(updateTimer != null){
                     if(!updateTimer.isRunning()){
                         updateTimer.start();
@@ -396,15 +397,15 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             } else if("get_qos".equals(msg)){
                 getQoSButton.setEnabled(false);
                 setQoSButton.setEnabled(false);
-                
+
                 setCursor(new Cursor(Cursor.WAIT_CURSOR));
                 setStatus("Resolving QoS...", true, true);
-                
+
                 Runnable worker = new Runnable(){
                     @Override
                     public void run(){
                         boolean b = qosTable.update();
-                        
+
                         if(b){
                             setStatus("QoS resolved", false, false);
                             setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
@@ -421,10 +422,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             } else if("set_qos".equals(msg)){
                 getQoSButton.setEnabled(false);
                 setQoSButton.setEnabled(false);
-                
+
                 setCursor(new Cursor(Cursor.WAIT_CURSOR));
                 setStatus("Applying new QoS...", true, true);
-                
+
                 Runnable worker = new Runnable(){
                     @Override
                     public void run(){
@@ -439,13 +440,6 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                             setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                             getQoSButton.setEnabled(true);
                             setQoSButton.setEnabled(true);
-                            
-                            
-                            /*
-                            closed = true;
-                            fireFrameChanged("entity_freed");
-                            dispose();
-                            */
                         }
                     }
                 };
@@ -453,7 +447,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             } else if(msg.startsWith("view_")){
                 final String command = msg.substring(5);
                 setStatus("Changing data type representation to " + type + "...", true, true);
-                
+
                 Runnable worker = new Runnable(){
                     @Override
                     public void run(){
@@ -464,17 +458,17 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 SwingUtilities.invokeLater(worker);
             } else if("refresh".equals(msg)){
                 Component selected = tabbedPane.getSelectedComponent();
-                
+
                 if(selected.equals(statusScrollPane)){
                     refreshItem.setEnabled(false);
                     setCursor(new Cursor(Cursor.WAIT_CURSOR));
                     setStatus("Resolving Status...", true, true);
-                    
+
                     Runnable worker = new Runnable(){
                         @Override
                         public void run(){
                             boolean success = ((EntityStatusTableModel)statusTable.getModel()).update();
-                            
+
                             if(success){
                                 setStatus("Status resolved.", false, false);
                                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
@@ -492,12 +486,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     refreshItem.setEnabled(false);
                     setCursor(new Cursor(Cursor.WAIT_CURSOR));
                     setStatus("Resolving Statistics...", true, true);
-                    
+
                     Runnable worker = new Runnable(){
                         @Override
                         public void run(){
                             boolean success = statisticsTable.update();
-                            
+
                             if(success){
                                 setStatus("Statistics resolved.", false, false);
                                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
@@ -517,12 +511,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     refreshItem.setEnabled(false);
                     setCursor(new Cursor(Cursor.WAIT_CURSOR));
                     setStatus("Refreshing attributes...", true, true);
-                    
+
                     Runnable worker = new Runnable(){
                         @Override
                         public void run(){
                             boolean success = ((EntityAttributeTableModel)(getAttributeTable().getModel())).update();
-                            
+
                             if(success){
                                 setStatus("Attributes refreshed.", false, false);
                                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
@@ -548,31 +542,31 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             }
         }
     }
-    
+
     /**
      * Sets the supplied status in the status bar.
-     * 
+     *
      * @param msg The message to display.
      * @param persistent Whether or not the message should be displayed until
      *                   another message is set, or should be removed after an
      *                   amount of timer
      * @param busy Whether or not the status bar should display the progressbar
-     *             and set the progress to indeterminate mode. 
+     *             and set the progress to indeterminate mode.
      */
     public void setStatus(String msg, boolean persistent, boolean busy){
         statusPanel.setStatus(msg, persistent, busy);
     }
-    
+
     @Override
     public String toString(){
         String result = this.getTitle();
-        
+
         return result;
     }
-        
+
     /**
      * Notifies the ModelRegister about changes in the frame.
-     * 
+     *
      * @param description The description about what changed.
      */
     protected void fireFrameChanged(String description){
@@ -580,10 +574,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             register.pushUpdate("entity_frame_" + description);
         }
     }
-    
+
 	/**
 	 * This method initializes this
-	 * 
+	 *
 	 * @return void
 	 */
 	private void initialize() {
@@ -596,7 +590,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 	}
 	/**
 	 * This method initializes rootPanel
-	 * 
+	 *
 	 * @return The root panel of the frame.
 	 */
 	private JPanel getRootPanel() {
@@ -610,15 +604,15 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 	}
 
 	/**
-	 * This method initializes tabbedPane	
-	 * 	
-	 * @return The tabbed pane that holds all views on the attached Entity.	
-	 */    
+	 * This method initializes tabbedPane
+	 *
+	 * @return The tabbed pane that holds all views on the attached Entity.
+	 */
 	private JTabbedPane getTabbedPane() {
 		if (tabbedPane == null) {
 			tabbedPane = new JTabbedPane();
 			tabbedPane.addTab("Attributes", null, getAttributesScrollPane(), "Entity attributes");
-            
+
             if( (entity instanceof Topic) ||
                 (entity instanceof Subscriber) ||
                 (entity instanceof DataReader) ||
@@ -638,27 +632,27 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             {
                 tabbedPane.addTab("QoS", null, getQosPanel(), "Entity QoS policies");
             }
-            
+
             if( (entity instanceof Topic) ||
                 (entity instanceof DataReader) ||
-                (entity instanceof Queue) || 
+                (entity instanceof Queue) ||
                 (entity instanceof Query) ||
                 (entity instanceof Writer))
             {
                 tabbedPane.addTab("Data type", null, getDataTypeScrollPane(), "Data type");
             }
-            
+
             tabbedPane.addTab("Statistics", null, getStatisticsPane(), "Entity statistics");
-            
+
             tabbedPane.addChangeListener(controller);
 		}
 		return tabbedPane;
 	}
-    
+
     /**
-     * This method intializes dataTypeView. It is only displayed for Topic, Reader,
+     * This method initializes dataTypeView. It is only displayed for Topic, Reader,
      * or Writer entities and displays associated the data type of the entity.
-     * 
+     *
      * @return The EntityInfoTabView that displays the data type of the Topic, Writer, or Reader.
      */
     private EntityInfoTabView getDataTypeView(){
@@ -696,12 +690,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return dataTypeView;
     }
-    
+
 	/**
-	 * This method initializes attributesScrollPane	
-	 * 	
-	 * @return The pane that holds the attributesTable.	
-	 */    
+	 * This method initializes attributesScrollPane
+	 *
+	 * @return The pane that holds the attributesTable.
+	 */
 	private JScrollPane getAttributesScrollPane() {
 		if (attributesScrollPane == null) {
 			attributesScrollPane = new JScrollPane();
@@ -709,30 +703,29 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 		}
 		return attributesScrollPane;
 	}
-    
+
 	/**
-	 * This method initializes statusScrollPane	
-	 * 
-	 * @return Pane that holds the statusTable.	
-	 */    
+	 * This method initializes statusScrollPane
+	 *
+	 * @return Pane that holds the statusTable.
+	 */
 	private JScrollPane getStatusScrollPane() {
 		if (statusScrollPane == null) {
 			statusScrollPane = new JScrollPane();
-			//statusScrollPane.setViewportView(getStatusTable());
 		}
 		return statusScrollPane;
 	}
-    
+
 	/**
-	 * This method initializes statusTable	
-	 * 	
-	 * @return Table that holds the current status of the attached Entity.	
+	 * This method initializes statusTable
+	 *
+	 * @return Table that holds the current status of the attached Entity.
 	 * @throws CommonException
-	 */    
+	 */
 	private JTable getStatusTable() throws CommonException {
 		if (statusTable == null) {
             EntityStatusTableModel model = null;
-		    
+
             if(entity instanceof Partition){
                 model = new PartitionStatusTableModel((Partition)entity);
             } else if(entity instanceof Topic){
@@ -756,12 +749,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 		}
 		return statusTable;
 	}
-    
+
 	/**
-	 * This method initializes qosPanel	
-	 * 	
-	 * @return Currently an empty panel.	
-	 */    
+	 * This method initializes qosPanel
+	 *
+	 * @return Currently an empty panel.
+	 */
 	private JPanel getQosPanel() {
 		if (qosPanel == null) {
 			qosPanel = new JPanel();
@@ -771,30 +764,29 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 		}
 		return qosPanel;
 	}
-    
+
 	/**
-	 * This method initializes dataTypeScrollPane	
-	 * 	
-	 * @return Pane that holds the dataTypePane.	
-	 */    
+	 * This method initializes dataTypeScrollPane
+	 *
+	 * @return Pane that holds the dataTypePane.
+	 */
 	private JScrollPane getDataTypeScrollPane() {
 		if (dataTypeScrollPane == null) {
 			dataTypeScrollPane = new JScrollPane();
-			//dataTypeScrollPane.setViewportView(getDataTypePane());
 		}
 		return dataTypeScrollPane;
 	}
-    
+
     private StatusPanel getStatusPanel(){
         if(statusPanel == null){
             statusPanel = new StatusPanel(this.getWidth(), "", false, true);
         }
         return statusPanel;
     }
-    
+
     /**
      * Provides access to infoMenuBar.
-     * 
+     *
      * @return Returns the infoMenuBar.
      */
     private JMenuBar getInfoMenuBar() {
@@ -806,61 +798,61 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return infoMenuBar;
     }
-    
+
     private JMenu getFileMenu() {
         if(fileMenu == null) {
             fileMenu = new JMenu();
             fileMenu.setText("File");
             fileMenu.setMnemonic(java.awt.event.KeyEvent.VK_F);
-            
+
             fileMenu.add(getCloseItem());
         }
         return fileMenu;
     }
-    
+
     private JMenu getEditMenu() {
         if(editMenu == null) {
             editMenu = new JMenu();
             editMenu.setText("Edit");
             editMenu.setMnemonic(java.awt.event.KeyEvent.VK_E);
-            
+
             editMenu.add(this.getRefreshItem());
         }
         return editMenu;
     }
-    
+
     private JMenu getViewMenu() {
         if(viewMenu == null) {
             viewMenu = new JMenu();
             viewMenu.setText("View");
             viewMenu.setMnemonic(java.awt.event.KeyEvent.VK_V);
-            
+
             if( (entity instanceof Topic) ||
                 (entity instanceof DataReader) ||
-                (entity instanceof Queue) || 
+                (entity instanceof Queue) ||
                 (entity instanceof Query) ||
                 (entity instanceof Writer))
             {
                 ButtonGroup group = new ButtonGroup();
                 group.add(getContentHtmlItem());
                 group.add(getContentTextItem());
-                
+
                 JMenu viewDataTypeMenu = new JMenu();
                 viewDataTypeMenu.setText("Data type representation");
                 viewDataTypeMenu.add(getContentTextItem());
                 viewDataTypeMenu.add(getContentHtmlItem());
                 viewMenu.add(viewDataTypeMenu);
                 selectContentType();
-                
+
             }
-            
+
             if(parent != null){
                 viewMenu.add(getViewMainItem());
             }
         }
         return viewMenu;
     }
-    
+
     private JMenuItem getViewMainItem(){
         if(viewMainItem == null){
             viewMainItem = new JMenuItem();
@@ -874,7 +866,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     }
     /**
      * Provides access to closeItem.
-     * 
+     *
      * @return Returns the closeItem.
      */
     private JMenuItem getCloseItem() {
@@ -888,10 +880,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return closeItem;
     }
-    
+
     /**
      * Provides access to refreshStatusItem.
-     * 
+     *
      * @return Returns the refreshStatusItem.
      */
     private JMenuItem getRefreshItem() {
@@ -905,10 +897,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return refreshItem;
     }
-    
+
     /**
      * Provides access to buttonPanel.
-     * 
+     *
      * @return Returns the buttonPanel.
      */
     private JPanel getButtonPanel() {
@@ -925,7 +917,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     }
     /**
      * Provides access to getQoSButton.
-     * 
+     *
      * @return Returns the getQoSButton.
      */
     private JButton getGetQoSButton() {
@@ -945,7 +937,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     }
     /**
      * Provides access to setQoSButton.
-     * 
+     *
      * @return Returns the setQoSButton.
      */
     private JButton getSetQoSButton() {
@@ -963,17 +955,17 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return setQoSButton;
     }
- 
+
     private JScrollPane getQosScrollPane(){
         if(qosScrollPane == null){
             qosScrollPane = new JScrollPane();
         }
         return qosScrollPane;
     }
-    
+
     /**
      * Provides access to qosTable.
-     * 
+     *
      * @return Returns the qosTable.
      * @throws CommonException
      */
@@ -983,24 +975,24 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return qosTable;
     }
-    
+
     private JScrollPane getStatisticsPane() {
         if(statisticsPane == null){
             statisticsPane = new JScrollPane();
         }
         return statisticsPane;
     }
-    
+
     private StatisticsTable getStatisticsTable() throws CommonException {
         if(statisticsTable == null){
             statisticsTable = new StatisticsTable(entity, this);
         }
         return statisticsTable;
     }
-    
+
     /**
      * Provides access to contentHtmlItem.
-     * 
+     *
      * @return Returns the contentHtmlItem.
      */
     private JRadioButtonMenuItem getContentHtmlItem() {
@@ -1016,7 +1008,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     }
     /**
      * Provides access to contentTextItem.
-     * 
+     *
      * @return Returns the contentTextItem.
      */
     private JRadioButtonMenuItem getContentTextItem() {
@@ -1030,12 +1022,12 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         }
         return contentTextItem;
     }
-    
+
     private void selectContentType(){
         if(type == null){
             type = Config.getInstance().getProperty("data_type_content_type");
         }
-        
+
         if("text/plain".equals(type)){
             contentTextItem.setSelected(true);
             contentHtmlItem.setSelected(false);

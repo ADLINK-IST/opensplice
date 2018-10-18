@@ -1,0 +1,9 @@
+module DDS {
+    typedef sequence<octet> CDRBlob;
+
+    struct CDRSample {
+        CDRBlob blob;
+    };
+    
+#pragma keylist CDRSample
+};

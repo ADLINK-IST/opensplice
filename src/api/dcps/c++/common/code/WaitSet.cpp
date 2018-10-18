@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -248,8 +249,7 @@ DDS::WaitSet::wait(
             }
         }
     }
-
-    CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_TIMEOUT));
+    CPP_REPORT_FLUSH((result != DDS::RETCODE_ALREADY_DELETED) ? this : NULL, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_TIMEOUT));
 
     return result;
 }
@@ -512,8 +512,12 @@ DDS::WaitSet::trigger (
     if (result == DDS::RETCODE_OK) {
         uResult = u_waitsetNotify (uWaitset, cond);
         result = uResultToReturnCode (uResult);
-        CPP_REPORT(result, "Could not trigger WaitSet.");
+        if (result != DDS::RETCODE_OK) {
+            CPP_REPORT(result, "Could not trigger WaitSet.");
+        }
     }
+
+
 
     return result;
 }

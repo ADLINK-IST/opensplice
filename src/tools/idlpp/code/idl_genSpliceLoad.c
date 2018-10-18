@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,8 +39,8 @@
 /* The following IDL to metadata type mapping applies to all routines.
  *
  *  IDL type			splice-type	meta data
- *                               
- *  char			c_char		c_primitive->kind P_CHAR 
+ *
+ *  char			c_char		c_primitive->kind P_CHAR
  *  octet			c_octet		c_primitive->kind P_OCTET
  *  boolean			c_bool		c_primitive->kind P_BOOLEAN
  *  short			c_short		c_primitive->kind P_SHORT
@@ -133,7 +134,7 @@
 typedef enum {
     sc_base,
     sc_scope,
-    sc_struct 
+    sc_struct
 } sc_scoping;
 
 	/** Index for the member of a structure		*/
@@ -179,19 +180,19 @@ idl_valueFromLabelVal(
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
 		break;
 	    case V_SHORT:
-		snprintf (labelName, sizeof(labelName), "c_shortValue (%d)", 
+		snprintf (labelName, sizeof(labelName), "c_shortValue (%d)",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
 		break;
 	    case V_USHORT:
-		snprintf (labelName, sizeof(labelName), "c_ushortValue (%u)", 
+		snprintf (labelName, sizeof(labelName), "c_ushortValue (%u)",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
 		break;
 	    case V_LONG:
-		snprintf (labelName, sizeof(labelName), "c_longValue (%d)", 
+		snprintf (labelName, sizeof(labelName), "c_longValue (%d)",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
 		break;
 	    case V_ULONG:
-		snprintf (labelName, sizeof(labelName), "c_ulongValue (%u)", 
+		snprintf (labelName, sizeof(labelName), "c_ulongValue (%u)",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
 		break;
 	    case V_LONGLONG:
@@ -431,7 +432,7 @@ idl_structureOpen(
 
    @endverbatim
  *
- * The function finalizes the meta data definition of the structure 
+ * The function finalizes the meta data definition of the structure
  * by assigning the members, then finalizing the structure.
  *
  * The function then again finds the structure in the meta data.
@@ -716,7 +717,7 @@ idl_unionOpen(
    =>   };
    @endverbatim
  *
- * The function finalizes the meta data definition of the union 
+ * The function finalizes the meta data definition of the union
  * by assigning the union cases, then finalizing the union.
  *
  * The function then again finds the union in the meta data.
@@ -1042,7 +1043,7 @@ idl_enumerationOpen(
 
     return idl_explore;
 }
- 
+
 /** @brief callback function called on closure of an enumeration in the IDL input file.
  *
  * Generate code for the following IDL construct:
@@ -1054,7 +1055,7 @@ idl_enumerationOpen(
    =>   };
    @endverbatim
  *
- * The function finalizes the meta data definition of the enumeration 
+ * The function finalizes the meta data definition of the enumeration
  * by assigning the elements, then finalizing the enumeration.
  *
  * The function then again finds the enumeration in the meta data.
@@ -1198,9 +1199,10 @@ idl_arrayLoad(
                     sType = idl_scopeElementType(idl_scopeCur(idl_typeUserScope(idl_typeUser(arrayType))));
                     /* QAC EXPECT 3416; No side effect here */
                     if ((sType == idl_tStruct) || (sType == idl_tUnion)) {
-            /* If the bounded string is defined within a structure or union then load
-			   the structure or union metadata. The structure or union is the scope of
-			   the bounded string */
+                        /* If the bounded string is defined within a structure or union then load
+                          * the structure or union metadata. The structure or union is the scope of
+                          * the bounded string
+                          */
                         idl_fileOutPrintf(
                             idl_fileCur(),
                             "    tscope = __%s_%u__load (o)->definedIn;\n",
@@ -1208,7 +1210,8 @@ idl_arrayLoad(
                             idl_typeBasicMaxlen(idl_typeBasic(idl_typeArrayType(idl_typeArray(typeSpec)))));
           		    } else {
 			/* If the bounded string is defined within an other user type then load
-			   the user type metadata. The user type scope is the scope of the bounded string */
+                         * the user type metadata. The user type scope is the scope of the bounded string
+                         */
                         idl_fileOutPrintf(
                             idl_fileCur(),
                             "    tscope = __%s_%u__load (scope)->definedIn;\n",
@@ -1259,8 +1262,8 @@ idl_arrayLoad(
         }
         idl_printIndent(indent);
 	/* Resolve the subtype of the array based upon the determined scope of the subtype and set the
-	   arrays subType attribute
-	*/
+         * arrays subType attribute
+         */
         idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(%c)->subType = ResolveType(tscope,\"%s\");\n",
     	    IDL_INDEX_VAR+indent,
 	        idl_typeSpecName(arrayType));
@@ -1329,13 +1332,13 @@ idl_seqLoad(
     sType = idl_scopeElementType(idl_scopeCur(scope));
     if ((sType == idl_tStruct) || (sType == idl_tUnion)) {
 	/* The sequence is defined within a structure or union, therefor the
-           scope is the structure or union.
-	*/
+         * scope is the structure or union.
+         */
         scoping = sc_struct;
     } else {
 	/* The sequence is not defined within a structure or union, therefor the
-           scope is defined by the "scope" variable.
-	*/
+         * scope is defined by the "scope" variable.
+         */
         scoping = sc_scope;
     }
     /* QAC EXPECT 3416; No side effect here */
@@ -1369,8 +1372,8 @@ idl_seqLoad(
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeSpecType(idl_typeSpec(seqType)) == idl_tseq) {
 	    /* If the subtype of the sequence is a sequence then determine the scope of
-	       the subtype and resolve the type to set the subtype of the sequence
-	    */
+             * the subtype and resolve the type to set the subtype of the sequence
+             */
             idl_printIndent(indent);
     	    idl_fileOutPrintf(idl_fileCur(), "    tscope = %s;\n", scopeName[scoping]);
             idl_printIndent(indent);
@@ -1407,7 +1410,7 @@ idl_seqLoad(
             /* check for recursive single or multi level definition */
             scope_index = idl_scopeStackSize(scope) - 1;
             subType_defined = 0;
-            while ((scope_index >= 0) && 
+            while ((scope_index >= 0) &&
                    ((idl_scopeElementType(idl_scopeIndexed(scope,scope_index)) == idl_tStruct) ||
                    (idl_scopeElementType(idl_scopeIndexed(scope,scope_index)) == idl_tUnion))) {
                 /* QAC EXPECT 3416; No side effect here */
@@ -1439,7 +1442,7 @@ idl_seqLoad(
             }
             if (subType_defined == 0) {
                 idl_printIndent(indent);
-                if (((sType == idl_tStruct) || (sType == idl_tUnion)) && 
+                if (((sType == idl_tStruct) || (sType == idl_tUnion)) &&
                     idl_scopeEqual(scope, idl_typeUserScope(idl_typeUser(seqType))) == TRUE) {
                     idl_fileOutPrintf(
                         idl_fileCur(),
@@ -1570,8 +1573,8 @@ idl_typedefOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "    c_metaObject(o)->definedIn = scope;\n");
         idl_fileOutPrintf(idl_fileCur(), "    tscope = scope;\n");
 	/* Resolve the subtype of the type definition based on its scope and set the alias attribute
-	   of the type definition
-	*/
+         * of the type definition
+         */
         idl_fileOutPrintf(
             idl_fileCur(),
             "    c_typeDef(o)->alias = ResolveType(tscope,\"%s\");\n",
@@ -1608,7 +1611,7 @@ idl_typedefOpenClose(
         */
         idl_fileOutPrintf(idl_fileCur(), "    c_typeDef(o)->alias = ResolveType(tscope,\"%s\");\n",
 	    idl_typeFromTypeSpec(idl_typeSpec(idl_typeDefRefered(defSpec))));
-    } 
+    }
     /* Finalize the type definition */
     idl_fileOutPrintf(idl_fileCur(), "    c_metaFinalize(o);\n");
     idl_fileOutPrintf(idl_fileCur(), "    found = c_metaBind(scope,\"%s\",o);\n",name);
@@ -1692,7 +1695,7 @@ idl_getControl(
     return &idl_genSpliceLoadControl;
 }
 
-/** 
+/**
  * Specifies the callback table for the metadata generation functions.
  */
 static struct idl_program

@@ -1,7 +1,7 @@
 ##############################################################################
 # OpenSplice_IDLGEN(idlfilename)
 #
-# Macro to generate OpenSplice DDS sources from a given idl file with the 
+# Macro to generate Vortex OpenSplice sources from a given idl file with the 
 # data structures.
 # You must include the extension .idl in the name of the data file.
 #

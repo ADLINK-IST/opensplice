@@ -25,21 +25,20 @@ extern "C" {
 #define DDS_ERR_MOD_MASK   0x0000ff00
 #define DDS_ERR_MINOR_MASK 0x00ff0000
 
-/*
-  State is unchanged following a function call returning an error
-  other than UNSPECIFIED, OUT_OF_RESOURCES and ALREADY_DELETED.
-
-  Error handling functions. Three components to returned int status value.
-
-  1 - The DDS_ERR_xxx error number
-  2 - A module identifier
-  3 - A minor number
-
-  The minor number allows every place in the implementation code to
-  use a uniue minor code so errors can be traced exactly.
-
-  All functions return >= 0 on success, < 0 on error
-*/
+/* State is unchanged following a function call returning an error
+ * other than UNSPECIFIED, OUT_OF_RESOURCES and ALREADY_DELETED.
+ *
+ * Error handling functions. Three components to returned int status value.
+ *
+ * 1 - The DDS_ERR_xxx error number
+ * 2 - A module identifier
+ * 3 - A minor number
+ *
+ * The minor number allows every place in the implementation code to
+ * use a uniue minor code so errors can be traced exactly.
+ *
+ * All functions return >= 0 on success, < 0 on error
+ */
 /** @name Return codes
   @{**/
 #define DDS_RETCODE_OK                   0 /**< Success */

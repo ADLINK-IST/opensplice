@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -30,22 +31,22 @@ static c_char *idl_scopedSacSequenceTypeIdent (const idl_typeSpec typeSpec);
 /** @todo Correct comment */
 
 /* Return the scoped type specification where for the user types,
-   scopes are separated by "_" chracters. 
-   IDL strings (bounded and unbounded) are mapped on: c_string, other
-       basic types are mapped on corresponding splice types
-   IDL structures are identified by: struct <scoped-struct-name>
-   IDL unions are identified by: struct <scoped-union-name> becuase
-   the union mapping is:
-       struct <union-name> {
-           <tag-type> _d;
-	   union {
-		<union-case-specifications>
-	   } _u;
-	}
-    IDL enumerations are identified by: enum <scoped-enum-name>
-    IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_sequence
-*/
+ * scopes are separated by "_" chracters.
+ * IDL strings (bounded and unbounded) are mapped on: c_string, other
+ *      basic types are mapped on corresponding splice types
+ * IDL structures are identified by: struct <scoped-struct-name>
+ * IDL unions are identified by: struct <scoped-union-name> becuase
+ * the union mapping is:
+ *      struct <union-name> {
+ *              <tag-type> _d;
+ *              union {
+ *                      <union-case-specifications>
+ *              } _u;
+ *      }
+ * IDL enumerations are identified by: enum <scoped-enum-name>
+ * IDL typedefs are formed by the scoped type name
+ * IDL sequences are mapped on: c_sequence
+ */
 c_char *
 idl_scopedSacTypeIdent (
     const idl_typeSpec typeSpec)
@@ -79,123 +80,107 @@ idl_scopedSacTypeIdent (
 }
 
 /* Return the scoped actual type specification where for the user types,
-   scopes are separated by "_" chracters. 
-   IDL strings (bounded and unbounded) are mapped on: c_string, other
-       basic types are mapped on corresponding splice types
-   IDL structures are identified by: struct <scoped-struct-name>
-   IDL unions are identified by: struct <scoped-union-name> becuase
-   the union mapping is:
-       struct <union-name> {
-           <tag-type> _d;
-	   union {
-		<union-case-specifications>
-	   } _u;
-	}
-    IDL enumerations are identified by: enum <scoped-enum-name>
-    IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_sequence
-*/
+ * scopes are separated by "_" chracters.
+ * IDL strings (bounded and unbounded) are mapped on: c_string, other
+ *      basic types are mapped on corresponding splice types
+ * IDL structures are identified by: struct <scoped-struct-name>
+ * IDL unions are identified by: struct <scoped-union-name> becuase
+ * the union mapping is:
+ *      struct <union-name> {
+ *              <tag-type> _d;
+ *              union {
+ *                      <union-case-specifications>
+ *              } _u;
+ *      }
+ * IDL enumerations are identified by: enum <scoped-enum-name>
+ * IDL typedefs are formed by the scoped type name
+ * IDL sequences are mapped on: c_sequence
+ */
 static c_char *
 idl_scopedSacSequenceElementTypeIdent (
     const idl_typeSpec typeSpec)
 {
-    c_char scopedTypeIdent[256];
+    c_char *typeName;
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-	switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-	case idl_short:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_short");
-	    break;
-	case idl_ushort:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_unsigned_short");
-	    break;
-	case idl_long:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_long");
-	    break;
-	case idl_ulong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_unsigned_long");
-	    break;
-	case idl_longlong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_long_long");
-	    break;
-	case idl_ulonglong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_unsigned_long_long");
-	    break;
-	case idl_float:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_float");
-	    break;
-	case idl_double:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_double");
-	    break;
-	case idl_char:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_char");
-	    break;
-	case idl_string:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_string");
-	    break;
-	case idl_boolean:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_boolean");
-	    break;
-	case idl_octet:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "DDS_octet");
-	    break;
-	default:
-	   os_strncpy (scopedTypeIdent, "", sizeof(scopedTypeIdent));
-	}
+        switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
+        case idl_short:
+            typeName = os_strdup("DDS_short");
+            break;
+        case idl_ushort:
+            typeName = os_strdup("DDS_unsigned_short");
+            break;
+        case idl_long:
+            typeName = os_strdup("DDS_long");
+            break;
+        case idl_ulong:
+            typeName = os_strdup("DDS_unsigned_long");
+            break;
+        case idl_longlong:
+            typeName = os_strdup("DDS_long_long");
+            break;
+        case idl_ulonglong:
+            typeName = os_strdup("DDS_unsigned_long_long");
+            break;
+        case idl_float:
+            typeName = os_strdup("DDS_float");
+            break;
+        case idl_double:
+            typeName = os_strdup("DDS_double");
+            break;
+        case idl_char:
+            typeName = os_strdup("DDS_char");
+            break;
+        case idl_string:
+            typeName = os_strdup("DDS_string");
+            break;
+        case idl_boolean:
+            typeName = os_strdup("DDS_boolean");
+            break;
+        case idl_octet:
+            typeName = os_strdup("DDS_octet");
+            break;
+        default:
+            typeName = os_strdup("");
+        }
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
-	idl_typeSpecType(typeSpec) == idl_tunion ||
-	idl_typeSpecType(typeSpec) == idl_tenum) {
-	/* QAC EXPECT 3416; No unexpected side effects here */
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_sacTypeFromTypeSpec(idl_typeSpec(typeSpec)));
+            idl_typeSpecType(typeSpec) == idl_tunion ||
+            idl_typeSpecType(typeSpec) == idl_tenum) {
+        /* QAC EXPECT 3416; No unexpected side effects here */
+        typeName = idl_sacTypeFromTypeSpec(idl_typeSpec(typeSpec));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-	switch (idl_typeSpecType(idl_typeDefRefered (idl_typeDef(typeSpec)))) {
-	case idl_tarray:
-	case idl_tseq:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-		idl_sacTypeFromTypeSpec(typeSpec));
-	    break;
-	case idl_ttypedef:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	        idl_scopedSacSequenceTypeIdent(idl_typeDefRefered (idl_typeDef(typeSpec))));
-	    break;
-	default:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-		idl_sacTypeFromTypeSpec(idl_typeDefActual(idl_typeDef(typeSpec))));
-	}
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        typeName = idl_sacTypeFromTypeSpec(typeSpec);
+    /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_scopedSacSequenceTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec))));
+        typeName = idl_scopedSacSequenceTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec)));
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_sequenceIdent(idl_typeSeq(typeSpec)));
+        typeName = idl_sequenceIdent(idl_typeSeq(typeSpec));
     } else {
-	/* Do nothing, only to prevent dangling else-ifs QAC messages */
+        typeName = NULL;
     }
 
-    return os_strdup(scopedTypeIdent);
+    return typeName;
 }
 
 /* Return the scoped actual type specification where for the user types,
-   scopes are separated by "_" characters.
-   IDL strings (bounded and unbounded) are mapped on: c_string, other
-       basic types are mapped on corresponding splice types
-   IDL structures are identified by: struct <scoped-struct-name>
-   IDL unions are identified by: struct <scoped-union-name> because
-   the union mapping is:
-       struct <union-name> {
-           <tag-type> _d;
-	   union {
-		<union-case-specifications>
-	   } _u;
-	}
-    IDL enumerations are identified by: enum <scoped-enum-name>
-    IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_sequence
-*/
+ * scopes are separated by "_" characters.
+ * IDL strings (bounded and unbounded) are mapped on: c_string, other
+ *      basic types are mapped on corresponding splice types
+ * IDL structures are identified by: struct <scoped-struct-name>
+ * IDL unions are identified by: struct <scoped-union-name> because
+ * the union mapping is:
+ *      struct <union-name> {
+ *              <tag-type> _d;
+ *              union {
+ *                      <union-case-specifications>
+ *              } _u;
+ *      }
+ * IDL enumerations are identified by: enum <scoped-enum-name>
+ * IDL typedefs are formed by the scoped type name
+ * IDL sequences are mapped on: c_sequence
+ */
 static c_char *
 idl_scopedSacSequenceSubElementTypeIdent (
     const idl_typeSpec typeSpec)
@@ -281,7 +266,7 @@ idl_scopedSacSequenceSubElementTypeIdent (
 }
 
 /* Return the scoped actual type specification where for the user types,
-   scopes are separated by "_" chracters. 
+   scopes are separated by "_" chracters.
    IDL strings (bounded and unbounded) are mapped on: c_string, other
        basic types are mapped on corresponding splice types
    IDL structures are identified by: struct <scoped-struct-name>
@@ -305,77 +290,63 @@ idl_scopedSacSequenceTypeIdent (
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-	switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-	case idl_short:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "short");
-	    break;
-	case idl_ushort:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_short");
-	    break;
-	case idl_long:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "long");
-	    break;
-	case idl_ulong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_long");
-	    break;
-	case idl_longlong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "long_long");
-	    break;
-	case idl_ulonglong:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_long_long");
-	    break;
-	case idl_float:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "float");
-	    break;
-	case idl_double:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "double");
-	    break;
-	case idl_char:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "char");
-	    break;
-	case idl_string:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "string");
-	    break;
-	case idl_boolean:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "boolean");
-	    break;
-	case idl_octet:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "octet");
-	    break;
-	default:
-	   os_strncpy (scopedTypeIdent, "", sizeof(scopedTypeIdent));
-	}
-    } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
-	idl_typeSpecType(typeSpec) == idl_tunion ||
-	idl_typeSpecType(typeSpec) == idl_tenum) {
-	/* QAC EXPECT 3416; No unexpected side effects here */
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_sacTypeFromTypeSpec(idl_typeSpec(typeSpec)));
-	/* QAC EXPECT 3416; No unexpected side effects here */
-    } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-	switch (idl_typeSpecType(idl_typeDefRefered (idl_typeDef(typeSpec)))) {
-	case idl_tarray:
-	case idl_tseq:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-		idl_sacTypeFromTypeSpec(typeSpec));
-	    break;
-	case idl_ttypedef:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	        idl_scopedSacSequenceTypeIdent(idl_typeDefRefered (idl_typeDef(typeSpec))));
-	    break;
-	default:
-	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-		idl_sacTypeFromTypeSpec(idl_typeDefActual(idl_typeDef(typeSpec))));
-	}
-	/* QAC EXPECT 3416; No unexpected side effects here */
-    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_scopedSacSequenceTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec))));
-    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
-	    idl_sequenceIdent(idl_typeSeq(typeSpec)));
+        switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
+        case idl_short:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "short");
+            break;
+        case idl_ushort:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_short");
+            break;
+        case idl_long:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "long");
+            break;
+        case idl_ulong:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_long");
+            break;
+        case idl_longlong:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "long_long");
+            break;
+        case idl_ulonglong:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "unsigned_long_long");
+            break;
+        case idl_float:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "float");
+            break;
+        case idl_double:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "double");
+            break;
+        case idl_char:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "char");
+            break;
+        case idl_string:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "string");
+            break;
+        case idl_boolean:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "boolean");
+            break;
+        case idl_octet:
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "octet");
+            break;
+        default:
+            os_strncpy (scopedTypeIdent, "", sizeof(scopedTypeIdent));
+        }
     } else {
-	/* Do nothing, only to prevent dangling else-ifs QAC messages */
+        char *typeName = NULL;
+
+        if (idl_typeSpecType(typeSpec) == idl_tstruct ||
+                idl_typeSpecType(typeSpec) == idl_tunion ||
+                idl_typeSpecType(typeSpec) == idl_tenum ||
+                idl_typeSpecType(typeSpec) == idl_ttypedef) {
+            typeName = idl_sacTypeFromTypeSpec(idl_typeSpec(typeSpec));
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s", typeName);
+        } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
+            typeName = idl_scopedSacSequenceTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec)));
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s", typeName);
+        } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
+            typeName = idl_sequenceIdent(idl_typeSeq(typeSpec));
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s", typeName);
+        }
+        os_free(typeName);
     }
 
     return os_strdup(scopedTypeIdent);
@@ -575,7 +546,7 @@ idl_sequenceIdentScoped (
     }
 
     snprintf (&sequenceName[pos], len, "%s%s", "sequence_", sequenceType);
-
+    os_free(sequenceType);
     return sequenceName;
 }
 
@@ -599,13 +570,13 @@ idl_sequenceSupportFunctionsExist (
             /* If a type has a related key, that means that readers and
              * writers have been created, which also means that type
              * sequence support functions have already been created in
-             * the other context. */
+             * the other context.
+             */
             if (idl_keyDefIncludesType(idl_keyDefDefGet(), elementName)) {
                 exist = TRUE;
             }
 
-            /*
-             * We should search all scopes of all contexts to be sure that
+            /* We should search all scopes of all contexts to be sure that
              * no sequence support functions for this type are defined
              * anywhere within the hierarchy by means of an actual
              * 'sequence<Type>' definition in an idl file.

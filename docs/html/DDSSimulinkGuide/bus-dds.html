@@ -1,0 +1,379 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Simulink Bus to DDS Topic Mapping &mdash; The Vortex OpenSplice Simulink Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice Simulink Guide" href="index.html" />
+    <link rel="next" title="5. QoS Provider" href="qos_provider.html" />
+    <link rel="prev" title="3. Vortex DDS Blocks" href="blocks.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="blocks.html" title="3. Vortex DDS Blocks"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="simulink-bus-to-dds-topic-mapping">
+<span id="id1"></span><h1>4. Simulink Bus to DDS Topic Mapping<a class="headerlink" href="#simulink-bus-to-dds-topic-mapping" title="Permalink to this headline">¶</a></h1>
+<p>Simulink data is represented in buses whose types are not compatible with DDS topic data types.</p>
+<p>When using the Simulink Vortex DDS library, the user must create Simulink buses that will be mapped to DDS topic types.</p>
+<p>The Vortex DDS <strong>Reader</strong>, <strong>Writer</strong> and <strong>Topic</strong> blocks have block parameters that require a Simulink bus type.  On data writes, the Simulink bus types are converted to DDS topic types and on data reads, the DDS topic types are converted to Simulink bus types.</p>
+<p>The user can generate/create the Simulink bus definitions by either generating them from an IDL file, or by using the Simulink bus editor.</p>
+<div class="section" id="generate-simulink-bus-definitions-from-an-idl-file">
+<h2>4.1. Generate Simulink bus definitions from an IDL file<a class="headerlink" href="#generate-simulink-bus-definitions-from-an-idl-file" title="Permalink to this headline">¶</a></h2>
+<p>DDS Topic Types can be described in an IDL file.  The public Vortex.idlImportSl function can be called to generate Simulink bus definitions from an IDL file.</p>
+<p><strong>idlImportSl(IDLFILENAME,DICTIONARYFILE)</strong></p>
+<blockquote>
+<div><p>Given an IDLFILENAME, invokes the idlpp tool to generate a MATLAB script.
+This script is then used to create Simulink.Bus objects and import them into the specified data dictionary DICTIONARYFILE.
+The values are inserted into the &#8216;Design Data&#8217; section of the data dictionary.
+If the target data dictionary already contains definitions for the bus or enum names, they are overwritten.
+If idlpp returns non-zero, the function returns immediately with the error code.</p>
+<blockquote>
+<div><p>Input Arguments:</p>
+<p>IDLFILENAME       A character array with the value of the IDL file name to process.</p>
+<p>DICTIONARYFILE    A character array with the value of the data dictionary file name.</p>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Steps:</strong></p>
+<ol class="arabic">
+<li><p class="first">In the IDL file, ensure that any topic structures have the OSPL specific annotation <em>pragma keylist</em> defined.</p>
+<blockquote>
+<div><p>If you want a given IDL structure to serve as the topic type, the structure requires an OSPL specific annotation.
+The #pragma keylist &lt;data-type-name&gt; &lt;key&gt;* declaration should be defined after the structure declaration.</p>
+<p>IMPORTANT NOTE: The IDL file has to have a blank line after the pragma keylist declaration. (BUG)</p>
+<p>More information can be found at: <a href="#id2"><span class="problematic" id="id3">IDLPreProcGuide_</span></a></p>
+</div></blockquote>
+</li>
+<li><p class="first">In MATLAB, navigate to the directory that contains the IDL file.   Set this directory to be the MATLAB <strong>Current Folder</strong>.</p>
+</li>
+<li><p class="first">Call the idlImportSl function in the MATLAB command window.</p>
+<blockquote>
+<div><p>Example:
+&gt;&gt; Vortex.idlImportSl(&#8216;ShapeType.idl&#8217;, &#8216;shape.sldd&#8217;)</p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="overriding-default-values-for-vortex-idlimportsl">
+<h2>4.2. Overriding default values for Vortex.idlImportSl<a class="headerlink" href="#overriding-default-values-for-vortex-idlimportsl" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt> function makes a number assumptions when generating a Simulink data dictionary
+from your IDL file. These are documented in the following table:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="43%" />
+<col width="57%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>IDL Element</strong></th>
+<th class="head"><strong>Default Simulink Equivalent</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>struct name</td>
+<td>Unqualified bus name</td>
+</tr>
+<tr class="row-odd"><td>enum name</td>
+<td>Unqualified enum name</td>
+</tr>
+<tr class="row-even"><td>sequence&lt;<em>T</em>, <em>N</em>&gt; name</td>
+<td><em>seqN_T</em></td>
+</tr>
+<tr class="row-odd"><td>sequence&lt;<em>T</em>&gt; name</td>
+<td><em>seq_T</em></td>
+</tr>
+<tr class="row-even"><td>unbounded string</td>
+<td>maximum 256 characters</td>
+</tr>
+<tr class="row-odd"><td>unbounded sequence</td>
+<td>maximum 16 elements</td>
+</tr>
+</tbody>
+</table>
+<p>The following subsections illustrate how to override each of these defaults.</p>
+<div class="section" id="overriding-struct-and-enum-names">
+<h3>4.2.1. Overriding struct and enum names<a class="headerlink" href="#overriding-struct-and-enum-names" title="Permalink to this headline">¶</a></h3>
+<p>IDL allows you to describe a hierarchical set of namespaces for structs and enums by defining modules.
+Simulink, however, has a flat namespace for all busses and enumerations.
+This can present problems when the same unqualified struct name is used to two or more different modules.</p>
+<p>Consider the following idl:</p>
+<div class="highlight-python"><div class="highlight"><pre>module A {
+  enum Status {
+     INFO,
+     WARNING,
+     ERROR
+  };
+  struct Message {
+      long id;
+      Status status;
+  };
+  #pragma keylist Message id
+};
+
+module B {
+  enum Status {
+     SUCCESS,
+     FAILURE
+  };
+  struct Message {
+      long id;
+      Status status;
+  };
+  #pragma keylist Message id
+};
+</pre></div>
+</div>
+<p>In it, both <tt class="docutils literal"><span class="pre">Status</span></tt> and <tt class="docutils literal"><span class="pre">Message</span></tt> are used in the context of both module A and module B. When you run <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt> against it,
+you will receive the following messages:</p>
+<div class="highlight-python"><div class="highlight"><pre>Error: IDL element B::Status translates to the Simulink artifact named Status,
+which already corresponds to another IDL element A::Status.
+Edit the idl_defaults.properties file to assign unique Simulink names to each IDL element.
+
+Error: IDL element B::Message translates to the Simulink artifact named Message,
+which already corresponds to another IDL element A::Message.
+Edit the idl_defaults.properties file to assign unique Simulink names to each IDL element.
+</pre></div>
+</div>
+<p>To help you solve the problem, the IDL import function generates a <em>properties file</em> with the same name as the original IDL file, but with a <em>properties</em> extension.
+Here is the generated properties file:</p>
+<div class="highlight-python"><div class="highlight"><pre># &lt;initial comments removed for brevity&gt;
+#
+# To change the generated Simulink element, change one or more values in this file, and then
+# re-run the IDL import.
+
+A::Message#name = Message
+A::Status#name = Status
+B::Message#name = Message
+B::Status#name = Status
+</pre></div>
+</div>
+<p>The properties file shows the names the IDL import attempted to used. Each line is of the format:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;qualified-IDL-name&gt;#name = &lt;simulink-name&gt;
+</pre></div>
+</div>
+<p>You can modify any value after the equals sign (=), to create a unique name. Once you have finished
+editing the properties file, re-run the IDL import to update actual Simulink entities.</p>
+<p>Suppose we make the following changes to the properties file:</p>
+<div class="highlight-python"><div class="highlight"><pre>A::Message#name = MessageA
+A::Status#name = StatusA
+B::Message#name = Message
+B::Status#name = Status
+</pre></div>
+</div>
+<p>On re-running <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt>, the generated Simulink data dictionary would have contents as seen in the figure below.</p>
+<div class="figure">
+<img alt="DDS" src="_images/linuxIDLPP_SLDD_ChangedNames.png" />
+<p class="caption"><em>View of generated Simulink Data Dictionary, showing renamed busses and enumerations</em>.</p>
+</div>
+</div>
+<div class="section" id="changing-unbound-string-maximum-sizes">
+<h3>4.2.2. Changing unbound string maximum sizes<a class="headerlink" href="#changing-unbound-string-maximum-sizes" title="Permalink to this headline">¶</a></h3>
+<p>Although IDL unbound strings can be of any length, in Simulink they are mapped to fixed length arrays of int8.
+The default length the <tt class="docutils literal"><span class="pre">Vortex.idlImportSl</span></tt> assigns to such arrays is 256 characters.
+You can change this default value, per string, using the generated properties file.</p>
+<p>Suppose we modify A::Message to contain a string field:</p>
+<div class="highlight-python"><div class="highlight"><pre>module A {
+    enum Status {
+       INFO,
+       WARNING,
+       ERROR
+    };
+    struct Message {
+        long id;
+        Status status;
+        string body;
+    };
+    #pragma keylist Message id
+};
+</pre></div>
+</div>
+<p>On running the IDL import, the properties file would be updated to show a new line:</p>
+<div class="highlight-python"><div class="highlight"><pre>A::Message.body#stringMax = 256
+</pre></div>
+</div>
+<p>Changes the value to something new (say 128), and rerun the IDL import to update the generated Simulink bus.</p>
+</div>
+<div class="section" id="changing-sequence-attributes">
+<h3>4.2.3. Changing sequence attributes<a class="headerlink" href="#changing-sequence-attributes" title="Permalink to this headline">¶</a></h3>
+<p>IDL import generates a simulink bus for each IDL sequence discovered. For an unbound sequence, the default
+name for such sequences is <em>seq_T</em>, where <em>T</em> is the type of elements in the sequence.
+For bounded sequences, the default sequence name is <em>seqN_T</em>, where <em>N</em> is the declared upper bound of the sequence.</p>
+<p>The following IDL enhances our example IDL to use a sequence of string field for the body attribute:</p>
+<div class="highlight-python"><div class="highlight"><pre>module A {
+    enum Status {
+       INFO,
+       WARNING,
+       ERROR
+    };
+    struct Message {
+        long id;
+        Status status;
+        sequence&lt;string&gt; body;
+    };
+    #pragma keylist Message id
+};
+</pre></div>
+</div>
+<p>On running IDL import, the generated property file now contains the following lines:</p>
+<div class="highlight-python"><div class="highlight"><pre>A::Message.seq_string#name = seq_string
+A::Message.seq_string#seqMax = 16
+A::Message.seq_string#stringMax = 256
+</pre></div>
+</div>
+<p>You can edit the value of <tt class="docutils literal"><span class="pre">A::Message.seq_string#name</span></tt> to change the name of the generated Simulink bus representing the sequences.
+You can change the maximum number of elements stored in the Simulink representation of the sequence by editing <tt class="docutils literal"><span class="pre">A::Message.seq_string#seqMax</span></tt>.
+Finally, because the type of elements in this sequence are unbounded strings, you can also change the maximum size of each string in the sequence (<tt class="docutils literal"><span class="pre">A::Message.seq_string#stringMax</span></tt>).</p>
+</div>
+</div>
+<div class="section" id="add-simulink-bus-definitions-using-bus-editor">
+<h2>4.3. Add Simulink bus definitions using bus editor<a class="headerlink" href="#add-simulink-bus-definitions-using-bus-editor" title="Permalink to this headline">¶</a></h2>
+<p>Users can also model the Simulink buses using the Simulink bus editor.</p>
+<p>Please see <a class="reference internal" href="tutorial.html#tutorial"><em>Tutorial</em></a> for an example with detailed steps.</p>
+</div>
+<div class="section" id="bus-definition-limitations">
+<h2>4.4. Bus definition limitations<a class="headerlink" href="#bus-definition-limitations" title="Permalink to this headline">¶</a></h2>
+<p>The DDS Simulink integration has some limitations.  Provided below is a table of unsupported types.
+Some of these bus definition limitations will be removed in later release(s).</p>
+<p>Please refer to <a class="reference internal" href="bus_to_dds_mapping.html#appendix-a"><em>Appendix A</em></a> for more detailed implementation details.</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Unsupported Simulink Types</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>long long</td>
+</tr>
+<tr class="row-odd"><td>unsigned long long</td>
+</tr>
+<tr class="row-even"><td>wchar</td>
+</tr>
+<tr class="row-odd"><td>wstring</td>
+</tr>
+<tr class="row-even"><td>any</td>
+</tr>
+<tr class="row-odd"><td>long double</td>
+</tr>
+<tr class="row-even"><td>union</td>
+</tr>
+<tr class="row-odd"><td>inheritance</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>See also IDL PreProcessor Guide chapter Keys.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Simulink Bus to DDS Topic Mapping</a><ul>
+<li><a class="reference internal" href="#generate-simulink-bus-definitions-from-an-idl-file">4.1. Generate Simulink bus definitions from an IDL file</a></li>
+<li><a class="reference internal" href="#overriding-default-values-for-vortex-idlimportsl">4.2. Overriding default values for Vortex.idlImportSl</a><ul>
+<li><a class="reference internal" href="#overriding-struct-and-enum-names">4.2.1. Overriding struct and enum names</a></li>
+<li><a class="reference internal" href="#changing-unbound-string-maximum-sizes">4.2.2. Changing unbound string maximum sizes</a></li>
+<li><a class="reference internal" href="#changing-sequence-attributes">4.2.3. Changing sequence attributes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#add-simulink-bus-definitions-using-bus-editor">4.3. Add Simulink bus definitions using bus editor</a></li>
+<li><a class="reference internal" href="#bus-definition-limitations">4.4. Bus definition limitations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="blocks.html"
+                        title="previous chapter">3. Vortex DDS Blocks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="next chapter">5. QoS Provider</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bus-dds.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="blocks.html" title="3. Vortex DDS Blocks"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Simulink Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

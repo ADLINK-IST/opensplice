@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@ public class ConditionBase extends ObjectImpl {
     @Override
     protected int deinit() { return super.deinit(); }
 
-	public class ConditionBaseImpl extends DDS._ConditionLocalBase {
+	public static class ConditionBaseImpl extends DDS._ConditionLocalBase {
         private static final long serialVersionUID = 4977422964139406256L;
 
         /* condition operations */
@@ -33,16 +34,16 @@ public class ConditionBase extends ObjectImpl {
             return false;
         }
 	}
-	
+
 	private DDS._ConditionLocalBase base;
-	
+
 	public ConditionBase() {
 		base = new ConditionBaseImpl();
 	}
-	
+
     @Override
     public String[] _ids() {
 		return base._ids();
 	}
-	
+
 }

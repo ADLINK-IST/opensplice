@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -47,6 +48,9 @@
 #include "os_signalHandler.h"
 #include "sr_componentInfo.h"
 #include "ut_thread.h"
+#ifdef OSPL_ENTRY_OVERRIDE
+#include "ospl_entry_override.h"
+#endif
 
 #ifdef OSPL_ENV_SHMT
 #include <dlfcn.h>
@@ -83,10 +87,6 @@ C_STRUCT(spliced)
     ut_threads                  threads;
     s_threadsMonitor            threadsMonitor;
 };
-
-/**************************************************************
- * Private functions
- **************************************************************/
 
 static int
 argumentsCheck(
@@ -148,7 +148,8 @@ leaseRenewThread(
     self = ut_threadLookupSelf(_this->threads);
 
     /* Set the previous renew-time to maximum value that can be passed to
-     * os_timeMDiff(...), so no lag is reported for the first lease renewal. */
+     * os_timeMDiff(...), so no lag is reported for the first lease renewal.
+     */
     prevRenewed = OS_TIMEM_INFINITE;
 
     do {
@@ -170,20 +171,19 @@ leaseRenewThread(
                         OS_DURATION_GET_SECONDS(lag), OS_DURATION_GET_NANOSECONDS(lag));
         }
         /* Terminate flag is also accessed outside the mutex lock. This is no problem,
-         * protection guarantees no wait entry while setting the flag. */
+         * protection guarantees no wait entry while setting the flag.
+         */
         os_mutexLock(&_this->terminate.mtx);
         if ((flag = _this->terminate.flag) == SPLICED_EXIT_CODE_CONTINUE) {
-            ut_condTimedWait(self, &_this->terminate.cond, &_this->terminate.mtx, _this->config->leaseRenewalPeriod);
+            (void)ut_condTimedWait(self, &_this->terminate.cond, &_this->terminate.mtx, _this->config->leaseRenewalPeriod);
         }
         os_mutexUnlock(&_this->terminate.mtx);
     } while ((flag == SPLICED_EXIT_CODE_CONTINUE) && (result == U_RESULT_OK));
 
-    {
-        result = u_serviceRenewLease(u_service(_this->service), 300*OS_DURATION_SECOND);
-        if (result != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
-                "Failed to update service lease");
-        }
+    result = u_serviceRenewLease(u_service(_this->service), 300*OS_DURATION_SECOND);
+    if (result != U_RESULT_OK) {
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+            "Failed to update service lease");
     }
 
     return NULL;
@@ -264,10 +264,13 @@ startHeartbeatManager(
     return started;
 }
 
-static void
+static os_boolean
 stopHeartbeatManager(
-     spliced _this)
+    spliced _this)
 {
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
     v_leaseManager lm;
 
     u_splicedStopHeartbeat(_this->service);
@@ -276,11 +279,24 @@ stopHeartbeatManager(
     if (lm != NULL) {
         v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
         if (_this->heartbeatManager != NULL) {
-           ut_threadWaitExit(_this->heartbeatManager, NULL);
+            config = splicedGetConfiguration(_this);
+            osr = ut_threadTimedWaitExit(_this->heartbeatManager, config->serviceTerminatePeriod, NULL);
+            if (osr == os_resultSuccess) {
+                OS_REPORT(OS_ERROR, OS_FUNCTION, 0,
+                    "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                    ut_threadGetName(_this->heartbeatManager),
+                    (os_address)os_threadIdToInteger(ut_threadGetId(_this->heartbeatManager)),
+                    os_resultImage(osr));
+                result = OS_FALSE;
+            }
         }
-        c_free(lm);
+        if (result) {
+            c_free(lm);
+        }
     }
     ut_threadAwake(ut_threadLookupSelf(_this->threads));
+
+    return result;
 }
 
 /* The function below is intended to retrieve the federation
@@ -341,7 +357,7 @@ durabilityClientStart(spliced _this)
                             _this->service,
                             _this->config->durablePolicies,
                             requestPartition,
-                            "clientDurabilityPartition",        /* LH: Global partition, currently not used */
+                            "clientDurabilityPartition",
                             privatePartition);
 
     os_free(requestPartition);
@@ -370,21 +386,35 @@ durabilityClientStart(spliced _this)
     return (_this->durabilityClient != NULL);
 }
 
-static void
+static os_boolean
 durabilityClientStop(spliced _this)
 {
-    u_result u_res;
+    os_boolean result = OS_TRUE;
+    s_configuration config;
+    os_result osr;
+    u_result ures;
 
     if (_this->durabilityClient != NULL) {
-        u_res = u_splicedDurabilityClientTerminate(_this->service);
-        if (u_res == U_RESULT_OK) {
-            (void)ut_threadWaitExit(_this->durabilityClient, NULL);
+        ures = u_splicedDurabilityClientTerminate(_this->service);
+        if (ures == U_RESULT_OK) {
+            config = splicedGetConfiguration(_this);
+            osr = ut_threadTimedWaitExit(_this->durabilityClient, config->serviceTerminatePeriod, NULL);
+            if (osr != os_resultSuccess) {
+                OS_REPORT(OS_ERROR, OS_FUNCTION, osr,
+                    "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+                    ut_threadGetName(_this->durabilityClient),
+                    (os_address)os_threadIdToInteger(ut_threadGetId(_this->durabilityClient)),
+                    os_resultImage(osr));
+                result = OS_FALSE;
+            }
         } else {
             OS_REPORT(OS_WARNING, "spliced::durabilityClientStop", 0,
                       "Failed to terminate durability client");
         }
     }
     ut_threadAwake(ut_threadLookupSelf(_this->threads));
+
+    return result;
 }
 
 const os_char*
@@ -401,16 +431,19 @@ splicedGetDomainName(
 static os_result
 exitRequestHandler(
     os_callbackArg ignore,
+    void *callingThreadContext,
     void * arg)
 {
     struct terminate *terminate;
 
+    OS_UNUSED_ARG(callingThreadContext);
     OS_UNUSED_ARG(ignore);
 
     terminate = (struct terminate*) arg;
 
     /* The os_callbackArg can be ignored, because setting the below flag will
-     * cause proper exit of the spliced. */
+     * cause proper exit of the spliced.
+     */
     os_mutexLock(&terminate->mtx);
     terminate->flag = SPLICED_EXIT_CODE_OK;
     os_condBroadcast(&terminate->cond);
@@ -560,8 +593,8 @@ deployLibrary(
     os_libraryAttrInit(&libraryAttr);
 
     /* Applications can have their library overriden if the user
-     * specifies the library attribute */
-
+     * specifies the library attribute
+     */
     if (!info->isService && info->library && strlen(info->library) > 0)
     {
         libraryName = info->library;
@@ -580,7 +613,8 @@ deployLibrary(
         {
             /* Derive entry point name from Command.  When deploying a service
              * we use the "ospl_" prefix as we have full control over the
-             * names of these libraries */
+             * names of these libraries
+             */
             entryPoint = os_malloc (sizeof (char*) * (strlen(info->command) + 6));
             sprintf (entryPoint, "ospl_%s", info->command);
         }
@@ -620,7 +654,8 @@ deployLibrary(
             {
                 info->threadId = id;
                 /* Don't believe that a wait/sleep is required here.
-                 * historically there was one */
+                 * historically there was one
+                 */
             }
         } else {
             result = os_resultFail;
@@ -672,11 +707,10 @@ startServices(
     }
 #endif
 
-    /*
-    In case we haven't logged anything yet we call these methods now
-    before we start any other domain services
-    to (potentially) remove the previous versions of the files
-    */
+    /* In case we haven't logged anything yet we call these methods now
+     * before we start any other domain services
+     * to (potentially) remove the previous versions of the files
+     */
     os_free(os_reportGetInfoFileName());
     os_free(os_reportGetErrorFileName());
 
@@ -834,9 +868,6 @@ startApplications(
     }
 }
 
-/**************************************************************
- * configuration
- **************************************************************/
 static void
 getSingleProcessValue(
     spliced _this,
@@ -971,9 +1002,6 @@ readConfiguration(
     }
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 s_configuration
 splicedGetConfiguration(
     spliced spliceDaemon)
@@ -1160,33 +1188,6 @@ splicedGetServiceInfo(
     return ci;
 }
 
-#if 0
-static c_bool
-deleteContainedEntitiesForApplParticipants(
-    u_participant participant,
-    c_voidp arg)
-{
-    u_result result;
-
-    assert(participant);
-
-    OS_UNUSED_ARG(arg);
-
-    if(u_objectKind(u_object(participant)) != U_SERVICE) {
-        result = u_participantDeleteContainedEntities(participant);
-        if(result != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
-                    "An error occurred during termination. Unable to delete "
-                    "contained entities of participant '0x%x'; "
-                    "u_participantDeleteContainedEntities(...) returned %s.",
-                    participant, os_resultImage(result));
-        } /* when this fails, continue with the next participant */
-    }
-    return TRUE;
-}
-#endif
-
-
 static void
 waitForServices(
     spliced _this)
@@ -1209,10 +1210,8 @@ waitForServices(
         stopTime = os_timeMAdd(curTime, _this->config->serviceTerminatePeriod);
         terminateCount = 0;
 
-        ut_threadAsleep(self, (os_uint32)OS_DURATION_GET_SECONDS(_this->config->serviceTerminatePeriod));
         do {
-            /* Wait for services to reach final state TERMINATED.
-             */
+            /* Wait for services to reach final state TERMINATED. */
             names = u_serviceManagerGetServices(_this->serviceManager, STATE_TERMINATED);
             name = c_iterTakeFirst(names);
             while (name != NULL) {
@@ -1244,11 +1243,10 @@ waitForServices(
             curTime = os_timeMGet();
             if( (os_timeMCompare(curTime, stopTime) == OS_LESS) &&
                 (terminateCount < _this->nrKnownServices)) {
-                os_sleep(pollDelay);
+                ut_sleep(self, pollDelay);
             }
             curTime = os_timeMGet();
         } while ((os_timeMCompare(curTime, stopTime) == OS_LESS) && (terminateCount < (_this->nrKnownServices - _this->nrTerminatedServices)));
-        ut_threadAwake(self);
     }
 }
 
@@ -1268,6 +1266,7 @@ killServices(
                 OS_REPORT(OS_WARNING, OSRPT_CNTXT_SPLICED,
                           0, "Service '%s' did not terminate within serviceTerminatePeriod, thread will be forcefully destroyed.",
                           _this->knownServices[j]->name);
+                count++;
             }
         }
     } else {
@@ -1397,10 +1396,7 @@ setState(
     return ok;
 }
 
-/**************************************************************
- * Main
- **************************************************************/
-OPENSPLICE_ENTRYPOINT (ospl_spliced)
+OPENSPLICE_SERVICE_ENTRYPOINT (ospl_spliced, spliced)
 {
     os_sharedHandle shm = NULL;
     spliced _this;
@@ -1410,6 +1406,8 @@ OPENSPLICE_ENTRYPOINT (ospl_spliced)
     u_result uresult;
     ut_thread self;
     os_signalHandlerExitRequestHandle erh = os_signalHandlerExitRequestHandleNil;
+    os_boolean result = OS_TRUE;
+    os_uint32 runCount = 0;
 
     /* Set the flag in the user layer that spliced is running in this process.
      * For a hybrid multi-domain SHM and SP deployment this is not OK. */
@@ -1505,7 +1503,7 @@ OPENSPLICE_ENTRYPOINT (ospl_spliced)
 
     if(!_this->isSingleProcess){
 #ifndef INTEGRITY
-        erh = os_signalHandlerRegisterExitRequestCallback(exitRequestHandler, &_this->terminate);
+        erh = os_signalHandlerRegisterExitRequestCallback(exitRequestHandler, NULL, NULL, NULL, &_this->terminate);
 #endif
         if ((_this->shmMonitor = s_shmMonitorNew(_this)) == NULL) {
             /* Error reported by s_shmMonitorNew(...). */
@@ -1587,12 +1585,20 @@ OPENSPLICE_ENTRYPOINT (ospl_spliced)
 
     /* Start applications specified in XML on a best effort basis. Note
      * this will only succeed if this is a SingleProcess configuration,
-     * and leave warning messages otherwise. */
+     * and leave warning messages otherwise.
+     */
     startApplications(_this);
+
 
     /**************************************************************************/
     /*                            RUNNING PHASE                               */
     /**************************************************************************/
+    /* Set thread monitor interval to configured value. It starts with an interval
+    ** of 60 seconds as sometimes startin up takes a while (e.g. when Valgrind is used
+    ** As all threads are started now, ajust polling time to respone quicker on
+    ** a hanging thread
+    */
+    s_threadsMonitorSetInterval(_this);
     os_mutexLock(&_this->terminate.mtx);
     while (_this->terminate.flag == SPLICED_EXIT_CODE_CONTINUE) {
         (void)ut_condWait(self, &_this->terminate.cond, &_this->terminate.mtx);
@@ -1618,62 +1624,117 @@ OPENSPLICE_ENTRYPOINT (ospl_spliced)
 err_startServices:
     assert(splicedGetTerminateFlag(_this) != SPLICED_EXIT_CODE_CONTINUE);
     setState(_this, STATE_TERMINATING);
-    if(stopServices(_this, OS_TRUE) > 0) {
+    runCount = stopServices(_this, OS_TRUE);
+    if (runCount > 0) {
         shm = sharedMemoryHandle(_this);
+        /* not all services terminated successfully. if this occurs in single
+         * process mode, do not cleanup to avoid threads reading or writing
+         * corrupt memory. instead report to the application that it failed so
+         * that it can cleanup it's resources and abort.
+         */
+        if(_this->isSingleProcess){
+            goto fatal_svcsNok;
+        }
     }
+
 err_changeStateOperational:
     assert(splicedGetTerminateFlag(_this) != SPLICED_EXIT_CODE_CONTINUE);
-    (void) ut_threadWaitExit(lrt, NULL);
+    osresult = ut_threadTimedWaitExit(lrt, _this->config->serviceTerminatePeriod, NULL);
+    if (osresult != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, OS_FUNCTION, osresult,
+            "Failed to join thread \"%s\":0x%" PA_PRIxADDR " (%s)",
+            ut_threadGetName(lrt),
+            (os_address)os_threadIdToInteger(ut_threadGetId(lrt)),
+            os_resultImage(osresult));
+        result = OS_FALSE;
+    }
     setState(_this, STATE_TERMINATING);
 err_startLeaseRenewThread:
-    durabilityClientStop(_this);
+    if (result) {
+        durabilityClientStop(_this);
+    }
 err_startDurabilityClient:
-    stopHeartbeatManager(_this);
+    if (result) {
+        result = stopHeartbeatManager(_this);
+    }
 err_startHeartbeatManager:
-    serviceMonitorStop(_this->serviceMon);
-    serviceMonitorFree(_this->serviceMon);
+    if (result) {
+        serviceMonitorStop(_this->serviceMon);
+        serviceMonitorFree(_this->serviceMon);
+    }
 err_serviceMonitorNew:
     u_splicedPrepareTermination(_this->service);
-    s_garbageCollectorFree(_this->gc);
+    if (result) {
+        result = s_garbageCollectorFree(_this->gc);
+    }
 err_garbageCollectorNew:
     u_splicedPrepareTermination(_this->service);
-    s_kernelManagerFree(_this->km);
+    if (result) {
+        result = s_kernelManagerFree(_this->km);
+    }
 err_kernelManagerNew:
-    u_objectFree(_this->serviceManager);
+    if (result) {
+        u_objectFree(_this->serviceManager);
+    }
 err_userviceManagerNew:
-    s_shmMonitorFree(_this->shmMonitor);
+    if (result) {
+        result = s_shmMonitorFree(_this->shmMonitor);
+    }
 err_shmMonitor:
-    splicedKnownServicesFree(_this);
-    splicedApplicationsFree(_this);
+    if (runCount == 0) {
+        splicedKnownServicesFree(_this);
+        splicedApplicationsFree(_this);
+    }
 err_changeStateInitializing:
     setState(_this, STATE_TERMINATED);
     u_splicedSetInProcess(FALSE);
     os_signalHandlerUnregisterExitRequestCallback(erh);
-    u_objectFree(_this->service);
+    if (result) {
+        u_objectFree(_this->service);
+    }
     if(shm){
         /* Normally SHM is expected to be gone if spliced terminates normally.
          * If however one of the services was killed during shutdown, we try a
-         * little harder to wipe the traces. */
+         * little harder to wipe the traces.
+         */
         forcedShmDestroy(shm);
     }
 err_usplicedNew:
-    os_free(_this->cfg_handle.uri);
+    if (result) {
+        os_free(_this->cfg_handle.uri);
+    }
 err_nameOrUri:
-    s_threadsMonitorFree(_this->threadsMonitor);
+    if (result) {
+        result = s_threadsMonitorFree(_this->threadsMonitor);
+    }
 err_threadsMonitor:
-    ut_threadsFree(_this->threads);
+    if (result) {
+        ut_threadsFree(_this->threads);
+    } else {
+        ut_thread self = ut_threadLookupSelf(_this->threads);
+        ut_threadAsleep(self, UT_SLEEP_INDEFINITELY);
+    }
 err_threadsManager:
-    s_configurationFree(_this->config);
+    if (result) {
+        s_configurationFree(_this->config);
+    }
 err_configurationNew:
     assert(splicedGetTerminateFlag(_this) != SPLICED_EXIT_CODE_CONTINUE);
     retCode = splicedGetTerminateFlag(_this);
-    os_condDestroy(&_this->terminate.cond);
+    if (result) {
+        os_condDestroy(&_this->terminate.cond);
+    }
 err_condInit:
-    os_mutexDestroy(&_this->terminate.mtx);
+    if (result) {
+        os_mutexDestroy(&_this->terminate.mtx);
+    }
 err_mutexInit:
-    os_free(_this);
+    if (result) {
+        os_free(_this);
+    }
     /* No explicit undo for u_userInitialize(). */
 err_userInitialize:
+
     return retCode;
 
 
@@ -1682,12 +1743,18 @@ err_userInitialize:
     /**************************************************************************/
 fatal_shmNok:
     /* Resources are leaked in this case */
-    if(stopServices(_this, OS_FALSE) > 0 ){
+    if(stopServices(_this, OS_FALSE) > 0){
         shm =  sharedMemoryHandle(_this);
-        forcedShmDestroy(shm);
+        if (shm) {
+            forcedShmDestroy(shm);
+        }
     }
     retCode = splicedGetTerminateFlag(_this);
 
+    return retCode;
+
+fatal_svcsNok: /* one or more service threads did not stop */
+    retCode = SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR;
     return retCode;
 }
 

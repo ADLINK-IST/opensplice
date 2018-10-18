@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -168,121 +169,6 @@ v_messageQos_new(
 
     return v_messageQos_from_wqos_new(writer->qos, writer->msgQosType, writer->resend._d, writer->coherent_access, writer->ordered_access);
 }
-
-
-#if 0
-v_messageQos
-v_messageQos_new(
-    v_writer writer)
-{
-    v_messageQos _this;
-    v_writerQos wqos;
-    c_base base;
-    c_ulong offset    = 6, /* byte0 + byte1 + transport_priority */
-    strength_offset   = 0,
-    latency_offset    = 0,
-    deadline_offset   = 0,
-    liveliness_offset = 0,
-    lifespan_offset   = 0;
-
-    c_octet byte0, byte1;
-
-    c_octet *dst, *src;
-
-    assert(C_TYPECHECK(writer,v_writer));
-
-    wqos = writer->qos;
-    base = c_getBase(writer);
-
-    if (writer->msgQosType == NULL) {
-        writer->msgQosType = c_metaArrayTypeNew(c_metaObject(base),
-                                  "C_ARRAY<c_octet>",
-                                  c_octet_t(base),
-                                  0);
-    }
-    byte0 = (c_octet) (_LSHIFT_(wqos->reliability.v.kind, MQ_BYTE0_RELIABILITY_OFFSET) |
-                       _LSHIFT_(wqos->ownership.v.kind, MQ_BYTE0_OWNERSHIP_OFFSET) |
-                       _LSHIFT_(wqos->orderby.v.kind, MQ_BYTE0_ORDERBY_OFFSET) |
-                       _LSHIFT_(wqos->lifecycle.v.autodispose_unregistered_instances, MQ_BYTE0_AUTODISPOSE_OFFSET));
-    byte1 = (c_octet) (_LSHIFT_(wqos->durability.v.kind, MQ_BYTE1_DURABILITY_OFFSET) |
-                       _LSHIFT_(wqos->liveliness.v.kind, MQ_BYTE1_LIVELINESS_OFFSET) |
-                       /* writer->resend._d contains the access_scope of the publisher-QoS */
-                       _LSHIFT_(writer->resend._d, MQ_BYTE1_PRESENTATION_OFFSET) |
-                       _LSHIFT_(writer->coherent_access, MQ_BYTE1_COHERENT_ACCESS_OFFSET) |
-                       _LSHIFT_(writer->ordered_access, MQ_BYTE1_ORDERED_ACCESS_OFFSET));
-
-    if (wqos->ownership.v.kind == V_OWNERSHIP_EXCLUSIVE) {
-        strength_offset = offset;
-        offset += (c_ulong) sizeof(wqos->strength.v.value);
-    }
-    if (c_timeIsZero(wqos->latency.v.duration)) {
-        byte0 = (c_octet) (byte0 | _LSHIFT_(1,MQ_BYTE0_LATENCY_OFFSET));
-    } else {
-        latency_offset = offset;
-        offset += (c_ulong) sizeof(wqos->latency.v.duration);
-    }
-    if (c_timeIsInfinite(wqos->deadline.v.period)) {
-        byte0 = (c_octet) (byte0 | _LSHIFT_(1,MQ_BYTE0_DEADLINE_OFFSET));
-    } else {
-        deadline_offset = offset;
-        offset += (c_ulong) sizeof(wqos->deadline.v.period);
-    }
-    if (c_timeIsInfinite(wqos->liveliness.v.lease_duration)) {
-        byte0 = (c_octet) (byte0 | _LSHIFT_(1,MQ_BYTE0_LIVELINESS_OFFSET));
-    } else {
-        liveliness_offset = offset;
-        offset += (c_ulong) sizeof(wqos->liveliness.v.lease_duration);
-    }
-    if (c_timeIsInfinite(wqos->lifespan.v.duration)) {
-        byte0 = (c_octet) (byte0 | _LSHIFT_(1,MQ_BYTE0_LIFESPAN_OFFSET));
-    } else {
-        lifespan_offset = offset;
-        offset += (c_ulong) sizeof(wqos->lifespan.v.duration);
-    }
-
-    _this = c_newArray((c_collectionType)writer->msgQosType,offset);
-
-    if (_this) {
-        ((c_octet *)_this)[0] = byte0;
-        ((c_octet *)_this)[1] = byte1;
-        src = (c_octet *)&wqos->transport.v.value;
-        dst = (c_octet *)&((c_octet *)_this)[2];
-        _COPY4_(dst,src);
-
-        if (strength_offset) {
-            src = (c_octet *)&wqos->strength.v.value;
-            dst = (c_octet *)&((c_octet *)_this)[strength_offset];
-            _COPY4_(dst,src);
-        }
-        if (latency_offset) {
-            src = (c_octet *)&wqos->latency.v.duration;
-            dst = (c_octet *)&((c_octet *)_this)[latency_offset];
-            _COPY8_(dst,src);
-        }
-        if (deadline_offset) {
-            src = (c_octet *)&wqos->deadline.v.period;
-            dst = (c_octet *)&((c_octet *)_this)[deadline_offset];
-            _COPY8_(dst,src);
-        }
-        if (liveliness_offset) {
-            src = (c_octet *)&wqos->liveliness.v.lease_duration;
-            dst = (c_octet *)&((c_octet *)_this)[liveliness_offset];
-            _COPY8_(dst,src);
-        }
-        if (lifespan_offset) {
-            src = (c_octet *)&wqos->lifespan.v.duration;
-            dst = (c_octet *)&((c_octet *)_this)[lifespan_offset];
-            _COPY8_(dst,src);
-        }
-    } else {
-        OS_REPORT(OS_CRITICAL,
-                  "v_messageQos_new",V_RESULT_INTERNAL_ERROR,
-                  "Failed to allocate messageQos.");
-        assert(FALSE);
-    }
-    return _this;
-}
-#endif
 
 v_messageQos
 v_messageQos_copy (

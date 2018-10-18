@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,7 +23,7 @@
 
 #include "kernelModule.h"
 #include "v_dataReader.h"
-#include "v_dataViewSample.h"
+#include "v__dataViewSample.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -72,25 +73,20 @@ v_orderedInstanceReadSample (
     v_orderedInstance _this,
     v_sampleMask mask);
 
-#if 0
-OS_API void
-v_orderedInstanceUnreadSample (
-    v_orderedInstance _this,
-    v_dataReaderSample sample);
-#endif
-
 /* If presentation access scope is set to group, the read/take operations must
-   be aligned to the list of data readers returned by get_datareaders. In case
-   an unauthorized read/take is registered the list is invalidated and the
-   read/take operation should fallback to unordered mode. */
+ * be aligned to the list of data readers returned by get_datareaders. In case
+ * an unauthorized read/take is registered the list is invalidated and the
+ * read/take operation should fallback to unordered mode.
+ */
 OS_API c_bool
 v_orderedInstanceIsAligned (
     v_orderedInstance _this);
 
 /* If a reader reads a sample that does not belong to itself, it must
-   invalidate the list returned by get_datareaders by invoking this function.
-   This will effectively mark the ordered instance unaligned and reset the
-   bookmark. */
+ * invalidate the list returned by get_datareaders by invoking this function.
+ * This will effectively mark the ordered instance unaligned and reset the
+ * bookmark.
+ */
 OS_API void
 v_orderedInstanceUnaligned (
     v_orderedInstance _this);

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,6 +34,7 @@ namespace DDS {
         : public DDS::OpenSplice::DataReader
         {
         friend class DDS::OpenSplice::FooDataReaderView_impl;
+        friend class DDS::OpenSplice::TypeSupportMetaHolder;
         friend class DDS::OpenSplice::ReadCondition;
         friend class DDS::OpenSplice::QueryCondition;
 
@@ -54,6 +56,8 @@ namespace DDS {
             const char *name,
             DDS::OpenSplice::cxxCopyIn copyIn,
             DDS::OpenSplice::cxxCopyOut copyOut,
+            DDS::OpenSplice::cxxReaderCopy readerCopy,
+            void *cdrMarshaler,
             cxxDataSeqAlloc dataSeqAlloc,
             cxxDataSeqLength dataSeqLength,
             cxxDataSeqGetBuffer dataSeqGetBuffer,
@@ -198,6 +202,17 @@ namespace DDS {
             void * samplesList,
             void * received_data,
             ::DDS::SampleInfoSeq & info_seq);
+
+        static void copySampleOut (
+                   void *sample,
+                   void *info,
+                   void *arg);
+
+        static void copyCDRSampleOut (
+                   void *sample,
+                   void * info,
+                   void *arg);
+
 
         private:
         struct Implementation;

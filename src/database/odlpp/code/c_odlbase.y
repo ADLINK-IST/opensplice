@@ -21,7 +21,6 @@
 #define yylex                c_odlbase_yylex
 #define yylval               c_odlbase_yylval
 #define yyrestart            c_odlbase_yyrestart
-/*#define yywrap               c_odlbase_yywrap*/
 #define yytext               c_odlbase_yytext
 #define yynerrs              c_odlbase_yynerrs
 #define yyleng               c_odlbase_yyleng

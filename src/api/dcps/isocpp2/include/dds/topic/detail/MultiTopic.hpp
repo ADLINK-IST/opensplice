@@ -62,7 +62,7 @@ private:
     {
         q_expr expr = NULL;
         uint32_t length;
-        c_value *params;
+        std::vector<c_value> params;
 
         length = myFilter.parameters_length();
         if (length < 100) {
@@ -78,7 +78,7 @@ private:
 
         params = reader_parameters();
         /* The function below does not exist yet, but probably a function like it will need to be developed. */
-        if (!u_topicMultiExprValidate(dp.delegate()->get_user_handle(), myFilter.expression().c_str(), params)) {
+        if (!u_topicMultiExprValidate(dp.delegate()->get_user_handle(), myFilter.expression().c_str(), &params[0], params.size())) {
             ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR,
                     "filter_expression '%s' is invalid.", myFilter.expression().c_str());
         }

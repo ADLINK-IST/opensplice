@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -40,6 +41,7 @@
 #include "example_main.h"
 
 #define SEQ_PAYLOAD_SIZE (1000)
+#define MAX_NR_OF_TIMEOUTS_BEFORE_QUIT (60)
 
 // What it does:
 //   It send a message on the "PING" partition, which the PONG test is waiting for.
@@ -545,6 +547,7 @@ int OSPL_MAIN (int argc, char ** argv)
 
     bool                         finish_flag = false;
     bool                         timeout_flag = false;
+    int                          timeout_count = 0;
     bool                         terminate = false;
     DDS::ReturnCode_t                    result;
 
@@ -955,6 +958,7 @@ int OSPL_MAIN (int argc, char ** argv)
                     {
                         imax = conditionList->length ();
                         if (imax != 0) {
+                            timeout_count = 0;
                             for (i = 0; i < imax; i++) {
                                 if ((*conditionList)[i] == exp_condition) {
                                     finish_flag = active_handler (nof_cycles);
@@ -965,8 +969,13 @@ int OSPL_MAIN (int argc, char ** argv)
                                 }
                             }
                         } else {
-                            cout << "PING: TIMEOUT - message lost" << endl;
+                            cout << "PING: TIMEOUT - message lost " << timeout_count << endl;
                             timeout_flag = true;
+                            if (timeout_count++ > MAX_NR_OF_TIMEOUTS_BEFORE_QUIT) {
+                                cout << "PING: " << timeout_count << " consecutive timeouts, terminating" << endl;
+                                finish_flag = true;
+                                terminate = true;
+                            }
                         }
                     } else
                     {

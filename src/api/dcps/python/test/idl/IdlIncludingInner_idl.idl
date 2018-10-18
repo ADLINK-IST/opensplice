@@ -1,0 +1,10 @@
+#include "Inner_idl.idl"
+
+module Outer_mod {
+	struct Outer {
+		long key;
+		inner_mod::Inner inner1;
+	};
+	#pragma keylist Outer key
+};
+		

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,6 +30,10 @@
 extern "C" {
 #endif
 
+v_result
+v_groupStreamEnable(
+    _Inout_ v_groupStream _this);
+
 void
 v_groupStreamConnectNewGroups (
     v_groupStream _this,
@@ -44,25 +49,20 @@ v_groupStreamWrite (
     v_groupAction action);
 
 c_bool
-v_groupStreamSubscribe (
-    v_groupStream _this,
-    v_partition partition);
-                                                         
-c_bool
 v_groupStreamUnSubscribe (
     v_groupStream _this,
     v_partition partition);
-                                                         
+
 c_bool
 v_groupStreamSubscribeGroup (
-    v_groupStream _this, 
+    v_groupStream _this,
     v_group group);
-                                             
+
 c_bool
 v_groupStreamUnSubscribeGroup (
-    v_groupStream _this, 
+    v_groupStream _this,
     v_group group);
-                                             
+
 #if defined (__cplusplus)
 }
 #endif

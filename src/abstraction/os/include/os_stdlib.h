@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -442,6 +443,25 @@ os_vsnprintf(
    const char *format,
    va_list args);
 
+/**
+ * \brief Allocates destination buffer in which to store the formatted string
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - os_asprintf allocates space to write the formatted string and returns the
+ *   number of bytes written excluding the null byte. If an error occurs, e.g.
+ *   memory allocation fails, -1 is returned instead.
+ */
+OS_API int
+os_asprintf(
+    char **strp,
+    const char *fmt,
+    ...);
+
 /** \brief fprintf wrapper with disabled broken pipe signals
  *
  * A fprintf can cause an broken pipe signal that can result in a deadlock
@@ -711,7 +731,7 @@ os_strncasecmp(
 OS_API char *
 os_strtok_r(char *str, const char *delim, char **saveptr);
 
-struct os_stat {
+struct os_stat_s {
 /* The mode_t macro's (like OS_ISDIR) are defined in the platform specific header files! */
 /* NEVER name these fields identical to the POSIX standard! Since e.g. the Linux implementation
    has defined it as follows:
@@ -731,7 +751,7 @@ struct os_stat {
 OS_API os_result
 os_stat(
     const char *path,
-    struct os_stat *buf);
+    struct os_stat_s *buf);
 
 typedef os_os_dirHandle os_dirHandle;
 
@@ -879,6 +899,23 @@ os_write(int fd, const void *buf, size_t count);
 OS_API void *
 os_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
     int (*compar) (const void *, const void *));
+
+
+/**
+ * \brief  returns a pseudo-random integer in the range 0 to RAND_MAX inclusive (i.e., the mathematical range [0, RAND_MAX])
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - return a value between 0 and RAND_MAX
+ *
+ * Note:
+ *   rand should not be used for security related applications, as linear congruential algorithms are too easy to break.
+ *   Use a compliant random generator, such as /dev/random or /dev/urandom on Unix-like systemsm and CryptGenRandom on Windows.
+ */
+OS_API int
+os_rand(void);
 
 #undef OS_API
 

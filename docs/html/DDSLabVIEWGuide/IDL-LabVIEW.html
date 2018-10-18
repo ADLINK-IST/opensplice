@@ -1,0 +1,542 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. LabVIEW Generation from IDL &mdash; The Vortex OpenSplice LabVIEW Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice LabVIEW Guide" href="index.html" />
+    <link rel="next" title="5. QoS Provider" href="qos_provider.html" />
+    <link rel="prev" title="3. Vortex DDS Virtual Instruments (VIs)" href="dds_vis.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dds_vis.html" title="3. Vortex DDS Virtual Instruments (VIs)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="labview-generation-from-idl">
+<span id="id1"></span><h1>4. LabVIEW Generation from IDL<a class="headerlink" href="#labview-generation-from-idl" title="Permalink to this headline">¶</a></h1>
+<p>While creating a DDS application in LabVIEW, the user must create Topic VIs which map to DDS topic types. In addition to registering a topic, the user neeeds to create DDS Read and DDS Write VIs. LabVIEW data is represented in clusters. The DDS Read and Write VIs have terminals that require a LabVIEW cluster. On data writes, the LabVIEW clusters are converted to DDS topic types and on data reads, the DDS topic types are converted to LabVIEW clusters.</p>
+<p>The user can generate the LabVIEW clusters and DDS VIs from an IDL file.</p>
+<p>The DDS LabVIEW Integration supports generation of LabVIEW typedefs and VIs from IDL. This chapter describes the details of the IDL-LabVIEW binding.</p>
+<div class="section" id="generating-labview-vis-from-an-idl-file-idlpp">
+<h2>4.1. Generating LabVIEW VIs from an IDL File IDLPP<a class="headerlink" href="#generating-labview-vis-from-an-idl-file-idlpp" title="Permalink to this headline">¶</a></h2>
+<p>DDS Topic Types can be described in an IDL file. The LabVIEW IDL generation is done using the <strong>Import_IDL</strong> Tools menu in LabVIEW.</p>
+<p><em>Tools/VortexDDS/Import_IDL</em></p>
+<div class="figure">
+<img alt="Import IDL" src="_images/import_idl.png" />
+</div>
+<p>In the IDL file, ensure that any topic structures have the OSPL specific annotation <em>pragma keylist</em> defined. This value is added as a <strong>keylist constant</strong> to the <em>key</em> terminal of the generated RegisterTopic.vi.</p>
+<p>Select the IDL file and a folder for the generated VIs.</p>
+<div class="figure">
+<img alt="Import IDL" src="_images/import_idl_dialog.png" />
+</div>
+<p>Upon successful generation the VIs are located in the folder that was chosen. A dialog box appears indicating the path of the generated VIs and the IDL file.</p>
+<div class="figure">
+<img alt="Import IDL" src="_images/idl_import_success.png" />
+</div>
+</div>
+<div class="section" id="generated-artifacts">
+<h2>4.2. Generated Artifacts<a class="headerlink" href="#generated-artifacts" title="Permalink to this headline">¶</a></h2>
+<p>The following table defines the LabVIEW artifacts generated from IDL concepts:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="19%" />
+<col width="68%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL Concept</th>
+<th class="head">LabVIEW Concept</th>
+<th class="head">Comment</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>module</td>
+<td>&nbsp;</td>
+<td>Appended to the name of each VI contained in the module</td>
+</tr>
+<tr class="row-odd"><td>enum</td>
+<td>enum</td>
+<td>a LabVIEW .ctl file.</td>
+</tr>
+<tr class="row-even"><td>enum value</td>
+<td>enum value</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>struct</td>
+<td>cluster</td>
+<td>a LabVIEW .ctl file.</td>
+</tr>
+<tr class="row-even"><td>field</td>
+<td>cluster field</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>sequence</td>
+<td>array</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>array</td>
+<td>array</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Datatype mappings</strong></p>
+<p>The following table shows the LabVIEW equivalents to IDL primitive types:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="46%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>DDS IDL</strong></th>
+<th class="head"><strong>LabVIEW Type</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>boolean</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>char</td>
+<td>int8</td>
+</tr>
+<tr class="row-even"><td>octet</td>
+<td>uint8</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>int16</td>
+</tr>
+<tr class="row-even"><td>unsigned short</td>
+<td>uint16</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>int32</td>
+</tr>
+<tr class="row-even"><td>unsigned long</td>
+<td>uint32</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>int64</td>
+</tr>
+<tr class="row-even"><td>unsigned long long</td>
+<td>uint64</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>single-precision floating point</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>double-precision floating point</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>String</td>
+</tr>
+<tr class="row-even"><td colspan="2"><strong>Unsupported DDS data types</strong></td>
+</tr>
+<tr class="row-odd"><td>wchar</td>
+<td><em>not supported</em></td>
+</tr>
+<tr class="row-even"><td>wstring</td>
+<td><em>not supported</em></td>
+</tr>
+<tr class="row-odd"><td>any</td>
+<td><em>not supported</em></td>
+</tr>
+<tr class="row-even"><td>long double</td>
+<td><em>not supported</em></td>
+</tr>
+<tr class="row-odd"><td>union</td>
+<td><em>not supported</em></td>
+</tr>
+<tr class="row-even"><td>inheritance</td>
+<td><em>not supported</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Generated VIs and controls</strong></p>
+<p>For each struct in the IDL file, the following VIs and controls are generated:</p>
+<ul class="simple">
+<li>RegisterTopic.vi</li>
+<li>Write.vi</li>
+<li>Read.vi</li>
+<li>CicoTable.vi (Copy-in copy-out)</li>
+<li>Topic cluster.ctl (corresponds to each struct in IDL File)</li>
+<li>Enum.ctl (corresponds to each enum in IDL File)</li>
+</ul>
+<p>The &#8220;moduleName_structName&#8221; is appended to the name of each VI and control that is generated.</p>
+</div>
+<div class="section" id="registertopic-vi">
+<h2>4.3. RegisterTopic.vi<a class="headerlink" href="#registertopic-vi" title="Permalink to this headline">¶</a></h2>
+<p>The RegisterTopic.vi represents a DDS topic type. The DDS topic corresponds to a single data type. In DDS, data is distributed by publishing and subscribing topic data samples.</p>
+<div class="figure">
+<img alt="Register Topic" src="_images/register_topic.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>DomainParticipantHandle</td>
+<td>DDS Domain Participant
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>no</td>
+<td>TopicName</td>
+<td>DDS Topic Name</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>QosProfilePath</td>
+<td>QoS file uri</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>QoSProfileName</td>
+<td>Name of QoS profile</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>topicHandle</td>
+<td>DDS Topic entity instance</td>
+<td>create_reader.vi
+create_writer.vi</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="read-vi">
+<h2>4.4. Read.vi<a class="headerlink" href="#read-vi" title="Permalink to this headline">¶</a></h2>
+<p>The DDS Read.vi is used to read DDS samples from a specific topic.</p>
+<div class="figure">
+<img alt="Register Topic" src="_images/dds_read.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>readerHandle</td>
+<td>DDS Reader
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>mask</td>
+<td>read_condition masks
+LabVIEW cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>max_samples</td>
+<td>maximum number of samples
+to read</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>read_operation</td>
+<td>READ or TAKE
+default operation is TAKE</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>query_expression</td>
+<td>expression to filter
+samples based on a query</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>query_parameters</td>
+<td>parameters for the query
+expression</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>wait_available_data
+_timeout</td>
+<td>wait for data available
+timeout (seconds)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>no_of_samples</td>
+<td>Number of samples read</td>
+<td>user</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>no</td>
+<td>samples</td>
+<td>LabVIEW cluster</td>
+<td>user</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>dds_sample_info_array</td>
+<td>sample information</td>
+<td>user</td>
+</tr>
+<tr class="row-odd"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="filters">
+<h3>4.4.1. Filters<a class="headerlink" href="#filters" title="Permalink to this headline">¶</a></h3>
+<p>The filtering of incoming samples can happen based on a query and/or on a sample read condition(s).</p>
+<p><strong>Query</strong></p>
+<p>query_expression: The expression is a SQL condition.</p>
+<p>query_parameters: Each parameter element must be an array element.</p>
+<p><em>Note: Query expressions are only validated at runtime. If they are incorrect, errors will occur while running the VI.</em></p>
+<p><strong>Read Condition</strong></p>
+<p>The read condition mask specified will filter the samples that are read or take(n).</p>
+<p>Example: For a reader, the Sample State has <strong>Not Read</strong> selected and  <strong>Read</strong> deselected.</p>
+<p>Only samples with a Sample State <strong>Not Read</strong> will be processed with read or take.
+Any samples with the <strong>Read</strong> sample state will not be read or take(n).</p>
+<div class="figure">
+<img alt="Reader Filter" src="_images/read_filter.png" />
+</div>
+</div>
+</div>
+<div class="section" id="write-vi">
+<h2>4.5. Write.vi<a class="headerlink" href="#write-vi" title="Permalink to this headline">¶</a></h2>
+<p>The DDS Write.vi is used to write DDS samples to a specific topic.</p>
+<div class="figure">
+<img alt="Write" src="_images/dds_write.png" />
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="9%" />
+<col width="23%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Terminal Type</th>
+<th class="head">Optional</th>
+<th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Output consumed by</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>writerHandle</td>
+<td>DDS Writer
+entity instance</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>write_op</td>
+<td>write operation: WRITE,
+DISPOSE, WRITE_DISPOSE
+Default operation: WRITE</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>no</td>
+<td>data</td>
+<td>samples LabVIEW cluster</td>
+<td>DDS</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>wait_pub_matched
+_timeout</td>
+<td>wait for publication
+matched timeout (seconds)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Input</td>
+<td>yes</td>
+<td>write_after_timeout</td>
+<td>write samples
+after timeout</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>Input</td>
+<td>yes</td>
+<td>error in (no error)</td>
+<td>Input Error cluster</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Output</td>
+<td>yes</td>
+<td>error out</td>
+<td>Error out cluster</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. LabVIEW Generation from IDL</a><ul>
+<li><a class="reference internal" href="#generating-labview-vis-from-an-idl-file-idlpp">4.1. Generating LabVIEW VIs from an IDL File IDLPP</a></li>
+<li><a class="reference internal" href="#generated-artifacts">4.2. Generated Artifacts</a></li>
+<li><a class="reference internal" href="#registertopic-vi">4.3. RegisterTopic.vi</a></li>
+<li><a class="reference internal" href="#read-vi">4.4. Read.vi</a><ul>
+<li><a class="reference internal" href="#filters">4.4.1. Filters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#write-vi">4.5. Write.vi</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dds_vis.html"
+                        title="previous chapter">3. Vortex DDS Virtual Instruments (VIs)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="next chapter">5. QoS Provider</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/IDL-LabVIEW.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="5. QoS Provider"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dds_vis.html" title="3. Vortex DDS Virtual Instruments (VIs)"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice LabVIEW Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

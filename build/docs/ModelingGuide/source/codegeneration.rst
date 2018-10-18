@@ -15,9 +15,9 @@ an easy-to-use, Eclipse-based graphical interface.*
 
 |caution|
   +------------------------------------------------------------------+
-  | The OpenSplice HDE (version 6.1 or above) must be installed and  |
-  | configured in order to generate code for OpenSplice from Vortex  |
-  | OpenSplice Modeler.                                              |
+  | The Vortex OpenSplice HDE (version 6.1 or above) must be         |
+  | installed and configured in order to generate code for Vortex    |
+  | OpenSplice from Vortex OpenSplice Modeler.                       |
   |                                                                  |
   | Vortex Lite (version 1.2 or above) must be installed and         |
   | configured in order to generate code targeting Vortex Lite from  |
@@ -31,7 +31,7 @@ aim and is able to generate:
 
 + code for DDS data types, including
 
-  - IDL specifications for Vortex OpenSplice DDS Data Types
+  - IDL specifications for Vortex OpenSplice Data Types
 
   - Native language interfaces for Vortex OpenSplice Data Types 
     (*via* the Vortex OpenSplice IDL Pre-Processor)
@@ -1674,4 +1674,3 @@ This class defines the following methods:
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         

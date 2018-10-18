@@ -77,40 +77,22 @@ fi
 
 if [ "$COVERITY" = "yes" ]
 then
-    for i in $ANALYSIS_TYPE
-    do
-        STREAM="${i}_${BRANCH_NAME}_${HOSTNAME}_${SPLICE_PLATFORM}"
-        echo "++++++++COVERITY analyze $i"
-        echo "++++++++COVERITY stream setup is $STREAM"
-        if [ "$i" = "CandC++" ]
-        then
-            echo "++++++++COMMAND [cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS]"
-            cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
-                $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS
-            if [ $? != 0 ]
-            then
-                exit 2
-            fi
-        fi
-        if [ "$i" = "JAVA" ]
-        then
-            echo "++++++++COMMAND [cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS]"
-            cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
-                $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS
-            if [ $? != 0 ]
-            then
-                exit 2
-            fi
-        fi
-        echo "++++++++COVERITY commiting defects to $STREAM"
-        echo "++++++++COMMAND [cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT --user $COV_USER --password $COV_PASSWORD --stream $STREAM]"
-        cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT \
-            --user $COV_USER --password $COV_PASSWORD --stream $STREAM
-        if [ $? != 0 ]
-        then
-            exit 2
-        fi
-    done
+    STREAM="CandC++_${BRANCH_NAME}_${HOSTNAME}_${SPLICE_PLATFORM}"
+    echo "++++++++COVERITY analyze CandC++/Java"
+    echo "++++++++COVERITY stream setup is $STREAM"
+    echo "++++++++COMMAND [cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_ANALYSIS_OPTIONS $COV_ANALYSIS_EXTRA_OPTIONS]"
+    cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_ANALYSIS_OPTIONS $COV_ANALYSIS_EXTRA_OPTIONS
+    if [ $? != 0 ]
+    then
+        exit 2
+    fi
+    echo "++++++++COVERITY commiting defects to $STREAM"
+    echo "++++++++COMMAND [cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT --user $COV_USER --password $COV_PASSWORD --stream $STREAM]"
+    cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT --user $COV_USER --password $COV_PASSWORD --stream $STREAM
+    if [ $? != 0 ]
+    then
+        exit 2
+    fi
 fi
 
 # Create all features file as a reference for the features enabled found on the scoreboard.

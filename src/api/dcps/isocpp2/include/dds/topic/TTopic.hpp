@@ -122,7 +122,13 @@ public:
      * of a Topic object will not delete the Topic from the domain, just the local proxy is
      * deleted.
      *
+     * <i>Implicit Participant</i><br>
+     * It is expected to provide a DomainParticipant when creating a Topic. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * participant is created with org::opensplice::domain::default_id() and a default QoS.
+     *
      * @param dp        the domain participant on which the topic will be defined
+     *                  (or dds::core::null for an implicit participant)
      * @param topic_name the name of the Topic to be created
      * @throws dds::core::Error
      *                  A other Topic with the same name but different type or QoS was
@@ -162,7 +168,13 @@ public:
      * of a Topic object will not delete the Topic from the domain, just the local proxy is
      * deleted.
      *
+     * <i>Implicit Participant</i><br>
+     * It is expected to provide a DomainParticipant when creating a Topic. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * participant is created with org::opensplice::domain::default_id() and a default QoS.
+     *
      * @param dp        the domain participant on which the topic will be defined
+     *                  (or dds::core::null for an implicit participant)
      * @param topic_name the topic's name
      * @param type_name a local alias of the data type
      * @throws dds::core::Error
@@ -210,6 +222,11 @@ public:
      * of a Topic object will not delete the Topic from the domain, just the local proxy is
      * deleted.
      *
+     * <i>Implicit Participant</i><br>
+     * It is expected to provide a DomainParticipant when creating a Topic. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * participant is created with org::opensplice::domain::default_id() and a default QoS.
+     *
      * <i>Listener</i><br>
      * The following statuses are applicable to the TopicListener:
      *  - dds::core::status::StatusMask::inconsistent_topic()
@@ -221,6 +238,7 @@ public:
      * for more information.
      *
      * @param dp the domain participant on which the topic will be defined
+     *           (or dds::core::null for an implicit participant)
      * @param topic_name the topic's name
      * @param qos the topic listener
      * @param listener the topic listener
@@ -272,6 +290,11 @@ public:
      * of a Topic object will not delete the Topic from the domain, just the local proxy is
      * deleted.
      *
+     * <i>Implicit Participant</i><br>
+     * It is expected to provide a DomainParticipant when creating a Topic. However, it is
+     * allowed to provide dds::core::null. When dds::core::null is provided, then an implicit
+     * participant is created with org::opensplice::domain::default_id() and a default QoS.
+     *
      * <i>Listener</i><br>
      * The following statuses are applicable to the TopicListener:
      *  - dds::core::status::StatusMask::inconsistent_topic()
@@ -283,6 +306,7 @@ public:
      * for more information.
      *
      * @param dp the domain participant on which the topic will be defined
+     *           (or dds::core::null for an implicit participant)
      * @param topic_name the topic's name
      * @param type_name a local alias of the data type
      * @param qos the topic listener

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,6 +38,7 @@ os_posix_sharedMemoryAttach (
     OS_UNUSED_ARG (sharedAttr);
     OS_UNUSED_ARG (name);
     OS_UNUSED_ARG (mapped_address);
+    OS_UNUSED_ARG (id);
     return os_resultFail;
 }
 
@@ -64,6 +66,7 @@ static os_result os_posix_sharedMemoryDetach (const char *name, void *address, o
 {
     OS_UNUSED_ARG (address);
     OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (id);
     return os_resultFail;
 }
 
@@ -166,14 +169,6 @@ static os_result os_posix_sharedMemorySetState(const char *keyfile, os_state sta
     return os_resultUnavailable;
 }
 
-static os_result os_posix_sharedMemoryLock() {
-    return os_resultUnavailable;
-}
-
-static void os_posix_sharedMemoryUnlock() {
-    return;
-}
-
 #else
 #include "os_errno.h"
 #include "os_heap.h"
@@ -199,11 +194,6 @@ static void os_posix_sharedMemoryUnlock() {
 
 /** Defines the file format for the database file */
 const char os_posix_key_file_format[] = "spddskey_XXXXXX";
-
-/** Defines the file name for the shared mem creation lock file */
-static const char os_posix_key_file_creation_lock[] = "spddscreationLock";
-
-
 
 
 static mode_t
@@ -469,7 +459,7 @@ os_posix_getShmObjName(
     char *key_file_name;
     os_size_t name_len;
     char *db_file_name;
-    char buffer[50];
+    char buffer[256];
     int invalid_access;
 
     key_file_name = os_posix_findKeyFileByIdAndName(id,name);
@@ -522,37 +512,46 @@ os_posix_getShmObjName(
                                 name);
                 }
                 fchmod(key_file_fd, OS_PERMISSION & (~cmask));
-                write(key_file_fd, name, strlen(name) + 1);
-                write(key_file_fd, "\n", 1);
-                snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n", (PA_ADDRCAST)map_address);
-                write(key_file_fd, buffer, strlen(buffer));
-                snprintf(buffer, sizeof (buffer), "%"PA_PRIxADDR"\n", size);
-                write(key_file_fd, buffer, strlen(buffer));
-                snprintf(buffer, sizeof (buffer), "POSIX-SMO\n");
-                write(key_file_fd, buffer, strlen(buffer));
-                snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
-                write(key_file_fd, buffer, strlen(buffer));
-                snprintf(buffer, sizeof (buffer), "%d\n", id);
-                write(key_file_fd, buffer, strlen(buffer));
+
                 setpgrp(); /* Make this process the session leader. */
-                snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
-                write(key_file_fd, buffer, strlen(buffer));
+                snprintf(buffer, sizeof (buffer),
+                        "%s\n"
+                        PA_ADDRFMT"\n"
+                        "%"PA_PRIxADDR"\n"
+                        "POSIX-SMO\n"
+                        "%d\n"
+                        "%d\n"
+                        "%d\n",
+                        name,
+                        (PA_ADDRCAST)map_address,
+                        size,
+                        (int)getpid(),
+                        id,
+                        (int)getpgrp());
+                if (write(key_file_fd, buffer, strlen(buffer)) == -1) {
+                    OS_REPORT_WID(OS_INFO, OS_FUNCTION, -1, id,
+                        "Operation write to file '%s' failed with error (%d) = \"%s\"",
+                        key_file_name, os_getErrno(), os_strError(os_getErrno()));
+
+                    os_free(key_file_name);
+                    key_file_name = NULL;
+                }
                 close(key_file_fd);
             }
         }
     }
     if (key_file_name != NULL) {
-        db_file_name = os_malloc(strlen(key_file_name));
-        if (db_file_name != NULL) {
-           /* This function must return the populated string of the form
-            * "/spddskey_XXXXXX" (for the sake of the shm_open system call).
-            * So calculate the index of where this string begins in the
-            * key_file_name so only that part of it can be returned.
-            * The - 1 is for the intermediate '/' added above
-            */
-            os_size_t index = strlen(key_file_name) - 1 - strlen(os_posix_key_file_format);
-            os_strcpy(db_file_name, &key_file_name[index]);
-        }
+        os_size_t index;
+        /* This function must return the populated string of the form
+         * "/spddskey_XXXXXX" (for the sake of the shm_open system call).
+         * So calculate the index of where this string begins in the
+         * key_file_name so only that part of it can be returned.
+         * The - 1 is for the intermediate '/' added above
+         */
+        assert(strlen(key_file_name) >= strlen(os_posix_key_file_format) + 1);
+
+        index = strlen(key_file_name) - 1 - strlen(os_posix_key_file_format);
+        db_file_name = os_strdup(&key_file_name[index]);
         os_free(key_file_name);
     } else {
         db_file_name = NULL;
@@ -660,7 +659,6 @@ os_posix_sharedMemoryCreate(
     os_sharedAttr *sharedAttr,
     os_address size,
     const os_int32 id)
-
 {
     const os_address pagesize = (os_address) getpagesize();
     char *shmname;
@@ -785,12 +783,11 @@ os_posix_sharedMemoryDestroy(
                       "os_posix_sharedMemoryDestroy", 1,
                       "shm_unlink failed with error %d (%s)",
                       os_getErrno(), name);
-        rv = os_resultFail;
-    }
-
-    if (os_posix_destroyKey(name) == -1) {
-        rv = os_resultFail;
-    }
+            rv = os_resultFail;
+        }
+        if (os_posix_destroyKey(name) == -1) {
+            rv = os_resultFail;
+        }
         os_free(shmname);
     }
 
@@ -932,57 +929,6 @@ os_posix_sharedMemorySetState(
     os_state state)
 {
     return os_keyfile_appendInt(keyfile, (int)state);
-}
-
-/* Prevent race condition between creation and attach shared memory segment
- * create an exclusive lock file during creation.
- * Don block to long, a previous process could have created the lock file
- * and didn't clean it up properly due to an exception in creating shared memory segment
- */
-static os_result os_posix_sharedMemoryLock() {
-    int ifileHandle = -1;
-    int iRetriesToDo = 8;
-    char *str = NULL;
-    const char *dir = NULL;
-    os_size_t len;
-
-    dir = os_getTempDir();
-    len = strlen(dir) + strlen(os_posix_key_file_creation_lock) + 2;
-    str = os_malloc (len);
-    if (str != NULL) {
-        (void)snprintf (str, len, "%s/%s", dir, os_posix_key_file_creation_lock);
-        while (ifileHandle == -1 && iRetriesToDo > 0) {
-            ifileHandle = open(str, O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
-            if (ifileHandle == -1) {
-                os_sleep(OS_DURATION_SECOND/2);
-            } else {
-                close(ifileHandle);
-            }
-            iRetriesToDo--;
-        }
-        os_free(str);
-    }
-    if (ifileHandle != -1) {
-        return os_resultSuccess;
-    } else {
-        return os_resultFail;
-    }
-}
-
-static void os_posix_sharedMemoryUnlock() {
-    char *str = NULL;
-    const char *dir = NULL;
-    os_size_t len;
-
-    dir = os_getTempDir();
-    len = strlen(dir) + strlen(os_posix_key_file_creation_lock) + 2;
-    str = os_malloc (len);
-    if (str != NULL) {
-        (void)snprintf (str, len, "%s/%s", dir, os_posix_key_file_creation_lock);
-        remove(str);
-        os_free(str);
-    }
-
 }
 
 #undef OS_PERMISSION

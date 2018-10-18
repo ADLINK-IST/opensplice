@@ -1,0 +1,13 @@
+{
+  "name": "helloworld",
+  "version": "1.0.0",
+  "description": "Hello World example",
+  "main": "HelloWorldPublisher.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "eslint-config-strongloop": "^2.1.0",
+    "path": "^0.12.7",
+    "vortexdds": "file:../../vortexdds-0.1.0.tgz"
+  }
+}

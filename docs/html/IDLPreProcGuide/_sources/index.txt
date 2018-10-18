@@ -9,10 +9,10 @@ The IDL PreProcessor Guide
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    overview
-   
+
    prerequisites
    commandline
    ddsmodes
@@ -21,11 +21,11 @@ The IDL PreProcessor Guide
    modeslanguages
    topictypes
    ddsdatatypes
-   
+
    bibliography
-   
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

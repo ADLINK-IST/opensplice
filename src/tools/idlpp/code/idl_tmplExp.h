@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -141,6 +142,9 @@ void idl_streamOutFree (const idl_streamOut stream);
 
 /* Put character at current position and increment pointer and length */
 os_size_t idl_streamOutPut (const idl_streamOut stream, c_char character);
+
+/* Print formatted to output stream */
+void idl_streamOutPrintf (const idl_streamOut stream, const c_char *format, ...) __attribute_format__((printf,2,3));
 
 /****************************************************************
  * File Output Stream Class                                     *

@@ -1,6 +1,6 @@
 #set -x
 
-# For platforms which have suid busybox as /bin/sh so reset LD_LIBRARY_PATH 
+# For platforms which have suid busybox as /bin/sh so reset LD_LIBRARY_PATH
 if [ "$OVERRIDE_LD_LIBRARY_PATH" != "" ]
 then
    echo "Setting LD_LIBRARY_PATH from OVERRIDE_LD_LBIRARY_PATH"
@@ -17,7 +17,7 @@ then
    export PATH
 fi
 
-. $BASE/example_results_fns 
+. $BASE/example_results_fns
 
 if [ "$JAVA_HOME" != "" ]
 then
@@ -64,11 +64,11 @@ else
 
 
     if [ -n "$UNIQUE_MC_ADDRESS" ]
-    then 
+    then
         grep SPDPMulticastAddress $XMLFILE
         if [ $? = 0 ]
         then
-            echo "ERROR : SPDPMulticastAddress already exists"  
+            echo "ERROR : SPDPMulticastAddress already exists"
             exit 1;
         fi
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
@@ -85,16 +85,13 @@ else
         grep MulticastRecvNetworkInterfaceAddresses $XMLFILE
         if [ $? = 0 ]
         then
-            echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"  
+            echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"
             exit 1;
         fi
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
             -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
             -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
               <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
-
-        sed -e '/<DDSI2Service name=\"ddsi2\">/a<Internal><AssumeMulticastCapable>*</AssumeMulticastCapable></Internal>' -i $NEWXMLFILE
-
         # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
         grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
         if [ $? = 1 ]
@@ -112,7 +109,7 @@ echo "NEWXMLFILE is $NEWXMLFILE"
 
 ODBCINI="$ODBCHOME/etc/odbc.ini"
 ODBCINST="$ODBCHOME/etc/odbcinst.ini"
-ODBC_MSSQL_SERVER="10.1.0.189"
+ODBC_MSSQL_SERVER="10.1.5.197"
 ODBC_MYSQL_SERVER="10.1.0.191"
 ODBCSYSINI="$ODBCHOME/etc"
 LD_LIBRARY_PATH="$ODBCHOME/lib:.:$LD_LIBRARY_PATH"
@@ -132,8 +129,9 @@ RUN_SUMMARY_LOG=$LOGDIR/examples/run_$EXRUNTYPE/run_results_summary.txt
 RUN_LOG=$LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
 SUMMARY_LOG=$LOGDIR/examples/run_$EXRUNTYPE/examples.log
 TOTALS_LOG=$LOGDIR/examples/run_$EXRUNTYPE/totals.log
+KILLED_LOG=$LOGDIR/examples/run_$EXRUNTYPE/killed_processes.log
 
-export RUN_SUMMARY_LOG RUN_LOG SUMMARY_LOG TOTALS_LOG
+export RUN_SUMMARY_LOG RUN_LOG SUMMARY_LOG TOTALS_LOG KILLED_LOG
 
 CUR_PATH=`pwd`
 echo " Begin running examples - `date`"
@@ -186,7 +184,7 @@ do
             sh RUN $EXRUNTYPE >> run.log 2>&1
             status=$?
 
-            check_example_result $PROJECT 
+            check_example_result $PROJECT
 
             mkdir $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR
             cp $CUR_PATH/$PROJECT/*.log $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR

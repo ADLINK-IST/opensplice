@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Topic Generation and Discovery &mdash; Python DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Python DCPS API Guide" href="index.html" />
+    <link rel="next" title="8. Python Generation from IDL" href="python_idl_mapping.html" />
+    <link rel="prev" title="6. Quality of Service (QoS)" href="qos_provider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="python_idl_mapping.html" title="8. Python Generation from IDL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="topic-generation-and-discovery">
+<span id="id1"></span><h1>7. Topic Generation and Discovery<a class="headerlink" href="#topic-generation-and-discovery" title="Permalink to this headline">¶</a></h1>
+<p>A DDS Topic represents the unit for information that can be produced or consumed by a DDS application. Topics are defined by a name, a type, and a set of QoS policies.</p>
+<p>The Python DCPS API provides several ways of generating Python classes to represent DDS topics.</p>
+<blockquote>
+<div><ul class="simple">
+<li>over the wire discovery</li>
+<li>dynamic generation of Python Topic classes using parameters IDL file and topic name</li>
+<li>static generation of Python Topic classes using IDL</li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The <a class="reference internal" href="examples.html#examples"><em>Examples</em></a> section provides the examples directory location, example descriptions and running instructions.</li>
+</ul>
+</div>
+<div class="section" id="over-the-wire-discovery">
+<h2>7.1. Over the Wire Discovery<a class="headerlink" href="#over-the-wire-discovery" title="Permalink to this headline">¶</a></h2>
+<p>Python topic classes can be generated for existing DDS topics in the DDS system.   These topics are &#8220;discovered over the wire&#8221;.</p>
+<p>The Python classes are generated when the topic is requested by name.</p>
+<p>A code snippet is provided from example4.py.  This example finds a topic registered by another process, and reads and writes samples to that topic.</p>
+<p><strong>example4.py</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">...</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Connecting to DDS domain...&#39;</span><span class="p">)</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Finding OsplTestTopic...&#39;</span><span class="p">)</span>
+<span class="n">found_topic</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">find_topic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Registering OsplTestTopic locally&#39;</span><span class="p">)</span>
+<span class="n">local_topic</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">register_found_topic_as_local</span><span class="p">(</span><span class="n">found_topic</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Getting Python classes for the found topic...&#39;</span><span class="p">)</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_for_found_topic</span><span class="p">(</span><span class="n">found_topic</span><span class="p">)</span>
+<span class="n">OsplTestTopic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">get_class</span><span class="p">(</span><span class="n">found_topic</span><span class="o">.</span><span class="n">type_name</span><span class="p">)</span>
+<span class="n">Tstate</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">get_class</span><span class="p">(</span><span class="s">&#39;ospllog::Tstate&#39;</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Creating sample data to write...&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">OsplTestTopic</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span> <span class="mf">3.4</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">9.8</span><span class="p">,</span>
+    <span class="n">state</span><span class="o">=</span><span class="n">Tstate</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&#39;Hello from Python&#39;</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Creating readers and writers...&#39;</span><span class="p">)</span>
+<span class="n">pub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">()</span>
+<span class="n">wr</span> <span class="o">=</span> <span class="n">pub</span><span class="o">.</span><span class="n">create_datawriter</span><span class="p">(</span><span class="n">local_topic</span><span class="p">,</span> <span class="n">found_topic</span><span class="o">.</span><span class="n">qos</span><span class="p">)</span>
+<span class="n">sub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_subscriber</span><span class="p">()</span>
+<span class="n">rd</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">create_datareader</span><span class="p">(</span><span class="n">local_topic</span><span class="p">,</span> <span class="n">found_topic</span><span class="o">.</span><span class="n">qos</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Writing sample data...&#39;</span><span class="p">)</span>
+<span class="n">wr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Wrote: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="static-generation-of-python-topic-classes-using-idl">
+<h2>7.2. Static Generation of Python Topic Classes Using IDL<a class="headerlink" href="#static-generation-of-python-topic-classes-using-idl" title="Permalink to this headline">¶</a></h2>
+<p>The Python topic classes can be generated statically using an IDL file.  Please see <a class="reference internal" href="python_idl_mapping.html#staticgeneration"><em>Static Generation</em></a> for more information.</p>
+</div>
+<div class="section" id="dynamic-generation-of-python-topic-classes-using-idl-and-name">
+<h2>7.3. Dynamic Generation of Python Topic Classes Using IDL and Name<a class="headerlink" href="#dynamic-generation-of-python-topic-classes-using-idl-and-name" title="Permalink to this headline">¶</a></h2>
+<p>The Python topic classes can be generated dynamically using an IDL file, and the topic name.  Please see <a class="reference internal" href="python_idl_mapping.html#dynamicgeneration"><em>Dynamic Generation</em></a> for more information.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Topic Generation and Discovery</a><ul>
+<li><a class="reference internal" href="#over-the-wire-discovery">7.1. Over the Wire Discovery</a></li>
+<li><a class="reference internal" href="#static-generation-of-python-topic-classes-using-idl">7.2. Static Generation of Python Topic Classes Using IDL</a></li>
+<li><a class="reference internal" href="#dynamic-generation-of-python-topic-classes-using-idl-and-name">7.3. Dynamic Generation of Python Topic Classes Using IDL and Name</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="previous chapter">6. Quality of Service (QoS)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="python_idl_mapping.html"
+                        title="next chapter">8. Python Generation from IDL</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topic.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="python_idl_mapping.html" title="8. Python Generation from IDL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             >previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

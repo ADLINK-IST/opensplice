@@ -1,0 +1,20 @@
+module basic{
+
+	module module_SequenceOfStruct{
+
+		struct Inner{
+			short short1;
+			double double1;
+		};
+		
+		typedef Inner inner_struct;
+		
+		struct SequenceOfStruct_struct{
+			long long1;
+			Sequence<inner_struct> seq1;
+		};
+		
+		#pragma keylist SequenceOfStruct_struct long1
+	};
+};
+		

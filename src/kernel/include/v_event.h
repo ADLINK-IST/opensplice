@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -77,13 +78,12 @@
 #define v_eventTest(events,kind) (((events)&(kind))==(kind))
 #define v_eventMaskTest(events,mask) (((events)&(mask))!=0)
 
-typedef c_ulong v_eventKind;
-
 C_CLASS(v_event);
 C_STRUCT(v_event) {
     v_eventKind kind;
     v_observable source;
     c_voidp data;
+    c_bool handled; /* if true then listeners will not be invoked. */
 };
 
 C_CLASS(v_historyDeleteEventData);

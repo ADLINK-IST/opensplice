@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,7 +33,8 @@
 /* Both SAC and C99 have the same defines for the state flags.
  * However, the flags have different bits. The application
  * uses the C99 ones. Due to the includes, we have the SAC
- * ones. Be sure we can use the C99 ones as well. */
+ * ones. Be sure we can use the C99 ones as well.
+ */
 static const uint32_t  C99_DDS_READ_SAMPLE_STATE                   =  1;
 static const uint32_t  C99_DDS_NOT_READ_SAMPLE_STATE               =  2;
 static const uint32_t  C99_DDS_NEW_VIEW_STATE                      =  4;
@@ -111,7 +113,7 @@ on_sample_rejected (
         dds_sample_rejected_status_t s;
         s.total_count = status->total_count;
         s.total_count_change = status->total_count_change;
-        s.last_reason = status->last_reason;
+        s.last_reason = (dds_sample_rejected_status_kind)status->last_reason;
         s.last_instance_handle = status->last_instance_handle;
         listener->on_sample_rejected(reader, &s);
     }
@@ -531,46 +533,50 @@ dds_reader_create (
     struct DataReaderInfo *info;
     struct DDS_DataReaderListener dpl;
     struct DDS_DataReaderListener *lp = NULL;
-    DDS_StatusMask mask = DDS_STATUS_MASK_ANY | DDS_SUBSCRIPTION_MATCHED_STATUS;
+    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : DDS_STATUS_MASK_NONE;
     DDS_DataReaderQos *rQos;
     bool ownSubscriber = false;
 
     DDS_REPORT_STACK();
 
-    if (!pp_or_sub) {
-        result = DDS_RETCODE_BAD_PARAMETER;
-        DDS_REPORT(result, "Participant or subscriber parameter is NULL.");
-    } else if (!reader) {
+    if (!reader) {
         result = DDS_RETCODE_BAD_PARAMETER;
         DDS_REPORT(result, "Reader parameter is NULL.");
-    } else if (!topic) {
+    }
+    if (!topic) {
         result = DDS_RETCODE_BAD_PARAMETER;
         DDS_REPORT(result, "Topic parameter is NULL.");
-    } else {
-        if (DDS_Entity_get_kind(pp_or_sub) == DDS_ENTITY_KIND_DOMAINPARTICIPANT) {
-            result = dds_subscriber_create(pp_or_sub, &subscriber, qos, NULL);
+    }
+    if (result == DDS_RETCODE_OK) {
+        if (!pp_or_sub) {
+            result = dds_subscriber_create(NULL, &subscriber, qos, NULL);
             ownSubscriber = true;
         } else {
-            subscriber = pp_or_sub;
+            if (DDS_Entity_get_kind(pp_or_sub) == DDS_ENTITY_KIND_DOMAINPARTICIPANT) {
+                result = dds_subscriber_create(pp_or_sub, &subscriber, qos, NULL);
+                ownSubscriber = true;
+            } else {
+                subscriber = pp_or_sub;
+            }
         }
     }
-
     if (result == DDS_RETCODE_OK) {
         result = DDS_Topic_get_typeSupport(topic, &ts);
+        if (result != DDS_RETCODE_OK) {
+          DDS_REPORT(result, "Failed to get type support.");
+        }
     }
-
     if (result == DDS_RETCODE_OK) {
-        *reader = NULL;
-
         info = dds_data_reader_info_new(ts);
         if (!info) {
             result = DDS_RETCODE_ERROR;
             DDS_REPORT(result, "Failed to create reader info.");
         }
-        info->ownSubscriber = ownSubscriber;
     }
-
     if (result == DDS_RETCODE_OK) {
+
+        *reader = NULL;
+        info->ownSubscriber = ownSubscriber;
 
         if (listener) {
             info->listener = os_malloc(sizeof(dds_readerlistener_t));
@@ -584,21 +590,16 @@ dds_reader_create (
             result = DDS_Subscriber_get_default_datareader_qos(subscriber, rQos);
             if (result == DDS_RETCODE_OK) {
                 dds_qos_to_reader_qos(rQos, qos);
-                *reader = DDS_Subscriber_create_datareader(subscriber, topic, rQos, lp, lp ? mask : 0);
+                *reader = DDS_Subscriber_create_datareader(subscriber, topic, rQos, lp, mask);
             }
             DDS_free(rQos);
         } else {
-            *reader = DDS_Subscriber_create_datareader(subscriber, topic, DDS_DATAREADER_QOS_DEFAULT, lp, lp ? mask : 0);
+            *reader = DDS_Subscriber_create_datareader(subscriber, topic, DDS_DATAREADER_QOS_USE_TOPIC_QOS, lp, mask);
         }
         if (*reader) {
             result = DDS_Entity_set_user_data(*reader, (DDS_EntityUserData)info);
         } else {
             result = dds_report_get_error_code();
-        }
-        if (result == DDS_RETCODE_OK) {
-            /* Because of OSPL-9383, we have to set the mask with
-             * DDS_SUBSCRIPTION_MATCHED_STATUS enabled. */
-            dds_status_set_enabled(*reader, mask);
         }
         DDS_Entity_release_user_data((DDS_EntityUserData)info);
     }
@@ -746,12 +747,13 @@ dds_read (
         uResult = u_dataReaderRead(uReader, dds_mask_to_u_mask(mask), cmn_reader_action, sampleList, 0);
         if (uResult == U_RESULT_OK) {
             length = (int) cmn_samplesList_length(sampleList);
-            assert(length > 0);
-            if (buf[0] == 0) {
-                result = dds_loanRegistry_register(info->registry, buf, length);
-            }
-            if (result == DDS_RETCODE_OK) {
-                result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+            if (length > 0) {
+                if (buf[0] == 0) {
+                    result = dds_loanRegistry_register(info->registry, buf, length);
+                }
+                if (result == DDS_RETCODE_OK) {
+                    result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                }
             }
         } else {
             result = result_from_u_result(uResult);
@@ -805,12 +807,13 @@ int dds_read_instance (
         noReport = (uResult == U_RESULT_HANDLE_EXPIRED);
         if (uResult == U_RESULT_OK) {
             length = (int) cmn_samplesList_length(sampleList);
-            assert(length > 0);
-            if (buf[0] == 0) {
-                result = dds_loanRegistry_register(info->registry, buf, length);
-            }
-            if (result == DDS_RETCODE_OK) {
-                result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+            if (length > 0) {
+                if (buf[0] == 0) {
+                    result = dds_loanRegistry_register(info->registry, buf, length);
+                }
+                if (result == DDS_RETCODE_OK) {
+                    result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                }
             }
         } else {
             result = result_from_u_result(uResult);
@@ -864,12 +867,13 @@ int dds_read_cond (
                 uResult = u_queryRead(u_query(uObject), cmn_reader_action, sampleList, OS_DURATION_ZERO);
                 if (uResult == U_RESULT_OK) {
                     length = (int) cmn_samplesList_length(sampleList);
-                    assert(length > 0);
-                    if (buf[0] == 0) {
-                        result = dds_loanRegistry_register(info->registry, buf, length);
-                    }
-                    if (result == DDS_RETCODE_OK) {
-                        result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                    if (length > 0) {
+                        if (buf[0] == 0) {
+                            result = dds_loanRegistry_register(info->registry, buf, length);
+                        }
+                        if (result == DDS_RETCODE_OK) {
+                            result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                        }
                     }
                 } else {
                     result = result_from_u_result(uResult);
@@ -926,12 +930,13 @@ dds_take (
         uResult = u_dataReaderTake(uReader, dds_mask_to_u_mask(mask), cmn_reader_action, sampleList, 0);
         if (uResult == U_RESULT_OK) {
             length = (int) cmn_samplesList_length(sampleList);
-            assert(length > 0);
-            if (buf[0] == 0) {
-                result = dds_loanRegistry_register(info->registry, buf, length);
-            }
-            if (result == DDS_RETCODE_OK) {
-                result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+            if (length > 0) {
+                if (buf[0] == 0) {
+                    result = dds_loanRegistry_register(info->registry, buf, length);
+                }
+                if (result == DDS_RETCODE_OK) {
+                    result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                }
             }
         } else {
             result = result_from_u_result(uResult);
@@ -988,12 +993,13 @@ int dds_take_instance (
         noReport = (uResult == U_RESULT_HANDLE_EXPIRED);
         if (uResult == U_RESULT_OK) {
             length = (int) cmn_samplesList_length(sampleList);
-            assert(length > 0);
-            if (buf[0] == 0) {
-                result = dds_loanRegistry_register(info->registry, buf, length);
-            }
-            if (result == DDS_RETCODE_OK) {
-                result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+            if (length > 0) {
+                if (buf[0] == 0) {
+                    result = dds_loanRegistry_register(info->registry, buf, length);
+                }
+                if (result == DDS_RETCODE_OK) {
+                    result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                }
             }
         } else {
             result = result_from_u_result(uResult);
@@ -1047,12 +1053,13 @@ int dds_take_cond (
                 uResult = u_queryTake(u_query(uObject), cmn_reader_action, sampleList, OS_DURATION_ZERO);
                 if (uResult == U_RESULT_OK) {
                     length = (int) cmn_samplesList_length(sampleList);
-                    assert(length > 0);
-                    if (buf[0] == 0) {
-                        result = dds_loanRegistry_register(info->registry, buf, length);
-                    }
-                    if (result == DDS_RETCODE_OK) {
-                        result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                    if (length > 0) {
+                        if (buf[0] == 0) {
+                            result = dds_loanRegistry_register(info->registry, buf, length);
+                        }
+                        if (result == DDS_RETCODE_OK) {
+                            result = samples_flush_copy(rd, sampleList, length, buf, si, info->registry);
+                        }
                     }
                 } else {
                     result = result_from_u_result(uResult);
@@ -1152,7 +1159,7 @@ dds_datareader_set_listener(
 {
     DDS_ReturnCode_t result           = DDS_RETCODE_ERROR;
     struct DataReaderInfo *info       = NULL;
-    struct DDS_DataReaderListener dpl = {0};
+    struct DDS_DataReaderListener dpl = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     dds_readerlistener_t *newListener = NULL;
     dds_readerlistener_t *oldListener = NULL;
     DDS_StatusMask mask;

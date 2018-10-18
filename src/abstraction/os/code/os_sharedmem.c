@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -53,3 +54,19 @@
 
 /* include OS specific shared memory implementation		*/
 #include "code/os_sharedmem.c"
+
+const char*
+os_stateImage(os_state state)
+{
+    char *image;
+
+    switch (state) {
+    case OS_STATE_NONE: image = "NONE"; break;
+    case OS_STATE_INITIALIZING: image = "INITIALIZING"; break;
+    case OS_STATE_OPERATIONAL: image = "OPERATIONAL"; break;
+    case OS_STATE_TERMINATING: image = "TERMINATING"; break;
+    case OS_STATE_TERMINATED: image = "TERMINATED"; break;
+    default: image = "(unknown)"; break;
+    }
+    return image;
+}

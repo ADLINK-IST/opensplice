@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,13 +26,13 @@ import org.omg.dds.core.ServiceEnvironment;
 public class GuardConditionImpl extends GuardCondition implements org.opensplice.dds.core.Condition<DDS.GuardCondition> {
     private final OsplServiceEnvironment environment;
     private final DDS.GuardCondition oldGuardCondition;
-    
-    
+
+
     public GuardConditionImpl(OsplServiceEnvironment environment){
         this.environment = environment;
         this.oldGuardCondition = new DDS.GuardCondition();
     }
-    
+
     @Override
     public boolean getTriggerValue() {
         return this.oldGuardCondition.get_trigger_value();

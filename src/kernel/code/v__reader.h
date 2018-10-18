@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,29 +24,23 @@
 
 #include "v_reader.h"
 #include "v_entity.h"
+#include "v__subscriberQos.h"
 
-#define v_readerEntrySetLock(_this) \
-        c_mutexLock(&_this->entrySet.mutex)
-
-#define v_readerEntrySetUnlock(_this) \
-        c_mutexUnlock(&_this->entrySet.mutex)
-
-#define v__readerIsGroupCoherent(reader_) \
-    ((reader_->subQos->presentation.v.access_scope == V_PRESENTATION_GROUP) && \
-     (reader_->subQos->presentation.v.coherent_access))
-
+#define v__readerIsGroupCoherent(reader_) v_subscriberQosIsGroupCoherent((reader_)->subQos)
 #define v__readerIsGroupOrderedNonCoherent(reader_) \
     ((reader_->subQos->presentation.v.access_scope == V_PRESENTATION_GROUP) && \
      (reader_->subQos->presentation.v.coherent_access == FALSE) && \
      (reader_->subQos->presentation.v.ordered_access == TRUE))
 
+#define v_readerAccessScope(_this) \
+        v_reader(_this)->subQos->presentation.v.access_scope
+
 void
 v_readerInit(
-    v_reader _this,
-    const c_char *name,
-    v_subscriber s,
-    v_readerQos qos,
-    c_bool enable);
+    _Inout_ v_reader _this,
+    _In_z_ const c_char *name,
+    _In_ v_subscriber s,
+    _In_ v_readerQos qos);
 
 void
 v_readerDeinit(
@@ -55,38 +50,35 @@ void
 v_readerFree(
     v_reader _this);
 
-v_result
-v_readerSubscribe(
-    v_reader _this,
-    v_partition d);
+void
+v_readerAddEntry(
+    _Inout_ v_reader _this,
+    _In_ v_entry e);
 
-c_bool
-v_readerUnSubscribe(
-    v_reader _this,
-    v_partition d);
+void
+v_readerAddTransactionAdmin(
+    _Inout_ v_reader r,
+    _In_opt_ v_transactionGroupAdmin a);
 
-v_result
-v_readerGetHistoricalData(
+void
+v__readerNotifyStateChange_nl(
+    v_reader _this,
+    c_bool complete);
+
+v_topic
+v_readerGetTopic(
     v_reader _this);
 
-c_bool
-v_readerSubscribeGroup (
-    v_reader _this,
-    v_group group);
+v_topic
+v_readerGetTopic_nl(
+    v_reader _this);
 
-c_bool
-v_readerUnSubscribeGroup (
-    v_reader _this,
-    v_group g);
+void
+v_readerPublishBuiltinInfo(
+    v_reader _this);
 
-v_entry
-v_readerAddEntry(
-    v_reader _this,
-    v_entry e);
-
-v_entry
-v_readerRemoveEntry(
-    v_reader _this,
-    v_entry e);
+v_subscriber
+v_readerGetSubscriber(
+    v_reader _this);
 
 #endif

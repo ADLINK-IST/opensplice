@@ -9,7 +9,7 @@ DDS Java and C++ API Google Protocol Buffers Tutorial
 .. toctree::
    :maxdepth: 2
    :numbered:
-      
+
    preface
    introduction
    proto-message
@@ -17,8 +17,8 @@ DDS Java and C++ API Google Protocol Buffers Tutorial
    using-generated-api
    evolving-data-models
 
-   contacts   
-   
+   contacts
+
 
 Indices and tables
 ==================

@@ -2,3 +2,5 @@ export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 
+export JAVA7_HOME=/usr/local/jdk1.7.0
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

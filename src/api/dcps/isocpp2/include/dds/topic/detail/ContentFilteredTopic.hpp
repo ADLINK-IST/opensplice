@@ -101,7 +101,7 @@ private:
     {
         q_expr expr = NULL;
         uint32_t length;
-        c_value *params;
+        std::vector<c_value> params;
 
         length = myFilter.parameters_length();
         if (length < 100) {
@@ -118,15 +118,12 @@ private:
         u_topic uTopic = (u_topic)(myTopic.delegate()->get_user_handle());
 
         params = reader_parameters();
-        if (!u_topicContentFilterValidate2(uTopic, expr, params)) {
-            os_free(params);
+        if (!u_topicContentFilterValidate2(uTopic, expr, params.empty() ? NULL : &params[0], params.size())) {
             q_dispose(expr);
             ISOCPP_THROW_EXCEPTION(ISOCPP_INVALID_ARGUMENT_ERROR,
                     "filter_expression '%s' is invalid.", myFilter.expression().c_str());
         }
         q_dispose(expr);
-        /* The params can be NULL, but os_free ignores those pesky NULLs. */
-        os_free(params);
     }
 
 public:
@@ -142,18 +139,17 @@ public:
         return rExpr;
     }
 
-    c_value *reader_parameters() const
+    std::vector<c_value> reader_parameters() const
     {
         ISOCPP_REPORT_STACK_DELEGATE_BEGIN(this);
-        c_value *params = NULL;
+        std::vector<c_value> params;
         uint32_t n, length;
         org::opensplice::topic::FilterDelegate::const_iterator paramIterator;
 
         length = myFilter.parameters_length();
         if (length != 0) {
-            params = (c_value *)os_malloc(length * sizeof(struct c_value));
             for (n = 0, paramIterator = myFilter.begin(); n < length; n++, paramIterator++) {
-                params[n] = c_stringValue(const_cast<char *>(paramIterator->c_str()));
+                params.push_back(c_stringValue(const_cast<char *>(paramIterator->c_str())));
             }
         }
         return params;
@@ -198,18 +194,6 @@ public:
         ISOCPP_REPORT_STACK_DELEGATE_BEGIN(this);
         return dds::core::StringSeq(myFilter.begin(), myFilter.end());
     }
-#if 0
-    dds::topic::TTopicDescription<TopicDescriptionDelegate> clone()
-    {
-        org::opensplice::core::ScopedObjectLock scopedLock(*this);
-
-        typename dds::topic::ContentFilteredTopic<T, ContentFilteredTopic>::DELEGATE_REF_T ref(
-                new ContentFilteredTopic<T>(this->myTopic, this->myTopicName, this->myFilter));
-        ref->init(ref);
-
-        return dds::topic::ContentFilteredTopic<T, ContentFilteredTopic>(ref);
-    }
-#endif
 
 private:
     dds::topic::Topic<T> myTopic;

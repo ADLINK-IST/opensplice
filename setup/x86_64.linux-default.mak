@@ -68,7 +68,7 @@ SHCFLAGS         = -fPIC
 CFLAGS_OPT       = -O3 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W -Wno-long-long -Wno-variadic-macros
+CFLAGS_STRICT	 = -Wall -W -Wno-long-long -Wno-variadic-macros -Wdeclaration-after-statement
 CFLAGS_PERMISSIVE= -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function
 CFLAGS_LTO       = -flto
 ifeq ($(GCC_WERROR_IS_SWITCH_SUPPORT),1)

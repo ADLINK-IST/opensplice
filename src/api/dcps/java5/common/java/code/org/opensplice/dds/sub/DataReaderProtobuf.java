@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,8 +22,8 @@ package org.opensplice.dds.sub;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.omg.dds.core.InstanceHandle;
 import org.omg.dds.core.status.Status;
@@ -41,7 +42,7 @@ import DDS.SampleInfoSeqHolder;
 
 public class DataReaderProtobuf<PROTOBUF_TYPE, DDS_TYPE> extends
         AbstractDataReader<PROTOBUF_TYPE> {
-    private final ConcurrentHashMap<List<Sample<PROTOBUF_TYPE>>, PreAllocatorProtobuf<PROTOBUF_TYPE, DDS_TYPE>> preallocated;
+    private final HashMap<List<Sample<PROTOBUF_TYPE>>, PreAllocatorProtobuf<PROTOBUF_TYPE, DDS_TYPE>> preallocated;
     private final ReflectionDataReader<DDS_TYPE, PROTOBUF_TYPE> reflectionReader;
     private final TypeSupportProtobuf<PROTOBUF_TYPE, DDS_TYPE> typeSupport;
 
@@ -83,7 +84,7 @@ public class DataReaderProtobuf<PROTOBUF_TYPE, DDS_TYPE> extends
             Utilities.throwLastErrorException(this.environment);
         }
         this.setOld(old);
-        this.preallocated = new ConcurrentHashMap<List<Sample<PROTOBUF_TYPE>>, PreAllocatorProtobuf<PROTOBUF_TYPE, DDS_TYPE>>();
+        this.preallocated = new HashMap<List<Sample<PROTOBUF_TYPE>>, PreAllocatorProtobuf<PROTOBUF_TYPE, DDS_TYPE>>();
         this.typeSupport = (TypeSupportProtobuf<PROTOBUF_TYPE, DDS_TYPE>) topicDescription
                 .getTypeSupport();
         this.reflectionReader = new ReflectionDataReader<DDS_TYPE, PROTOBUF_TYPE>(

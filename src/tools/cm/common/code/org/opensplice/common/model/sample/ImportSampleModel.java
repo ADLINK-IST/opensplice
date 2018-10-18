@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,6 +35,7 @@ import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Participant;
 import org.opensplice.cm.Partition;
 import org.opensplice.cm.Publisher;
+import org.opensplice.cm.Time;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.data.Sample;
@@ -42,6 +44,7 @@ import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.PublisherQoS;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.TopicQoS;
+import org.opensplice.cm.qos.WriterLifecyclePolicy;
 import org.opensplice.cm.qos.WriterQoS;
 import org.opensplice.cm.transform.DataTransformerFactory;
 import org.opensplice.cm.transform.MetaTypeDeserializer;
@@ -720,6 +723,9 @@ public class ImportSampleModel extends SampleModel {
                     publisher = participant.createPublisher("import_publisher", qos);
 
                     WriterQoS wqos = WriterQoS.copyFromTopicQoS((TopicQoS)topic.getQoS());
+                    WriterLifecyclePolicy lifecycle = WriterLifecyclePolicy.DEFAULT;
+                    lifecycle.autodispose_unregistered_instances = false;
+                    wqos.setLifecycle(lifecycle);
                     writer = publisher.createWriter("import_writer", topic, wqos);
                 } catch(CMException ce){
                     throw new CommonException(ce.getMessage());

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,8 +22,8 @@ package org.opensplice.dds.pub;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -47,6 +48,7 @@ import org.opensplice.dds.core.StatusConditionImpl;
 import org.opensplice.dds.core.Utilities;
 import org.opensplice.dds.core.status.StatusConverter;
 import org.opensplice.dds.domain.DomainParticipantImpl;
+import org.opensplice.dds.topic.TopicDescriptionExt;
 import org.opensplice.dds.topic.TopicImpl;
 import org.opensplice.dds.type.AbstractTypeSupport;
 
@@ -54,7 +56,7 @@ public class PublisherImpl
 extends
 DomainEntityImpl<DDS.Publisher, DomainParticipantImpl, DDS.DomainParticipant, PublisherQos, PublisherListener, PublisherListenerImpl>
 implements Publisher {
-    private final ConcurrentHashMap<DDS.DataWriter, DataWriter<?>> writers;
+    private final HashMap<DDS.DataWriter, DataWriter<?>> writers;
 
     public PublisherImpl(OsplServiceEnvironment environment,
             DomainParticipantImpl parent, PublisherQos qos,
@@ -89,7 +91,7 @@ implements Publisher {
             Utilities.throwLastErrorException(this.environment);
         }
         this.setOld(old);
-        this.writers = new ConcurrentHashMap<DDS.DataWriter, DataWriter<?>>();
+        this.writers = new HashMap<DDS.DataWriter, DataWriter<?>>();
 
         if (this.listener != null) {
             this.listener.setInitialised();
@@ -267,11 +269,14 @@ implements Publisher {
 
     @Override
     public void closeContainedEntities() {
-        for (DataWriter<?> writer : this.writers.values()) {
-            try {
-                writer.close();
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
+        synchronized(this.writers){
+            HashMap<DDS.DataWriter, DataWriter<?>> copyWriter = new HashMap<DDS.DataWriter, DataWriter<?>>(this.writers);
+            for (DataWriter<?> writer : copyWriter.values()) {
+                try {
+                    writer.close();
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
+                }
             }
         }
     }
@@ -398,7 +403,9 @@ implements Publisher {
             EntityImpl<DDS.DataWriter, ?, ?, ?, ?> dataWriter) {
         DDS.DataWriter old = dataWriter.getOld();
         int rc = this.getOld().delete_datawriter(old);
-        this.writers.remove(old);
+        synchronized(this.writers){
+            this.writers.remove(old);
+        }
         Utilities.checkReturnCode(rc, this.environment,
                 "DataWriter.close() failed.");
     }

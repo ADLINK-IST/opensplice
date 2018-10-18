@@ -7,11 +7,11 @@ get_libjsig
 startOSPL
 
 echo "=== Launching QueryCondition "
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP QueryConditionDataSubscriber MSFT > subResult.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_QueryCondition_sub.jar MSFT > subResult.txt &
 
 sleep 2
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP QueryConditionDataPublisher > pubResult.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_QueryCondition_pub.jar > pubResult.txt
 
 queryconditionCheckResult
 

@@ -1,0 +1,21 @@
+module basic{
+	module module_SimpleTypes{
+		struct SimpleTypes_struct{
+			long long1;
+			unsigned long ulong1;
+			long long longlong1;
+			unsigned long long ulonglong1;
+			float float1;
+			short short1;
+			unsigned short ushort1;
+			char char1;
+			octet octet1;
+			double double1;
+			//long double longdouble1;
+			boolean bool1;
+			string string1;
+		};
+		
+		#pragma keylist SimpleTypes_struct long1
+	};
+};	

@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -121,32 +122,32 @@ public:
     static const char *
     get_prefix(int32_t code) {
         switch (code) {
-            case error_code:
-                return "Error: ";
-            case unsupported_error_code:
-                return "Unsupported: ";
-            case invalid_argument_code:
-                return "Bad parameter: ";
-            case precondition_not_met_error_code:
-                return "Precondition not met: ";
-            case out_of_resources_error_code:
-                return "Out of resources: ";
-            case not_enabled_error_code:
-                return "Not enabled: ";
-            case immutable_policy_error_code:
-                return "Immutable policy: ";
-            case inconsistent_policy_error_code:
-                return "Inconsistent policy: ";
-            case already_closed_error_code:
-                return "Already deleted: ";
-            case timeout_error_code:
-                return "Timeout: ";
-            case illegal_operation_error_code:
-                return "Illegal operation: ";
-            case null_reference_error_code:
-                return "Null reference: ";
-            default:
-                return "Warning: ";
+        case error_code:
+            return "Error";
+        case unsupported_error_code:
+            return "Unsupported";
+        case invalid_argument_code:
+            return "Bad parameter";
+        case precondition_not_met_error_code:
+            return "Precondition not met";
+        case out_of_resources_error_code:
+            return "Out of resources";
+        case not_enabled_error_code:
+            return "Not enabled";
+        case immutable_policy_error_code:
+            return "Immutable policy";
+        case inconsistent_policy_error_code:
+            return "Inconsistent policy";
+        case already_closed_error_code:
+            return "Already deleted";
+        case timeout_error_code:
+            return "Timeout";
+        case illegal_operation_error_code:
+            return "Illegal operation";
+        case null_reference_error_code:
+            return "Null reference";
+        default:
+            return "Warning";
         }
     }
 };
@@ -187,23 +188,24 @@ public:
     void throw_exception()
     {
         /* Add this exception as error to the logs. */
-        os_report_noargs(OS_ERROR,
+        os_report(OS_ERROR,
                          this->function.c_str(),
                          this->file.c_str(),
                          this->line,
                          this->code,
-                         this->description.c_str());
+                         -1, OS_TRUE,
+                         this->description.c_str(),
+                         NULL);
 
         /* Get reports into exception info before flushing the reports. */
         get_reports();
 
         /* Flush reports before throwing the exception. */
-        os_report_flush_unconditional(
-                        (os_boolean) (this->code != timeout_error_code),
-                        this->method.c_str(),
-                        this->file.c_str(),
-                        this->line,
-                        this->domainId);
+        os_report_dump((os_boolean) (this->code != timeout_error_code),
+                       this->method.c_str(),
+                       this->file.c_str(),
+                       this->line,
+                       this->domainId);
 
         /* Last but not least: throw proper exception type. */
         switch (this->code) {
@@ -251,6 +253,7 @@ private:
     {
         /* Prepend prefix to exception description. */
         this->description = CodeToString::get_prefix(this->code);
+        this->description += ": ";
         this->description += descr;
     }
 
@@ -259,7 +262,7 @@ private:
         /* Get and set context information. */
         os_timeW ostime;
         char node[64];
-        char date_time[128];
+        char date_time[OS_CTIME_R_BUFSIZE];
         std::stringstream tmp;
         const char *_file;
         int32_t _line;
@@ -286,7 +289,7 @@ private:
             this->method = this->signature;
         }
 
-        ostime = os_timeWGet();
+        ostime = os_report_getTimeW();
         os_ctimeW_r(&ostime, date_time, sizeof(date_time));
 
         if (os_gethostname(node, sizeof(node)-1) == os_resultSuccess) {
@@ -307,7 +310,7 @@ private:
         const char *file;
         int32_t i;
         std::stringstream tmp;
-        os_reportEventV1 report;
+        os_reportEvent report;
         int32_t stack_size = os_report_stack_size();
 
         if (stack_size <= 0) {
@@ -369,7 +372,7 @@ ReportFinisher::~ReportFinisher()
 {
     const char *function = NULL;
 
-    if (os_report_stack_flush_required(OS_FALSE)) {
+    if (os_report_status(OS_FALSE)) {
         const char *_file;
         int32_t _line;
         const char *_signature;
@@ -389,7 +392,7 @@ ReportFinisher::~ReportFinisher()
             domainId = obj->get_domain_id();
             }
         }
-        os_report_stack_unwind(OS_TRUE, function, _file, _line, domainId);
+        os_report_flush(OS_TRUE, function, _file, _line, domainId);
     }
 }
 
@@ -425,7 +428,7 @@ org::opensplice::core::utils::report_stack_close(
     assert (file != NULL);
     assert (signature != NULL);
 
-    if (os_report_stack_flush_required((flush ? OS_TRUE : OS_FALSE))) {
+    if (os_report_status((flush ? OS_TRUE : OS_FALSE))) {
         const char *_file = file;
         int32_t _line = line;
         const char *_signature = signature;
@@ -443,7 +446,7 @@ org::opensplice::core::utils::report_stack_close(
             org::opensplice::core::ObjectDelegate *obj = reinterpret_cast<org::opensplice::core::ObjectDelegate *>(objRef);
             domainId = obj->get_domain_id();
         }
-        os_report_stack_unwind((flush ? OS_TRUE : OS_FALSE), function, file, _line, domainId);
+        os_report_flush((flush ? OS_TRUE : OS_FALSE), function, file, _line, domainId);
     }
 }
 
@@ -469,14 +472,7 @@ org::opensplice::core::utils::report(
 
     /* Prepare error description. */
     retcode = CodeToString::get_prefix(code);
-    if (retcode != NULL) {
-        offset = strlen(retcode);
-        assert (offset <= OS_REPORT_BUFLEN);
-        (void)memcpy(buffer, retcode, offset);
-    }
-    va_start(args, format);
-    (void)os_vsnprintf(buffer + offset, sizeof(buffer) - offset, format, args);
-    va_end(args);
+    snprintf(buffer, sizeof(buffer), "%s: %s", retcode, format);
 
     /* Prettify function name. */
     std::string s(signature);
@@ -487,7 +483,9 @@ org::opensplice::core::utils::report(
     }
 
     /* Add this report to the logs. */
-    os_report_noargs(reportType, function, file, line, code, buffer);
+    va_start(args, format);
+    os_report_va(reportType, function, file, line, code, -1, OS_TRUE, buffer, args);
+    va_end(args);
 }
 
 
@@ -563,10 +561,13 @@ org::opensplice::core::utils::check_u_result_and_throw_exception(
             factory.prepare(ISOCPP_ALREADY_CLOSED_ERROR, file, line, signature, description);
             break;
 
+        case U_RESULT_NOT_INITIALISED:
+            factory.prepare(ISOCPP_NOT_ENABLED_ERROR, file, line, signature, description);
+            break;
+
         case U_RESULT_DETACHING:
         case U_RESULT_INTERNAL_ERROR:
         case U_RESULT_INTERRUPTED:
-        case U_RESULT_NOT_INITIALISED:
         case U_RESULT_UNDEFINED:
         default:
             factory.prepare(ISOCPP_ERROR, file, line, signature, description);

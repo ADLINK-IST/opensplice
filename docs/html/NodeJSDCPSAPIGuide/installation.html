@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Installation &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="index.html" />
+    <link rel="next" title="4. Examples" href="examples.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>3. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the procedure to install the Node.js DCPS API on a Linux or Windows platform.</p>
+<div class="section" id="dependencies">
+<h2>3.1. Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js DCPS API has several dependencies that must be installed.</p>
+<div class="section" id="linux-64-bit">
+<h3>3.1.1. Linux 64-bit<a class="headerlink" href="#linux-64-bit" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li>Node.js LTS 8.11.1 or later (preferably Node.js LTS 8.x version)</li>
+<li>npm (node package manager) version 5.6.0 or later (typically included with a Node.js install)</li>
+<li>Python 2.7 (v3.x.x is not supported)</li>
+<li>make</li>
+<li>C/C++ compiler toolchain like GCC</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="windows-64-bit">
+<h3>3.1.2. Windows 64-bit<a class="headerlink" href="#windows-64-bit" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li>Node.js LTS 8.11.1 or later (preferably Node.js LTS 8.x version)</li>
+<li>npm (node package manager) version 5.6.0 or later (typically included with a Node.js install)</li>
+<li>Python 2.7 (v3.x.x is not supported)</li>
+<li>Visual C++ build tools (VS 2015 or VS 2017)</li>
+</ul>
+</div></blockquote>
+<div class="section" id="python-and-visual-c-build-tools-install">
+<h4>3.1.2.1. Python and Visual C++ build tools install<a class="headerlink" href="#python-and-visual-c-build-tools-install" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><ul>
+<li><p class="first">Install all the required tools and configurations using Microsoft&#8217;s windows-build-tools by running the following from a command prompt as an administrator:</p>
+<p>npm install - -global - -production windows-build-tools</p>
+<blockquote>
+<div><p>(or)</p>
+</div></blockquote>
+</li>
+<li><p class="first">Install tools and configuration manually</p>
+<blockquote>
+<div><ul class="simple">
+<li>Visual C++ build tools (VS 2015 or VS 2017)</li>
+<li>Python 2.7 (v3.x.x is not supported)</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>More detailed information on installing Python and Visual C++ build tools on Windows can be found at: <a class="reference external" href="https://github.com/Microsoft/nodejs-guidelines/blob/master/windows-environment.md#compiling-native-addon-modules">https://github.com/Microsoft/nodejs-guidelines/blob/master/windows-environment.md#compiling-native-addon-modules</a></p>
+</div>
+</div>
+</div>
+<div class="section" id="opensplice-ospl-and-node-js-dcps-api-installation">
+<h2>3.2. OpenSplice (OSPL) and Node.js DCPS API Installation<a class="headerlink" href="#opensplice-ospl-and-node-js-dcps-api-installation" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic">
+<li><p class="first">Install OSPL. Choose an HDE type installer which is a Host Development Environment. This contains all of the services, libraries, header files and tools needed to develop
+applications using OpenSplice. The Node.js DCPS API is included in the following installers:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="46%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>Platform</strong></th>
+<th class="head"><strong>Platform Code</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Ubuntu1404 64 bit</td>
+<td>P704</td>
+</tr>
+<tr class="row-odd"><td>Ubuntu1604 64 bit</td>
+<td>P768</td>
+</tr>
+<tr class="row-even"><td>Windows10 64 bit</td>
+<td>P738</td>
+</tr>
+</tbody>
+</table>
+<p>Example installer:</p>
+<blockquote>
+<div><p>P704-VortexOpenSplice-6.9.x-HDE-x86.linux-gcc4.1.2-glibc2.5-installer.run</p>
+</div></blockquote>
+</li>
+<li><p class="first">Setup OSPL license. Copy the license.lic file into the appropriate license directory</p>
+</li>
+</ol>
+<blockquote>
+<div><em>/INSTALLDIR/Vortex_v2/license</em></div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Node.js DCPS API files are contained in a tools/nodejs folder</li>
+</ol>
+<blockquote>
+<div>Example:
+<em>$OSPL_HOME/tools/nodejs</em></div></blockquote>
+</div>
+<div class="section" id="installing-node-js-dcps-api-in-a-node-js-application">
+<h2>3.3. Installing Node.js DCPS API in a Node.js application<a class="headerlink" href="#installing-node-js-dcps-api-in-a-node-js-application" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Start a command shell. Setup OSPL environment variables by running release.com or release.bat which can be found in</p>
+<p><strong>Linux</strong></p>
+<p><em>/INSTALLDIR/ADLINK/Vortex_v2/Device/VortexOpenSplice/6.9.x/HDE/x86_64.linux/</em></p>
+<p><strong>Windows</strong></p>
+<p><em>\INSTALLDIR\ADLINK\Vortex_v2\Device\VortexOpenSplice\6.9.x\HDE\x86_64.windows\</em></p>
+</li>
+<li><p class="first">Create a node project folder, if not created</p>
+<p>mkdir &lt;project_name&gt;</p>
+<p>cd &lt;project_name&gt;</p>
+<p>npm init</p>
+</li>
+<li><p class="first">Change directory to node project folder</p>
+</li>
+<li><p class="first">Install the Node.js DCPS API to your project by executing:</p>
+<p><strong>Linux</strong></p>
+<p>npm install $OSPL_HOME/tools/nodejs/vortexdds-x.y.z.tgz</p>
+<p><strong>Windows</strong></p>
+<p>npm install %OSPL_HOME%\tools\nodejs\vortexdds-x.y.z.tgz</p>
+</li>
+</ol>
+</div>
+<div class="section" id="examples-and-documentation">
+<h2>3.4. Examples and Documentation<a class="headerlink" href="#examples-and-documentation" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Examples directory:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/tools/nodejs/examples</em></p>
+</div></blockquote>
+</li>
+<li><p class="first">Node.js DCPS API documentation directory:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/docs/nodejs/html</em></p>
+</div></blockquote>
+</li>
+<li><p class="first">Node.js DCPS User Guide (HTML and PDF) directory:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/docs</em></p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Installation</a><ul>
+<li><a class="reference internal" href="#dependencies">3.1. Dependencies</a><ul>
+<li><a class="reference internal" href="#linux-64-bit">3.1.1. Linux 64-bit</a></li>
+<li><a class="reference internal" href="#windows-64-bit">3.1.2. Windows 64-bit</a><ul>
+<li><a class="reference internal" href="#python-and-visual-c-build-tools-install">3.1.2.1. Python and Visual C++ build tools install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#opensplice-ospl-and-node-js-dcps-api-installation">3.2. OpenSplice (OSPL) and Node.js DCPS API Installation</a></li>
+<li><a class="reference internal" href="#installing-node-js-dcps-api-in-a-node-js-application">3.3. Installing Node.js DCPS API in a Node.js application</a></li>
+<li><a class="reference internal" href="#examples-and-documentation">3.4. Examples and Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="next chapter">4. Examples</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

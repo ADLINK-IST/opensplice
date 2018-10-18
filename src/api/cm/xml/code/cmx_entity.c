@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -243,6 +244,29 @@ err_iterNewEntityList:
     return cmEntities;
 }
 
+_Ret_z_
+const c_char *
+cmx__uresult (
+        _In_ u_result ures)
+{
+    switch(ures) {
+        case U_RESULT_OK:
+            return CMX_RESULT_OK;
+        case U_RESULT_ILL_PARAM:
+            return CMX_RESULT_ILL_PARAM;
+        case U_RESULT_IMMUTABLE_POLICY:
+            return CMX_RESULT_IMMUTABLE_POLICY;
+        case U_RESULT_INCONSISTENT_QOS:
+            return CMX_RESULT_INCONSISTENT_QOS;
+        case U_RESULT_TIMEOUT:
+            return CMX_RESULT_TIMEOUT;
+        case U_RESULT_PRECONDITION_NOT_MET:
+            return CMX_RESULT_PRECONDITION_NOT_MET;
+        default:
+            return CMX_RESULT_FAILED;
+    }
+}
+
 void
 cmx_entityNewFromAction(
     v_public entity,
@@ -282,7 +306,7 @@ cmx_entityNewEntityFromWalk(
         arg->result = (c_voidp)cmx_entityXml(entity->name,
                                              (c_address)proxy,
                                              &(v_public(entity)->handle),
-                                             entity->enabled,
+                                             v_entityEnabled(entity),
                                              special);
         os_free(special);
         result = TRUE;
@@ -375,6 +399,7 @@ cmx_entityGetTypeXml(
     case K_CMSOAP:
     case K_SPLICED:
     case K_RNR:
+    case K_DBMSCONNECT:
     case K_SERVICE:
         result = cmx_serviceInit((v_service)object);
     break;
@@ -452,6 +477,7 @@ cmx_entityInit(
         case K_CMSOAP:
         case K_SPLICED:
         case K_RNR:
+        case K_DBMSCONNECT:
         case K_SERVICE:
             result = cmx_serviceInit((v_service)entity);
         break;
@@ -654,6 +680,7 @@ cmx_entityWalkAction(
             case K_NWBRIDGE:
             case K_CMSOAP:
             case K_RNR:
+            case K_DBMSCONNECT:
                                 add = TRUE;  break;
             default:            break;
             }
@@ -667,6 +694,7 @@ cmx_entityWalkAction(
             case K_NWBRIDGE:
             case K_CMSOAP:
             case K_RNR:
+            case K_DBMSCONNECT:
                                 add = TRUE;  break;
             default:            break;
             }
@@ -1190,6 +1218,8 @@ cmx_entityStatisticsResetAction(
     break;
     case K_RNR:
     break;
+    case K_DBMSCONNECT:
+    break;
     case K_GROUPQUEUE:
         if (arg->fieldName) {
             result = v_statisticsResetField(v_statistics(v_groupQueue(object)->statistics), arg->fieldName);
@@ -1248,6 +1278,8 @@ cmx_entityStatisticsFieldResetAction(
         statistics = v_statistics(v_networking(object)->statistics);
     break;
     case K_RNR:
+    break;
+    case K_DBMSCONNECT:
     break;
     case K_GROUPQUEUE:
     break;
@@ -1331,13 +1363,18 @@ cmx_entityEnable(
 {
     cmx_entity ce;
     const c_char* result;
+    u_result ures;
 
     result = CMX_RESULT_ENTITY_NOT_AVAILABLE;
     ce = cmx_entityClaim(entity);
 
     if(ce != NULL){
-        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
-            result = CMX_RESULT_NOT_IMPLEMENTED;
+        if (u_objectKind(ce->uentity) != U_WAITSET) {
+            ures = u_entityEnable(u_entity(ce->uentity));
+            if(ures == U_RESULT_OK) {
+                /* TODO: update XML-entity? */
+            }
+            result = cmx__uresult(ures);
         } else {
             result = CMX_RESULT_ILL_PARAM;
         }

@@ -68,12 +68,12 @@ Host Development Environment (HDE) installer file. Follow the on-screen
 instructions and complete the installation. When asked to configure the
 installation with a license file, choose <em>No</em>. The installer will
 create an Vortex OpenSplice entry in <em>Start &gt; Programs</em> which contains
-links to the OpenSplice tools, documentation, and an Uninstall option.</p>
+links to the Vortex OpenSplice tools, documentation, and an Uninstall option.</p>
 <dl class="docutils">
 <dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
 <dd><p class="first">Please note that WindRiver&#8217;s Workbench GUI must be run in an environment
-where the OpenSplice variables have already been set. If you chose to
-set the OpenSplice variables globally during the installation stage,
+where the Vortex OpenSplice variables have already been set. If you chose to
+set the Vortex OpenSplice variables globally during the installation stage,
 then Workbench can be run directly. Otherwise, Workbench must be run
 from the Vortex OpenSplice command prompt. Start the command prompt by
 clicking <em>Start &gt; Programs &gt; Vortex OpenSplice menu entry &gt; Vortex OpenSplice
@@ -113,7 +113,7 @@ Vortex OpenSplice domain service <tt class="docutils literal"><span class="pre">
 described within the Vortex OpenSplice configuration file (<tt class="docutils literal"><span class="pre">ospl.xml</span></tt>). On
 VxWorks 6.x, a Real Time Process for each of these services is deployed
 on to the target hardware. The sample <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> configuration file
-provided with the VxWorks 6.x edition of OpenSplice has particular
+provided with the VxWorks 6.x edition of Vortex OpenSplice has particular
 settings so that these RTPs can operate effectively.</p>
 <p>The instructions below describe how to deploy these RTPs using the
 Workbench GUI and the Target Server File System (TSFS), although the
@@ -136,7 +136,7 @@ deployment configuration for the connection by right-clicking on the
 connection and choosing <em>Run &gt; Run RTP on Target...</em>.</p>
 <p><strong>Step 5</strong></p>
 <p>Create a new configuration for the <em>spliced</em> deployment that points to
-the <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> executable from the OpenSplice installation. The
+the <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> executable from the Vortex OpenSplice installation. The
 following parameters should be set in the dialog:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -174,7 +174,7 @@ following parameters should be set in the dialog:</p>
 executables (located in the <tt class="docutils literal"><span class="pre">bin</span></tt> directory of the installation) and
 <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> (located in the <tt class="docutils literal"><span class="pre">etc/config</span></tt> directory of the installation)
 have been copied to the directory made available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> described
-above. It is possible, if required, to copy the entire OpenSplice
+above. It is possible, if required, to copy the entire Vortex OpenSplice
 installation directory to the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> location so that all files are
 available, but please be aware that log and information files will be
 written to the same <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> location when the <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> is
@@ -190,19 +190,19 @@ shows this configuration.</p>
 each service described in the configuration file should be created.
 These can be seen in Workbench in the Real Time Processes list for the
 target connection. An example is shown below in
-<a class="reference internal" href="#workbench-showing-deployed-opensplice-rtps">Workbench showing deployed OpenSplice RTPs</a>.
+<a class="reference internal" href="#workbench-showing-deployed-vortex-opensplice-rtps">Workbench showing deployed Vortex OpenSplice RTPs</a>.
 (The list may need to be refreshed with the <em>F5</em> key.)</p>
 <p>Deployment problems are listed in <tt class="docutils literal"><span class="pre">ospl-error.txt</span></tt> and <tt class="docutils literal"><span class="pre">ospl-info.txt</span></tt>,
 which are created in the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> directory if the configuration
 described above is used.</p>
-<div class="figure" id="workbench-showing-deployed-opensplice-rtps">
-<a class="reference internal image-reference" href="_images/VxWorks-deployedRTPs.png"><img alt="Workbench showing deployed OpenSplice RTPs" src="_images/VxWorks-deployedRTPs.png" style="height: 70mm;" /></a>
-<p class="caption"><strong>Workbench showing deployed OpenSplice RTPs</strong></p>
+<div class="figure" id="workbench-showing-deployed-vortex-opensplice-rtps">
+<a class="reference internal image-reference" href="_images/VxWorks-deployedRTPs.png"><img alt="Workbench showing deployed Vortex OpenSplice RTPs" src="_images/VxWorks-deployedRTPs.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Workbench showing deployed Vortex OpenSplice RTPs</strong></p>
 </div>
 </div>
-<div class="section" id="opensplice-examples">
-<h2>11.5. OpenSplice Examples<a class="headerlink" href="#opensplice-examples" title="Permalink to this headline">¶</a></h2>
-<p>PrismTech provides a number of examples both for C and C++ that are
+<div class="section" id="vortex-opensplice-examples">
+<h2>11.5. Vortex OpenSplice Examples<a class="headerlink" href="#vortex-opensplice-examples" title="Permalink to this headline">¶</a></h2>
+<p>ADLINK provides a number of examples both for C and C++ that are
 described in the <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a> section. These example are provided in the form of
 Workbench projects which can be easily built and then deployed on to the
 target hardware in a similar process to that described above.</p>
@@ -213,7 +213,7 @@ the parameters required to run it.</p>
 <p>The example projects can be imported into Workbench by clicking
 <em>File &gt; Import... &gt; General &gt; Existing Projects into Workspace</em>.</p>
 <p>In the <em>Import Projects</em> dialog, browse to the <tt class="docutils literal"><span class="pre">examples</span></tt> directory of
-the OpenSplice installation. Select the required projects for importing
+the Vortex OpenSplice installation. Select the required projects for importing
 from the list that Workbench has detected.</p>
 <p>Ensure that the <em>Copy projects into workspace</em> box is un-checked.</p>
 </div>
@@ -227,8 +227,8 @@ from the list that Workbench has detected.</p>
 <em>Project &gt; Build All</em>.</li>
 </ul>
 </div>
-<div class="section" id="deploying-opensplice-examples">
-<h3>11.5.3. Deploying OpenSplice Examples<a class="headerlink" href="#deploying-opensplice-examples" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="deploying-vortex-opensplice-examples">
+<h3>11.5.3. Deploying Vortex OpenSplice Examples<a class="headerlink" href="#deploying-vortex-opensplice-examples" title="Permalink to this headline">¶</a></h3>
 <p>The PingPong and the Tutorial examples are run in identical ways with
 the same parameters for both C and C++. These should be deployed onto
 the VxWorks target with the arguments described in the <tt class="docutils literal"><span class="pre">README</span></tt> files
@@ -237,7 +237,7 @@ for each project.</p>
 <h4>11.5.3.1. Deploying PingPong<a class="headerlink" href="#deploying-pingpong" title="Permalink to this headline">¶</a></h4>
 <p>The PingPong example consists of the <tt class="docutils literal"><span class="pre">ping.vxe</span></tt> and <tt class="docutils literal"><span class="pre">pong.vxe</span></tt>
 executables. If these executables have been copied to the directory made
-available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> as described in <a href="#id2"><span class="problematic" id="id3">`Deploying OpenSplice DDS`_</span></a>,
+available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> as described in <a class="reference internal" href="#deploying-vortex-opensplice">Deploying Vortex OpenSplice</a>,
 RTP configurations should have the following parameters:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -311,7 +311,7 @@ button.</p>
 <p>The Chat Tutorial consists of the <tt class="docutils literal"><span class="pre">chatter.vxe</span></tt>, <tt class="docutils literal"><span class="pre">messageboard.vxe</span></tt> and
 <tt class="docutils literal"><span class="pre">userload.vxe</span></tt> executables. If these executables have been copied to the
 directory made available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> as described in
-<a href="#id4"><span class="problematic" id="id5">`Deploying OpenSplice DDS`_</span></a>, RTP configurations should have the following
+<a class="reference internal" href="#deploying-vortex-opensplice">Deploying Vortex OpenSplice</a>, RTP configurations should have the following
 parameters:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -431,10 +431,10 @@ for each process by clicking the <em>Display Selected Console</em> button.</p>
 <li><a class="reference internal" href="#installation">11.2. Installation</a></li>
 <li><a class="reference internal" href="#vxworks-kernel-requirements">11.3. VxWorks Kernel Requirements</a></li>
 <li><a class="reference internal" href="#deploying-vortex-opensplice">11.4. Deploying Vortex OpenSplice</a></li>
-<li><a class="reference internal" href="#opensplice-examples">11.5. OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#vortex-opensplice-examples">11.5. Vortex OpenSplice Examples</a><ul>
 <li><a class="reference internal" href="#importing-example-projects-into-workbench">11.5.1. Importing Example Projects into Workbench</a></li>
 <li><a class="reference internal" href="#building-example-projects-with-workbench">11.5.2. Building Example Projects with Workbench</a></li>
-<li><a class="reference internal" href="#deploying-opensplice-examples">11.5.3. Deploying OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#deploying-vortex-opensplice-examples">11.5.3. Deploying Vortex OpenSplice Examples</a><ul>
 <li><a class="reference internal" href="#deploying-pingpong">11.5.3.1. Deploying PingPong</a></li>
 <li><a class="reference internal" href="#deploying-the-chat-tutorial">11.5.3.2. Deploying the Chat Tutorial</a></li>
 </ul>
@@ -489,7 +489,7 @@ for each process by clicking the <em>Display Selected Console</em> button.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

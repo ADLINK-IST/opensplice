@@ -7,22 +7,22 @@ parseconditions:
 
     product: Vortex OpenSplice
 
-    conditions: 
+    conditions:
 
         - name: msg_lifecycle
           type: line
           inst: All
           required: yes
-          line: "Message : *Lifecycle_*"
+          line: "*Message* : *Lifecycle_*"
 
         - name: sample_sent
           type: line
           inst: All
           required: yes
-          line: "writerStates : *SAMPLE_SENT *"
+          line: "*riterStates* : *SAMPLE_SENT *"
 
         - name: stopping_subscriber
           type: line
           inst: All
           required: yes
-          line: "writerStates : *STOPPING_SUBSCRIBER*"
+          line: "*riterStates* : *STOPPING_SUBSCRIBER*"

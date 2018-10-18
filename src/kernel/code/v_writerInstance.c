@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -247,6 +248,9 @@ v_writerInstanceInsert(
             }
             /* remove last WRITE sample. */
             if (last != NULL) {
+                if (cursor == last) {
+                    cursor = last->next;
+                }
                 if (last->next != NULL) {
                     last->next->prev = v_writerSample(last->prev);
                 } else {
@@ -259,7 +263,8 @@ v_writerInstanceInsert(
                     v_writerSample(last->prev)->next = last->next;
                 } else {
                     /* Avoiding writerInstanceSetHead because
-                     * last->next's reference is transferred */
+                     * last->next's reference is transferred
+                     */
                     v_writerInstanceTemplate(instance)->sample = last->next;
                 }
                 last->next = NULL;

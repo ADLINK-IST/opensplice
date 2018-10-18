@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -797,8 +798,8 @@ cfg_sizeElementCheckValue(
 {
     os_boolean valid;
     os_uint64 value;
-
     valid = stringToSizeValue(str, &value);
+
     if (valid) {
         if ((value < _this->min) || (value > _this->max)) {
             valid = OS_FALSE;
@@ -1603,9 +1604,7 @@ cfg_elementCheckValue(
 {
     os_boolean valid = OS_TRUE;
 
-    if (str == NULL) {
-        return OS_FALSE;
-    }
+    assert(str);
 
     switch (_this->elementKind) {
     case CFG_ELEMENT_KIND_BOOLEAN:
@@ -1647,9 +1646,7 @@ cfg_attributeCheckValue(
 {
     os_boolean valid = OS_TRUE;
 
-    if (str == NULL) {
-        return OS_FALSE;
-    }
+    assert(str);
 
     switch (_this->attributeKind) {
     case CFG_ATTRIBUTE_KIND_BOOLEAN:
@@ -1945,26 +1942,28 @@ stringToSizeValue(
     os_boolean valid = OS_TRUE;
     char *endptr;
     os_size_t len;
+    os_double temp = 0.0;
 
-    *value = os_strtoull (image, &endptr, 0);
+    /* double needed to also accept cases like 0.5G */
+    temp = os_strtod (image, &endptr);
     len = strlen(endptr);
     if (len > 0) {
         switch (*endptr) {
         case 'K':
-            (*value) *= 1024ULL;
+            temp *= 1024ULL;
             break;
         case 'M':
-            (*value) *= 1024ULL * 1024UL;
+            temp *= 1024ULL * 1024UL;
             break;
         case 'G':
-            (*value) *= 1024ULL * 1024UL * 1024UL;
+            temp *= 1024ULL * 1024UL * 1024UL;
             break;
         default:
             valid = OS_FALSE;
             break;
         }
     }
-
+    (*value) = (os_uint64)temp;
     return valid;
 }
 

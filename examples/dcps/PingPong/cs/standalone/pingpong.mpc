@@ -8,13 +8,13 @@ project(sacs*ping) :  sacs_typesupport {
 
     specific {
         output_dir = .
+        lit_libs += System
     }
     exename = *
     Source_Files {
         ../src/ping.cs
         ../src/pinger.cs
         ../src/stats.cs
-        ../src/time.cs
         ../src/ErrorHandler.cs
     }
 
@@ -33,7 +33,6 @@ project(sacs*pong) :  sacs_typesupport {
         ../src/pong.cs
         ../src/ponger.cs
         ../src/stats.cs
-        ../src/time.cs
         ../src/ErrorHandler.cs
     }
 

@@ -5,7 +5,7 @@ parseconditions:
     parsecontents: yes
     type: local
 
-    conditions: 
+    conditions:
         - name: msft_inst
           type: line
           inst: All
@@ -16,10 +16,10 @@ parseconditions:
           type: line
           inst: All
           required: yes
-          line: "MSFT * pub1 5"
+          line: "MSFT * pub1 * 5"
 
         - name: msft_pub2
           type: line
           inst: All
           required: yes
-          line: "MSFT * pub2 10"
+          line: "MSFT * pub2 * 10"

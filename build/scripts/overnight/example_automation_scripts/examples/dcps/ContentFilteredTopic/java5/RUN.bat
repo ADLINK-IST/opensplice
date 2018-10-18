@@ -12,11 +12,11 @@ call %FUNCTIONS% :startOSPL
 
 echo "=== Launching ContentFilteredTopic "
 
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes ContentFilteredTopicDataSubscriber GE > subResult.txt
+start "" /B java -jar sub/java5_ContentFilteredTopic_sub.jar GE > subResult.txt
 
 %SLEEP5% >NUL
 
-java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes ContentFilteredTopicDataPublisher > pubResult.txt
+java -jar pub/java5_ContentFilteredTopic_pub.jar > pubResult.txt
 
 %SLEEP5% > NUL
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -56,7 +57,7 @@ extern "C" {
 
 #define SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR (33)
 
-#define SPLICED_EXIT_CODE_INAPPLICABLE_CONFIGURATION 34
+#define SPLICED_EXIT_CODE_INAPPLICABLE_CONFIGURATION (34)
 
 #define SPLICED_SHM_OK  (1)
 #define SPLICED_SHM_NOK (0)

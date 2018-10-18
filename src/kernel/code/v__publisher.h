@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,7 +44,7 @@ v_publisherConnectNewGroup(
     v_group g);
 
 c_bool
-v__publisherCoherentTransactionSingleNoLock(
+v_publisherStartTransaction(
     v_publisher p,
     c_ulong *publisherId,
     c_ulong *transactionId);

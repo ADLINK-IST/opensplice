@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -102,13 +103,15 @@ OS_API u_bool
 u_topicContentFilterValidate (
     const u_topic _this,
     const q_expr expr,
-    const c_value params[]);
+    const c_value params[],
+    os_uint32 nrOfParams);
 
 OS_API u_bool
 u_topicContentFilterValidate2 (
     const u_topic _this,
     const q_expr expr,
-    const c_value params[]);
+    const c_value params[],
+    os_uint32 nrOfParams);
 
 #undef OS_API
 

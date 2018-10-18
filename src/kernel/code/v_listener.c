@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -46,7 +47,7 @@ v_listenerNew(
     _this = v_listener(v_objectNew(kernel,K_LISTENER));
     if (_this != NULL) {
         v_publicInit(v_public(_this));
-        c_mutexInit(c_getBase(_this), &_this->mutex);
+        (void)c_mutexInit(c_getBase(_this), &_this->mutex);
         c_condInit(c_getBase(_this), &_this->cv, &_this->mutex);
         _this->participant = p;
         _this->eventList = NULL;
@@ -100,7 +101,7 @@ v_listenerFree(
 
     delay = OS_DURATION_INIT(0, 1000);
     while (_this->waitCount > 0 && !p->processIsZombie) {
-        os_sleep(delay);
+        ospl_os_sleep(delay);
     }
 
     v_participantRemove(p, v_object(_this));
@@ -166,8 +167,7 @@ v_listenerNotify(
     v_event e,
     v_entity listener)
 {
-   /*
-    * The userData argument is typical the user layer entity to which
+   /* The userData argument is typical the user layer entity to which
     * this listener is attached.
     * The userData is passed to the v_listenerWait operation.
     * The eventData is optional for passing additional data,
@@ -179,11 +179,10 @@ v_listenerNotify(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_listener));
 
+    c_mutexLock(&_this->mutex);
     if (e != NULL) {
-        c_mutexLock(&_this->mutex);
-        /* It seems that the list of events can grow to infinite length.
-         */
         found = NULL;
+        event = NULL;
         if (_this->combine &&
             ((e->kind & V_EVENT_DATA_AVAILABLE) || (e->kind & V_EVENT_ON_DATA_ON_READERS)) )
         {
@@ -191,67 +190,67 @@ v_listenerNotify(
              * to avoid triggering after data is already read on behalf of the first
              * trigger.
              */
+            c_voidp source = v_publicGetUserData(v_public(e->source));
             found = _this->eventList;
-            while ((found != NULL) &&
-                   (found->source != v_publicGetUserData(v_public(e->source))))
-            {
-                found = found->next;
+            while (found != NULL) {
+                if ((found->source == source) &&
+                    (found->kind == e->kind)) {
+                    break;
+                } else {
+                    found = found->next;
+                }
             }
         }
         if (found == NULL) {
             event = c_new(v_kernelType(v_objectKernel(_this),K_LISTENEREVENT));
-
-            /* Source is allowed to be NULL in case of trigger */
-            if (e->source != NULL) {
-                event->source = v_publicGetUserData(v_public(e->source));
-            } else {
-                assert (e->kind & V_EVENT_TRIGGER);
-                event->source = NULL;
-            }
-            if (listener) {
-                event->listenerData = listener->listenerData;
-                event->userData = v_publicGetUserData(v_public(listener)); /* Typical the language binding entity */
-            } else {
-                event->listenerData = NULL;
-                event->userData = NULL; /* Typical the language binding entity */
-            }
-            event->kind = e->kind;
             event->next = NULL;
-            /* For all events except for data availability and triggers
+            event->kind = e->kind;
+            event->source = v_publicGetUserData(v_public(e->source));
+            /* For all events except for data availability
              * copy the entity status to keep the actual value until the
              * data is processed. The aforementioned events do not affect
              * status, so there is no need to copy the value nor reset any
              * counters.
              */
-            switch (event->kind) {
-                case V_EVENT_DATA_AVAILABLE:
-                    event->eventData = c_keep(e->data);
-                    break;
-                case V_EVENT_TRIGGER:
-                    event->eventData = NULL;
-                    break;
-                default:
-                    status = v_entityStatus(v_entity(e->source));
-                    event->eventData = v_statusCopyOut(status);
-                    v_statusResetCounters(status, e->kind);
-                    c_free(status);
-                    break;
-            }
-            /* insert constructed listener event in the listeners event list.
-             */
-            if (_this->lastEvent) {
-                _this->lastEvent->next = c_keep(event);
-                c_free(_this->lastEvent);
+            if (event->kind == V_EVENT_DATA_AVAILABLE) {
+                c_free(event->eventData);
+                event->eventData = c_keep(e->data);
             } else {
-                assert(_this->eventList == NULL);
-                _this->eventList = c_keep(event);
+                status = v_entityStatus(v_entity(e->source));
+                c_free(event->eventData);
+                event->eventData = v_statusCopyOut(status);
+                v_statusResetCounters(status, e->kind);
+                c_free(status);
             }
-            _this->lastEvent = event /* transfer ref */;
         }
-        _TRACE_EVENTS_("v_listenerNotify: listener 0x%x, events 0x%x\n", _this, e->kind);
-        c_condBroadcast(&_this->cv);
-        c_mutexUnlock(&_this->mutex);
+    } else {
+        event = c_new(v_kernelType(v_objectKernel(_this),K_LISTENEREVENT));
+        event->next = NULL;
+        event->kind = V_EVENT_TRIGGER;
+        event->source = NULL;
+        event->eventData = NULL;
     }
+    if (event) {
+        /* insert constructed listener event in the listeners event list. */
+        if (_this->lastEvent) {
+            _this->lastEvent->next = c_keep(event);
+            c_free(_this->lastEvent);
+        } else {
+            assert(_this->eventList == NULL);
+            _this->eventList = c_keep(event);
+        }
+        _this->lastEvent = event /* transfer ref */;
+        if (listener) {
+            event->listenerData = listener->listenerData;
+            event->userData = v_publicGetUserData(v_public(listener)); /* Typical the language binding entity */
+        } else {
+            event->listenerData = NULL;
+            event->userData = NULL; /* Typical the language binding entity */
+        }
+    }
+    _TRACE_EVENTS_("v_listenerNotify: listener 0x%x, events 0x%x\n", _this, (e?e->kind:V_EVENT_TRIGGER));
+    c_condBroadcast(&_this->cv);
+    c_mutexUnlock(&_this->mutex);
 }
 
 v_result
@@ -289,69 +288,60 @@ v_listenerWait(
     _this->waitCount--;
     assert(_this->waitCount + 1 > _this->waitCount);
     c_mutexUnlock(&_this->mutex);
-    if ((result != V_RESULT_ALREADY_DELETED) && action) {
-        if (eventList != NULL) {
-            /* If we timed out but did find some events, we consider
-               it success, so that a timeout means no events were
-               processed and success means some events were
-               processed. */
-            result = V_RESULT_OK;
-        } else {
-            _TRACE_EVENTS_("v_listenerWait: listener 0x%x, event list is empty so timeout\n", _this);
-        }
-        event = eventList;
-        while (event) {
-            _TRACE_EVENTS_("v_listenerWait process event: "
-                           "listener 0x%x, event 0x%x\n",
-                           _this, event->kind);
 
+    if (result == V_RESULT_ALREADY_DELETED) {
+        action = NULL;
+    }
+    if (eventList != NULL) {
+        /* If we timed out but did find some events, we consider
+         * it success, so that a timeout means no events were
+         * processed and success means some events were processed.
+         */
+        result = V_RESULT_OK;
+    } else {
+        _TRACE_EVENTS_("v_listenerWait: listener 0x%x, event list is empty so timeout\n", _this);
+    }
+    event = eventList;
+    while (event) {
+        _TRACE_EVENTS_("v_listenerWait process event: "
+                       "listener 0x%x, event 0x%x\n",
+                       _this, event->kind);
+
+        if (action && event->kind != V_EVENT_TRIGGER) {
             v_kernelProtectStrictReadOnlyEnter();
             action(event, arg);
             v_kernelProtectStrictReadOnlyExit();
-
-            /* If this event is a destroy event then we must remove all
-             * events from the same source that have arrived after this event.
-             * Generation of new event are disabled but there may still be
-             * events in the event list.
-             * So scan the rest of the list for any events.
-             */
-            if (event->kind & V_EVENT_OBJECT_DESTROYED) {
-                v_listenerEvent prev = event;
-                v_listenerEvent e = event->next;
-
-                while (e) {
-                    if (e->source == event->source) {
-                        prev->next = e->next;
-                        v_listenerEventDeinit(e);
-                        c_free(e);
-                        e = prev->next;
-                    } else {
-                        prev = e;
-                        e = e->next;
-                    }
-                }
-                /* Now we are sure that no events exist anymore from this source. */
-            }
-
-            eventList = event->next;
-
-            /* free the Status object previously allocated by v_listenerNotify. */
-            v_listenerEventDeinit(event);
-            c_free(event);
-            event = eventList;
         }
+
+        /* If this event is a destroy event then we must remove all
+         * events from the same source that have arrived after this event.
+         * Generation of new event are disabled but there may still be
+         * events in the event list.
+         * So scan the rest of the list for any events.
+         */
+        if (event->kind & V_EVENT_OBJECT_DESTROYED) {
+            v_listenerEvent prev = event;
+            v_listenerEvent e = event->next;
+
+            while (e) {
+                if (e->source == event->source) {
+                    prev->next = e->next;
+                    v_listenerEventDeinit(e);
+                    c_free(e);
+                    e = prev->next;
+                } else {
+                    prev = e;
+                    e = e->next;
+                }
+            }
+            /* Now we are sure that no events exist anymore from this source. */
+        }
+        eventList = event->next;
+        /* free the Status object previously allocated by v_listenerNotify. */
+        v_listenerEventDeinit(event);
+        c_free(event);
+        event = eventList;
     }
     return result;
 }
 
-void
-v_listenerTrigger(
-    v_listener _this)
-{
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this,v_listener));
-
-    c_mutexLock(&_this->mutex);
-    c_condBroadcast(&_this->cv);
-    c_mutexUnlock(&_this->mutex);
-}

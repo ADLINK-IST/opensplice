@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,9 +46,7 @@
  */
 #define COL(index) ((index) / NROFROW)
 #define ROW(index) ((index) % NROFROW)
-/*
- * This macro specifies the non zero value as first serial value.
- */
+/* This macro specifies the non zero value as first serial value. */
 #define MAX_SERIAL   (0x00ffffff)
 
 const v_handle V_HANDLE_NIL = {0, 0, 0};
@@ -103,7 +102,13 @@ v_handleServerNew (
                           "kernel::v_handle::v_handleServerNew",V_RESULT_INTERNAL_ERROR,
                           "Failed to allocate handle info records");
             } else {
-                c_mutexInit(c_getBase(server), &server->mutex);
+                if (c_mutexInit(c_getBase(server), &server->mutex) != SYNC_RESULT_SUCCESS) {
+                    c_free(server);
+                    server = NULL;
+                    OS_REPORT(OS_FATAL,
+                            "kernel::v_handle::v_handleServerNew",V_RESULT_INTERNAL_ERROR,
+                            "Failed to initialize mutex for server");
+                }
             }
         } else {
             c_free(server);
@@ -277,7 +282,8 @@ v_handleServerRegister(
         info = fresh_info_from_idx(server, idx);
     } else if (server->freeListLength < NROFROW && COL(server->lastIndex) < NROFCOL-1) {
         /* Free list is getting short, but we can add another column (this also
-           covers the case of an empty freelist) */
+         * covers the case of an empty freelist)
+         */
         assert(ROW(server->lastIndex) == NROFROW - 1);
         idx = ++server->lastIndex;
         if ((info = fresh_info_from_new_column(server, idx)) == NULL) {
@@ -301,10 +307,11 @@ v_handleServerRegister(
     info->object_nextFree = (c_address) c_keep(o);
 
     /* memory barrier here will ensure that any accidental
-       handleClaim (we haven't advertised the handle, but in case
-       somehow it gets fed random garbage) will fail because
-       status_count still has ON_FREELIST set until object_nextFree
-       properly points to the object. */
+     * handleClaim (we haven't advertised the handle, but in case
+     * somehow it gets fed random garbage) will fail because
+     * status_count still has ON_FREELIST set until object_nextFree
+     * properly points to the object.
+     */
     pa_fence ();
     pa_st32 (&info->status_count_index, 0);
 
@@ -382,9 +389,10 @@ release_int (
     c_ulong idx)
 {
     /* GCC atomic builtins imply barriers => whatever had been done
-       before release_int will be visible in time.  v_handleDeregister
-       marks the handle as DEREGISTERING and relies on release_int to
-       put it on the freelist and dispose the object */
+     * before release_int will be visible in time.  v_handleDeregister
+     * marks the handle as DEREGISTERING and relies on release_int to
+     * put it on the freelist and dispose the object
+     */
     assert (!(pa_ld32 (&info->status_count_index) & STATUS_ON_FREELIST));
     if (pa_dec32_nv (&info->status_count_index) == STATUS_DEREGISTERING) {
         free_handle (server, info, idx);
@@ -403,8 +411,9 @@ retry:
     status_count = pa_ld32 (&info->status_count_index);
     if (status_count & (STATUS_DEREGISTERING | STATUS_ON_FREELIST)) {
         /* can't trust serials unless we first lock server->mutex, but
-           then again, who cares whether it is EXPIRED or INVALID
-           anyway? */
+         * then again, who cares whether it is EXPIRED or INVALID
+         * anyway?
+         */
         return V_HANDLE_EXPIRED;
     } else {
         c_ulong new_status_count = status_count + 1;
@@ -418,8 +427,9 @@ retry:
         return V_HANDLE_OK;
     } else {
         /* Incremented refcount, but for the wrong handle => decide
-           whether it is expired or illegal, then immediately release
-           it */
+         * whether it is expired or illegal, then immediately release
+         * it
+         */
         v_handleResult result = (handle.serial < info->serial && handle.serial != 0) ? V_HANDLE_EXPIRED : V_HANDLE_ILLEGAL;
         release_int (server, info, handle.index);
         return result;
@@ -490,9 +500,10 @@ v_handleRelease (
     }
 
     /* It must be claimed, therefore the serial can't change and must
-       match ... Now what if it wasn't claimed? There's no guarantee
-       whatsoever that an issue will be caught, but do some assertions
-       anyway. */
+     * match ... Now what if it wasn't claimed? There's no guarantee
+     * whatsoever that an issue will be caught, but do some assertions
+     * anyway.
+     */
     assert ((pa_ld32 (&info->status_count_index) & STATUS_COUNT_INDEX_MASK) > 0);
     assert (!(pa_ld32 (&info->status_count_index) & STATUS_ON_FREELIST));
     assert (handle.serial == info->serial);

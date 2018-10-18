@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@
 /* Implementation */
 #include "vortex_os.h"
 #include "os_report.h"
+#include "os_atomics.h"
 #include "c_base.h"
 #include "kernelModuleI.h"
 #include "v__networkQueue.h"
@@ -67,7 +69,8 @@ v_networkReaderNew(
     c_bool ignoreReliabilityQoS)
 {
     /* Note: currently, no qos-es are supported. Everything is redirected
-     *       to the defaultQueue */
+     *       to the defaultQueue
+     */
 
     v_kernel kernel;
     v_networkReader reader = NULL;
@@ -88,7 +91,9 @@ v_networkReaderNew(
             reader->statistics = v_networkReaderStatisticsNew(kernel);
 
             /* Initialization of parent */
-            v_readerInit(v_reader(reader), name, subscriber, q, TRUE);
+            v_readerInit(v_reader(reader), name, subscriber, q);
+            (void)v_entityEnable(v_entity(reader));
+
             c_free(q); /* ref now in v_reader(queue)->qos */
 
             /* This function only ever called once per network instance so no
@@ -198,8 +203,7 @@ v_networkReaderCreateQueue(
             reader->queues[reader->nofQueues] = queue;
             reader->nofQueues++;
             result = reader->nofQueues;
-            /* insert statistics
-             */
+            /* insert statistics */
             if (nqs != NULL) {
                 s = reader->statistics;
                 if (s != NULL) {
@@ -289,7 +293,8 @@ v_networkReaderSelectBestQueueByReliability(
                 } else {
                     if (prio < queuePrio) {
                         /* This queue might be the best fit, it offers higher prio
-                         * than requested */
+                         * than requested
+                         */
                         if (possiblyBestQueue != NULL) {
                             if (queuePrio < possiblyBestQueue->priority) {
                                 possiblyBestQueue = currentQueue;
@@ -301,7 +306,8 @@ v_networkReaderSelectBestQueueByReliability(
                     if (possiblyBestQueue == NULL) {
                         /* No queue fits until now, but this queue
                          * might be the best alternative if no queue
-                         * offers the requested prio at all */
+                         * offers the requested prio at all
+                         */
                         if (bestAlternativeQueue != NULL) {
                             if (queuePrio > bestAlternativeQueue->priority) {
                                 bestAlternativeQueue  = currentQueue;
@@ -395,7 +401,8 @@ v_networkReaderSelectBestQueueIgnoreReliability(
                 if (possiblyBestQueue == NULL) {
                     /* No queue fits until now, but this queue
                      * might be the best alternative if no queue
-                     * offers the requested prio at all */
+                     * offers the requested prio at all
+                     */
                     if (bestAlternativeQueue != NULL) {
                         if (queuePrio > bestAlternativeQueue->priority) {
                             bestAlternativeQueue  = currentQueue;
@@ -433,7 +440,8 @@ v_networkReaderSelectBestQueue(
 {
   if (reader->ignoreReliabilityQoS) {
     /* this mode is required for DDSi, where a singlee channel is
-       serving best-effort and reliable messages */
+     * serving best-effort and reliable messages
+     */
     return v_networkReaderSelectBestQueueIgnoreReliability
       (reader,
        qos,
@@ -444,7 +452,8 @@ v_networkReaderSelectBestQueue(
   else {
     /* Note: else-branch is the fast path */
     /* this mode is required for legacy OSPL protocol, change order
-       when DDSi becomes the default protocol  */
+     * when DDSi becomes the default protocol
+     */
     return v_networkReaderSelectBestQueueByReliability
       (reader,
        qos,
@@ -471,7 +480,7 @@ v_networkReaderWrite(
     assert(C_TYPECHECK(reader, v_networkReader));
 
     /* First select the best queue */
-    if (reader->remoteActivity) {
+    if (reader->remoteActivity && !(pa_ld32(&v_objectKernel(reader)->isolate) & V_ISOLATE_MUTE)) {
         if (message != NULL) {
             bestQueue = v_networkReaderSelectBestQueue(
                             reader,
@@ -527,10 +536,11 @@ v_networkReaderWaitDelayed(
     os_duration sleep;
 
     /* Simply sleeping here for resolution time, is not correct.
-    We should wakeup on, or just after the next wakeuptime.*/
+     * We should wakeup on, or just after the next wakeuptime.
+     */
     sleep = os_timeEDiff(v_networkQueue(reader->queues[queueId-1])->nextWakeup, os_timeEGet());
     v__kernelProtectWaitEnter(NULL, NULL);
-    os_sleep(sleep);
+    ospl_os_sleep(sleep);
     v__kernelProtectWaitExit();
 
     return V_WAITRESULT_TIMEOUT | v_networkReaderWait(reader, queueId, queue);
@@ -558,68 +568,36 @@ void
 v_networkReaderFree(
     v_networkReader reader)
 {
-    /* call inherited free */
+    c_bool sendTo, more;
+    v_message message;
+    c_ulong sequenceNumber, priority;
+    v_gid sender, receiver;
+    os_timeE sendBefore;
+    v_networkReaderEntry entry;
+    c_ulong i;
+
+    c_keep(reader);
+
+    /* call inherited free,
+     * which will remove the entry from the associated groups
+     */
     v_readerFree(v_reader(reader));
+
+    /* remove the messages still pressent in the network queues */
+    for (i = 0; i < reader->nofQueues; i++) {
+        while (v_networkQueueTakeFirst (
+                    v_networkQueue(reader->queues[i]), &message, &entry, &sequenceNumber,
+                    &sender, &sendTo, &receiver, &sendBefore, &priority, &more)) {
+            c_free(message);
+            c_free(entry);
+        }
+    }
+
+    c_free(reader);
 }
 
 
 /* ------------------------ Subscription/Unsubscription --------------------- */
-
-static c_bool
-v_networkReaderEntryUnSubscribe(
-    v_networkReaderEntry entry,
-    v_partition partition)
-{
-    assert(C_TYPECHECK(entry, v_networkReaderEntry));
-    assert(C_TYPECHECK(partition, v_partition));
-
-    if (v_group(entry->group)->partition == partition) {
-      v_groupRemoveEntry(entry->group, v_entry(entry));
-    }
-
-    return TRUE;
-}
-
-
-c_bool
-v_networkReaderUnSubscribe(
-    v_networkReader reader,
-    v_partition partition)
-{
-    assert(C_TYPECHECK(reader, v_networkReader));
-    assert(C_TYPECHECK(partition, v_partition));
-
-    return v_readerWalkEntries(v_reader(reader),
-               (c_action)v_networkReaderEntryUnSubscribe, partition);
-}
-
-static c_bool
-v_networkReaderEntryUnSubscribeGroup(
-    v_networkReaderEntry entry,
-    v_group group)
-{
-    assert(C_TYPECHECK(entry, v_networkReaderEntry));
-    assert(C_TYPECHECK(group, v_group));
-
-    if (v_group(entry->group) == group) {
-      v_groupRemoveEntry(entry->group, v_entry(entry));
-    }
-
-    return TRUE;
-}
-
-
-c_bool
-v_networkReaderUnSubscribeGroup(
-    v_networkReader reader,
-    v_group group)
-{
-    assert(C_TYPECHECK(reader, v_networkReader));
-    assert(C_TYPECHECK(group, v_group));
-
-    return v_readerWalkEntries(v_reader(reader),
-               (c_action)v_networkReaderEntryUnSubscribeGroup, group);
-}
 
 struct v_findEntryArg {
     v_group group;

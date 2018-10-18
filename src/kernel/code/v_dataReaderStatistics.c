@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,7 +24,10 @@
 #include "v_maxValue.h"
 #include "v_fullCounter.h"
 
-v_dataReaderStatistics v_dataReaderStatisticsNew(v_kernel k)
+_Ret_notnull_
+v_dataReaderStatistics
+v_dataReaderStatisticsNew(
+        _In_ v_kernel k)
 {
     v_dataReaderStatistics rs;
     c_type readerStatisticsType;
@@ -37,7 +41,9 @@ v_dataReaderStatistics v_dataReaderStatisticsNew(v_kernel k)
     return rs;
 }
 
-void v_dataReaderStatisticsInit(v_dataReaderStatistics rs)
+void
+v_dataReaderStatisticsInit(
+        _Inout_ v_dataReaderStatistics rs)
 {
     assert(rs != NULL);
     assert(C_TYPECHECK(rs,v_dataReaderStatistics));

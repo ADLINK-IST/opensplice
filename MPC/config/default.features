@@ -71,6 +71,8 @@ ospl_os_host_solaris = 0
 // Compilers (and other variations)
 ospl_compiler_studio = 0
 ospl_compiler_gcc = 0
+ospl_gcc_5 = 0
+ospl_gcc_6 = 0
 
 // VxWorks 6.5, 6.6, and 6.7 have libs under target/usr/lib, so set to 1
 ospl_vxworks_libs_in_target_usr_lib=0
@@ -102,7 +104,9 @@ cortexa9t_neon_WRlinux5_gcc = 0
 cortexa9t_yocto = 0
 armv7l_linux = 0
 armv7a_vfp_neon_linux = 0
+armv7a_lafp_neon_linux = 0
 armv7at2_vfp_neon_WRlinux7_gcc = 0
+aarch64_zynqmp_linux = 0
 intel_atom_WRlinux5_gcc = 0
 x86_WRlinux7_gcc = 0
 x86_64_WRlinux7_gcc = 0

@@ -1,11 +1,10 @@
 @ECHO OFF
 
+SETLOCAL
+
 pwd
 
 call setenv.bat
-
-REM run set to see what is actually set
-set
 
 REM RUN_LOG is a logfile containing the full test results
 
@@ -16,6 +15,9 @@ ECHO Set OSPL runtime environment
 call release.bat
 set PATH=c:\Python27;%PATH%
 set HOSTNAME
+
+REM run set to see what is actually set
+set
 
 mkdir "%OSPL_HOME%\etc\tmp"
 IF "%TMP%"=="" set TMP=%OSPL_HOME%\etc\tmp
@@ -37,3 +39,5 @@ cd %OSPLI_BASE%
 cd python
 
 python runExample.py -a 
+
+ENDLOCAL

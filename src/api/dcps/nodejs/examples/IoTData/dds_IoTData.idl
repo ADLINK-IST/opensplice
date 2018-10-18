@@ -1,0 +1,114 @@
+#ifndef DDS_IOTDATA_IDL
+#define DDS_IOTDATA_IDL
+
+module DDS
+{
+   module IoT
+   {
+      typedef octet              IoTUI8;
+      typedef unsigned short     IoTUI16;
+      typedef unsigned long      IoTUI32;
+      typedef unsigned long long IoTUI64;
+      typedef char               IoTI8;
+      typedef short              IoTI16;
+      typedef long               IoTI32;
+      typedef long long          IoTI64;
+      typedef float              IoTF32;
+      typedef double             IoTF64;
+      typedef boolean            IoTB;
+      typedef string             IoTStr;
+      typedef char               IoTCh;
+
+      typedef sequence<IoTUI8>  IoTUI8Seq;
+      typedef sequence<IoTUI16> IoTUI16Seq;
+      typedef sequence<IoTUI32> IoTUI32Seq;
+      typedef sequence<IoTUI64> IoTUI64Seq;
+      typedef sequence<IoTI8>   IoTI8Seq;
+      typedef sequence<IoTI16>  IoTI16Seq;
+      typedef sequence<IoTI32>  IoTI32Seq;
+      typedef sequence<IoTI64>  IoTI64Seq;
+      typedef sequence<IoTF32>  IoTF32Seq;
+      typedef sequence<IoTF64>  IoTF64Seq;
+      typedef sequence<IoTB>    IoTBSeq;
+      typedef sequence<IoTStr>  IoTStrSeq;
+      typedef sequence<IoTCh>   IoTChSeq;
+
+      enum IoTType
+      {
+         TYPE_IoTUI8,
+         TYPE_IoTUI16,
+         TYPE_IoTUI32,
+         TYPE_IoTUI64,
+         TYPE_IoTI8,
+         TYPE_IoTI16,
+         TYPE_IoTI32,
+         TYPE_IoTI64,
+         TYPE_IoTF32,
+         TYPE_IoTF64,
+         TYPE_IoTB,
+         TYPE_IoTStr,
+         TYPE_IoTCh,
+         TYPE_IoTUI8Seq,
+         TYPE_IoTUI16Seq,
+         TYPE_IoTUI32Seq,
+         TYPE_IoTUI64Seq,
+         TYPE_IoTI8Seq,
+         TYPE_IoTI16Seq,
+         TYPE_IoTI32Seq,
+         TYPE_IoTI64Seq,
+         TYPE_IoTF32Seq,
+         TYPE_IoTF64Seq,
+         TYPE_IoTBSeq,
+         TYPE_IoTStrSeq,
+         TYPE_IoTChSeq
+      };
+
+      union IoTValue switch (IoTType)
+      {
+         case TYPE_IoTUI8:     IoTUI8     ui8;
+         case TYPE_IoTUI16:    IoTUI16    ui16;
+         case TYPE_IoTUI32:    IoTUI32    ui32;
+         case TYPE_IoTUI64:    IoTUI64    ui64;
+         case TYPE_IoTI8:      IoTI8      i8;
+         case TYPE_IoTI16:     IoTI16     i16;
+         case TYPE_IoTI32:     IoTI32     i32;
+         case TYPE_IoTI64:     IoTI64     i64;
+         case TYPE_IoTF32:     IoTF32     f32;
+         case TYPE_IoTF64:     IoTF64     f64;
+         case TYPE_IoTB:       IoTB       b;
+         case TYPE_IoTStr:     IoTStr     str;
+         case TYPE_IoTCh:      IoTCh      ch;
+         case TYPE_IoTUI8Seq:  IoTUI8Seq  ui8Seq;
+         case TYPE_IoTUI16Seq: IoTUI16Seq ui16Seq;
+         case TYPE_IoTUI32Seq: IoTUI32Seq ui32Seq;
+         case TYPE_IoTUI64Seq: IoTUI64Seq ui64Seq;
+         case TYPE_IoTI8Seq:   IoTI8Seq   i8Seq;
+         case TYPE_IoTI16Seq:  IoTI16Seq  i16Seq;
+         case TYPE_IoTI32Seq:  IoTI32Seq  i32Seq;
+         case TYPE_IoTI64Seq:  IoTI64Seq  i64Seq;
+         case TYPE_IoTF32Seq:  IoTF32Seq  f32Seq;
+         case TYPE_IoTF64Seq:  IoTF64Seq  f64Seq;
+         case TYPE_IoTBSeq:    IoTBSeq    bSeq;
+         case TYPE_IoTStrSeq:  IoTStrSeq  strSeq;
+         case TYPE_IoTChSeq:   IoTChSeq   chSeq;
+      };
+
+      struct IoTNVP
+      {
+         string name;
+         IoTValue value;
+      };
+
+      typedef sequence<IoTNVP> IoTNVPSeq;
+
+      struct IoTData
+      {
+         string typeName;
+         string instanceId;
+         IoTNVPSeq values;
+      };
+
+#pragma keylist IoTData typeName instanceId
+   };
+};
+#endif /* DDS_IOTDATA_IDL */

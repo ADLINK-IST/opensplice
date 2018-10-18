@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,6 +45,9 @@ public:
     typedef ::dds::core::smart_ptr_traits< ListenerDispatcher >::ref_type ref_type;
     typedef ::dds::core::smart_ptr_traits< ListenerDispatcher >::weak_ref_type weak_ref_type;
 
+    ListenerDispatcher(u_participant participant,
+                       const org::opensplice::core::policy::ListenerScheduling& scheduling);
+
     virtual ~ListenerDispatcher();
 
     void
@@ -64,8 +68,6 @@ public:
     remove_source(org::opensplice::core::EntityDelegate* source, u_entity uEntity);
 
 private:
-    ListenerDispatcher(u_participant participant,
-                       const org::opensplice::core::policy::ListenerScheduling& scheduling);
 
     typedef enum {
        STOPPED,
@@ -85,7 +87,7 @@ private:
         void *arg);
 
     void
-    thread();
+    thread(const org::opensplice::core::ObjectDelegate::ref_type& participant);
 
     static void
     eventHandlerWrapper(
@@ -110,6 +112,7 @@ private:
     threadState_t             threadState;
     uint32_t                  stackSize;
     u_listener                uListener;
+    u_participant             uParticipant;
     v_listenerEvent           eventListHead;
     v_listenerEvent           eventListTail;
     v_listenerEvent           freeList;
@@ -119,41 +122,6 @@ private:
     org::opensplice::core::Mutex entities_mutex;
 
     static const uint32_t     DEFAULT_STACKSIZE = 0;
-
-public:
-    /*
-     * Special create and destroy functionallity.
-     *
-     * The ListenerDispatcher contains a thread. This thread holds strong
-     * references (aka shared pointers) to Entities. Because of this,
-     * entities can be destructed within the ListenerDispatcher thread
-     * context.
-     * This, in the end, can mean that the ListenerDispatcher itself is
-     * destroyed within its own thread.
-     *
-     * This causes all kinds of problems, as you can imagine.
-     *
-     * The simplest solution is not really destroying the ListenerDispatcher
-     * when the creator requests it. But instead store it in global strong
-     * reference. This way, the ListenerDispatcher is either destroyed when
-     * another ListenerDispatchers' destruction is requested (meaning that
-     * the pointer in the strong reference is replaced, meaning that the
-     * destructor of the stored ListenerDispatcher is called) or with the
-     * end of the program when the shared pointer is destroyed and thus its
-     * containing ListenerDispatcher as well.
-     * This way, you can always ensure that a ListenerDispatcher is not
-     * destroyed within its own thread context (it is still possible that
-     * it is destroyed in the thread context of another ListenerDispatcher,
-     * but that's not a problem).
-     */
-    static ListenerDispatcher*
-    create(u_participant                        participant,
-           const org::opensplice::core::policy::ListenerScheduling& scheduling);
-    static void
-    destroy(ListenerDispatcher* ld);
-private:
-    static ListenerDispatcher::ref_type livecycle_ref;
-    static org::opensplice::core::Mutex livecycle_mutex;
 };
 
 }

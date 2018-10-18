@@ -1,0 +1,2 @@
+export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.7.0_71
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

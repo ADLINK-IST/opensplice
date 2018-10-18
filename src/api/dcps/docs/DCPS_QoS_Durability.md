@@ -21,13 +21,13 @@ Attributes
         <td>
             Specifies the type of durability from VOLATILE_DURABILITY_QOS (short life) to PERSISTENT_DURABILITY_QOS (long life).
         </td>
-        <td rowspan="4">
+        <td rowspan="5">
             \ref DCPS_Modules_TopicDefinition "Topic",
             \ref DCPS_Modules_Subscription_DataReader "DataReader",
             \ref DCPS_Modules_Publication_DataWriter "DataWriter"
         </td>
-        <td rowspan="4">Yes</td>
-        <td rowspan="4">No</td>
+        <td rowspan="5">Yes</td>
+        <td rowspan="5">No</td>
     </tr>
     <tr>
         <td>
@@ -46,18 +46,18 @@ Attributes
     </tr>
     <tr>
         <td>
-            TRANSIENT_LOCAL,
+            TRANSIENT_LOCAL
+        </td>
+        <td>
+        Currently behaves identically to the Transient Qos, except for its RxO properties. The desired behaviour of TransientLocal can be achieved from the Transient Qos with the default (true) setting of the AutodisposeUnregisteredInstances flag on the \ref DCPS_Modules_Subscription_DataReader "DataReader" and the ServiceCleanupDelay set to 0 on the durability service. This is because for TransientLocal, the data should only remain available for late-joining readers during the lifetime of its source writer, so it is not required to survive after its source writer has been deleted. Since the deletion of a writer implicitly unregisters all its instances, an AutodisposeUnregisteredInstances value of true will also dispose the affected data from the durability store, and thus prevent it from remaining available to late joining readers.
+        </td>
+    </tr>
+     <tr>
+        <td>
             TRANSIENT
         </td>
         <td>
-            The Data Distribution Service does not need to keep
-            any samples of data-instances on
-            behalf of any \ref DCPS_Modules_Subscription_DataReader "DataReader" that is not
-            known by the \ref DCPS_Modules_Publication_DataWriter "DataWriter" at the
-            time the instance is written. In other
-            words the Service will only attempt
-            to provide the data to existing
-            subscribers. This is the default kind.
+            Some samples are available to late-joining DataReaders (stored in memory). This means that the late-joining DataReaders are able to read these previously written samples. The \ref DCPS_Modules_Subscription_DataReader "DataReader" does not necessarily have to exist at the time of writing. Not all samples are stored (depending on QosPolicy \ref DCPS_QoS_History "History" and QosPolicy \ref DCPS_QoS_ResourceLimits "ResourceLimits"). The storage does not depend on the \ref DCPS_Modules_Publication_DataWriter "DataWriter" and will outlive the DataWriter. This may be used to implement reallocation of applications because the data is saved in the Data Distribution Service (not in the DataWriter). This setting is typically used for state related information of an application. In this case also the \ref DCPS_QoS_DurabilityService "DurabilityService" QosPolicy  settings are relevant for the behaviour of the Data Distribution Service.
         </td>
     </tr>
     <tr>
@@ -65,9 +65,7 @@ Attributes
             PERSISTENT
         </td>
         <td>
-            Data is kept on permanent
-            storage, so that they can outlive a
-            system session.
+          The data is stored in permanent storage (e.g. hard disk). This means that the samples are also available after a system restart. The samples not only outlives the DataWriters, but even the Data Distribution Service and the system. This setting is typically used for attributes and settings for an application or the system. In this case also the \ref DCPS_QoS_DurabilityService "DurabilityService" QosPolicy  settings are relevant for the behaviour of the Data Distribution Service.
         </td>
     </tr>
 </table>
@@ -96,3 +94,5 @@ liveliness,
 previous two conditions were met.
 
 The utility of the service_cleanup_delay is apparent in the situation where an application disposes an instance and it crashes before it has a chance to complete additional tasks related to the disposition. Upon restart the application may ask for initial data to regain its state and the delay introduced by the service_cleanup_delay will allow the restarted application to receive the information on the disposed instance and complete the interrupted tasks.
+
+This QoS plays a role within the scope of \ref DCPS_Eventual_Consistency "Eventual Consistency"

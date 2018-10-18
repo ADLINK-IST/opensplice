@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -203,7 +204,7 @@ os_timeModuleExit(void)
  * the remaining time.
  */
 os_result
-os_sleep (
+ospl_os_sleep (
     os_duration delay)
 {
     os_result result = os_resultSuccess;
@@ -219,13 +220,12 @@ os_sleep (
     return result;
 }
 
-static os_timeW
-os__timeWGet (
-    void)
+static os_time
+os__timeDefaultTimeGet(void)
 {
     FILETIME ft;
     ULARGE_INTEGER ns100;
-    os_timeW current_time;
+    os_time current_time;
 
     /* GetSystemTime(Precise)AsFileTime returns the number of 100-nanosecond
      * intervals since January 1, 1601 (UTC).
@@ -245,7 +245,21 @@ os__timeWGet (
     GetSystemTimeAsFileTimeFunc(&ft);
     ns100.LowPart = ft.dwLowDateTime;
     ns100.HighPart = ft.dwHighDateTime;
-    current_time = OS_TIMEW_INIT((ns100.QuadPart / 10000000) - OS_TIME_FILETIME_UNIXEPOCH_OFFSET_SECS, (ns100.QuadPart % 10000000) * 100);
+    current_time.tv_sec = (os_timeSec)((ns100.QuadPart / 10000000) - OS_TIME_FILETIME_UNIXEPOCH_OFFSET_SECS);
+    current_time.tv_nsec = (os_int32)((ns100.QuadPart % 10000000) * 100);
+
+    return current_time;
+}
+
+static os_timeW
+os__timeWGet (
+    void)
+{
+    os_time default_time;
+    os_timeW current_time;
+
+    default_time = os__timeDefaultTimeGet();
+    current_time = OS_TIMEW_INIT(default_time.tv_sec, default_time.tv_nsec);
 
     return current_time;
 }

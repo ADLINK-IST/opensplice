@@ -366,8 +366,8 @@ following code extract.
 
    /*****************************************************************
     *  
-    * Copyright (c) 2006 to 2016
-    * PrismTech Ltd.
+    * Copyright (c) 2006 to 2018
+    * ADLINK Technology Limited
     * All rights Reserved.
     * 
     * LOGICAL_NAME:    Chat.idl

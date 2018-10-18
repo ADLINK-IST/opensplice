@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -68,7 +69,7 @@ idl_fileOpen (
     c_char *tmplPath;
     c_char *orbPath;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
     os_char* tmpName;
     os_uint32 i;
@@ -104,6 +105,7 @@ idl_fileOpen (
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+    os_free(idlpp_template);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
     tmpName = os_strdup(name);
     for(i = 0; i < strlen(tmpName); i++)
@@ -129,7 +131,7 @@ idl_fileOpen (
     idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
     nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
+    (void)memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
 
     idlpp_indent_level = 0;
@@ -227,6 +229,7 @@ idl_structureOpen(
 
         /* Store data-type in iterator for future generation of type descriptor. */
         idl_metaCxxAddType(scope, name, idl_typeSpec(structSpec), &cxxUserData->idlpp_metaList);
+        os_free(scopedTypeName);
     }
     return idl_explore;
 }

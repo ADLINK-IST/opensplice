@@ -2,11 +2,14 @@
 
 #include "vortex_os.h"
 #include "os_report.h"
+#include "os_atomics.h"
+#include "v_time.h"
 #include "v_service.h"
 #include "v_participant.h"
 #include "v_publisher.h"
 #include "v_writer.h"
 #include "v_builtin.h"
+#include "v_state.h"
 #include "u__user.h"
 #include "u__object.h"
 #include "u__observable.h"
@@ -36,13 +39,14 @@ u__builtinWriterInit(
 }
 
 /* Each "networking" service that sees a given node (and possibly spliced) has
-   it's own registration for the DCPSHeartbeat instance declaring that node.
-   Only when all "networking" services have unregistered this instance will
-   become not alive, indicating to whoever is interested that the node no
-   longer exists (for example, triggering spliced to dispose it). Thus, it is
-   necessary that all networking services have their own writers. This is
-   merely a convenience function to ensure that all "networking" services use
-   the same QoS settings. */
+ * it's own registration for the DCPSHeartbeat instance declaring that node.
+ * Only when all "networking" services have unregistered this instance will
+ * become not alive, indicating to whoever is interested that the node no
+ * longer exists (for example, triggering spliced to dispose it). Thus, it is
+ * necessary that all networking services have their own writers. This is
+ * merely a convenience function to ensure that all "networking" services use
+ * the same QoS settings.
+ */
 u_writer
 u_builtinWriterNew(
     const u_publisher publisher,
@@ -72,7 +76,8 @@ u_builtinWriterNew(
         kernel = v_objectKernel(vPublisher);
 
         /* Retrieve builtin DCPSHeartbeat writer created by spliced, so that
-           the QoS can be copied. */
+         * the QoS can be copied.
+         */
         vBuiltinWriter = v_builtinWriterLookup (kernel->builtin, infoId);
         assert (vBuiltinWriter != NULL);
         vWriterQos = v_writerGetQos(vBuiltinWriter);
@@ -129,7 +134,6 @@ u_builtinWriterNew(
     return _this;
 }
 
-
 struct u__builtinHeartbeatArgument {
     c_ulong systemId;
     v_state state;
@@ -142,10 +146,21 @@ u__builtinWriteFakeHeartbeat(
     void *varg)
 {
     struct u__builtinHeartbeatArgument *arg = varg;
+    v_kernel k;
+
+    if(arg->state & L_WRITE) {
+        k = v_objectKernel(_this);
+        assert(k != NULL);
+        /* Disable purging by increasing the purgeSuppressCount and writing a
+         * DCPSHeartbeat.
+         */
+        pa_inc32(&k->purgeSuppressCount);
+    }
 
     /* Write a fake heartbeat with an infinite duration to prevent spliced
-       from generating a fake heartbeat with a finite duration. It MUST
-       remain local to the machine, therefore v_groupWrite must be used. */
+     * from generating a fake heartbeat with a finite duration. It MUST
+     * remain local to the machine, therefore v_groupWrite must be used.
+     */
     arg->result = v_builtinWriteHeartbeat(
         v_writer (_this), arg->systemId, os_timeWGet (), OS_DURATION_INFINITE, arg->state);
 }
@@ -165,8 +180,7 @@ u_builtinWriteFakeHeartbeat(
     arg.state = state;
     arg.result = V_WRITE_ERROR;
 
-    result = u_observableAction (
-        u_observable (_this), &u__builtinWriteFakeHeartbeat, &arg);
+    result = u_observableAction (u_observable (_this), &u__builtinWriteFakeHeartbeat, &arg);
     if (result == U_RESULT_OK) {
         result = u_resultFromKernelWriteResult(arg.result);
     }

@@ -1,0 +1,17 @@
+/node_modules/
+/examples/HelloWorld/node_modules/
+/examples/jsshapes/node_modules/
+/examples/IoTData/node_modules/
+/examples/PingPong/node_modules/
+/examples/QoSExample/node_modules/
+/examples/GetSetQoSExample/node_modules/
+/out/
+/.nyc_output/
+/test-results.xml
+/.vscode/
+/bld/
+ospl-info.log
+ospl-error.log
+makefile
+makefile.mak
+

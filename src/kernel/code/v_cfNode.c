@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,13 +28,6 @@
 #include "v_cfAttribute.h"
 #include "v_cfData.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_cfNode
 v_cfNodeNew(
     v_configuration config,
@@ -41,9 +35,9 @@ v_cfNodeNew(
 {
     v_cfNode node;
     c_type type;
-    
+
     assert(C_TYPECHECK(config, v_configuration));
-    
+
     switch (kind) {
     case V_CFELEMENT:
         type = c_resolve(c_getBase(config), "kernelModuleI::v_cfElement");
@@ -60,7 +54,7 @@ v_cfNodeNew(
             OS_ERROR, OS_FUNCTION, V_RESULT_ILL_PARAM,
             "Illegal kind (%d) specified",
             kind);
-        assert(FALSE); 
+        assert(FALSE);
         type = NULL;
     break;
     }
@@ -75,8 +69,9 @@ v_cfNodeNew(
         assert(FALSE);
         node = NULL;
     }
-    /* init is done by specific class itself, this is just a 
-       convenience function! */
+    /* init is done by specific class itself, this is just a
+     * convenience function!
+     */
 
     return node;
 }
@@ -97,13 +92,6 @@ v_cfNodeInit (
     node->configuration = config;
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 const c_char *
 v_cfNodeGetName (
     v_cfNode node)
@@ -130,6 +118,6 @@ v_cfNodeConfiguration(
 {
     assert(node != NULL);
     assert(C_TYPECHECK(node, v_cfNode));
-    
+
     return node->configuration;
 }

@@ -57,7 +57,7 @@ public:
 
       // QosProvider...
       QosProvider qos_provider(
-            "http://www.opensplice.org/demo/config/qos.xml",
+            "http://www.prismtech.com/dds-community/demo/config/qos.xml",
             "ishapes-profile");
 
       DataReader<ShapeType> cfdr(sub, cft);

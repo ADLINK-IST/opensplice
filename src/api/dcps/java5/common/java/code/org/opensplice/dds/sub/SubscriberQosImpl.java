@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -55,47 +56,59 @@ public class SubscriberQosImpl extends EntityQosImpl<ForSubscriber> implements
 
     @Override
     protected void setupMissingPolicies() {
-        if (!this.policies.containsKey(Presentation.class)) {
-            this.policies.put(Presentation.class, new PresentationImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(Partition.class)) {
-            this.policies.put(Partition.class, new PartitionImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(GroupData.class)) {
-            this.policies.put(GroupData.class, new GroupDataImpl(
-                    this.environment));
-        }
-        if (!this.policies.containsKey(EntityFactory.class)) {
-            this.policies.put(EntityFactory.class, new EntityFactoryImpl(
-                    this.environment));
+        synchronized(this.policies) {
+            if (!this.policies.containsKey(Presentation.class)) {
+                this.policies.put(Presentation.class, new PresentationImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Partition.class)) {
+                this.policies.put(Partition.class, new PartitionImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(GroupData.class)) {
+                this.policies.put(GroupData.class, new GroupDataImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(EntityFactory.class)) {
+                this.policies.put(EntityFactory.class, new EntityFactoryImpl(
+                        this.environment));
+            }
         }
     }
 
     @Override
     public Presentation getPresentation() {
-        return (Presentation) this.policies.get(Presentation.class);
+        synchronized(this.policies) {
+            return (Presentation) this.policies.get(Presentation.class);
+        }
     }
 
     @Override
     public Partition getPartition() {
-        return (Partition) this.policies.get(Partition.class);
+        synchronized(this.policies) {
+            return (Partition) this.policies.get(Partition.class);
+        }
     }
 
     @Override
     public GroupData getGroupData() {
-        return (GroupData) this.policies.get(GroupData.class);
+        synchronized(this.policies) {
+            return (GroupData) this.policies.get(GroupData.class);
+        }
     }
 
     @Override
     public EntityFactory getEntityFactory() {
-        return (EntityFactory) this.policies.get(EntityFactory.class);
+        synchronized(this.policies) {
+            return (EntityFactory) this.policies.get(EntityFactory.class);
+        }
     }
 
     @Override
     public Share getShare() {
-        return (Share) this.policies.get(Share.class);
+        synchronized(this.policies) {
+            return (Share) this.policies.get(Share.class);
+        }
     }
 
     @Override
@@ -105,7 +118,9 @@ public class SubscriberQosImpl extends EntityQosImpl<ForSubscriber> implements
 
     @Override
     public SubscriberQos withPolicies(ForSubscriber... policy) {
-        return new SubscriberQosImpl(this, policy);
+        synchronized (this.policies) {
+            return new SubscriberQosImpl(this, policy);
+        }
     }
 
     public static SubscriberQosImpl convert(OsplServiceEnvironment env,

@@ -1,0 +1,44 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.opensplice.dds.examples.java</groupId>
+    <artifactId>org.opensplice.dds.examples</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>org.opensplice.dds.examples</name>
+    <url>http://maven.apache.org</url>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <modules>
+        <module>dcps</module>
+        <module>face</module>
+    </modules>
+    <profiles>
+        <!-- enable google protocol buffer example if GPB is available -->
+        <profile>
+            <id>protobuf-enabled</id>
+            <activation>
+                <property>
+                    <name>env.PROTOBUF_HOME</name>
+                </property>
+            </activation>
+            <modules>
+                <module>protobuf</module>
+            </modules>
+        </profile>
+
+    </profiles>
+    <build>
+        <defaultGoal>package</defaultGoal>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.2.1</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

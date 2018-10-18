@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,7 +28,7 @@
 #include "u_participant.h"
 
 #include "v_waitset.h"
-#include "v_observable.h"
+#include "v_observer.h"
 #include "os_heap.h"
 #include "os_report.h"
 
@@ -71,7 +72,7 @@ u_waitsetEntryRun(
          * just wait until all application waits has finished before starting.
          */
         os_mutexUnlock(&_this->mutex);
-        os_sleep(delay);
+        ospl_os_sleep(delay);
         os_mutexLock(&_this->mutex);
     }
     while (os_threadIdToInteger(_this->thread) != os_threadIdToInteger(OS_THREAD_ID_NONE) &&
@@ -104,6 +105,30 @@ u_waitsetEntryRun(
 }
 
 static u_result
+_waitsetEntryPrepareDestroy(
+    const u_waitsetEntry _this,
+    c_voidp eventArg)
+{
+    u_result result;
+    u_domain domain;
+    v_waitset kWaitset;
+
+    assert(_this != NULL);
+
+    domain = u_observableDomain(u_observable(_this));
+    result = u_domainProtect(domain);
+    if (result == U_RESULT_OK) {
+        result = u_handleClaim(_this->handle, &kWaitset);
+        if (result == U_RESULT_OK) {
+            v_waitsetPrepareDestroy(kWaitset, eventArg);
+            (void)u_handleRelease(_this->handle);
+        }
+        u_domainUnprotect();
+    }
+    return result;
+}
+
+static u_result
 u__waitsetEntryDeinitW (
     void *_vthis)
 {
@@ -114,11 +139,11 @@ u__waitsetEntryDeinitW (
     _this->alive = FALSE;
     thread = _this->thread;
     _this->thread = OS_THREAD_ID_NONE;
-    result = u_waitsetEntryTrigger(_this,NULL);
+    result = _waitsetEntryPrepareDestroy(_this,NULL);
     while (_this->waitCount != 0) {
         const os_duration delay = OS_DURATION_INIT(0, 1 * 1000 * 1000);
         os_mutexUnlock(&_this->mutex);
-        os_sleep(delay);
+        ospl_os_sleep(delay);
         os_mutexLock(&_this->mutex);
     }
     os_mutexUnlock(&_this->mutex);
@@ -200,8 +225,7 @@ u_waitsetEntrySetMode(
     if ((multimode == TRUE) &&
         (os_threadIdToInteger(_this->thread) == os_threadIdToInteger(OS_THREAD_ID_NONE)))
     {
-        /* Switch to multi domain mode and start waitset entry thread.
-         */
+        /* Switch to multi domain mode and start waitset entry thread. */
         os_threadAttrInit(&osThreadAttr);
         osResult = os_threadCreate(
                         &_this->thread,
@@ -219,8 +243,7 @@ u_waitsetEntrySetMode(
     if ((multimode == FALSE) &&
         (os_threadIdToInteger(_this->thread) != os_threadIdToInteger(OS_THREAD_ID_NONE)))
     {
-        /* Switch to single domain mode and stop waitset entry thread.
-         */
+        /* Switch to single domain mode and stop waitset entry thread. */
         u_domain domain = u_observableDomain(u_observable(_this));
         result = u_domainProtect(domain);
         if (result == U_RESULT_OK) {
@@ -310,8 +333,13 @@ u_waitsetEntryDetach (
                     result = U_RESULT_UNSUPPORTED;
                 }
                 u_observableRelease(observable, C_MM_RESERVATION_NO_CHECK);
+            } else if (result == U_RESULT_ALREADY_DELETED) {
+                /* The end result of detaching an already deleted condition is not incorrect.
+                 * So don't report an error in this case  and return OK.
+                 */
+                result = V_RESULT_OK;
             } else {
-                OS_REPORT(OS_ERROR, "u_waitsetEntryDetach", result,
+                OS_REPORT(OS_WARNING, "u_waitsetEntryDetach", result,
                             "Could not claim supplied entity (0x%"PA_PRIxADDR").",
                             (os_address)observable);
             }
@@ -356,7 +384,7 @@ u_waitsetEntryWait(
             result = u_resultFromKernel(kr);
             os_mutexLock(&_this->mutex);
             _this->waitCount--;
-            u_handleRelease(_this->handle);
+            (void)u_handleRelease(_this->handle);
             os_mutexUnlock(&_this->mutex);
         } else {
             os_mutexUnlock(&_this->mutex);
@@ -423,7 +451,7 @@ u_waitsetEntryTrigger(
         result = u_handleClaim(_this->handle, &kWaitset);
         if (result == U_RESULT_OK) {
             v_waitsetTrigger(kWaitset, eventArg);
-            u_handleRelease(_this->handle);
+            (void)u_handleRelease(_this->handle);
         }
         u_domainUnprotect();
     }

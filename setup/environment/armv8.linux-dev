@@ -20,6 +20,8 @@ tao_check || ERRS=1
 jacorb_check || ERRS=1
 protoc_check || ERRS=1
 c99_check || ERRS=1
+python3_check || ERRS=1
+maven_check_inner || ERRS=1
 
 if [ -z $REPORT ]
 then

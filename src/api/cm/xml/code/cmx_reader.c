@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -107,8 +108,11 @@ cmx_readerDataTypeAction(
         r = v_dataReader(entity);
         v_observerLock(v_observer(r));
         topic = v_dataReaderGetTopic(r);
-        type = v_topicDataType(topic);
-        c_free(topic);
+
+        if(topic){
+            type = v_topicDataType(topic);
+            c_free(topic);
+        }
         v_observerUnlock(v_observer(r));
     break;
     case K_DATAREADERQUERY:
@@ -116,8 +120,11 @@ cmx_readerDataTypeAction(
         r = v_dataReader(v_querySource(query));
         v_observerLock(v_observer(r));
         topic = v_dataReaderGetTopic(r);
-        type = v_topicDataType(topic);
-        c_free(topic);
+
+        if(topic){
+            type = v_topicDataType(topic);
+            c_free(topic);
+        }
         v_observerUnlock(v_observer(r));
         c_free(r);
     break;

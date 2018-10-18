@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -129,8 +130,9 @@ int dds_waitset_wait (dds_waitset_t ws, dds_attach_t *xs, size_t nxs, dds_durati
 int dds_waitset_wait_until (dds_waitset_t ws, dds_attach_t *xs, size_t nxs, dds_time_t abstimeout)
 {
     int idx;
-    DDS_REPORT_STACK();
     dds_duration_t reltimeout = dds_delta_from_now(abstimeout);
+
+    DDS_REPORT_STACK();
     if (reltimeout >= 0) {
         idx = (DDS_ReturnCode_t)dds_waitset_wait(ws, xs, nxs, reltimeout);
     } else {

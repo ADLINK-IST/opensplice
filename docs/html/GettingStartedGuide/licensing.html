@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7. Licensing OpenSplice &mdash; OpenSplice Getting Started Guide</title>
+    <title>7. Licensing Vortex OpenSplice &mdash; OpenSplice Getting Started Guide</title>
     
     <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -49,15 +49,15 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="licensing-opensplice">
-<span id="id1"></span><h1>7. Licensing OpenSplice<a class="headerlink" href="#licensing-opensplice" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="licensing-vortex-opensplice">
+<span id="id1"></span><h1>7. Licensing Vortex OpenSplice<a class="headerlink" href="#licensing-vortex-opensplice" title="Permalink to this headline">¶</a></h1>
 <p><em>Vortex OpenSplice uses Reprise License Manager (RLM) to manage licenses.
 This section describes how to install a license file for Vortex OpenSplice
 and how to use the license manager.</em></p>
 <div class="section" id="general">
 <h2>7.1. General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
 <p>The licensing software is automatically installed on the host machine as
-part of the OpenSplice distribution. The software consists of two parts:</p>
+part of the Vortex OpenSplice distribution. The software consists of two parts:</p>
 <ul>
 <li><dl class="first docutils">
 <dt><em>Vortex OpenSplice binary files</em></dt>
@@ -73,7 +73,7 @@ part of the OpenSplice distribution. The software consists of two parts:</p>
 <dt><em>License files</em></dt>
 <dd><div class="first last line-block">
 <div class="line">which determine the terms of the license.</div>
-<div class="line">These will be supplied by PrismTech.</div>
+<div class="line">These will be supplied by ADLINK.</div>
 </div>
 </dd>
 </dl>
@@ -81,9 +81,9 @@ part of the OpenSplice distribution. The software consists of two parts:</p>
 </ul>
 <dl class="docutils">
 <dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
-<dd><strong>Licenses:</strong> PrismTech supplies an Vortex OpenSplice license file,
+<dd><strong>Licenses:</strong> ADLINK supplies an Vortex OpenSplice license file,
 <tt class="docutils literal"><span class="pre">license.lic</span></tt>. This file is <em>not</em> included in the software
-distribution, but is sent separately by PrismTech.</dd>
+distribution, but is sent separately by ADLINK.</dd>
 </dl>
 </div>
 <div class="section" id="development-and-deployment-licenses">
@@ -95,7 +95,7 @@ Vortex OpenSplice is also physically licensed on enterprise platforms for
 deployment.</p>
 <dl class="docutils">
 <dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
-<dd>Some OpenSplice components are licensed individually and you will need
+<dd>Some Vortex OpenSplice components are licensed individually and you will need
 the correct feature to be unlocked for you to use them.</dd>
 </dl>
 </div>
@@ -103,31 +103,31 @@ the correct feature to be unlocked for you to use them.</dd>
 <h2>7.3. Installing the License File<a class="headerlink" href="#installing-the-license-file" title="Permalink to this headline">¶</a></h2>
 <p>Copy the license file to <tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;/etc/license.lic</span></tt>
 on the machine that will run the license manager.
-<tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;</span></tt> is the directory where OpenSplice is
+<tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;</span></tt> is the directory where Vortex OpenSplice is
 installed.</p>
 <p>This is the recommended location for the license file but you can put
 the file in any location that can be accessed by the license manager
 <tt class="docutils literal"><span class="pre">rlm</span></tt>.</p>
 <p>If another location is used or the environment has not been setup, then
-an environment variable, either <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt>,
+an environment variable, either <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt>,
 must be set to the full path and filename of the license file (either
 variable can be set; there is no need to set both). For example:</p>
 <blockquote>
-<div><tt class="docutils literal"><span class="pre">prismtech_LICENSE=/my/lic/dir/license.lic</span></tt></div></blockquote>
+<div><tt class="docutils literal"><span class="pre">ADLINK_LICENSE=/my/lic/dir/license.lic</span></tt></div></blockquote>
 <p>If licenses are distributed between multiple license files, the
-<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> variable can be set to point to
+<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt> variable can be set to point to
 the directory which contains the license files.</p>
 </div>
 <div class="section" id="running-the-license-manager-daemon">
 <h2>7.4. Running the License Manager Daemon<a class="headerlink" href="#running-the-license-manager-daemon" title="Permalink to this headline">¶</a></h2>
 <p>It is only necessary to run the License Manager Daemon for floating or
 counted licenses. In this case, the license manager must be running
-before OpenSplice DDS can be used. The license manager software is
+before Vortex OpenSplice can be used. The license manager software is
 responsible for allocating licenses to developers and ensuring that the
 allowed number of concurrent licenses is not exceeded.</p>
 <p>For node-locked licenses, as is the case with all evaluation licenses,
 then it is not necessary to run the License Manager Daemon but the
-<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> variable must be set to the
+<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt> variable must be set to the
 correct license file location.</p>
 <p>To run the license manager, use the following command:</p>
 <div class="highlight-bash"><div class="highlight"><pre>rlm -c &lt;location&gt;
@@ -136,11 +136,11 @@ correct license file location.</p>
 <p>where <tt class="docutils literal"><span class="pre">&lt;location&gt;</span></tt> is the full path and filename of the license file. If
 licenses are distributed between multiple files, <tt class="docutils literal"><span class="pre">&lt;location&gt;</span></tt> should be
 the path to the directory that contains the license files.</p>
-<p>The <tt class="docutils literal"><span class="pre">rlm</span></tt> command will start the PrismTech vendor daemon <tt class="docutils literal"><span class="pre">prismtech</span></tt>,
-which controls the licensing of the OpenSplice DDS software.</p>
-<p>To obtain a license for OpenSplice DDS from a License Manager Daemon
+<p>The <tt class="docutils literal"><span class="pre">rlm</span></tt> command will start the ADLINK vendor daemon <tt class="docutils literal"><span class="pre">prismtech</span></tt>,
+which controls the licensing of the Vortex OpenSplice software.</p>
+<p>To obtain a license for Vortex OpenSplice from a License Manager Daemon
 that is running on a different machine, set either the <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt>
-or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> environment variable to point to the License
+or <tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt> environment variable to point to the License
 Manager Daemon, using the following syntax:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span class="nv">RLM_LICENSE</span><span class="o">=</span>&lt;port&gt;@&lt;host&gt;
 </pre></div>
@@ -181,7 +181,7 @@ following example:</p>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">&lt;port&gt;</span></tt> value should be taken from the first line of the output.
 The <tt class="docutils literal"><span class="pre">&lt;server&gt;</span></tt> value should be taken from the last line. From this
-example, the value for <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> would be:</p>
+example, the value for <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">ADLINK_LICENSE</span></tt> would be:</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">35562&#64;rhel4e</span></tt></div></blockquote>
 </div>
@@ -190,8 +190,8 @@ example, the value for <tt class="docutils literal"><span class="pre">RLM_LICENS
 <p>A utility program, <tt class="docutils literal"><span class="pre">rlmutil</span></tt>, is available for license server
 management and administration. One feature of this utility is its
 ability to gracefully shut down the license manager. To shut down the
-license manager, preventing the checkout of licenses for the OpenSplice
-DDS software, run either of the following commands:</p>
+license manager, preventing the checkout of licenses for the Vortex OpenSplice
+software, run either of the following commands:</p>
 <div class="highlight-bash"><div class="highlight"><pre>rlmutil rlmdown -vendor prismtech
 
 rlmutil rlmdown -c &lt;location&gt;
@@ -212,7 +212,7 @@ run the following command on the license server:</p>
 <p>This returns an ID code for the server, which will look similar to:</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">Hostid</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">machine:</span> <span class="pre">0025643ad2a7</span></tt></div></blockquote>
-<p>This ID code must be supplied to PrismTech so that your license key can
+<p>This ID code must be supplied to ADLINK so that your license key can
 be generated.</p>
 </div>
 </div>
@@ -228,7 +228,7 @@ be generated.</p>
             </a></p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">7. Licensing OpenSplice</a><ul>
+<li><a class="reference internal" href="#">7. Licensing Vortex OpenSplice</a><ul>
 <li><a class="reference internal" href="#general">7.1. General</a></li>
 <li><a class="reference internal" href="#development-and-deployment-licenses">7.2. Development and Deployment Licenses</a></li>
 <li><a class="reference internal" href="#installing-the-license-file">7.3. Installing the License File</a></li>
@@ -282,7 +282,7 @@ be generated.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

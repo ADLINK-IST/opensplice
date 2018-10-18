@@ -59,7 +59,8 @@ class FileObj:
             'TOffered', 'TRequested',
             #TBuiltinStuff
             'TSubscription', 'TPublication', 'TParticipant', 'TTopicBuiltinTopicData',
-            'TCM', 'TBuiltinTopicTypes'
+            'TCM', 'TBuiltinTopicTypes',
+            'TBytesTopicType', 'TKeyedBytesTopicType', 'TKeyedStringTopicType', 'TStringTopicType',
             #Streams
             'TStreamDataReader', 'TStreamDataWriter', 'TCorePolicy', 'TStreamSample', 'TStreamFlush'
             ]

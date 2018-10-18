@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -50,9 +51,6 @@
 
 #define CF_FORMAT(x) CF_FORMAT_##x
 
-/**************************************************************
- * Private functions
- **************************************************************/
 /* Special routine for scanning booleans */
 /* scanf does not support this           */
 static u_bool
@@ -78,18 +76,6 @@ u_cfValueScanBoolean(
 
     return result;
 }
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 
 #define __CASE__(kind,type)                                  \
     case V_##kind:                                           \

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -306,14 +307,17 @@ idl_constOperandImage (
     image = idl_scopeStackLanguage(
                 idl_constSpecScopeGet(constOperand->constSpec),
                 idl_constSpecName(constOperand->constSpec));
-    getter = idl_genLanguageConstGetter();
-    if (getter) {
-        tmp = os_malloc(strlen(image) + strlen(getter) + 1);
-        os_strcpy(tmp, image);
-        os_strcat(tmp, getter);
-        os_free(getter);
-        os_free(image);
-        image = tmp;
+    if (idl_typeSpecType(idl_constSpecTypeGet(constOperand->constSpec)) != idl_tenum ||
+            idl_constSpecOperandGet(constOperand->constSpec)->kind != idl_cLit) {
+        getter = idl_genLanguageConstGetter();
+        if (getter) {
+            tmp = os_malloc(strlen(image) + strlen(getter) + 1);
+            os_strcpy(tmp, image);
+            os_strcat(tmp, getter);
+            os_free(getter);
+            os_free(image);
+            image = tmp;
+        }
     }
 
     return image;

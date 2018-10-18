@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -91,15 +92,14 @@ public class PreAllocatorProtobuf<PROTOBUF_TYPE, DDS_TYPE> implements
             for (int i = 0; i < this.infoSeqHolder.value.length; i++) {
                 if (this.infoSeqHolder.value[i].valid_data) {
                     this.sampleList.add(new SampleImpl<PROTOBUF_TYPE>(
-                            this.environment, this.typeSupport
-                                    .ddsToProtobuf((DDS_TYPE) Array.get(
-                                            dataValue, i)),
-                            this.infoSeqHolder.value[i]));
+                        this.environment,
+                        this.typeSupport.ddsToProtobuf((DDS_TYPE)Array.get(dataValue, i)),
+                        this.infoSeqHolder.value[i]));
                 } else {
-                    this.sampleList
-                            .add(new SampleImpl<PROTOBUF_TYPE>(
-                                    this.environment, null,
-                                    this.infoSeqHolder.value[i]));
+                    this.sampleList.add(new SampleImpl<PROTOBUF_TYPE>(
+                        this.environment,
+                        this.typeSupport.ddsKeyToProtobuf((DDS_TYPE)Array.get(dataValue, i)),
+                        this.infoSeqHolder.value[i]));
                 }
             }
 

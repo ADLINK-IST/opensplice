@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,7 +64,7 @@ DDS::OpenSplice::Utils::pretty_function(
 void
 DDS::OpenSplice::Utils::report_stack()
 {
-    os_report_stack();
+    os_report_stack_open(NULL,0,NULL,NULL);
 }
 
 void
@@ -77,8 +78,6 @@ DDS::OpenSplice::Utils::panic(
     os_char *function = NULL;
     /* os_report truncates messages to <OS_REPORT_BUFLEN> bytes */
     os_char buffer[OS_REPORT_BUFLEN];
-    static const os_char panic[] = "Panic: ";
-    const os_size_t offset = sizeof(panic) - 1;
     va_list args;
 
     assert (file != NULL);
@@ -87,17 +86,17 @@ DDS::OpenSplice::Utils::panic(
     /* probably never happens, but you can never be to sure */
     assert (OS_REPORT_BUFLEN > 0);
 
-    va_start(args, format);
-    (void)os_vsnprintf(buffer + offset, sizeof(buffer) - offset, format, args);
-    va_end(args);
+    snprintf(buffer, sizeof(buffer), "Panic: %s", format);
 
     function = DDS::OpenSplice::Utils::pretty_function(signature);
     if (function == NULL) {
         function = (os_char *)signature;
     }
 
-    os_report_noargs(OS_CRITICAL, function, file, line, DDS::RETCODE_ERROR, buffer);
-    os_report_dumpStack(function, file, line);
+    va_start(args, format);
+    os_report_va(OS_CRITICAL, function, file, line, DDS::RETCODE_ERROR, -1, OS_TRUE, (os_char *)buffer, args);
+    os_report_dump(OS_TRUE, function, file, line, -1);
+    va_end(args);
 
     if (function != NULL && function != signature) {
         os_free(function);
@@ -118,73 +117,65 @@ DDS::OpenSplice::Utils::report(
     const os_char *retcode = NULL;
     /* os_report truncates messages to <OS_REPORT_BUFLEN> bytes */
     os_char buffer[OS_REPORT_BUFLEN];
-    os_size_t offset = 0;
     va_list args;
 
     assert (file != NULL);
     assert (signature != NULL);
     assert (format != NULL);
-    /* probably never happens, but you can never be to sure */
-    assert (OS_REPORT_BUFLEN > 0);
 
     switch (code) {
-        case DDS::RETCODE_ERROR:
-            retcode = "Error: ";
-            break;
-        case DDS::RETCODE_UNSUPPORTED:
-            retcode = "Unsupported: ";
-            break;
-        case DDS::RETCODE_BAD_PARAMETER:
-            retcode = "Bad parameter: ";
-            break;
-        case DDS::RETCODE_PRECONDITION_NOT_MET:
-            retcode = "Precondition not met: ";
-            break;
-        case DDS::RETCODE_OUT_OF_RESOURCES:
-            retcode = "Out of resources: ";
-            break;
-        case DDS::RETCODE_NOT_ENABLED:
-            retcode = "Not enabled: ";
-            break;
-        case DDS::RETCODE_IMMUTABLE_POLICY:
-            retcode = "Immutable policy: ";
-            break;
-        case DDS::RETCODE_INCONSISTENT_POLICY:
-            retcode = "Inconsistent policy: ";
-            break;
-        case DDS::RETCODE_ALREADY_DELETED:
-            retcode = "Already deleted: ";
-            break;
-        case DDS::RETCODE_TIMEOUT:
-            retcode = "Timeout: ";
-            break;
-        case DDS::RETCODE_NO_DATA:
-            retcode = "No data: ";
-            break;
-        case DDS::RETCODE_ILLEGAL_OPERATION:
-            retcode = "Illegal operation: ";
-            break;
-        default:
-            assert (code == DDS::RETCODE_OK);
-            break;
+    case DDS::RETCODE_ERROR:
+        retcode = "Error";
+    break;
+    case DDS::RETCODE_UNSUPPORTED:
+        retcode = "Unsupported";
+    break;
+    case DDS::RETCODE_BAD_PARAMETER:
+        retcode = "Bad parameter";
+    break;
+    case DDS::RETCODE_PRECONDITION_NOT_MET:
+        retcode = "Precondition not met";
+    break;
+    case DDS::RETCODE_OUT_OF_RESOURCES:
+        retcode = "Out of resources";
+    break;
+    case DDS::RETCODE_NOT_ENABLED:
+        retcode = "Not enabled";
+    break;
+    case DDS::RETCODE_IMMUTABLE_POLICY:
+        retcode = "Immutable policy";
+    break;
+    case DDS::RETCODE_INCONSISTENT_POLICY:
+        retcode = "Inconsistent policy";
+    break;
+    case DDS::RETCODE_ALREADY_DELETED:
+        retcode = "Already deleted";
+    break;
+    case DDS::RETCODE_TIMEOUT:
+        retcode = "Timeout";
+    break;
+    case DDS::RETCODE_NO_DATA:
+        retcode = "No data";
+    break;
+    case DDS::RETCODE_ILLEGAL_OPERATION:
+        retcode = "Illegal operation";
+    break;
+    default:
+        assert (code == DDS::RETCODE_OK);
+        retcode = "Unknown error";
+    break;
     }
 
-    if (retcode != NULL) {
-        assert (offset <= OS_REPORT_BUFLEN);
-        offset = strlen(retcode);
-        (void)memcpy(buffer, retcode, offset);
-    }
-
-    va_start(args, format);
-    (void)os_vsnprintf(buffer + offset, sizeof(buffer) - offset, format, args);
-    va_end(args);
+    snprintf(buffer, OS_REPORT_BUFLEN, "%s: %s", retcode, format);
 
     function = DDS::OpenSplice::Utils::pretty_function(signature);
     if (function == NULL) {
         function = (os_char *)signature;
     }
 
-    os_report_noargs(reportType, function, file, line, code, buffer);
+    va_start(args, format);
+    os_report_va(reportType, function, file, line, code, -1, OS_TRUE, (os_char *)buffer, args);
+    va_end(args);
 
     if (function != NULL && function != signature) {
         os_free(function);
@@ -205,7 +196,7 @@ DDS::OpenSplice::Utils::report_flush(
     assert (file != NULL);
     assert (signature != NULL);
 
-    if (os_report_stack_flush_required(flush ? OS_TRUE : OS_FALSE)) {
+    if (os_report_status(flush ? OS_TRUE : OS_FALSE)) {
         function = DDS::OpenSplice::Utils::pretty_function(signature);
         if (function == NULL) {
             function = (os_char *)signature;
@@ -214,9 +205,9 @@ DDS::OpenSplice::Utils::report_flush(
             domainId = object->getDomainId();
         }
 
-        os_report_stack_unwind((os_boolean)flush, function, file, line, domainId);
+        os_report_flush((os_boolean)flush, function, file, line, domainId);
 
-        if (function != NULL && function != signature) {
+        if (function != signature) {
             os_free(function);
         }
     }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,7 +42,8 @@ v_deliveryWaitListWait (
         /* TODO: Due to spurious wake-ups and the use of a *relative* timeout,
          * the provided timeout can be exceeded. When the hibernation work is
          * available, this should be eliminated by keeping track of the
-         * monotonic clock or absolute sleeps should be supported instead. */
+         * monotonic clock or absolute sleeps should be supported instead.
+         */
         result = v_condWait(&_this->cv, &_this->mutex, timeout);
     }
     c_mutexUnlock(&_this->mutex);
@@ -73,7 +75,8 @@ v_deliveryWaitListNotify (
             if (v_gidEqual(list[i], msg->userData.readerGID)) {
                 /* Set the found readerGID to zero, the waitlist can be
                  * unblocked when all expected systemIds are zero. In that case
-                 * _this->waitCount will be 0. */
+                 * _this->waitCount will be 0.
+                 */
                 v_gidSetNil(list[i]);
                 _this->waitCount--;
                 break;
@@ -114,7 +117,8 @@ v_deliveryWaitListIgnore (
         if (v_gidEqual(list[i], readerGID)) {
             /* Set the found readerGID to zero, the waitlist can be
              * unblocked when all expected systemIds are zero. In that case
-             * _this->waitCount will be 0. */
+             * _this->waitCount will be 0.
+             */
             v_gidSetNil(list[i]);
             _this->waitCount--;
             break;
@@ -185,26 +189,33 @@ v_deliveryWaitListNew(
     assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-    /* lookup or create a writer specific admin.
-     */
+    /* lookup or create a writer specific admin. */
     type = c_subType(_this->waitlists);
     waitlist = c_new_s(type);
     c_free(type);
     if (waitlist) {
-        c_mutexInit(c_getBase(waitlist), &waitlist->mutex);
-        c_condInit(c_getBase(waitlist), &waitlist->cv, &waitlist->mutex);
-        waitlist->sequenceNumber = msg->sequenceNumber;
-        waitlist->guard = _this;
+        if (c_mutexInit(c_getBase(waitlist), &waitlist->mutex) == SYNC_RESULT_SUCCESS) {
+            c_condInit(c_getBase(waitlist), &waitlist->cv, &waitlist->mutex);
+            waitlist->sequenceNumber = msg->sequenceNumber;
+            waitlist->guard = _this;
 
-        /* When modifying the contents of the WaitList collection in the deliveryGuard,
-         * we must first acquire its lock. */
-        c_mutexLock(&_this->mutex);
-        waitlist->readerGID = copyReaderGIDsFromPublications(_this);
-        waitlist->waitCount = c_arraySize(waitlist->readerGID);
-        found = c_tableInsert(_this->waitlists, waitlist);
-        assert(found == waitlist);
-        (void)found;
-        c_mutexUnlock(&_this->mutex);
+            /* When modifying the contents of the WaitList collection in the deliveryGuard,
+            * we must first acquire its lock.
+            */
+            c_mutexLock(&_this->mutex);
+            waitlist->readerGID = copyReaderGIDsFromPublications(_this);
+            waitlist->waitCount = c_arraySize(waitlist->readerGID);
+            found = c_tableInsert(_this->waitlists, waitlist);
+            assert(found == waitlist);
+            (void)found;
+            c_mutexUnlock(&_this->mutex);
+        } else {
+            c_free(waitlist);
+            waitlist = NULL;
+            OS_REPORT(OS_FATAL,
+                    "v_deliveryWaitListNew",V_RESULT_INTERNAL_ERROR,
+                    "Failed to initialize mutex for waitlist.");
+        }
     } else {
         OS_REPORT(OS_FATAL,
                   "v_deliveryWaitListNew",V_RESULT_INTERNAL_ERROR,
@@ -224,11 +235,11 @@ v_deliveryWaitListFree(
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
-    /* lookup or create a writer specific admin.
-     */
+    /* lookup or create a writer specific admin. */
     if (_this) {
         /* When modifying the contents of the WaitList collection in the deliveryGuard,
-         * we must first acquire the lock of its guard. */
+         * we must first acquire the lock of its guard.
+         */
         guard = v_deliveryGuard(_this->guard);
         c_mutexLock(&guard->mutex);
         found = c_remove(guard->waitlists, _this, NULL, NULL);

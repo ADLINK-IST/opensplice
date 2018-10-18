@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -53,6 +54,8 @@ public:
      */
     void enable();
 
+    bool is_enabled();
+
     ::dds::core::status::StatusMask status_changes() const;
 
     ::dds::core::InstanceHandle instance_handle() const;
@@ -90,6 +93,7 @@ protected:
                     uint32_t       triggerMask,
                     void           *eventData,
                     void           *listener) = 0;
+
 public:
     /* This is called by the listener dispatcher when an event
      * was triggered. The child classes should implement the
@@ -112,7 +116,7 @@ public:
 
 protected:
     static volatile unsigned int entityID_;
-    bool enabled_;
+    bool enabled_; /* Can be cached, since an entity can never be disabled */
     os_uint64 maxSupportedSeconds_;
 
 private:

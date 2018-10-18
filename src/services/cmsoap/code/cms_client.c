@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -84,36 +85,40 @@ cms_clientNew(
     os_result osr;
 
     client = os_malloc(sizeof *client);
-    cms_threadInit(cms_thread(client), "cms_client", &service->configuration->clientScheduling);
     if(client != NULL){
-        cms_object(client)->kind = CMS_CLIENT;
-        cms_thread(client)->did = service->did;
-        cms_thread(client)->uri = os_strdup(service->uri);
-        client->ip = ip;
-        client->initCount = 0;
-        client->service = service;
-        client->internalFree = FALSE;
-        osr = os_mutexInit(&client->soapMutex, NULL);
-        client->soapEnvs = c_iterNew(NULL);
+        if (cms_threadInit(cms_thread(client), "cms_client", &service->configuration->clientScheduling)) {
+            cms_object(client)->kind = CMS_CLIENT;
+            cms_thread(client)->did = service->did;
+            cms_thread(client)->uri = os_strdup(service->uri);
+            client->ip = ip;
+            client->initCount = 0;
+            client->service = service;
+            client->internalFree = FALSE;
+            osr = os_mutexInit(&client->soapMutex, NULL);
+            client->soapEnvs = c_iterNew(NULL);
 
-        if(osr == os_resultSuccess){
-            osr = os_mutexInit(&client->conditionMutex, NULL);
             if(osr == os_resultSuccess){
-                osr = os_condInit(&client->condition, &client->conditionMutex, NULL );
+                osr = os_mutexInit(&client->conditionMutex, NULL);
                 if(osr == os_resultSuccess){
-                    osr = os_mutexInit(&client->threadMutex, NULL);
-
+                    osr = os_condInit(&client->condition, &client->conditionMutex, NULL );
                     if(osr == os_resultSuccess){
-                        client->threads = c_iterNew(NULL);
-                    } else {
-                        cms_clientFree(client);
+                        osr = os_mutexInit(&client->threadMutex, NULL);
+
+                        if(osr == os_resultSuccess){
+                            client->threads = c_iterNew(NULL);
+                        } else {
+                            cms_clientFree(client);
+                        }
                     }
+                } else {
+                    cms_clientFree(client);
                 }
             } else {
                 cms_clientFree(client);
             }
         } else {
             cms_clientFree(client);
+            client = NULL;
         }
     }
 
@@ -330,7 +335,7 @@ cms_clientRun(
                             }
                             found = TRUE;
                         } else {
-                            os_sleep(OS_DURATION_MICROSECOND);
+                            ospl_os_sleep(OS_DURATION_MICROSECOND);
                         }
                     } else {
                         cms_soapThreadHandleRequest(soapThread, soap);

@@ -133,6 +133,9 @@ public:
      * @throws dds::core::OutOfResourcesError
      *                  The Data Distribution Service ran out of resources to
      *                  complete this operation.
+     * @throws dds::core::PreconditionNotMetError
+     *                  Can happen when requesting conditional alignment on non-volatile readers or
+     *                  Historical data request already in progress or complete.
      */
     void wait_for_historical_data(const dds::core::Duration& timeout);
 
@@ -229,6 +232,9 @@ public:
      * @throws dds::core::OutOfResourcesError
      *                  The Data Distribution Service ran out of resources to
      *                  complete this operation.
+     * @throws dds::core::PreconditionNotMetError
+     *                  Can happen when requesting conditional alignment on non-volatile readers or
+     *                  Historical data request already in progress or complete.
      */
     void wait_for_historical_data_w_condition(const std::string& filter_expression,
                                               const std::vector<std::string>& filter_parameters,

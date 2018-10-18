@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@
  *
  */
 #include "v__dataReader.h"
+#include "v__reader.h"
 #include "v_state.h"
 #include "v_event.h"
 #include "v_index.h"
@@ -139,6 +141,90 @@ resolveFields (
     return TRUE;
 }
 
+static void
+translate(
+    q_expr expr,
+    c_array sourceKeyList, /* c_array<c_field> */
+    c_array indexKeyList)  /* c_array<c_field> */
+{
+    assert(expr);
+    assert(sourceKeyList);
+    assert(indexKeyList);
+
+    if(q_getKind(expr) == T_FNC){
+        if(q_isFnc(expr, Q_EXPR_PROPERTY)) {
+            /* first get the string representation of the id's in this expr */
+            c_field f;
+            c_ulong i, index, size = 0;
+            c_char *name;
+
+            name = q_propertyName(expr);
+            if(name) {
+                /* Now find the matching key in the sourceKeyList */
+                index = size = c_arraySize(sourceKeyList);
+
+                assert(size == c_arraySize(indexKeyList));
+
+                if(size == c_arraySize(indexKeyList)){
+                    for(i=0; i<size; i++) {
+                        f = (c_field)(sourceKeyList[i]);
+                        if(strcmp(c_fieldName(f), name) == 0) {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    assert(index < size);
+
+                    if(index < size) {
+                        /* now replace the Q_EXPR_PROPERTY id's by the indexKeyList ones */
+                        q_expr e;
+                        c_char *fieldNameStr;
+                        c_char *str;
+                        c_iter ids;
+
+                        f = (c_field)(indexKeyList[index]);
+                        fieldNameStr = c_fieldName(f);
+
+                        /* clear current list */
+                        e = q_takePar(expr, 0);
+                        while(e){
+                            q_dispose(e);
+                            e = q_takePar(expr, 0);
+                        }
+
+                        ids = c_splitString(fieldNameStr, ".");
+                        if(ids){
+                            str = (c_char*)c_iterTakeFirst(ids);
+                            while(str){
+                                e = q_newId(str);
+                                q_addPar(expr, e);
+                                os_free(str);
+                                str = (c_char*)c_iterTakeFirst(ids);
+                            }
+                            c_iterFree(ids);
+                        }
+                    } else {
+                        OS_REPORT(OS_WARNING,"v_dataReaderQuery_translate failed", 0,
+                                  "Cannot find key '%s' in key list.", name);
+                    }
+                } else {
+                    OS_REPORT(OS_ERROR,"v_dataReaderQuery_translate failed", 0,
+                              "sizes of indexKeyList (size %d) and sourceKeyList (size %d) do not match.",
+                              c_arraySize(indexKeyList), size);
+                }
+                os_free(name);
+            }
+        } else if (!q_isFnc(expr, Q_EXPR_CALLBACK)) {
+            q_list l = q_getLst(expr, 0);
+            while(l) {
+                translate(q_element(l), sourceKeyList, indexKeyList);
+                l = q_next(l);
+            }
+        }
+    }
+}
+
 #define PRINT_QUERY (0)
 
 v_dataReaderQuery
@@ -220,7 +306,7 @@ v_dataReaderQueryNew (
         values = NULL;
     }
 
-    v_dataReaderLock(r);
+    OSPL_LOCK(r);
     if (!resolveFields(r,e)) {
         c_char *rname;
         if (name == NULL) {
@@ -235,7 +321,7 @@ v_dataReaderQueryNew (
                     "Operation failed: unable to resolve dataReader type fields for query=\"%s\""
                     OS_REPORT_NL "DataReader = \"%s\"",
                     name, rname);
-        v_dataReaderUnlock(r);
+        OSPL_UNLOCK(r);
         q_dispose(e);
         q_dispose(predicate);
         c_free(query);
@@ -260,7 +346,7 @@ v_dataReaderQueryNew (
     printf("after remove nots:\n"); q_print(e,0); printf("\n");
 #endif
 
-    list = deOr(e,NULL);
+    list = q_exprDeOr(e,NULL);
 
     len = c_iterLength(list);
     type = c_resolve(c_getBase(c_object(kernel)),"c_query");
@@ -272,7 +358,7 @@ v_dataReaderQueryNew (
         subExpr = c_iterTakeFirst(list);
 #if PRINT_QUERY
         printf("v_datyaReaderQueryNew\n");
-        printf("deOr term(%d):\n",i);
+        printf("q_exprDeOr term(%d):\n",i);
         q_print(subExpr,0);
         printf("\n\n");
 #endif
@@ -302,7 +388,7 @@ v_dataReaderQueryNew (
 
             q_dispose(progExpr);
             if (query->instanceQ[i] == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 v_queryFree(v_query(query));
                 c_free(query);
                 c_iterFree(list);
@@ -331,19 +417,19 @@ v_dataReaderQueryNew (
             printf("\n");
 #endif
 /* The following code generates the intermediate non-key query code.
-   Unfortunately c_queryNew creates the query expression relative to the
-   given collection's element type. In this case the instance type.
-   This means that to perform the query evaluation on each sample within
-   an instance the sample must be swapped with the instance sample field and
-   re-swapped after the evaluation.
-*/
+ * Unfortunately c_queryNew creates the query expression relative to the
+ * given collection's element type. In this case the instance type.
+ * This means that to perform the query evaluation on each sample within
+ * an instance the sample must be swapped with the instance sample field and
+ * re-swapped after the evaluation.
+ */
             progExpr = F1(Q_EXPR_PROGRAM,subExpr);
             query->sampleQ[i] = c_queryNew(instanceSet,
                                            progExpr,
                                            values);
             q_dispose(progExpr);
             if (query->sampleQ[i] == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 v_queryFree(v_query(query));
                 c_free(query);
                 c_iterFree(list);
@@ -374,7 +460,7 @@ v_dataReaderQueryNew (
     assert(found == query);
     OS_UNUSED_ARG(found);
 
-    v_dataReaderUnlock(r);
+    OSPL_UNLOCK(r);
     if (values) {
         os_free(values);
     }
@@ -401,12 +487,12 @@ v_dataReaderQueryFree (
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
             drQ = v_dataReaderQuery(_this);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (drQ->triggerValue) {
                 v_dataReaderTriggerValueFree(drQ->triggerValue);
                 drQ->triggerValue = NULL;
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
             v_queryFree(v_query(_this));
         } else {
             OS_REPORT(OS_ERROR, "v_dataReaderQueryFree failed", V_RESULT_ILL_PARAM,
@@ -435,16 +521,17 @@ v_dataReaderQueryDeinit (
             assert(v_objectKind(src) == K_DATAREADER);
             if (v_objectKind(src) == K_DATAREADER) {
                 r = v_dataReader(src);
-                v_dataReaderLock(r);
+                OSPL_LOCK(r);
                 found = c_setRemove(v_collection(r)->queries,_this,NULL,NULL);
                 if (found != NULL) {
                     assert(_this == found);
                     /* Free the query found because it has been removed
-                     * from the queries-collection */
+                     * from the queries-collection
+                     */
                     c_free(found);
                     v_queryDeinit(v_query(_this));
                 }
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
             } else {
                 OS_REPORT(OS_ERROR, "v_dataReaderQueryDeinit failed", V_RESULT_ILL_PARAM,
                           "source is not datareader");
@@ -532,7 +619,7 @@ v_dataReaderQueryTest(
         if (v_objectKind(src) == K_DATAREADER)
         {
             r = v_dataReader(src);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             instanceSet = r->index->notEmptyList;
             if (c_tableCount(instanceSet) > 0)
             {
@@ -620,6 +707,14 @@ v_dataReaderQueryTest(
                     }
                     else
                     {
+                        /* When the triggerValue was an invalid sample, then it could
+                         * be that it was a invalid dispose sample that was just replaced
+                         * by an unregister sample. Set walk reaquired to true to catch
+                         * those situations.
+                         */
+                        if(!v_readerSampleTestState(_this->triggerValue, L_VALIDDATA)) {
+                            _this->walkRequired = TRUE;
+                        }
                         /* The trigger value is no longer available in the DataReader.
                          * It can therefore be reset.
                          */
@@ -661,7 +756,7 @@ v_dataReaderQueryTest(
             if ( !pass ) {
                 _this->state = V_STATE_INITIAL;
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             OS_REPORT(OS_CRITICAL,
                       "v_dataReaderQueryTest failed", V_RESULT_ILL_PARAM,
@@ -794,9 +889,7 @@ v__dataReaderQueryOrderedReadOrTake(
             }
 
             if (v_actionResultTest (proceed, V_PROCEED)) {
-                if (v_subscriberAccessScope (v_readerSubscriber(source))
-                        != V_PRESENTATION_GROUP)
-                {
+                if (v_readerAccessScope(source) != V_PRESENTATION_GROUP) {
                     sample = v_orderedInstanceReadSample (
                         source->orderedInstance, _this->sampleMask);
                 } else {
@@ -824,8 +917,8 @@ waitForData(
     if (*delay > 0) {
         c_ulong flags = 0;
         os_timeE time = os_timeEGet();
-        v__observerSetEvent(v_observer(_this), V_EVENT_DATA_AVAILABLE);
-        flags = v__observerTimedWait(v_observer(_this), *delay);
+        v_observerSetEvent(v_observer(_this), V_EVENT_DATA_AVAILABLE);
+        flags = OSPL_CATCH_EVENT(_this, *delay);
         if (flags & V_EVENT_TIMEOUT) {
             result = V_RESULT_TIMEOUT;
         } else {
@@ -859,17 +952,17 @@ v_dataReaderQueryRead (
 
             r = v_dataReader(src);
 
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 r->readCnt++;
 
-                if (v_subscriberAccessScope (v_readerSubscriber (r)) != V_PRESENTATION_GROUP) {
-                    v_dataReaderUpdatePurgeListsLocked(r);
+                if (v_readerAccessScope(r) != V_PRESENTATION_GROUP) {
+                    v_dataReaderUpdatePurgeLists(r);
                 }
                 if (v_orderedInstanceIsAligned (r->orderedInstance)) {
                     result = v__dataReaderQueryOrderedReadOrTake (
@@ -973,7 +1066,7 @@ v_dataReaderQueryRead (
                                 }
                                 c_iterFree(argument.emptyList);
                                 if (r->statistics) {
-                                    r->statistics->numberOfInstances = v_dataReaderInstanceCount(r);
+                                    r->statistics->numberOfInstances = v_dataReaderInstanceCount_nl(r);
                                 }
                             }
                         }
@@ -993,7 +1086,7 @@ v_dataReaderQueryRead (
                     _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
                 }
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL,
@@ -1037,17 +1130,17 @@ v_dataReaderQueryReadInstance(
         assert(v_objectKind(src) == K_DATAREADER);
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 C_STRUCT(sampleActionArg) argument;
                 v_orderedInstanceUnaligned (r->orderedInstance);
                 r->readCnt++;
-                v_dataReaderUpdatePurgeListsLocked(r);
+                v_dataReaderUpdatePurgeLists(r);
 
                 argument.action = action;
                 argument.arg = arg;
@@ -1096,7 +1189,7 @@ v_dataReaderQueryReadInstance(
                    _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
                 }
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL,
@@ -1156,18 +1249,18 @@ v_dataReaderQueryReadNextInstance(
         assert(v_objectKind(src) == K_DATAREADER);
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 C_STRUCT(sampleActionArg) argument;
                 v_orderedInstanceUnaligned (r->orderedInstance);
 
                 r->readCnt++;
-                v_dataReaderUpdatePurgeListsLocked(r);
+                v_dataReaderUpdatePurgeLists(r);
 
                 a.action = action;
                 a.arg = arg;
@@ -1238,7 +1331,7 @@ v_dataReaderQueryReadNextInstance(
                 }
                 action(NULL, arg); /* This triggers the action routine that the last sample is read. */
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL, "v_dataReaderQueryReadNextInstance failed", V_RESULT_ILL_PARAM,
@@ -1333,17 +1426,17 @@ v_dataReaderQueryTake(
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
 
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 r->readCnt++;
 
-                if (v_subscriberAccessScope (v_readerSubscriber (r)) != V_PRESENTATION_GROUP) {
-                    v_dataReaderUpdatePurgeListsLocked(r);
+                if (v_readerAccessScope(r) != V_PRESENTATION_GROUP) {
+                    v_dataReaderUpdatePurgeLists(r);
                 }
                 if (v_orderedInstanceIsAligned (r->orderedInstance)) {
                     result = v__dataReaderQueryOrderedReadOrTake (
@@ -1437,7 +1530,7 @@ v_dataReaderQueryTake(
                                     }
                                     c_iterFree(argument.emptyList);
                                     if (r->statistics) {
-                                        r->statistics->numberOfInstances = v_dataReaderInstanceCount(r);
+                                        r->statistics->numberOfInstances = v_dataReaderInstanceCount_nl(r);
                                     }
                                 }
                             }
@@ -1461,7 +1554,7 @@ v_dataReaderQueryTake(
                     _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
                 }
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL,
@@ -1507,18 +1600,18 @@ v_dataReaderQueryTakeInstance(
         assert(v_objectKind(src) == K_DATAREADER);
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 C_STRUCT(sampleActionArg) argument;
                 v_orderedInstanceUnaligned (r->orderedInstance);
 
                 r->readCnt++;
-                v_dataReaderUpdatePurgeListsLocked(r);
+                v_dataReaderUpdatePurgeLists(r);
 
                 argument.action = action;
                 argument.arg = arg;
@@ -1573,7 +1666,7 @@ v_dataReaderQueryTakeInstance(
                     _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
                 }
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL,
@@ -1620,18 +1713,18 @@ v_dataReaderQueryTakeNextInstance(
         assert(v_objectKind(src) == K_DATAREADER);
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             if (v_readerSubscriber(r) == NULL) {
-                v_dataReaderUnlock(r);
+                OSPL_UNLOCK(r);
                 return V_RESULT_ALREADY_DELETED;
             }
-            result = v_subscriberTestBeginAccess(v_readerSubscriber(r));
+            result = v_dataReaderAccessTest(r);
             if (result == V_RESULT_OK) {
                 C_STRUCT(sampleActionArg) argument;
                 v_orderedInstanceUnaligned (r->orderedInstance);
 
                 r->readCnt++;
-                v_dataReaderUpdatePurgeListsLocked(r);
+                v_dataReaderUpdatePurgeLists(r);
 
                 a.action = action;
                 a.arg = arg;
@@ -1724,7 +1817,7 @@ v_dataReaderQueryTakeNextInstance(
                 }
                 action(NULL, arg); /* This triggers the action routine that the last sample is read. */
             }
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
         } else {
             result = V_RESULT_ILL_PARAM;
             OS_REPORT(OS_CRITICAL,
@@ -1757,7 +1850,7 @@ v_dataReaderQueryNotifyDataAvailable(
 
     EVENT_TRACE("v_dataReaderQueryNotifyDataAvailable(_this = 0x%x, event = 0x%x)\n", _this, e);
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
     /* Only store the trigger value and notify observers if no
      * trigger value is set before.
      * The trigger value is reset when it no longer satisfies the Query.
@@ -1779,8 +1872,8 @@ v_dataReaderQueryNotifyDataAvailable(
         _this->walkRequired = TRUE;
     }
     _this->state |= V_STATE_DATA_AVAILABLE;
-    v_observableNotify(v_observable(_this),e);
-    v_observerUnlock(v_observer(_this));
+    OSPL_THROW_EVENT(_this, e);
+    OSPL_UNLOCK(_this);
 
     return TRUE;
 }
@@ -1826,7 +1919,7 @@ v_dataReaderQuerySetParams(
             kernel = v_objectKernel(_this);
             r = v_dataReader(src);
 
-            v_dataReaderLock(r);
+            OSPL_LOCK(r);
             len = c_arraySize(_this->instanceQ);
             /* Try to assign parameter values to all sub-queries.
              * If one or more of the assignments fails then it indicates that
@@ -1849,7 +1942,7 @@ v_dataReaderQuerySetParams(
 
                 e = q_takePar(predicate,0);
                 if (!resolveFields(r,e)) {
-                    v_dataReaderUnlock(r);
+                    OSPL_UNLOCK(r);
                     q_dispose(e);
                     q_dispose(predicate);
                     os_free(values);
@@ -1860,7 +1953,7 @@ v_dataReaderQuerySetParams(
                 q_disjunctify(e);
                 e = q_removeNots(e);
 
-                list = deOr(e,NULL);
+                list = q_exprDeOr(e,NULL);
 
                 len = c_iterLength(list);
                 type = c_resolve(c_getBase(c_object(kernel)),"c_query");
@@ -1927,7 +2020,7 @@ v_dataReaderQuerySetParams(
             result = TRUE;
             _this->walkRequired = TRUE;
 
-            v_dataReaderUnlock(r);
+            OSPL_UNLOCK(r);
             if (values) {
                 os_free(values);
             }
@@ -1946,14 +2039,14 @@ v_dataReaderQuerySetParams(
     }
 
     if (result == TRUE) {
-        if (v_observableHasObservers(v_observable(_this))) {
-            C_STRUCT(v_event) event;
+        C_STRUCT(v_event) event;
 
-            event.kind = V_EVENT_TRIGGER;
-            event.source = v_observable(_this);
-            event.data = NULL;
-            v_observableNotify(v_observable(_this), &event);
-        }
+        event.kind = V_EVENT_TRIGGER;
+        event.source = v_observable(_this);
+        event.data = NULL;
+        event.handled = FALSE;
+
+        OSPL_THROW_EVENT(_this, &event);
     }
 
     return result;

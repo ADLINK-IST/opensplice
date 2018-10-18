@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,9 +28,11 @@
 #include "c_stringSupport.h"
 
 #include "v__entity.h"
+#include "v__reader.h"
 #include "v__dataReader.h"
 #include "v__query.h"
-#include "v_dataViewInstance.h"
+#include "v__dataViewInstance.h"
+#include "v__dataReaderSample.h"
 #include "v_readerQos.h"
 #include "v_dataViewQos.h"
 #include "v_qos.h"
@@ -37,7 +40,7 @@
 #include "v__topic.h"
 #include "v__index.h"
 #include "v__observer.h"
-#include "v_observable.h"
+#include "v__observable.h"
 #include "v_state.h"
 #include "v__collection.h"
 #include "v__subscriber.h"
@@ -234,7 +237,10 @@ v_dataViewInit(
     q = v_dataViewQosNew(kernel, qos);
     dataView->qos = q;
 
-    v_collectionInit(v_collection(dataView), name, enable);
+    v_collectionInit(v_collection(dataView), name);
+    if(enable) {
+        (void)v_entityEnable(v_entity(dataView));
+    }
 
     dataViewSampleType = dataViewSampleTypeNew(dataReader);
     assert(dataViewSampleType != NULL);
@@ -243,16 +249,12 @@ v_dataViewInit(
     /* When the view has defined its own keys, then grab the key-definition from
      * the userKeyQosPolicy and the key-values from the messages that are passed.
      */
-    if (qos->userKey.v.enable)
-    {
-        if (qos->userKey.v.expression)
-        {
+    if (qos->userKey.v.enable) {
+        if (qos->userKey.v.expression) {
             totalSize = strlen(qos->userKey.v.expression) + 1;
             keyExpr = os_malloc(totalSize);
             os_strncpy(keyExpr, qos->userKey.v.expression, totalSize);
-        }
-        else
-        {
+        } else {
             keyExpr = NULL;
         }
     }
@@ -261,34 +263,30 @@ v_dataViewInit(
      * the original keys as specified on the topic, or the reader may have
      * overruled the topic keys by means of its own userKeyQosPolicy.
      */
-    else if (v_reader(dataReader)->qos->userKey.v.enable)
-    {
-        if (v_reader(dataReader)->qos->userKey.v.expression)
-        {
+    else if (v_reader(dataReader)->qos->userKey.v.enable) {
+        if (v_reader(dataReader)->qos->userKey.v.expression) {
             totalSize = strlen(v_reader(dataReader)->qos->userKey.v.expression) + 1;
             keyExpr = os_malloc(totalSize);
             os_strncpy(keyExpr, v_reader(dataReader)->qos->userKey.v.expression, totalSize);
-        }
-        else
-        {
+        } else {
             keyExpr = NULL;
         }
-    }
-    else
-    {
+    } else {
         v_topic topic;
-        topic = v_dataReaderGetTopic(dataReader);
-        if (v_topicKeyExpr(topic) != NULL)
-        {
-            totalSize = strlen(v_topicKeyExpr(topic)) + 1;
-            keyExpr = os_malloc(totalSize);
-            os_strncpy(keyExpr, v_topicKeyExpr(topic), totalSize);
-        }
-        else
-        {
+        topic = v_readerGetTopic(v_reader(dataReader));
+
+        if(topic) {
+            if (v_topicKeyExpr(topic) != NULL) {
+                totalSize = strlen(v_topicKeyExpr(topic)) + 1;
+                keyExpr = os_malloc(totalSize);
+                os_strncpy(keyExpr, v_topicKeyExpr(topic), totalSize);
+            } else {
+                keyExpr = NULL;
+            }
+            c_free(topic);
+        } else {
             keyExpr = NULL;
         }
-        c_free(topic);
     }
     prefix = "sample.sample.message.userData.";
     if (keyExpr != NULL) {
@@ -421,16 +419,21 @@ v_dataViewWrite(
 {
     v_actionResult result = 0;
     v_dataViewInstance instance, found;
+    v_dataViewSample viewSample;
 
     assert(C_TYPECHECK(_this,v_dataView));
 
     if (!v_stateTest(v_nodeState(v_dataReaderSampleMessage(sample)),L_REGISTER)) {
-        instance = v_dataViewInstanceNew(_this,sample);
+        viewSample = v_dataViewSampleNew(_this, sample);
+        assert(viewSample);
+        instance = v_dataViewInstanceNew(_this,viewSample);
         found = c_tableInsert(_this->instances,instance);
+        v_readerSample(viewSample)->instance = found;
+        v_dataReaderSampleAddViewSample(sample,viewSample);
         if (found != instance) {
-            v_dataViewInstanceWipe(instance);
-            v_dataViewInstanceWrite(found,sample);
+            v_dataViewInstanceWrite(found,viewSample, NULL);
         }
+        v_dataViewNotifyDataAvailable(_this, viewSample);
         c_free(instance);
     }
 
@@ -460,10 +463,8 @@ waitForData(
     if (*delay > 0) {
         c_ulong flags = 0;
         os_timeE time = os_timeEGet();
-        v_observerLock(_this);
-        v__observerSetEvent(v_observer(_this), V_EVENT_DATA_AVAILABLE);
-        flags = v__observerTimedWait(v_observer(_this), *delay);
-        v_observerUnlock(_this);
+        v_observerSetEvent(v_observer(_this), V_EVENT_DATA_AVAILABLE);
+        flags = OSPL_CATCH_EVENT(_this, *delay);
         if (flags & V_EVENT_TIMEOUT) {
             result = V_RESULT_TIMEOUT;
         } else {
@@ -517,12 +518,12 @@ v_dataViewRead(
 
     assert(C_TYPECHECK(_this,v_dataView));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         argument.action = action;
         argument.arg = arg;
@@ -545,7 +546,7 @@ v_dataViewRead(
         action(NULL,arg); /* This triggers the action routine that the
                            * last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -569,12 +570,12 @@ v_dataViewReadInstance(
 
     assert(C_TYPECHECK(instance, v_dataViewInstance));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         argument.action = action;
         argument.arg = arg;
@@ -597,7 +598,7 @@ v_dataViewReadInstance(
         action(NULL,arg); /* This triggers the action routine that the
                            * last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -618,16 +619,16 @@ v_dataViewReadNextInstance(
     assert(C_TYPECHECK(_this,v_dataView));
     assert(C_TYPECHECK(instance, v_dataViewInstance));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
     if (instance != NULL && ((v_dataView)v_instanceEntity(instance)) != _this) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_PRECONDITION_NOT_MET;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
@@ -654,7 +655,7 @@ v_dataViewReadNextInstance(
         action(NULL,arg); /* This triggers the action routine that the
                            * last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -688,12 +689,12 @@ v_dataViewTake(
 
     assert(C_TYPECHECK(_this,v_dataView));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
@@ -723,7 +724,7 @@ v_dataViewTake(
         }
         action(NULL,arg); /* This triggers the action routine that the last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -748,12 +749,12 @@ v_dataViewTakeInstance(
 
     assert(C_TYPECHECK(instance, v_dataViewInstance));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
@@ -778,7 +779,7 @@ v_dataViewTakeInstance(
         }
         action(NULL,arg); /* This triggers the action routine that the last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -798,16 +799,16 @@ v_dataViewTakeNextInstance(
     assert(C_TYPECHECK(_this,v_dataView));
     assert(C_TYPECHECK(instance,v_dataViewInstance ));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     if (v_readerSubscriber(_this->reader) == NULL) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_ALREADY_DELETED;
     }
     if (instance != NULL && ((v_dataView)v_instanceEntity(instance)) != _this) {
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
         return V_RESULT_PRECONDITION_NOT_MET;
     }
-    result = v_subscriberTestBeginAccess(v_readerSubscriber(_this->reader));
+    result = v_dataReaderAccessTest(_this->reader);
     if (result == V_RESULT_OK) {
         v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
@@ -844,7 +845,7 @@ v_dataViewTakeNextInstance(
         action(NULL,arg); /* This triggers the action routine that the
                            * last sample is read. */
     }
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -857,9 +858,9 @@ v_dataViewGetQos(
 
     assert(C_TYPECHECK(_this,v_dataView));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     qos = c_keep(_this->qos);
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return qos;
 }
@@ -894,12 +895,12 @@ v_dataViewLookupInstance(
     assert(C_TYPECHECK(_this,v_dataView));
     assert(C_TYPECHECK(keyTemplate,v_message));
 
-    v_dataViewLock(_this);
+    OSPL_LOCK(_this);
     readerSampleTemplate.message = keyTemplate;
     viewSampleTemplate.sample = (v_readerSample)(&readerSampleTemplate);
     instanceTemplate.sample = (v_dataViewSample)(&viewSampleTemplate);
     instance = c_find(_this->instances, &instanceTemplate);
-    v_dataViewUnlock(_this);
+    OSPL_UNLOCK(_this);
 
     return instance;
 }
@@ -915,7 +916,7 @@ v_dataViewContainsInstance (
     assert(C_TYPECHECK(instance,v_dataViewInstance));
 
     if (instance) {
-        v_dataViewLock(_this);
+        OSPL_LOCK(_this);
         if ( ((v_dataView)v_instanceEntity(instance)) == _this) {
             found = TRUE;
         } else {
@@ -923,7 +924,7 @@ v_dataViewContainsInstance (
                 "Invalid dataViewInstance: no attached to DataView"
                 "<_this = 0x%"PA_PRIxADDR" instance = 0x%"PA_PRIxADDR">", (os_address)_this, (os_address)instance);
         }
-        v_dataViewUnlock(_this);
+        OSPL_UNLOCK(_this);
     }
     return found;
 }
@@ -956,13 +957,13 @@ v_dataViewNotifyDataAvailable(
     event.kind = V_EVENT_DATA_AVAILABLE;
     event.source = NULL;
     event.data = sample;
+    event.handled = FALSE;
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
     c_setWalk(v_collection(_this)->queries, queryNotifyDataAvailable, &event);
-    v_observerUnlock(v_observer(_this));
-
+    OSPL_UNLOCK(_this);
     /* Also notify myself, since the user reader might be waiting. */
     event.source = v_observable(_this);
 
-    v_observableNotify(v_observable(_this), &event);
+    OSPL_THROW_EVENT(_this, &event);
 }

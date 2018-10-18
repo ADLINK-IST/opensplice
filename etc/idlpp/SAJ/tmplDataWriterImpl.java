@@ -1,5 +1,7 @@
 public class $(type-name)DataWriterImpl extends org.opensplice.dds.dcps.DataWriterImpl implements $(type-name)DataWriter
 {
+    private static final long serialVersionUID = 1L;
+
     private long copyCache;
     private $(type-name)TypeSupport typeSupport;
 

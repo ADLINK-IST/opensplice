@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@
 
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "os_stdarg.h"
 
 #include "code/os_stdlib_defs.c"
 #include "code/os_stdlib_mkdir.c"
@@ -133,7 +135,7 @@ os_mkpath(const os_char *path, os_mode_t mode)
     os_char *dir;
     const os_char *strErr;
     os_size_t len, pos;
-    struct os_stat sbuf;
+    struct os_stat_s sbuf;
     os_result result = os_resultSuccess;
 
     if (path == NULL) {
@@ -179,4 +181,48 @@ os_mkpath(const os_char *path, os_mode_t mode)
     }
 
     return result;
+}
+
+int
+os_asprintf(
+    char **strp,
+    const char *fmt,
+    ...)
+{
+    int ret;
+    unsigned int len;
+    char buf[1] = { '\0' };
+    char *str = NULL;
+    va_list args1, args2;
+
+    assert(strp != NULL);
+    assert(fmt != NULL);
+
+    va_start(args1, fmt);
+    os_va_copy(args2, args1); /* va_list cannot be reused */
+
+    if ((ret = os_vsnprintf(buf, sizeof(buf), fmt, args1)) >= 0) {
+        len = (unsigned int)ret; /* +1 for null byte */
+        if ((str = os_malloc(len + 1)) == NULL) {
+            ret = -1;
+        } else if ((ret = os_vsnprintf(str, len + 1, fmt, args2)) >= 0) {
+            assert(((unsigned int)ret) == len);
+            *strp = str;
+        } else {
+            os_free(str);
+        }
+    }
+
+    va_end(args1);
+    va_end(args2);
+
+    return ret;
+}
+
+int
+os_rand(
+    void)
+{
+    /* coverity[dont_call : FALSE] */
+    return rand();
 }

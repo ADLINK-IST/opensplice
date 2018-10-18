@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -59,8 +60,7 @@ template <class T> class DDS_DCPS_mgr;
 namespace DDS
 {
    // Primitive types
-   /**
-    * @bug OSPL-918 This should be bool */
+   /** @bug OSPL-918 DDS::Bool is not (yet) a bool */
    typedef os_uchar Boolean;
    typedef Boolean& Boolean_out;
    typedef Boolean* Boolean_ptr;

@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. MATLAB Generation from IDL &mdash; The Vortex OpenSplice MATLAB Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice MATLAB Guide" href="index.html" />
+    <link rel="next" title="5. MATLAB without IDL" href="IDLless-MATLAB.html" />
+    <link rel="prev" title="3. MATLAB API for Vortex DDS Classes" href="DDS-Classes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="IDLless-MATLAB.html" title="5. MATLAB without IDL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="DDS-Classes.html" title="3. MATLAB API for Vortex DDS Classes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="matlab-generation-from-idl">
+<span id="id1"></span><h1>4. MATLAB Generation from IDL<a class="headerlink" href="#matlab-generation-from-idl" title="Permalink to this headline">¶</a></h1>
+<p>The DDS MATLAB Integration supports generation of MATLAB classes from IDL. This chapter describes the details of the IDL-MATLAB binding.</p>
+<div class="section" id="running-idlpp">
+<h2>4.1. Running IDLPP<a class="headerlink" href="#running-idlpp" title="Permalink to this headline">¶</a></h2>
+<p>Compiling IDL into MATLAB code is done using the <tt class="docutils literal"><span class="pre">-l</span> <span class="pre">matlab</span></tt> switch on idlpp:</p>
+<div class="highlight-python"><div class="highlight"><pre>idlpp -l matlab idl-file-to-compile.idl
+</pre></div>
+</div>
+<p><strong>Generated Artifacts</strong></p>
+<p>The following table defines the MATLAB artifacts generated from IDL concepts:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="19%" />
+<col width="65%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL Concept</th>
+<th class="head">MATLAB Concept</th>
+<th class="head">Comment</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>module</td>
+<td>package</td>
+<td>a MATLAB package is a folder starting with &#8216;+&#8217;.</td>
+</tr>
+<tr class="row-odd"><td>enum</td>
+<td>class</td>
+<td>a MATLAB .m file.</td>
+</tr>
+<tr class="row-even"><td>enum value</td>
+<td>enum value</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>struct</td>
+<td>class</td>
+<td>a MATLAB .m file.</td>
+</tr>
+<tr class="row-even"><td>field</td>
+<td>class property</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>typedef</td>
+<td>&nbsp;</td>
+<td>IDL typedef&#8217;s are inlined.</td>
+</tr>
+<tr class="row-even"><td>union</td>
+<td>Unsupported</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>inheritance</td>
+<td>Unsupported</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Datatype mappings</strong></p>
+<p>The following table shows the MATLAB equivalents to IDL primitive types:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL Type</th>
+<th class="head">MATLAB Type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>boolean</td>
+<td>logical</td>
+</tr>
+<tr class="row-odd"><td>char</td>
+<td>int8</td>
+</tr>
+<tr class="row-even"><td>octet</td>
+<td>uint8</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>int16</td>
+</tr>
+<tr class="row-even"><td>ushort</td>
+<td>uint16</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>int32</td>
+</tr>
+<tr class="row-even"><td>ulong</td>
+<td>uint32</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>int64</td>
+</tr>
+<tr class="row-even"><td>ulong long</td>
+<td>uint64</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>single</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>double</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>char</td>
+</tr>
+<tr class="row-even"><td>wchar</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-odd"><td>wstring</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-even"><td>any</td>
+<td>Unsupported</td>
+</tr>
+<tr class="row-odd"><td>long double</td>
+<td>Unsupported</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Implementing Arrays and Sequences in MATLAB</strong></p>
+<p>Both IDL arrays and IDL sequences are mapped to MATLAB arrays.
+MATLAB supports both native array types, which must have homogenenous contents and <em>cell arrays</em>, which may have heterogenous content.
+In general, IDLPP prefers native arrays, as they support more straight forward type checking.
+However, some situations require cell arrays.
+The following table summarizes the cases where IDLPP will generate cell arrays:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="25%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Datatype</th>
+<th class="head">Sample Syntax</th>
+<th class="head">Reason for using cell array</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>sequence of sequence</td>
+<td>sequence&lt;sequence&lt;T&gt;&gt; f;</td>
+<td>Nested sequences need not have a homogeneous length</td>
+</tr>
+<tr class="row-odd"><td>array of sequence</td>
+<td>sequence&lt;T&gt; f[N];</td>
+<td>Sequences lengths need not be homogeneous</td>
+</tr>
+<tr class="row-even"><td>sequence of array</td>
+<td>sequence&lt;A&gt; f;</td>
+<td>A multi-dim array makes adding elements too difficult</td>
+</tr>
+<tr class="row-odd"><td>sequence of string</td>
+<td>sequence&lt;string&gt; f;</td>
+<td>Nested strings need not have a homogeneous length</td>
+</tr>
+<tr class="row-even"><td>string array</td>
+<td>string f[N];</td>
+<td>Nested strings need not have a homogeneous length</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="limitations-of-matlab-support">
+<h2>4.2. Limitations of MATLAB Support<a class="headerlink" href="#limitations-of-matlab-support" title="Permalink to this headline">¶</a></h2>
+<p>The IDL-to-MATLAB binding has the following limitations:</p>
+<ul class="simple">
+<li>IDL unions are not supported</li>
+<li>the following IDL data types are not supported: wchar, wstring, any and long double</li>
+<li>arrays of sequences of structures are not supported</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. MATLAB Generation from IDL</a><ul>
+<li><a class="reference internal" href="#running-idlpp">4.1. Running IDLPP</a></li>
+<li><a class="reference internal" href="#limitations-of-matlab-support">4.2. Limitations of MATLAB Support</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="DDS-Classes.html"
+                        title="previous chapter">3. MATLAB API for Vortex DDS Classes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="IDLless-MATLAB.html"
+                        title="next chapter">5. MATLAB without IDL</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/IDL-MATLAB.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="IDLless-MATLAB.html" title="5. MATLAB without IDL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="DDS-Classes.html" title="3. MATLAB API for Vortex DDS Classes"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,11 +28,13 @@ import java.util.Map;
 import java.util.Set;
 
 import DDS.ExtDomainParticipantListener;
+import DDS.Property;
+import DDS.PropertyHolder;
 import DDS.Topic;
 import DDS.TopicQosHolder;
 
 /**
- * Implementation of the {@link DDS.DomainParticipant} interface.
+ * Implementation of the DomainParticipant interface.
  *
  * The behavior of built-in entities adheres to the following rules:
  * <ul>
@@ -99,7 +102,7 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
             this.factoryAutoEnable = a_qos.entity_factory.autoenable_created_entities;
             dispatcher = new ListenerDispatcher (
                 uParticipant, a_qos.listener_scheduling);
-            this.set_dispatcher(dispatcher);
+            result = this.set_dispatcher(dispatcher);
         } else {
             result = DDS.RETCODE_ERROR.value;
         }
@@ -141,27 +144,30 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
                             "' ContentFilteredTopic entities.");
                 } else {
                     if (this.listener != null) {
-                        set_listener(this.listener, 0);
+                        result = set_listener(this.listener, 0);
                     }
-                    this.disable_callbacks();
-                    result = this.delete_builtin_subscriber();
-
                     if (result == DDS.RETCODE_OK.value) {
-                        dispatcher = this.get_dispatcher();
-                        if (dispatcher != null) {
-                            this.set_dispatcher(null);
-                            result = dispatcher.deinit();
-                            dispatcher = null;
-                            this.set_dispatcher(dispatcher);
-                        }
+                        result = this.disable_callbacks();
                         if (result == DDS.RETCODE_OK.value) {
-                            result = ((EntityImpl) this).detach_statuscondition();
-                        }
-                        if (result == DDS.RETCODE_OK.value) {
-                            this.builtintopics.clear();
-                            result = jniDomainParticipantFree(uParticipant);
+                            result = this.delete_builtin_subscriber();
                             if (result == DDS.RETCODE_OK.value) {
-                                result = super.deinit();
+                                dispatcher = this.get_dispatcher();
+                                if (dispatcher != null) {
+                                    result = this.set_dispatcher(null);
+                                    if (result == DDS.RETCODE_OK.value) {
+                                        result = dispatcher.deinit();
+                                    }
+                                }
+                                if (result == DDS.RETCODE_OK.value) {
+                                    result = ((EntityImpl) this).detach_statuscondition();
+                                }
+                                if (result == DDS.RETCODE_OK.value) {
+                                    this.builtintopics.clear();
+                                    result = jniDomainParticipantFree(uParticipant);
+                                    if (result == DDS.RETCODE_OK.value) {
+                                        result = super.deinit();
+                                    }
+                                }
                             }
                         }
                     }
@@ -329,7 +335,10 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
                     result = sub.set_listener(a_listener, mask);
                 }
                 if (result == DDS.RETCODE_OK.value) {
-                    if ((this.factoryAutoEnable) && (this.is_enabled())) {
+                    if ((this.factoryAutoEnable) &&
+                        (this.is_enabled()) &&
+                        !(qos.presentation.access_scope == DDS.PresentationQosPolicyAccessScopeKind.GROUP_PRESENTATION_QOS &&
+                          qos.presentation.coherent_access == true)) {
                         result = sub.enable();
                     }
                 }
@@ -677,7 +686,6 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
                     }
 
                     if (found != null) {
-                        uTopic = found.get_user_object();
                         TopicQosHolder qos = new TopicQosHolder();
                         found.get_qos(qos);
                         String type_alias = found.get_type_name();
@@ -1615,7 +1623,7 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
             java.lang.String type_alias)
     {
         int result = DDS.RETCODE_BAD_PARAMETER.value;
-
+        ReportStack.start();
         synchronized (this) {
             long uParticipant = get_user_object();
             if (uParticipant != 0) {
@@ -1651,21 +1659,25 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
                                              typeSupport.get_type_hash(),
                                              typeSupport.get_meta_data(),
                                              typeSupport.get_extentions());
-
-                    long jniCopyCache = jniCopyCacheNew(uParticipant,
-                                            typeSupport.get_type_name(),
-                                            type_alias,
-                                            typeSupport.get_package_redirects());
-                    typeSupport.set_copyCache(jniCopyCache);
-                    if (result != DDS.RETCODE_OK.value) {
-                        remove(type_alias);
+                    if (result == DDS.RETCODE_OK.value) {
+                        long jniCopyCache = jniCopyCacheNew(uParticipant,
+                                                typeSupport.get_type_name(),
+                                                type_alias,
+                                                typeSupport.get_package_redirects());
+                        typeSupport.set_copyCache(jniCopyCache);
+                        if (jniCopyCache == 0) {
+                            remove(type_alias);
+                        }
+                    } else {
+                        ReportStack.report(result, "Register type failed for type:" +  typeSupport.get_type_name() + ".");
                     }
                 }
             } else {
                 result = DDS.RETCODE_ALREADY_DELETED.value;
             }
-        }
 
+        }
+        ReportStack.flush(result != DDS.RETCODE_OK.value);
         return result;
     }
 
@@ -1706,6 +1718,48 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
         return result;
     }
 
+    public int set_property(Property a_property) {
+        int result = DDS.RETCODE_OK.value;
+        long uParticipant;
+        ReportStack.start();
+
+        result = checkProperty(a_property);
+
+        if (result == DDS.RETCODE_OK.value) {
+            uParticipant = this.get_user_object();
+            if (uParticipant != 0) {
+                a_property.name = a_property.name.toLowerCase();
+                a_property.value = a_property.value.toLowerCase();
+                result = jniSetProperty(uParticipant, a_property);
+            } else {
+                result = DDS.RETCODE_ALREADY_DELETED.value;
+            }
+        }
+
+        ReportStack.flush(this, result != DDS.RETCODE_OK.value);
+        return result;
+    }
+
+    public int get_property(PropertyHolder a_property) {
+        int result = DDS.RETCODE_OK.value;
+        long uParticipant;
+        ReportStack.start();
+
+        result = checkPropertyHolder(a_property);
+
+        if (result == DDS.RETCODE_OK.value) {
+            uParticipant = this.get_user_object();
+            if (uParticipant != 0) {
+                a_property.value.name = a_property.value.name.toLowerCase();
+                result = jniGetProperty(uParticipant, a_property);
+            } else {
+                result = DDS.RETCODE_ALREADY_DELETED.value;
+            }
+        }
+
+        ReportStack.flush(this, result != DDS.RETCODE_OK.value);
+        return result;
+    }
 
     private native long jniDomainParticipantNew(String name, int domainId, DDS.DomainParticipantQos qos);
     private native int jniDomainParticipantFree(long uParticipant);
@@ -1723,5 +1777,6 @@ public class DomainParticipantImpl extends DomainParticipantBase implements DDS.
     private native int jniDeleteHistoricalData(long uParticipant, String partition_expression, String topic_expression);
 
     private native long jniCopyCacheNew(long uParticipant, String idlTypeName, String type_alias, String package_redirects);
-
+    private native int jniSetProperty(long uParticipant, Property a_property);
+    private native int jniGetProperty(long uParticipant, PropertyHolder a_property);
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,8 +22,8 @@ package org.opensplice.dds.domain;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.omg.dds.core.ServiceEnvironment;
 import org.omg.dds.core.status.Status;
@@ -41,11 +42,11 @@ public class DomainParticipantFactoryImpl
         implements org.opensplice.dds.domain.DomainParticipantFactory {
     private OsplServiceEnvironment environment;
     private DDS.DomainParticipantFactory factory;
-    private ConcurrentHashMap<DDS.DomainParticipant, DomainParticipantImpl> participants;
+    private HashMap<DDS.DomainParticipant, DomainParticipantImpl> participants;
 
     public DomainParticipantFactoryImpl(OsplServiceEnvironment environment) {
         this.environment = environment;
-        this.participants = new ConcurrentHashMap<DDS.DomainParticipant, DomainParticipantImpl>();
+        this.participants = new HashMap<DDS.DomainParticipant, DomainParticipantImpl>();
         this.factory = DDS.DomainParticipantFactory.get_instance();
     }
 

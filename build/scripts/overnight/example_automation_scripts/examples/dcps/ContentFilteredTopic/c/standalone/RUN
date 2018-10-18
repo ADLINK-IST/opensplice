@@ -7,14 +7,13 @@ startOSPL
 echo "=== Launching ContentFilteredTopic "
 
 ./sac_contentfilteredtopic_sub GE > subResult.txt &
-
+cmd_pid=$!
 sleep 2
 
 ./sac_contentfilteredtopic_pub > pubResult.txt
 
 echo === Waiting for processes to terminate
-waitForProcessTermination sac_contentfilteredtopic_pub 40
-waitForProcessTermination sac_contentfilteredtopic_sub 40
+waitForProcessTermination $cmd_pid 40
 
 contentfilteredtopicCheckResult
 

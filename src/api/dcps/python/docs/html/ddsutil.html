@@ -1,0 +1,226 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ddsutil module &#8212; Python DCPS API 6.8.3 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.8.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="dds module" href="dds.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ddsutil">
+<span id="ddsutil-module"></span><h1>ddsutil module<a class="headerlink" href="#module-ddsutil" title="Permalink to this headline">¶</a></h1>
+<p>DDS descriptor utility module</p>
+<p>Main purpose of this module is to provide methods to convert
+DDS descriptor to Python classes dynamically.</p>
+<p>Users can use IDL file as an input to generate classes</p>
+<dl class="class">
+<dt id="ddsutil.GeneratedClassInfo">
+<em class="property">class </em><code class="descclassname">ddsutil.</code><code class="descname">GeneratedClassInfo</code><span class="sig-paren">(</span><em>data_cls</em>, <em>type_support_cls</em>, <em>nested_types</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.GeneratedClassInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Place holder for generated classes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>topic_data_class</strong> – Topic data class</li>
+<li><strong>type_support_class</strong> – Type support class</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="ddsutil.GeneratedClassInfo.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>data_cls</em>, <em>type_support_cls</em>, <em>nested_types</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.GeneratedClassInfo.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ddsutil.GeneratedClassInfo.get_class">
+<code class="descname">get_class</code><span class="sig-paren">(</span><em>type_info</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.GeneratedClassInfo.get_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return classes created dynamically</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>type_info</strong> (<em>string</em>) – struct identifier (.e.g, “test::basic::inner_struct”)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ddsutil.GeneratedClassInfo.register_topic">
+<code class="descname">register_topic</code><span class="sig-paren">(</span><em>dp</em>, <em>name</em>, <em>qos</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.GeneratedClassInfo.register_topic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register topic for generated topic data class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dp</strong> (<a class="reference internal" href="dds.html#dds.DomainParticipant" title="dds.DomainParticipant"><em>DomainParticipant</em></a>) – Domain participant</li>
+<li><strong>name</strong> (<em>string</em>) – topic name</li>
+<li><strong>qos</strong> (<a class="reference internal" href="dds.html#dds.Qos" title="dds.Qos"><em>Qos</em></a>) – topic QoS</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="dds.html#dds.Topic" title="dds.Topic">Topic</a></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">topic</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ddsutil.get_dds_classes_from_idl">
+<code class="descclassname">ddsutil.</code><code class="descname">get_dds_classes_from_idl</code><span class="sig-paren">(</span><em>idl_path</em>, <em>type_info</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.get_dds_classes_from_idl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create DDS topic data class and DDS type support class
+from the given IDL file source.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>idl_path</strong> (<em>string</em>) – path to IDL file</li>
+<li><strong>type_info</strong> (<em>string</em>) – struct module (e.g., test::basic::my_struct)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#ddsutil.GeneratedClassInfo" title="ddsutil.GeneratedClassInfo">GeneratedClassInfo</a></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">GeneratedClassInfo</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Examples:</dt>
+<dd>gen_info = dds_class(“sample.idl”, “basic::test::Type1”, “long_1”)</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="ddsutil.TopicDataClass">
+<em class="property">class </em><code class="descclassname">ddsutil.</code><code class="descname">TopicDataClass</code><span class="sig-paren">(</span><em>member_names=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.TopicDataClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract topic data class.
+Generated classes inherits this base class.</p>
+<dl class="method">
+<dt id="ddsutil.TopicDataClass.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>member_names=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.TopicDataClass.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ddsutil.TopicDataClass.get_vars">
+<code class="descname">get_vars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.TopicDataClass.get_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the dictionary of attribute and value pair for the topic data members.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ddsutil.TopicDataClass.print_vars">
+<code class="descname">print_vars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ddsutil.TopicDataClass.print_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print values of all member variables.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Python DCPS API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="dds.html">dds module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ddsutil module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="dds.html" title="previous chapter">dds module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, ADLINK Technology Limited.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/ddsutil.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

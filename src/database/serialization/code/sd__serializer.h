@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,8 +36,7 @@
 /** \brief Platform independent representation of the serializer format ID */
 typedef c_octet sd_formatID[2];
 
-/** \brief Platform independent representation of the serializer format version
- */
+/** \brief Platform independent representation of the serializer format version */
 typedef c_octet sd_formatVersion[2];
 
 /** \brief Platform independent representation of size of the serialized data,
@@ -127,8 +127,8 @@ C_STRUCT(sd_serializer) {
 };
 
 /* Private constructor, to be used only by descendants which do not
- * add any members */
- 
+ * add any members
+ */
 sd_serializer
 sd_serializerNew(
     c_ushort formatID,
@@ -145,11 +145,11 @@ sd_serializerInitialize(
     c_base base,
     c_type type,
     struct sd_serializerVMT VMT) __nonnull((1,4));
-                               
+
 void
 sd_serializerResetValidationState(
     sd_serializer _this) __nonnull_all__;
-                  
+
 void
 sd_serializerSetValidationInfo(
     sd_serializer _this,

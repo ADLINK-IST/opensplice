@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,9 +33,14 @@ typedef enum {
     IDL_LANG_CS,
     IDL_LANG_JAVA,
     IDL_LANG_ISOCPP2,
-    /** IDL_LANG_ISOCPP, I am not adding this yet. I wish to re-use C++ with tweaks @bug OSPL-3369 */
+    /* IDL_LANG_ISOCPP, TODO Can this be removed. Wish to re-use C++ with tweaks */
     IDL_LANG_LITE_CXX,
     IDL_LANG_C99,
+    IDL_LANG_SIMULINK,
+	IDL_LANG_MATLAB,
+	IDL_LANG_PYTHON_DESCRIPTORS,
+	IDL_LANG_LABVIEW,
+	IDL_LANG_PYTHON,
     IDL_LANG_COUNT /* should always be the last in the enumeration!!! */
 } IDL_LANGUAGE;
 
@@ -42,10 +48,11 @@ typedef enum {
     IDL_MODE_UNKNOWN,
     IDL_MODE_ORB_BOUND,
     IDL_MODE_STANDALONE,
-    /** IDL_MODE_NEW,  I am not adding this yet. I wish to re-use C++ with tweaks @bug OSPL-3369
-                      Also: I don't like the designation 'New' but we're using vanilla
-                     get_opt and all the good characters are taken.
-                     This way we can re-use for Java 5 PSM */
+    /** IDL_MODE_NEW,  TODO Can this removed. I wish to re-use C++ with tweaks
+     * Also: I don't like the designation 'New' but we're using vanilla
+     * get_opt and all the good characters are taken.
+     * This way we can re-use for Java 5 PSM
+     */
     IDL_MODE_COUNT /* should always be the last in the enumeration!!! */
 } IDL_CORBA_MODE;
 
@@ -67,6 +74,7 @@ int idl_languageAndModeSupported(void);
 c_char *idl_languageId(const char *identifier);
 c_char *idl_scopeStackLanguage(idl_scope scope, const char *name);
 c_char *idl_corbaLanguageTypeFromTypeSpec(idl_typeSpec typeSpec);
+c_char *idl_genLanguageLiteralValueImage(c_value literal, c_type type, void *userData);
 c_char *idl_genLanguageConstGetter(void);
 
 void idl_setIsISOCpp(os_boolean itIs);

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
  */
 #include "v__entry.h"
 #include "v__observer.h"
+#include "v__observable.h"
 #include "v__reader.h"
 #include "v__group.h"
 #include "v_entity.h"
@@ -43,9 +45,10 @@
  */
 #define COMPLETE_FLAG (0x0001)
 #define DURABILITY_FLAG (0x0002)
+
 #define SET_COMPLETE(userData, complete) \
         { c_address data = (c_address)userData; \
-          if (complete) {data |= COMPLETE_FLAG;} else {data &= (c_address)~COMPLETE_FLAG;} \
+          if ((complete) == V_ALIGNSTATE_COMPLETE) {data |= COMPLETE_FLAG;} else {data &= (c_address)~COMPLETE_FLAG;} \
           userData = (c_voidp)data; \
         }
 #define SET_DURABILITY(userData, durability) \
@@ -69,7 +72,7 @@ v_entryInit(
 
     kernel = v_objectKernel(reader);
     _this->reader = reader;
-    _this->complete = FALSE;
+    _this->alignState = V_ALIGNSTATE_INCOMPLETE;
     _this->nvgCount = 0; /* non volatile group count */
     _this->groups = c_tableNew(v_kernelType(kernel,K_PROXY), "source.index,source.server");
     assert(_this->groups != NULL);
@@ -91,6 +94,7 @@ v_entryFree(
         group = v_group(v_proxyClaim(proxy));
         if (group) {
             v_groupRemoveEntry(group, _this);
+            v_entryRemoveGroup(_this, group);
             v_proxyRelease(proxy);
         }
         c_free(proxy);
@@ -169,31 +173,31 @@ v_entryResend(
 static c_bool
 get_completeness(c_object o, c_voidp arg)
 {
-    c_bool *complete = (c_bool *)arg;
+    v_alignState *alignState = (v_alignState *)arg;
     if (!TEST_COMPLETE(v_proxyUserData(o))) {
-        *complete = FALSE;
+        *alignState = V_ALIGNSTATE_INCOMPLETE;
     }
-    return *complete;
+    return *alignState == V_ALIGNSTATE_COMPLETE;
 }
 
-c_bool
+void
 v_entryAddGroup(
     v_entry _this,
     v_group group)
 {
     v_proxy proxy;
     v_proxy found;
-    c_bool result;
-    c_bool complete;
+    v_alignState alignState;
     c_bool durability;
     c_voidp userData = NULL;
+    c_bool stateChanged = FALSE;
 
     assert(C_TYPECHECK(_this,v_entry));
     assert(C_TYPECHECK(group,v_group));
 
-    complete = v_groupCompleteGet(group);
+    alignState = v_groupCompleteGet(group);
     durability = v_groupIsDurable(group);
-    SET_COMPLETE(userData, complete);
+    SET_COMPLETE(userData, alignState);
     SET_DURABILITY(userData, durability);
 
     /* Create group proxy and store completeness (and in the future also durability)
@@ -203,35 +207,38 @@ v_entryAddGroup(
                        v_publicHandle(v_public(group)),
                        (c_voidp)userData);
 
+    OSPL_LOCK(_this->reader);
     found = ospl_c_insert(_this->groups, proxy);
     if(found != proxy){
         /* The group was already available in the groupset. This can happen if
          * the reader gets notified of the group it has just created. In that
-         * case the administration should not be updated. */
-        result = FALSE;
+         * case the administration should not be updated.
+         */
     } else {
-        if (_this->complete != complete) {
-            if (_this->complete) {
+        if (_this->alignState != alignState) {
+            if (_this->alignState == V_ALIGNSTATE_COMPLETE) {
                 /* reader becomes incomplete because an incomplete group is added. */
-                _this->complete = FALSE;
+                _this->alignState = V_ALIGNSTATE_INCOMPLETE;
             } else {
                 /* reader was incomplete and group is complete so recheck total completeness. */
-                _this->complete = TRUE;
-                (void)c_tableWalk(_this->groups, get_completeness, &_this->complete);
+                _this->alignState = V_ALIGNSTATE_COMPLETE;
+                (void)c_tableWalk(_this->groups, get_completeness, &_this->alignState);
             }
-            if (_this->complete == complete) {
+            assert(_this->alignState == V_ALIGNSTATE_COMPLETE || _this->alignState == V_ALIGNSTATE_INCOMPLETE);
+            if (_this->alignState == alignState) {
                 /* reader completeness has changed so notify state change. */
-                v_readerNotifyStateChange(_this->reader, _this->complete);
+                stateChanged = TRUE;
             }
         }
         if (durability == TRUE) {
             _this->nvgCount++;
         }
-        result = TRUE;
+        if (stateChanged) {
+            v__readerNotifyStateChange_nl(_this->reader, _this->alignState == V_ALIGNSTATE_COMPLETE);
+        }
     }
+    OSPL_UNLOCK(_this->reader);
     c_free(proxy);
-
-    return result;
 }
 
 void
@@ -256,6 +263,7 @@ v_entryRemoveGroup(
     params[0] = c_ulongValue(handle.index);
     params[1] = c_addressValue(handle.server);
 
+    OSPL_LOCK(_this->reader);
     query = c_queryNew(_this->groups, qExpr, params);
     q_dispose(qExpr);
     groups = ospl_c_select(query, 0);
@@ -265,12 +273,12 @@ v_entryRemoveGroup(
     proxy2 = c_remove(_this->groups, proxy, NULL, NULL);
     c_free(proxy);
     if (proxy2) {
-        if (!_this->complete) {
-            _this->complete = TRUE;
-            (void)c_tableWalk(_this->groups, get_completeness, &_this->complete);
-            if (_this->complete) {
+        if (_this->alignState == V_ALIGNSTATE_INCOMPLETE) {
+            _this->alignState = V_ALIGNSTATE_COMPLETE;
+            (void)c_tableWalk(_this->groups, get_completeness, &_this->alignState);
+            if (_this->alignState == V_ALIGNSTATE_COMPLETE) {
                 /* reader became complete because the only incomplete group is removed. */
-                v_readerNotifyStateChange(_this->reader, TRUE);
+                v__readerNotifyStateChange_nl(_this->reader, _this->alignState == V_ALIGNSTATE_COMPLETE);
             }
         }
         if (TEST_DURABILITY(v_proxyUserData(proxy2))) {
@@ -278,49 +286,57 @@ v_entryRemoveGroup(
         }
         c_free(proxy2);
     }
+    OSPL_UNLOCK(_this->reader);
     c_iterFree(groups);
 }
+
+struct set_completeness_arg {
+    v_handle groupHandle;
+    v_alignState alignState;
+};
 
 static c_bool
 set_completeness(c_object o, c_voidp arg)
 {
     v_proxy p = v_proxy(o);
     c_bool found = FALSE;
-    v_group group = v_group(arg);
-    c_bool complete = v_groupCompleteGet(group);
+    struct set_completeness_arg *a = (struct set_completeness_arg *)arg;
 
-    if (v_handleIsEqual(p->source, v_publicHandle(v_public(group)))) {
-        SET_COMPLETE(p->userData, complete);
+    if (v_handleIsEqual(p->source, a->groupHandle)) {
+        SET_COMPLETE(p->userData, a->alignState);
         found = TRUE;
     }
     return !found;
 }
 
-c_bool
+v_alignState
 v_entryNotifyGroupStateChange(
     v_entry _this,
-    v_group group)
+    v_handle groupHandle,
+    v_alignState alignState)
 {
-    c_bool complete = v_groupCompleteGet(group);
+    struct set_completeness_arg arg;
     c_bool changed = FALSE;
     v_reader reader = v_reader(_this->reader);
 
-    v_readerEntrySetLock(reader);
-    (void)c_tableWalk(_this->groups, set_completeness, group);
-    if (complete != _this->complete) {
-        if (_this->complete) {
-            _this->complete = FALSE;
+    OSPL_LOCK(reader);
+
+    arg.groupHandle = groupHandle;
+    arg.alignState = alignState;
+    (void)c_tableWalk(_this->groups, set_completeness, &arg);
+    if (alignState != _this->alignState) {
+        if (_this->alignState == V_ALIGNSTATE_COMPLETE) {
+            _this->alignState = V_ALIGNSTATE_INCOMPLETE;
         } else {
-            _this->complete = TRUE;
-            (void)c_tableWalk(_this->groups, get_completeness, &_this->complete);
+            _this->alignState = V_ALIGNSTATE_COMPLETE;
+            (void)c_tableWalk(_this->groups, get_completeness, &_this->alignState);
         }
-        complete = _this->complete;
+        alignState = _this->alignState;
         changed = TRUE;
     }
-    v_readerEntrySetUnlock(reader);
     if (changed) {
-       v_readerNotifyStateChange(reader, complete);
-       if (complete) {
+        v__readerNotifyStateChange_nl(reader, alignState == V_ALIGNSTATE_COMPLETE);
+        if (alignState == V_ALIGNSTATE_COMPLETE) {
             /* At this point it all goups have become complete so the reader can get
              * the historical data (changes).
              * For now the data is still pushed by the group so it is already available
@@ -330,10 +346,13 @@ v_entryNotifyGroupStateChange(
              * solving locking issues, this operation is called by the group and requires
              * locking of the reader and groups to get the data, need to decide if this
              * can be performed synchonuous or asychronuous by a reader/subscriber/participant
-             * or application thread. */
-       }
+             * or application thread.
+             */
+        }
     }
-    return complete;
+    OSPL_UNLOCK(reader);
+
+    return alignState;
 }
 
 struct groupExistsArg {
@@ -377,5 +396,56 @@ v_entryDurableGroupCount(
     v_entry _this)
 {
     return _this->nvgCount;
+}
+
+struct groupActionHelper {
+    c_action action;
+    c_voidp  arg;
+};
+
+static c_bool
+groupAction(
+    c_object o,
+    c_voidp arg)
+{
+    v_proxy p = v_proxy(o);
+    struct groupActionHelper *helper = (struct groupActionHelper *)arg;
+    v_group group;
+    c_bool result = FALSE;
+
+    assert(helper);
+
+    if (v_handleClaim(p->source, (v_object*)(&group)) == V_HANDLE_OK) {
+        assert(helper->action);
+        result = helper->action(group, helper->arg);
+        (void)v_handleRelease(p->source);
+    }
+    return result;
+}
+
+c_bool
+v_entryWalkGroups(
+    v_entry _this,
+    c_action action,
+    c_voidp actionArg)
+{
+    struct groupActionHelper helper;
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_entry));
+
+    helper.action = action;
+    helper.arg = actionArg;
+
+    return c_tableWalk(_this->groups, groupAction, &helper);
+}
+
+c_iter
+v_entryGetGroups(
+    v_entry _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_entry));
+
+    return ospl_c_select(_this->groups, 0);
 }
 

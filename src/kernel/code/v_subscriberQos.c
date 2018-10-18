@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,10 +28,6 @@
 
 static const v_qosChangeMask immutableMask = V_POLICY_BIT_PRESENTATION;
 
-
-/**************************************************************
- * private functions
- **************************************************************/
 static c_bool
 v_subscriberQosValidValues(
     v_subscriberQos qos)
@@ -53,13 +50,12 @@ v_subscriberQosValidValues(
     return (valuesNok) ? FALSE : TRUE;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
+_Check_return_
+_When_(template, _Ret_maybenull_)
 v_subscriberQos
 v_subscriberQosNew(
-    v_kernel kernel,
-    v_subscriberQos template)
+    _In_ v_kernel kernel,
+    _In_opt_ v_subscriberQos template)
 {
     v_subscriberQos q;
     c_base base;
@@ -68,40 +64,38 @@ v_subscriberQosNew(
     assert(C_TYPECHECK(kernel,v_kernel));
 
     base = c_getBase(c_object(kernel));
-        q = v_subscriberQos(v_qosCreate(base,V_SUBSCRIBER_QOS));
+    q = v_subscriberQos(v_qosCreate(base,V_SUBSCRIBER_QOS));
 
-    if (q != NULL) {
-        if (template != NULL) {
-            q->groupData.v.size = template->groupData.v.size;
-            if (template->groupData.v.size > 0) {
-                q->groupData.v.value = c_arrayNew_s(c_octet_t(base),(c_ulong)template->groupData.v.size);
-                if (q->groupData.v.value) {
-                    memcpy(q->groupData.v.value,template->groupData.v.value,(c_ulong)template->groupData.v.size);
-                } else {
-                    OS_REPORT(OS_ERROR, "v_subscriberQosNew", V_RESULT_OUT_OF_MEMORY,
-                              "Failed to allocate group_data policy of subscriber QoS.");
-                    c_free(q);
-                    return NULL;
-                }
+    if (template != NULL) {
+        q->groupData.v.size = template->groupData.v.size;
+        if (template->groupData.v.size > 0) {
+            q->groupData.v.value = c_arrayNew_s(c_octet_t(base),(c_ulong)template->groupData.v.size);
+            if (q->groupData.v.value) {
+                memcpy(q->groupData.v.value,template->groupData.v.value,(c_ulong)template->groupData.v.size);
             } else {
-                q->groupData.v.value = NULL;
+                OS_REPORT(OS_ERROR, "v_subscriberQosNew", V_RESULT_OUT_OF_MEMORY,
+                          "Failed to allocate group_data policy of subscriber QoS.");
+                c_free(q);
+                return NULL;
             }
-            q->partition.v = c_stringNew(base,template->partition.v);
-            q->presentation = template->presentation;
-            q->share.v.enable = template->share.v.enable;
-            q->share.v.name = c_stringNew(base,template->share.v.name);
-            q->entityFactory = template->entityFactory;
         } else {
-            q->groupData.v.value              = NULL;
-            q->groupData.v.size               = 0;
-            q->presentation.v.access_scope    = V_PRESENTATION_INSTANCE;
-            q->presentation.v.coherent_access = FALSE;
-            q->presentation.v.ordered_access  = FALSE;
-            q->partition.v                    = c_stringNew(base, "");
-            q->share.v.enable                 = FALSE;
-            q->share.v.name                   = NULL;
-            q->entityFactory.v.autoenable_created_entities = TRUE;
+            q->groupData.v.value = NULL;
         }
+        q->partition.v = c_stringNew(base,template->partition.v);
+        q->presentation = template->presentation;
+        q->share.v.enable = template->share.v.enable;
+        q->share.v.name = c_stringNew(base,template->share.v.name);
+        q->entityFactory = template->entityFactory;
+    } else {
+        q->groupData.v.value              = NULL;
+        q->groupData.v.size               = 0;
+        q->presentation.v.access_scope    = V_PRESENTATION_INSTANCE;
+        q->presentation.v.coherent_access = FALSE;
+        q->presentation.v.ordered_access  = FALSE;
+        q->partition.v                    = c_stringNew(base, "");
+        q->share.v.enable                 = FALSE;
+        q->share.v.name                   = NULL;
+        q->entityFactory.v.autoenable_created_entities = TRUE;
     }
 
     return q;
@@ -109,59 +103,74 @@ v_subscriberQosNew(
 
 void
 v_subscriberQosFree(
-    v_subscriberQos q)
+        _In_opt_ _Post_invalid_ v_subscriberQos q)
 {
     c_free(q);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
+_Success_(return == V_RESULT_OK)
 v_result
 v_subscriberQosCompare(
-    v_subscriberQos q,
-    v_subscriberQos tmpl,
-    c_bool enabled,
-    v_qosChangeMask *changeMask)
+    _In_ v_subscriberQos q,
+    _In_ v_subscriberQos tmpl,
+    _In_ c_bool enabled,
+    _Out_ v_qosChangeMask *changeMask)
 {
-    v_qosChangeMask cm;
+    v_qosChangeMask cm, immutable;
     v_result result;
 
     cm = 0;
-    if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
-        /* built change mask */
-            if (!v_presentationPolicyIEqual(q->presentation, tmpl->presentation)) {
-            cm |= V_POLICY_BIT_PRESENTATION;
-        }
-            if (!v_partitionPolicyIEqual(q->partition, tmpl->partition)) {
-            cm |= V_POLICY_BIT_PARTITION;
-        }
-            if (!v_groupDataPolicyIEqual(q->groupData, tmpl->groupData)) {
-            cm |= V_POLICY_BIT_GROUPDATA;
-        }
-            if (!v_entityFactoryPolicyIEqual(q->entityFactory, tmpl->entityFactory)) {
-            cm |= V_POLICY_BIT_ENTITYFACTORY;
-        }
-        /* check whether immutable policies are changed */
-        if (((cm & immutableMask) != 0) && enabled) {
-            v_policyReportImmutable(cm, immutableMask);
-            result = V_RESULT_IMMUTABLE_POLICY;
-        } else {
-            *changeMask = cm;
-            result = V_RESULT_OK;
-        }
-    } else {
-        result = V_RESULT_ILL_PARAM;
+    immutable = immutableMask;
+    if(enabled && v_subscriberQosIsGroupCoherent(q)) {
+        /* A group-coherent subscriber cannot be changed at all after it has
+         * been enabled.
+         */
+        immutable |= V_POLICY_BIT_PARTITION;
+        /* Changing V_POLICY_BIT_GROUPDATA  shouldn't matter, since it doesn't
+         * influence the middleware at all, but for now we block all changes.
+         */
+        immutable |= V_POLICY_BIT_GROUPDATA;
+        /* Changing V_POLICY_BIT_ENTITYFACTORY  shouldn't matter, since it is
+         * ignored anyway for a group-coherent subscriber.
+         */
+        immutable |= V_POLICY_BIT_ENTITYFACTORY;
     }
+
+    /* built change mask */
+        if (!v_presentationPolicyIEqual(q->presentation, tmpl->presentation)) {
+        cm |= V_POLICY_BIT_PRESENTATION;
+    }
+        if (!v_partitionPolicyIEqual(q->partition, tmpl->partition)) {
+        cm |= V_POLICY_BIT_PARTITION;
+    }
+        if (!v_groupDataPolicyIEqual(q->groupData, tmpl->groupData)) {
+        cm |= V_POLICY_BIT_GROUPDATA;
+    }
+        if (!v_entityFactoryPolicyIEqual(q->entityFactory, tmpl->entityFactory)) {
+        cm |= V_POLICY_BIT_ENTITYFACTORY;
+    }
+    /* check whether immutable policies are changed */
+    if (((cm & immutable) != 0) && enabled) {
+        v_policyReportImmutable(cm, immutable);
+        result = V_RESULT_IMMUTABLE_POLICY;
+    } else {
+        *changeMask = cm;
+        result = V_RESULT_OK;
+    }
+
     return result;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
+c_bool
+v_subscriberQosIsGroupCoherent (
+    _In_ _Const_ v_subscriberQos _this)
+{
+    return _this->presentation.v.coherent_access && _this->presentation.v.access_scope == V_PRESENTATION_GROUP;
+}
+
 v_result
 v_subscriberQosCheck(
-    v_subscriberQos _this)
+    _In_opt_ v_subscriberQos _this)
 {
     v_result result = V_RESULT_OK;
 

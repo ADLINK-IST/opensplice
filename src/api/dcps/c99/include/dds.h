@@ -17,11 +17,12 @@
 #include "dds/alloc.h"
 #include "os_if.h"
 
+#include "dds_predefTypes.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-#undef DDS_EXPORT
 #ifdef OSPL_BUILD_DCPSC99
 #define DDS_EXPORT OS_API_EXPORT
 #else
@@ -166,12 +167,11 @@ typedef struct dds_sample_info
 }
 dds_sample_info_t;
 
-/*
-  All entities are represented by a process-private handle, with one
-  call to delete an entity and all entities it logically contains.
-  That is, it is equivalent to combination of
-  delete_contained_entities and delete_xxx in the DCPS API.
-*/
+/* All entities are represented by a process-private handle, with one
+ * call to delete an entity and all entities it logically contains.
+ * That is, it is equivalent to combination of
+ * delete_contained_entities and delete_xxx in the DCPS API.
+ */
 
 /**
  * Description : Recursively deletes all the contained entities and deletes
@@ -183,12 +183,11 @@ dds_sample_info_t;
  */
 DDS_EXPORT void dds_entity_delete (dds_entity_t e);
 
-/*
-  All entities have a set of "status conditions" (following the DCPS
-  spec), read peeks, take reads & resets (analogously to read & take
-  operations on reader). The "mask" allows operating only on a subset
-  of the statuses. Enabled status analogously to DCPS spec.
-*/
+/* All entities have a set of "status conditions" (following the DCPS
+ * spec), read peeks, take reads & resets (analogously to read & take
+ * operations on reader). The "mask" allows operating only on a subset
+ * of the statuses. Enabled status analogously to DCPS spec.
+ */
 
 
 /**
@@ -247,12 +246,11 @@ DDS_EXPORT uint32_t dds_status_get_enabled (dds_entity_t e);
  */
 DDS_EXPORT int dds_status_set_enabled (dds_entity_t e, uint32_t mask);
 
-/*
-  Almost all entities have get/set qos operations defined on them,
-  again following the DCPS spec. But unlike the DCPS spec, the
-  "present" field in qos_t allows one to initialise just the one QoS
-  one wants to set & pass it to set_qos.
-*/
+/* Almost all entities have get/set qos operations defined on them,
+ * again following the DCPS spec. But unlike the DCPS spec, the
+ * "present" field in qos_t allows one to initialise just the one QoS
+ * one wants to set & pass it to set_qos.
+ */
 
 /**
  * Description : This operation allows access to the existing set of QoS policies
@@ -279,10 +277,9 @@ DDS_EXPORT void dds_qos_get (dds_entity_t e, dds_qos_t * qos);
  */
 DDS_EXPORT int dds_qos_set (dds_entity_t e, const dds_qos_t * qos);
 
-/*
-  Get or set listener associated with an entity, type of listener
-  provided much match type of entity.
-*/
+/* Get or set listener associated with an entity, type of listener
+ * provided much match type of entity.
+ */
 
 /**
  * Description : This operation allows access to the existing listeners attached to
@@ -306,19 +303,18 @@ DDS_EXPORT void dds_listener_get (dds_entity_t e, dds_listener_t listener);
  */
 DDS_EXPORT void dds_listener_set (dds_entity_t e, const dds_listener_t listener);
 
-/*
-  Creation functions for various entities. Creating a subscriber or
-  publisher is optional: if one creates a reader as a descendant of a
-  participant, it is as if a subscriber is created specially for
-  that reader.
-
-  QoS default values are those of the DDS specification, but the
-  inheritance rules are different:
-
-    * publishers and subscribers inherit from the participant QoS
-    * readers and writers always inherit from the topic QoS
-    * the QoS's present in the "qos" parameter override the inherited values
-*/
+/* Creation functions for various entities. Creating a subscriber or
+ * publisher is optional: if one creates a reader as a descendant of a
+ * participant, it is as if a subscriber is created specially for
+ * that reader.
+ *
+ * QoS default values are those of the DDS specification, but the
+ * inheritance rules are different:
+ *
+ *   * publishers and subscribers inherit from the participant QoS
+ *   * readers and writers always inherit from the topic QoS
+ *   * the QoS's present in the "qos" parameter override the inherited values
+ */
 
 /**
  * Description : Creates a new instance of a DDS participant in a domain. If domain
@@ -461,6 +457,24 @@ DDS_EXPORT char * dds_topic_get_name (dds_entity_t topic);
  */
 DDS_EXPORT char * dds_topic_get_type_name (dds_entity_t topic);
 
+/**
+ * Description : Return a topic meta descriptor (XML). Returned value must be freed with dds_free
+ *
+ * Arguments :
+ *   -# topic The topic
+ *   -# Returns The XML topic descriptor or NULL to indicate an error
+ */
+DDS_EXPORT char * dds_topic_get_metadescriptor (dds_entity_t topic);
+
+/**
+ * Description : Return the keys of a topic. Returned value must be freed with dds_free
+ *
+ * Arguments :
+ *   -# topic The topic
+ *   -# Returns A comma separated string of the key fields or NULL to indicate an error
+ */
+DDS_EXPORT char * dds_topic_get_keylist (dds_entity_t topic);
+
 typedef bool (*dds_topic_filter_fn) (const void * sample);
 
 /**
@@ -546,8 +560,9 @@ DDS_EXPORT int dds_reader_create
  * Arguments :
  *   -# reader The reader on which to wait for historical data
  *   -# max_wait How long to wait for historical data before time out
- *   -# Returns a status, 0 on success, TIMEOUT on timeout or a  negative value to indicate error
+ *   -# Returns a status 0 on success, TIMEOUT on timeout and a negative value to indicate error
  */
+
 DDS_EXPORT int dds_reader_wait_for_historical_data
 (
   dds_entity_t reader,
@@ -618,13 +633,13 @@ DDS_EXPORT int dds_writer_create
   const dds_writerlistener_t * listener
 );
 
-/*
-  Writing data (and variants of it) is straightforward. The first set
-  is equivalent to the second set with -1 passed for "tstamp",
-  meaning, substitute the result of a call to time(). The dispose
-  and unregister operations take an object of the topic's type, but
-  only touch the key fields; the remained may be undefined.
-*/
+/* Writing data (and variants of it) is straightforward. The first set
+ * is equivalent to the second set with -1 passed for "tstamp",
+ * meaning, substitute the result of a call to time(). The dispose
+ * and unregister operations take an object of the topic's type, but
+ * only touch the key fields; the remained may be undefined.
+ */
+
 /**
  * Description : Registers an instance with a key value to the data writer
  *
@@ -741,24 +756,23 @@ DDS_EXPORT int dds_write_ts (dds_entity_t wr, const void *data, dds_time_t tstam
  */
 DDS_EXPORT void dds_write_flush (dds_entity_t wr);
 
-/*
-  Waitsets allow waiting for an event on some of any set of entities
-  (all can in principle be waited for via their status conditions;
-  the "enabled" statuses are the only ones considered). Then there
-  are the "guard" and "read" conditions, both following the DCPS
-  spec.
-
-  The "guard" is a simple application-controlled entity with a state
-  consisting of a single status condition, TRIGGERED.
-
-  The "read" condition allows specifying which samples are of
-  interest in a data reader's history. The application visible state
-  of a read (or query) condition consists of a single status condition,
-  TRIGGERED. This status changes based on the contents of the history
-  cache of the associated data reader.
-
-  The DCPS "query" condition is not currently supported.
-*/
+/* Waitsets allow waiting for an event on some of any set of entities
+ * (all can in principle be waited for via their status conditions;
+ * the "enabled" statuses are the only ones considered). Then there
+ * are the "guard" and "read" conditions, both following the DCPS
+ * spec.
+ *
+ * The "guard" is a simple application-controlled entity with a state
+ * consisting of a single status condition, TRIGGERED.
+ *
+ * The "read" condition allows specifying which samples are of
+ * interest in a data reader's history. The application visible state
+ * of a read (or query) condition consists of a single status condition,
+ * TRIGGERED. This status changes based on the contents of the history
+ * cache of the associated data reader.
+ *
+ * The DCPS "query" condition is not currently supported.
+ */
 
 /**
  * Description : Return the status condition set by an entity
@@ -800,12 +814,12 @@ DDS_EXPORT dds_condition_t dds_readcondition_create (dds_entity_t rd, uint32_t m
  */
 DDS_EXPORT void dds_condition_delete (dds_condition_t cond);
 
-/*
-  Guard conditions may be triggered or not. The status of a guard condition
-  can always be retrieved via the dds_condition_triggered function. To trigger
-  or reset a guard condition it must first be associated with a waitset or
-  an error status will be returned.
-*/
+/* Guard conditions may be triggered or not. The status of a guard condition
+ * can always be retrieved via the dds_condition_triggered function. To trigger
+ * or reset a guard condition it must first be associated with a waitset or
+ * an error status will be returned.
+ */
+
 /**
  * Description : Sets the trigger_value associated with a guard condition
  *               The guard condition should be associated with a waitset, before
@@ -833,12 +847,11 @@ DDS_EXPORT void dds_guard_reset (dds_condition_t guard);
  */
 DDS_EXPORT bool dds_condition_triggered (dds_condition_t guard);
 
-/*
-  Entities can be attached to a waitset or removed from a waitset (in
-  an NxM relationship, but each entity can be in one waitset only
-  once), the "x" value is what is returned by "wait" when the entity
-  represented by handle e triggers.
-*/
+/* Entities can be attached to a waitset or removed from a waitset (in
+ * an NxM relationship, but each entity can be in one waitset only
+ * once), the "x" value is what is returned by "wait" when the entity
+ * represented by handle e triggers.
+ */
 
 typedef void * dds_attach_t;
 
@@ -895,26 +908,25 @@ DDS_EXPORT int dds_waitset_attach (dds_waitset_t ws, dds_condition_t e, dds_atta
  */
 DDS_EXPORT int dds_waitset_detach (dds_waitset_t ws, dds_condition_t e);
 
-/*
-  The "dds_waitset_wait" operation blocks until the some of the
-  attached entities has an enabled and set status condition, or
-  "reltimeout" has elapsed. The "dds_waitset_wait_until" operation
-  is the same as the "dds_wait" except that it takes an absolute timeout.
-
-  Upon successful return, the array "xs" is filled with 0 < M <= nxs
-  values of the "x"s corresponding to the triggering entities, as
-  specified in attach_to_waitset, and M is returned. In case of a
-  time out, the return value is 0.
-
-  Deleting the waitset while the application is blocked results in an
-  error code (i.e. < 0) returned by "wait".
-
-  Multiple threads may block on a single waitset at the same time;
-  the calls are entirely independent.
-
-  An empty waitset never triggers (i.e., dds_waitset_wait on an empty
-  waitset is essentially equivalent to dds_sleepfor).
-*/
+/* The "dds_waitset_wait" operation blocks until the some of the
+ * attached entities has an enabled and set status condition, or
+ * "reltimeout" has elapsed. The "dds_waitset_wait_until" operation
+ * is the same as the "dds_wait" except that it takes an absolute timeout.
+ *
+ * Upon successful return, the array "xs" is filled with 0 < M <= nxs
+ * values of the "x"s corresponding to the triggering entities, as
+ * specified in attach_to_waitset, and M is returned. In case of a
+ * time out, the return value is 0.
+ *
+ * Deleting the waitset while the application is blocked results in an
+ * error code (i.e. < 0) returned by "wait".
+ *
+ * Multiple threads may block on a single waitset at the same time;
+ * the calls are entirely independent.
+ *
+ * An empty waitset never triggers (i.e., dds_waitset_wait on an empty
+ * waitset is essentially equivalent to dds_sleepfor).
+ */
 
 /**
  * Description : This API is used to block the current executing thread until some of the
@@ -948,24 +960,23 @@ DDS_EXPORT int dds_waitset_wait (dds_waitset_t ws, dds_attach_t *xs, size_t nxs,
  */
 DDS_EXPORT int dds_waitset_wait_until (dds_waitset_t ws, dds_attach_t *xs, size_t nxs, dds_time_t abstimeout);
 
-/*
-  There are a number of read and take variations.
-
-  Return value is the number of elements returned. "max_samples"
-  should have the same type, as one can't return more than MAX_INT
-  this way, anyway. X, Y, CX, CY return to the various filtering
-  options, see the DCPS spec.
-
-  O ::= read | take
-
-  X             => CX
-  (empty)          (empty)
-  _next_instance   instance_handle_t prev
-
-  Y             => CY
-  (empty)          uint32_t mask
-  _cond            cond_t cond -- refers to a read condition (or query if implemented)
-*/
+/* There are a number of read and take variations.
+ *
+ * Return value is the number of elements returned. "max_samples"
+ * should have the same type, as one can't return more than MAX_INT
+ * this way, anyway. X, Y, CX, CY return to the various filtering
+ * options, see the DCPS spec.
+ *
+ * O ::= read | take
+ *
+ * X             => CX
+ * (empty)          (empty)
+ * _next_instance   instance_handle_t prev
+ *
+ * Y             => CY
+ * (empty)          uint32_t mask
+ * _cond            cond_t cond -- refers to a read condition (or query if implemented)
+ */
 
 /**
  * Description : Access the collection of data values (of same type) and sample info from the
@@ -1129,11 +1140,10 @@ DDS_EXPORT int dds_take_cond
   dds_condition_t cond
 );
 
-/*
-  The read/take next functions return a single sample. The returned sample
-  has a sample state of NOT_READ, a view state of ANY_VIEW_STATE and an
-  instance state of ANY_INSTANCE_STATE.
-*/
+/* The read/take next functions return a single sample. The returned sample
+ * has a sample state of NOT_READ, a view state of ANY_VIEW_STATE and an
+ * instance state of ANY_INSTANCE_STATE.
+ */
 
 /**
  * Description : This operation copies the next, non-previously accessed data value and corresponding
@@ -1174,16 +1184,16 @@ DDS_EXPORT int dds_read_next (dds_entity_t rd, void ** buf, dds_sample_info_t * 
 DDS_EXPORT void dds_return_loan (dds_entity_t rd, void ** buf, uint32_t maxs);
 
 /*
-  Instance handle <=> key value mapping.
-  Functions exactly as read w.r.t. treatment of data
-  parameter. On output, only key values set.
-
-    T x = { ... };
-    T y;
-    dds_instance_handle_t ih;
-    ih = dds_instance_lookup (e, &x);
-    dds_instance_get_key (e, ih, &y);
-*/
+ * Instance handle <=> key value mapping.
+ * Functions exactly as read w.r.t. treatment of data
+ * parameter. On output, only key values set.
+ *
+ *   T x = { ... };
+ *   T y;
+ *   dds_instance_handle_t ih;
+ *   ih = dds_instance_lookup (e, &x);
+ *   dds_instance_get_key (e, ih, &y);
+ */
 
 /**
  * Description : This operation takes a sample and returns an instance handle to be used for
@@ -1210,6 +1220,81 @@ DDS_EXPORT dds_instance_handle_t dds_instance_lookup (dds_entity_t e, const void
 DDS_EXPORT int dds_instance_get_key (dds_entity_t e, dds_instance_handle_t inst, void * data);
 
 /**
+ * Description : This operation sets a property on the entity.
+ *
+ * Arguments :
+ * -# e The entity on which the property should be available. Only entities of kind DDS_ENTITY_KIND_DOMAINPARTICIPANT are checked.
+ * -# property The name (case insensitive) of the property to set. If found, the value of the property will be 
+ *             set to the string in the value parameter
+ * -# value The value to set the property to (if found).
+ * -# Returns 0 on successful operation, or a negative value indicates an error. Use  dds_err_no to retrieve the error code.
+ * 
+ * Detailed Description
+ * This operation sets the property specified by name to the value given by value on the given entity specified by e.
+ * 
+ * Currently, the following properties are defined: 
+ * isolateNode 
+ * The isolateNode property allows applications to isolate the federation from the rest of the Domain, i.e. 
+ * at network level disconnect the node from the rest of the system. Additionally, they also need to be able 
+ * to issue a request to reconnect their federation to the domain again after which the durability merge-policy 
+ * that is configured needs to be applied. 
+ * To isolate a federation, the application needs to set the isolateNode property value to ‘true’ and to 
+ * (de)isolate the federation the same property needs to set to ‘false’. The default value of the isolateNode property is ‘false’.
+ * All data that is published after isolateNode is set to true will not be sent to the network and any data 
+ * received from the network will be ignored.  
+ * Be aware that data being processed by the network service at time of isolating a node may still be sent to the 
+ * network due to asynchronous nature of network service internals.
+ * The value is interpreted as a boolean (i.e., it must be either ‘true’ or ‘false’ (case insensitive)).
+ * false (default): The federation is connected to the domain.
+ * true: The federation is disconnected from the domain meaning that data is not published on the network and data from the network is ignored.
+ * 
+ * Error codes
+ * The following error code can be returned (retrieved by using dds_err_no);
+ * DDS_RETCODE_BAD_PARAMETER  -  the given dds_entity_t is NULL
+ * DDS_RETCODE_BAD_PARAMETER  -  the given name is NULL
+ * DDS_RETCODE_BAD_PARAMETER  -  the given value is either NULL or not  ‘true’   or  ‘false’  (case insensitive)
+ * DDS_RETCODE_UNSUPPORTED    -  the given dds_entity_t is not a DDS_ENTITY_KIND_DOMAINPARTICIPANT  kind
+ * DDS_RETCODE_UNSUPPORTED    -  the given name contains an unsupported property
+ */
+DDS_EXPORT int dds_set_property(dds_entity_t e, const char *property, const char *value);
+
+/**
+ * Description : This operation gets a property from the entity.
+ *
+ * Arguments :
+ * -# e entity The entity on which the property should be available. Only entities of kind DDS_ENTITY_KIND_DOMAINPARTICIPANT are checked.
+ * -# property The name (case insensitive) of the property to fetch. If found, the value of the property will be 
+ *             represented as string in the value parameter
+ * -# value The current value of the property (if found).
+ * -# size Number of reserved characters for value. If size is less than the number of characters of the stored 
+ *         value, value will be truncated.
+ * -# Returns on success the number of characters in the output (excluding the null terminator).
+ *    If the output was truncated due to size limits, then the returned value is the number of
+ *    characters (excluding the null terminator) which would have been in the output had there been
+ *    enough space available. Thus, a returns value of size or more means that the output was
+ *    truncated.
+ *    A negative value indicates an error. Use  dds_err_no to retrieve the error code.
+ * 
+ * Detailed Description
+ * "This operation looks up the property specified by name in the DomainParticipant, copying 
+ * the corresponding value to the parameter 'value' and returning the number of characters copied to parameter 'value'"
+ * 
+ * Supported properties:
+ * See dds_set_property for supported properties
+ * 
+ * Error codes
+ * The following error code can be returned (retrieved by using dds_err_no);
+ * DDS_RETCODE_BAD_PARAMETER  -  the given dds_entity_t is NULL
+ * DDS_RETCODE_BAD_PARAMETER  -  the given name is NULL
+ * DDS_RETCODE_BAD_PARAMETER  -  the given value is NULL
+ * DDS_RETCODE_BAD_PARAMETER  -  the given size is larger than MAX_INT
+ * DDS_RETCODE_UNSUPPORTED    -  the given dds_entity_t is not a DDS_ENTITY_KIND_DOMAINPARTICIPANT kind, or 
+ * DDS_RETCODE_UNSUPPORTED    -  the given name contains an invalid property
+
+  */
+DDS_EXPORT int dds_get_property(dds_entity_t e, const char *property, char *value, size_t size);
+
+/**
  * Description : This operation stores the thread state for the thread created.
  *
  * Arguments :
@@ -1226,6 +1311,89 @@ DDS_EXPORT int dds_thread_init (const char * name);
  */
 DDS_EXPORT void dds_thread_fini (void);
 
+/**
+ * Description : The QoSProvider is created given the file uri and the profile within the file
+ *
+ *  Arguments :
+ *   -# qp  The QosProvider
+ *   -# uri _the file uri (absolute path) to th QoS XML file
+ *   -# profile the profile within the file
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_create (dds_entity_t * qp, const char *uri,const char *profile);
+
+/**
+ * Description : Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_participant_qos (dds_entity_t qp, dds_qos_t *qos, const char *id);
+
+/**
+ * Description :  Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_topic_qos
+(
+  dds_entity_t qp,
+  dds_qos_t *qos,
+  const char *id
+);
+
+/**
+ * Description : Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_subscriber_qos (dds_entity_t qp, dds_qos_t *qos, const char *id);
+
+/**
+ * Description : Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_reader_qos(dds_entity_t qp, dds_qos_t *qos, const char *id);
+
+/**
+ * Description : Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_writer_qos (dds_entity_t qp, dds_qos_t *qos, const char *id);
+
+/**
+ * Description : Given the QoSProvider, populate the created QoS
+ *
+ *  Arguments :
+ *   -# qp  the QoSProvider
+ *   -# qos the QoS to be populated. Qos must be created at this point.
+ *   -# id
+ *   -# Returns _Success_(return == 0)
+ */
+DDS_EXPORT int dds_qosprovider_get_publisher_qos(dds_entity_t qp, dds_qos_t *qos, const char *id);
+
+#undef DDS_EXPORT
 #if defined (__cplusplus)
 }
 #endif

@@ -3,7 +3,7 @@
   <head>
   <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V5</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+    <link rel="stylesheet" href="../css/style.css" type="text/css">
   </head>
   <body>
     <p class="back">
@@ -525,7 +525,7 @@
              When multiple services are known to the service framework, a failure
              action can be taken multiple times.
              <br><br>
-             <b>Solution: The defect in the service failure action algorithm is 
+             <b>Solution: The defect in the service failure action algorithm is
              now fixed and the action will only be done once.</b>
            </i>
          </td>
@@ -537,12 +537,12 @@
           <td>
             <b>spliced may crash after a service with the "systemhalt" failure action dies</b><br/>
             <i>
-               If a service dies it may not have performed a detach from the 
+               If a service dies it may not have performed a detach from the
                OpenSplice kernel/database and so the attached services count may
                 be incorrect. That could lead to a crash of a database thread
                 because the spliced may get detached too early.
               <br><br>
-              <b>Solution: When spliced detects that a service has died, it 
+              <b>Solution: When spliced detects that a service has died, it
               ensures that attached services count is correctly maintained,
               so such a crash cannot occur.
             </i>
@@ -562,7 +562,7 @@
          itself especially in the way the disposed data was delivered to late
          joiners (which sometimes couldn't see that the data was actually disposed)
          and in the way disposed data ignored the cleanup delay specified on the
-         durability service. 
+         durability service.
          <br><br>
          <b>Solution: The new implementation of dispose_all_data is much
          more inline with sending separate dispose messages for every instance,
@@ -614,7 +614,7 @@
         participants.</b><br/>
         <i>
           When an application creates 2 or more participants and all these
-          participants are deleted using the delete_participant function, 
+          participants are deleted using the delete_participant function,
           the application still hold a reference to the shared memory.
           <br><br>
           <b>Solution: The defect is now fixed and when all participants from an
@@ -649,7 +649,7 @@
         <i>
           In some situations networking would try to access the compressed
           and/or encrypted content of a packet in its resend-administration,
-          causing packets to not be re-transmitted. 
+          causing packets to not be re-transmitted.
           <br><br>
           <b>Solution: All information needed for (re-)sending of a packet are
           read from the packet-buffer before compression and/or encryption.</b>
@@ -678,7 +678,7 @@
           be re-published locally when an instance handle is provided by the
           durability service while doing so. In some scenario's, the durability
           service did not use an instance handle while doing so, which made the
-          service crash while locally republishing an aligned unregistration. 
+          service crash while locally republishing an aligned unregistration.
           <br><br>
           <b>Solution: The durability service now ensures an instance handle is
           created in any case while also making sure a registration is created
@@ -713,7 +713,7 @@
           the system, but for which a duplicate was created by another application
           before the original could enable its topic, a refCount to the resulting
           topic got dropped and that topic could suddenly disappear while still
-          being used by the system. 
+          being used by the system.
           <br><br>
           <b>Solution: A change in the refCounting algorithm has now solved
           this issue.</b>
@@ -871,7 +871,7 @@
           In certain scenarios the subscriber listener handling is faster than
           the datareader listener handling.
           <br><br>
-          <b>Solution: The handling algorithm of the datareader listener is 
+          <b>Solution: The handling algorithm of the datareader listener is
           improved to match the subscriber handling.</b>
         </i>
       </td>
@@ -909,7 +909,7 @@
       <td>
         <b>BOUNDS_CHECK does not report the name of the incorrect member when the member is null.</b><br/>
         <i>
-          The copyin routines for C and C++ did not check for null-values in string fields. 
+          The copyin routines for C and C++ did not check for null-values in string fields.
           <br><br>
           <b>Solution: Check for null-values in string-fields is added.
         </i>
@@ -919,15 +919,15 @@
       <td>OSPL-1558
       </td>
       <td>
-        <b>Durability sometimes creates conflicting namespace for __BUILT-IN 
+        <b>Durability sometimes creates conflicting namespace for __BUILT-IN
         PARTITION__ when partitionTopic is used in namespace-definition.</b><br/>
         <i>
           Durability could automatically create conflicting namespace for
-          __BUILT-IN PARTITION__ when partitionTopic is used. 
+          __BUILT-IN PARTITION__ when partitionTopic is used.
           <br><br>
           <b>Solution: Durability now only creates a namespace in which the
           builtin-topics are matched, instead of matching the whole
-          builtin-partition. 
+          builtin-partition.
         </i>
       </td>
     </tr>
@@ -6250,9 +6250,9 @@
     <br/>
     <hr>
     <p>
-     <a target="_top" href="http://www.prismtech.com">
-       <img src="../images/logo_prismtech2.gif" align="right"
-            width="232" height="60" border="0" alt="PrismTech">
+     <a target="_top" href="http://ist.adlinktech.com/">
+       <img src="../images/ADLINK_Logo.png" align="right" border="0"
+            width="217" height="35" alt="ADLINK">
       </a>
       <a href="#top" target="_self">
         <img src="../images/top.gif" width="32"

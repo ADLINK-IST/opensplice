@@ -9,19 +9,19 @@ The Vortex Record and Replay API Reference
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    introduction
    scenarios
    topic-api-overview
    issues
    impact
-   
+
    appendixa
    bibliography
-   
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

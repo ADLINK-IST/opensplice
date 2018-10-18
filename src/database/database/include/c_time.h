@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -52,7 +53,8 @@ typedef os_result c_timeResult;
  * be broken if this were to be enabled by default in dev-builds. There are also
  * some conversion (e.g., from real to c_time) which don't cover all cases
  * correctly (the result is assumed to be relative, while it is perfectly valid
- * to convert an absolute time to a real and back). */
+ * to convert an absolute time to a real and back).
+ */
 #ifdef C_TIME_CHECK
 /* The two most significant bits of the nanoseconds part of the time encode the
  * time-domain as follows:
@@ -64,7 +66,8 @@ typedef os_result c_timeResult;
  *
  * The C_TIME(_MIN)_INFINITE values also have bit 30 set (C_TIME_MONOTONIC). This
  * isn't a problem, since both infinites are part of the C_TIME_MONOTONIC domain
- * as well. */
+ * as well.
+ */
 
 #   define CHECK_TIME(expr) expr
 #   define C_TIME_MONOTONIC (1U << 30)

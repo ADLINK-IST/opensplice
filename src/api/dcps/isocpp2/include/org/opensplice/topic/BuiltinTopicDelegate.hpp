@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -48,6 +49,13 @@ class CMSubscriberBuiltinTopicDataDelegate;
 class CMDataWriterBuiltinTopicDataDelegate;
 class CMDataReaderBuiltinTopicDataDelegate;
 class TypeBuiltinTopicDataDelegate;
+
+/* X-Types builtin. */
+class BytesTopicTypeDelegate;
+class StringTopicTypeDelegate;
+class KeyedBytesTopicTypeDelegate;
+class KeyedStringTopicTypeDelegate;
+
 }
 }
 }
@@ -1692,6 +1700,154 @@ protected:
     TypeHash type_hash_;
     ::dds::core::ByteSeq meta_data_;
     ::dds::core::ByteSeq extentions_;
+};
+
+//==============================================================================
+//            BytesTopicTypeDelegate
+//==============================================================================
+
+class org::opensplice::topic::BytesTopicTypeDelegate
+{
+public:
+    BytesTopicTypeDelegate(const std::vector<uint8_t>& value) :
+        value_(value)
+    {
+    }
+
+    const std::vector<uint8_t>& value() const
+    {
+        return value_;
+    }
+
+    void value(const std::vector<uint8_t>& value)
+    {
+        value_ = value;
+    }
+
+    bool operator ==(const BytesTopicTypeDelegate& other) const
+    {
+        return other.value_ == value_;
+    }
+
+protected:
+    std::vector<uint8_t> value_;
+};
+
+//==============================================================================
+//            StringTopicTypeDelegate
+//==============================================================================
+
+class org::opensplice::topic::StringTopicTypeDelegate
+{
+public:
+    StringTopicTypeDelegate(const std::string& value) :
+        value_(value)
+    {
+    }
+
+    const std::string& value() const
+    {
+        return value_;
+    }
+
+    void value(const std::string& value)
+    {
+        value_ = value;
+    }
+
+    bool operator ==(const StringTopicTypeDelegate& other) const
+    {
+        return other.value_ == value_;
+    }
+
+protected:
+    std::string value_;
+};
+
+//==============================================================================
+//            KeyedBytesTopicTypeDelegate
+//==============================================================================
+
+class org::opensplice::topic::KeyedBytesTopicTypeDelegate
+{
+public:
+    KeyedBytesTopicTypeDelegate(const std::string& key, const std::vector<uint8_t>& value) :
+        key_(key), value_(value)
+    {
+    }
+
+    const std::string& key() const
+    {
+        return key_;
+    }
+
+    void key(const std::string& key)
+    {
+        key_ = key;
+    }
+
+    const std::vector<uint8_t>& value() const
+    {
+        return value_;
+    }
+
+    void value(const std::vector<uint8_t>& value)
+    {
+        value_ = value;
+    }
+
+    bool operator ==(const KeyedBytesTopicTypeDelegate& other) const
+    {
+        return other.key_   == key_ &&
+               other.value_ == value_;
+    }
+
+protected:
+    std::string key_;
+    std::vector<uint8_t> value_;
+};
+
+//==============================================================================
+//            KeyedStringTopicTypeDelegate
+//==============================================================================
+
+class org::opensplice::topic::KeyedStringTopicTypeDelegate
+{
+public:
+    KeyedStringTopicTypeDelegate(const std::string& key, const std::string& value) :
+        key_(key), value_(value)
+    {
+    }
+
+    const std::string& key() const
+    {
+        return key_;
+    }
+
+    void key(const std::string& key)
+    {
+        key_ = key;
+    }
+
+    const std::string& value() const
+    {
+        return value_;
+    }
+
+    void value(const std::string& value)
+    {
+        value_ = value;
+    }
+
+    bool operator ==(const KeyedStringTopicTypeDelegate& other) const
+    {
+        return other.key_   == key_ &&
+               other.value_ == value_;
+    }
+
+protected:
+    std::string key_;
+    std::string value_;
 };
 
 

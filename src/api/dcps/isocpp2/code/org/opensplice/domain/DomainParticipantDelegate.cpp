@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,7 +34,6 @@
 #include <dds/domain/DomainParticipantListener.hpp>
 
 #include <org/opensplice/domain/DomainParticipantDelegate.hpp>
-#include <org/opensplice/domain/DomainParticipantRegistry.hpp>
 #include <org/opensplice/domain/DomainParticipantListener.hpp>
 #include <org/opensplice/core/ReportUtils.hpp>
 #include <org/opensplice/core/ScopedLock.hpp>
@@ -43,6 +43,7 @@
 #include <org/opensplice/topic/AnyTopicDelegate.hpp>
 #include <org/opensplice/sub/BuiltinSubscriberDelegate.hpp>
 #include <org/opensplice/core/TimeUtils.hpp>
+#include <string>
 
 
 #include "os_stdlib.h"
@@ -55,7 +56,7 @@
 
 org::opensplice::core::Mutex org::opensplice::domain::DomainParticipantDelegate::default_participant_qos_lock_;
 dds::domain::qos::DomainParticipantQos org::opensplice::domain::DomainParticipantDelegate::default_participant_qos_;
-
+org::opensplice::core::EntitySet org::opensplice::domain::DomainParticipantDelegate::participants;
 
 org::opensplice::domain::DomainParticipantDelegate::DomainParticipantDelegate (
         uint32_t id,
@@ -101,16 +102,21 @@ org::opensplice::domain::DomainParticipantDelegate::init(ObjectDelegate::weak_re
 {
     /* Set weak_ref. */
     this->set_weak_ref(weak_ref);
+
     /* Create and set listener dispatcher. */
     /* TODO: Add Scheduling to listener dispatcher creation. */
     this->listener_dispatcher_set(
-            org::opensplice::core::ListenerDispatcher::create(
+            new org::opensplice::core::ListenerDispatcher(
                     u_participant(this->userHandle),
                     this->qos_->policy<org::opensplice::core::policy::ListenerScheduling>()));
     /* This only starts listening when the status mask shows interest. */
     this->listener_enable();
+
     /* No 'factory': always enable. */
     this->enable();
+
+    /* Include participant in list of known participants. */
+    add_participant(*this);
 }
 
 org::opensplice::domain::DomainParticipantDelegate::~DomainParticipantDelegate()
@@ -207,8 +213,6 @@ org::opensplice::domain::DomainParticipantDelegate::close()
 {
     /* Stop listener. */
     this->listener(NULL, dds::core::status::StatusMask::none());
-    /* Remove and delete dispatcher. */
-    org::opensplice::core::ListenerDispatcher::destroy(this->listener_dispatcher_reset());
 
     org::opensplice::core::ScopedObjectLock scopedLock(*this);
 
@@ -217,7 +221,10 @@ org::opensplice::domain::DomainParticipantDelegate::close()
     this->cfTopics.all_close();
     this->topics.all_close();
 
-    org::opensplice::domain::DomainParticipantRegistry::remove(this);
+    /* Remove and delete dispatcher. */
+    delete (this->listener_dispatcher_reset());
+
+    remove_participant(*this);
 
     org::opensplice::core::EntityDelegate::close();
 
@@ -312,6 +319,20 @@ org::opensplice::domain::DomainParticipantDelegate::default_participant_qos(
     default_participant_qos_lock_.lock();
     default_participant_qos_= qos;
     default_participant_qos_lock_.unlock();
+}
+
+void
+org::opensplice::domain::DomainParticipantDelegate::add_participant(
+        org::opensplice::core::EntityDelegate& participant)
+{
+    this->participants.insert(participant);
+}
+
+void
+org::opensplice::domain::DomainParticipantDelegate::remove_participant(
+        org::opensplice::core::EntityDelegate& participant)
+{
+    this->participants.erase(participant);
 }
 
 void
@@ -437,6 +458,31 @@ org::opensplice::domain::DomainParticipantDelegate::lookup_topics(
     c_iterFree(list);
 }
 
+org::opensplice::domain::DomainParticipantDelegate::ref_type
+org::opensplice::domain::DomainParticipantDelegate::lookup_participant(uint32_t domain_id)
+{
+    org::opensplice::domain::DomainParticipantDelegate::ref_type participant;
+
+    org::opensplice::core::EntitySet::vector entities;
+    org::opensplice::core::EntitySet::vectorIterator iter;
+
+    entities = participants.copy();
+    iter = entities.begin();
+
+    for (iter = entities.begin(); iter != entities.end(); ++iter) {
+        org::opensplice::core::ObjectDelegate::ref_type ref = iter->lock();
+        if (ref) {
+            org::opensplice::domain::DomainParticipantDelegate::ref_type tmp =
+                    OSPL_CXX11_STD_MODULE::dynamic_pointer_cast<org::opensplice::domain::DomainParticipantDelegate>(ref);
+            assert(tmp);
+            if (tmp->domain_id() == domain_id) {
+                participant = tmp;
+            }
+        }
+    }
+
+    return participant;
+}
 
 org::opensplice::core::EntityDelegate::ref_type
 org::opensplice::domain::DomainParticipantDelegate::find_topic(
@@ -495,6 +541,47 @@ org::opensplice::domain::DomainParticipantDelegate::find_cfTopic(
 
     return cftopic;
 }
+
+void
+org::opensplice::domain::DomainParticipantDelegate::ignore_participant(
+    const ::dds::core::InstanceHandle& handle)
+{
+    check();
+    u_result uResult = u_participantIgnoreParticipant(u_participant(this->userHandle),
+                                                      handle.delegate().handle());
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Could not ignore DomainParticipant.");
+}
+
+void
+org::opensplice::domain::DomainParticipantDelegate::ignore_topic(
+    const ::dds::core::InstanceHandle& handle)
+{
+    check();
+    u_result uResult = u_participantIgnoreTopic(u_participant(this->userHandle),
+                                                handle.delegate().handle());
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Could not ignore Topic.");
+}
+
+void
+org::opensplice::domain::DomainParticipantDelegate::ignore_publication(
+    const ::dds::core::InstanceHandle& handle)
+{
+    check();
+    u_result uResult = u_participantIgnorePublication(u_participant(this->userHandle),
+                                                      handle.delegate().handle());
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Could not ignore Publication.");
+}
+
+void
+org::opensplice::domain::DomainParticipantDelegate::ignore_subscription(
+    const ::dds::core::InstanceHandle& handle)
+{
+    check();
+    u_result uResult = u_participantIgnoreSubscription(u_participant(this->userHandle),
+                                                       handle.delegate().handle());
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Could not ignore Subscription.");
+}
+
 
 org::opensplice::core::EntityDelegate::ref_type
 org::opensplice::domain::DomainParticipantDelegate::builtin_subscriber()
@@ -813,4 +900,41 @@ org::opensplice::domain::DomainParticipantDelegate::detach_all_domains(
 
     ures = u_userDetach(flags);
     ISOCPP_U_RESULT_CHECK_AND_THROW(ures, "Could not detach from all domains.");
+}
+void 
+org::opensplice::domain::DomainParticipantDelegate::set_property(std::string name, std::string value){
+    u_participant uParticipant;
+    u_result uResult;
+
+    ISOCPP_REPORT_STACK_DELEGATE_BEGIN(this);
+
+    uParticipant = u_participant(this->userHandle);
+    org::opensplice::core::ScopedObjectLock scopedLock(*this);
+    uParticipant = u_participant(this->userHandle);
+    assert (uParticipant);
+    uResult = u_entitySetProperty(u_entity(uParticipant), name.c_str(), value.c_str());
+
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Property %s could not be set to %s", name.c_str(), value.c_str());
+}
+
+std::string 
+org::opensplice::domain::DomainParticipantDelegate::get_property(std::string name){
+    u_participant uParticipant;
+    u_result uResult;
+    std::string value;
+    os_char* uValue;
+
+    ISOCPP_REPORT_STACK_DELEGATE_BEGIN(this);
+
+    uParticipant = u_participant(this->userHandle);
+    org::opensplice::core::ScopedObjectLock scopedLock(*this);
+    uParticipant = u_participant(this->userHandle);
+    assert (uParticipant);
+    uResult = u_entityGetProperty(u_entity(uParticipant), name.c_str(), &uValue);
+    if (uValue) {
+        value.assign(uValue);
+    }
+    
+    ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Property %s could not be read", name.c_str(), value.c_str());
+    return value;
 }

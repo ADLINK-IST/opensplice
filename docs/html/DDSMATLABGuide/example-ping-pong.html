@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Ping Pong Example &mdash; The Vortex OpenSplice MATLAB Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice MATLAB Guide" href="index.html" />
+    <link rel="next" title="8. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="6. QoS Provider" href="qos_provider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="8. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. QoS Provider"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="ping-pong-example">
+<span id="id1"></span><h1>7. Ping Pong Example<a class="headerlink" href="#ping-pong-example" title="Permalink to this headline">¶</a></h1>
+<p>A simple ping pong example is provided to demonstrate the basic capabilities of the MATLAB DDS integration.</p>
+<p>The ping pong example can be found in the following directory:</p>
+<blockquote>
+<div><cite>OSPL_HOME</cite>/tools/matlab/examples/matlab/pingpong</div></blockquote>
+<p>The ping pong example creates two participants.</p>
+<ol class="arabic simple">
+<li>A pinger that writes to the PING partition and reads from the PONG partition.</li>
+<li>A ponger that writes to the PONG partition and reads from the PING partition.</li>
+</ol>
+<p>A matlab script is provided that writes and reads sample data in the pinger and ponger participants.</p>
+<div class="section" id="example-files">
+<h2>7.1. Example Files<a class="headerlink" href="#example-files" title="Permalink to this headline">¶</a></h2>
+<p>Files with the .m extension are MATLAB script files.</p>
+<p>An explanation of what each example file does is provided below.</p>
+<p><strong>pingpong.idl</strong></p>
+<ul class="simple">
+<li>Defines the PingPongType in idl</li>
+<li>Used to generate the MATLAB file PingPongType.m via:</li>
+</ul>
+<p>idlpp -l matlab pingpong.idl</p>
+<p><strong>PingPongType.m</strong></p>
+<ul class="simple">
+<li>Defines a PingPongType; generated from idlpp</li>
+<li>The PingPongType represents a DDS topic type.</li>
+<li>PingPongType specifies two properties:  id, count.</li>
+</ul>
+<p><strong>DDS_PingerVolatileQoS.xml</strong></p>
+<ul class="simple">
+<li>XML file that specifies the DDS QoS (quality of service) settings for pinger.</li>
+</ul>
+<p><strong>DDS_PongerVolatileQoS.xml</strong></p>
+<ul class="simple">
+<li>XML file that specifies the DDS QoS (quality of service) settings for ponger.</li>
+</ul>
+<p><strong>setup_pinger.m</strong></p>
+<ul class="simple">
+<li>Creates the pinger participant on the default DDS domain, with specified QoS profile.</li>
+<li>Creates the topic PingPongType.</li>
+<li>Creates the publisher using the domain participant on the PING partition specified in the specified QoS profile.</li>
+<li>Creates the writer using the publisher and the specified QoS profile.</li>
+<li>Creates the subscriber using the domain participant on the PONG partition specified in the QoS profile.</li>
+<li>Creates the reader using the subscriber and the specified QoS profile.</li>
+</ul>
+<p><strong>setup_ponger.m</strong></p>
+<ul class="simple">
+<li>Creates the ponger participant on default domain with specified QoS profile.</li>
+<li>Creates the topic PingPongType.</li>
+<li>Creates the publisher using the domain participant on the PONG partition specified in the QoS profile.</li>
+<li>Creates the writer using the publisher and the specified QoS profile.</li>
+<li>Creates the subscriber using the domain participant on the PING partition specified in the QoS profile.</li>
+<li>Creates the reader using the subscriber and the specified QoS profile.</li>
+</ul>
+<p><strong>pinger_ponger.m</strong></p>
+<ul class="simple">
+<li>MATLAB script that writes and reads sample data in the pinger and ponger participants.</li>
+<li>This script calls the setup_pinger.m and setup_ponger.m scripts.</li>
+<li>This is the main script to run the ping pong example.</li>
+<li>This script is run from the MATLAB Command Window.</li>
+</ul>
+</div>
+<div class="section" id="steps-to-run-example">
+<h2>7.2. Steps to run example<a class="headerlink" href="#steps-to-run-example" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>In the MATLAB command window, run pinger_ponger.m.</dt>
+<dd><ul class="first last simple">
+<li>Type &#8220;pinger_ponger&#8221;.</li>
+<li>Hit enter.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Ping Pong Example</a><ul>
+<li><a class="reference internal" href="#example-files">7.1. Example Files</a></li>
+<li><a class="reference internal" href="#steps-to-run-example">7.2. Steps to run example</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="previous chapter">6. QoS Provider</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">8. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/example-ping-pong.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="8. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. QoS Provider"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

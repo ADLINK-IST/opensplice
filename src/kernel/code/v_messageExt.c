@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -49,39 +50,26 @@ c_timeFromUint64(
 }
 
 
-c_type v_messageExtTypeNew (v_topic topic)
+c_type
+v_messageExtTypeNew (
+    v_topic topic)
 {
-    /* closely follows v_topic.c:messageTypeNew */
-    static const char baseTypeName[] = "kernelModule::v_messageExt";
-    c_type dataType = v_topicDataType (topic);
-    c_base base = c_getBase (topic);
-    c_type baseType = c_resolve (base, baseTypeName);
-    c_type type;
-    c_object o;
-
-    assert (dataType);
-    assert (baseType);
-
-    type = c_type(c_metaDefine (c_metaObject(base), M_CLASS));
-    c_class(type)->extends = c_keep (c_class(baseType));
-    o = c_metaDeclare (c_metaObject(type), "userData", M_ATTRIBUTE);
-    c_property(o)->type = c_keep (dataType);
-    c_metaObject(type)->definedIn = c_keep (base);
-    c_metaFinalize (c_metaObject(type));
-    c_free (baseType);
-    c_free(o);
-
-    /* leave anonymous */
-    return type;
+    return c_keep(v_topicMessageExtType(topic));
 }
 
-void v_messageExtTypeFree (c_type xmsgType)
+void
+v_messageExtTypeFree (
+    c_type xmsgType)
 {
     c_free (xmsgType);
 }
 
 
-static void v_messageExtConvertHeaderFromExtCommon (v_message vmsg, const struct v_messageExt_s *xmsg, c_bool y2038Ready)
+static void
+v_messageExtConvertHeaderFromExtCommon (
+    v_message vmsg,
+    const struct v_messageExt_s *xmsg,
+    c_bool y2038Ready)
 {
     vmsg->_parent.nodeState = xmsg->_parent.nodeState;
     if (y2038Ready) {
@@ -97,7 +85,11 @@ static void v_messageExtConvertHeaderFromExtCommon (v_message vmsg, const struct
     vmsg->qos = xmsg->qos;
 }
 
-static void v_messageExtConvertHeaderToExtCommon (v_messageExt xmsg, const struct v_message_s *vmsg, c_bool y2038Ready)
+static void
+v_messageExtConvertHeaderToExtCommon (
+    v_messageExt xmsg,
+    const struct v_message_s *vmsg,
+    c_bool y2038Ready)
 {
     xmsg->_parent.nodeState = vmsg->_parent.nodeState;
     if (y2038Ready) {
@@ -113,7 +105,10 @@ static void v_messageExtConvertHeaderToExtCommon (v_messageExt xmsg, const struc
     xmsg->qos = vmsg->qos;
 }
 
-void v_messageExtConvertHeaderFromExt (v_message vmsg, const struct v_messageExt_s *xmsg)
+void
+v_messageExtConvertHeaderFromExt (
+    v_message vmsg,
+    const struct v_messageExt_s *xmsg)
 {
     c_bool y2038Ready = v_stateTest(xmsg->_parent.nodeState, L_TIME_Y2038);
 
@@ -125,7 +120,10 @@ void v_messageExtConvertHeaderFromExt (v_message vmsg, const struct v_messageExt
     }
 }
 
-void v_messageExtConvertHeaderToExt (v_messageExt xmsg, const struct v_message_s *vmsg)
+void
+v_messageExtConvertHeaderToExt (
+    v_messageExt xmsg,
+    const struct v_message_s *vmsg)
 {
     c_bool y2038Ready = c_baseGetY2038Ready(c_getBase(c_object(vmsg)));
 
@@ -137,7 +135,10 @@ void v_messageExtConvertHeaderToExt (v_messageExt xmsg, const struct v_message_s
     }
 }
 
-void v_messageExtConvertHeaderFromExtNoAllocTime (v_message vmsg, const struct v_messageExt_s *xmsg)
+void
+v_messageExtConvertHeaderFromExtNoAllocTime (
+    v_message vmsg,
+    const struct v_messageExt_s *xmsg)
 {
     c_bool y2038Ready = v_stateTest(xmsg->_parent.nodeState, L_TIME_Y2038);
 
@@ -145,7 +146,10 @@ void v_messageExtConvertHeaderFromExtNoAllocTime (v_message vmsg, const struct v
     vmsg->allocTime = os_timeEGet();
 }
 
-void v_messageExtConvertHeaderToExtNoAllocTime (v_messageExt xmsg, const struct v_message_s *vmsg)
+void
+v_messageExtConvertHeaderToExtNoAllocTime (
+    v_messageExt xmsg,
+    const struct v_message_s *vmsg)
 {
     c_bool y2038Ready = c_baseGetY2038Ready(c_getBase(c_object(vmsg)));
 
@@ -154,7 +158,10 @@ void v_messageExtConvertHeaderToExtNoAllocTime (v_messageExt xmsg, const struct 
     xmsg->allocTime.nanoseconds = 0;
 }
 
-void v_messageEOTExtConvertFromExtNoAllocTime (v_messageEOT vmsgEOT, const struct v_messageEOTExt_s *xmsgEOT)
+void
+v_messageEOTExtConvertFromExtNoAllocTime (
+    v_messageEOT vmsgEOT,
+    const struct v_messageEOTExt_s *xmsgEOT)
 {
     v_messageExtConvertHeaderFromExtNoAllocTime (&vmsgEOT->_parent, &xmsgEOT->_parent);
     vmsgEOT->publisherId = xmsgEOT->publisherId;
@@ -163,7 +170,10 @@ void v_messageEOTExtConvertFromExtNoAllocTime (v_messageEOT vmsgEOT, const struc
     vmsgEOT->tidList = xmsgEOT->tidList;
 }
 
-void v_messageEOTExtConvertToExtNoAllocTime (v_messageEOTExt xmsgEOT, const struct v_messageEOT_s *vmsgEOT)
+void
+v_messageEOTExtConvertToExtNoAllocTime (
+    v_messageEOTExt xmsgEOT,
+    const struct v_messageEOT_s *vmsgEOT)
 {
     v_messageExtConvertHeaderToExtNoAllocTime (&xmsgEOT->_parent, &vmsgEOT->_parent);
     xmsgEOT->publisherId = vmsgEOT->publisherId;
@@ -172,7 +182,10 @@ void v_messageEOTExtConvertToExtNoAllocTime (v_messageEOTExt xmsgEOT, const stru
     xmsgEOT->tidList = vmsgEOT->tidList;
 }
 
-v_message v_messageExtConvertFromExtType (c_type msgType, v_messageExt xmsg)
+v_message
+v_messageExtConvertFromExtType (
+    c_type msgType,
+    v_messageExt xmsg)
 {
     c_type xmsgType = c_getType (xmsg);
     v_message vmsg;
@@ -186,7 +199,10 @@ v_message v_messageExtConvertFromExtType (c_type msgType, v_messageExt xmsg)
     return vmsg;
 }
 
-v_messageExt v_messageExtCopyToExtType (c_type xmsgType, const struct v_message_s *vmsg)
+v_messageExt
+v_messageExtCopyToExtType (
+    c_type xmsgType,
+    const struct v_message_s *vmsg)
 {
     v_messageExt xmsg;
     xmsg = c_new (xmsgType);
@@ -195,14 +211,18 @@ v_messageExt v_messageExtCopyToExtType (c_type xmsgType, const struct v_message_
     return xmsg;
 }
 
-void v_messageExtFree (v_messageExt xmsg)
+void
+v_messageExtFree (
+    v_messageExt xmsg)
 {
     c_type xmsgType = c_getType (xmsg);
     memset (xmsg, 0, xmsgType->size);
     c_free (xmsg);
 }
 
-v_messageEOTExt v_messageEOTExtCopyToExtType (const struct v_messageEOT_s *vmsg)
+v_messageEOTExt
+v_messageEOTExtCopyToExtType (
+    const struct v_messageEOT_s *vmsg)
 {
     c_type xmsgType = c_resolve(c_getBase((c_object)vmsg), "kernelModule::v_messageEOTExt");
     v_messageEOTExt xmsg;
@@ -213,13 +233,17 @@ v_messageEOTExt v_messageEOTExtCopyToExtType (const struct v_messageEOT_s *vmsg)
 }
 
 
-v_message v_messageEOTExtConvertFromExtType (v_messageEOTExt xmsg_eot)
+v_message
+v_messageEOTExtConvertFromExtType (
+    v_messageEOTExt xmsg_eot)
 {
     c_type msgType = c_resolve(c_getBase((c_object)xmsg_eot), "kernelModuleI::v_messageEOT");
     return v_messageExtConvertFromExtType (msgType, (v_messageExt) xmsg_eot);
 }
 
-void v_messageEOTExtFree (v_messageEOTExt xmsg)
+void
+v_messageEOTExtFree (
+    v_messageEOTExt xmsg)
 {
     c_type xmsgType = c_getType (xmsg);
     memset (xmsg, 0, xmsgType->size);
@@ -236,7 +260,10 @@ struct v_messageExtCdrTmp {
     void *d;
 };
 
-struct v_messageExtCdrInfo *v_messageExtCdrInfoNew(c_type topicMessageType, const struct sd_cdrControl *control)
+struct v_messageExtCdrInfo *
+v_messageExtCdrInfoNew(
+    c_type topicMessageType,
+    const struct sd_cdrControl *control)
 {
     static const char headerTypeName[] = "kernelModule::v_messageExt";
     c_base base = c_getBase (topicMessageType);
@@ -306,13 +333,20 @@ err_note:
     return NULL;
 }
 
-void v_messageExtCdrInfoFree(struct v_messageExtCdrInfo *xci)
+void
+v_messageExtCdrInfoFree(
+    struct v_messageExtCdrInfo *xci)
 {
     sd_cdrInfoFree(xci->ci);
     c_free(xci->vmsgType);
 }
 
-int v_messageExtCdrSerializeNoAllocTime (int (*f) (const struct sd_cdrInfo *ci, void *serdata, const void *data), const struct v_messageExtCdrInfo *xci, void *serdata, const struct v_message_s *vmsg)
+int
+v_messageExtCdrSerializeNoAllocTime (
+    int (*f) (const struct sd_cdrInfo *ci, void *serdata, const void *data),
+    const struct v_messageExtCdrInfo *xci,
+    void *serdata,
+    const struct v_message_s *vmsg)
 {
     struct v_messageExtCdrTmp tmp;
     struct v_messageExt_s xmsg;
@@ -322,7 +356,13 @@ int v_messageExtCdrSerializeNoAllocTime (int (*f) (const struct sd_cdrInfo *ci, 
     return f(xci->ci, serdata, &tmp);
 }
 
-int v_messageExtCdrDeserializeNoAllocTime (int (*f) (void *dst, const struct sd_cdrInfo *ci, os_uint32 sz, const void *src), v_message *dst, const struct v_messageExtCdrInfo *xci, os_uint32 sz, const void *src)
+int
+v_messageExtCdrDeserializeNoAllocTime (
+    int (*f) (void *dst, const struct sd_cdrInfo *ci, os_uint32 sz, const void *src),
+    v_message *dst,
+    const struct v_messageExtCdrInfo *xci,
+    os_uint32 sz,
+    const void *src)
 {
     struct v_messageExtCdrTmp tmp;
     struct v_messageExt_s xmsg;

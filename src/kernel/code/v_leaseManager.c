@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -272,7 +273,7 @@ v_leaseManagerInit(
     assert(C_TYPECHECK(_this, v_leaseManager));
 
     k = v_objectKernel(_this);
-    c_mutexInit(c_getBase(_this), &_this->mutex);
+    (void)c_mutexInit(c_getBase(_this), &_this->mutex);
     c_condInit(c_getBase(_this), &_this->cond, &_this->mutex);
     _this->quit = FALSE;
     _this->monotonic.nextExpiryTime = v_leaseTimeInfinite(V_LEASE_KIND_MONOTONIC);
@@ -606,7 +607,8 @@ v_leaseManagerEvaluateLeases(
 
     if (arg.shortestPeriod != 0) {
          /* Current time is apparently > next expiry-time, so calculate
-          * lag by subtracting nextExpiryTime from current time. */
+          * lag by subtracting nextExpiryTime from current time.
+          */
          *lag = v_leaseTimeDiff(arg.expiryTime, leaseAdmin->nextExpiryTime);
     }
 
@@ -642,7 +644,8 @@ v_leaseManagerMain(
              /* The next expiry-time lies in the past, log a warning and proceed
               * as normal. The first cycle, the leaseManager may be late as the
               * thread is started asynchronously and leases may have been added
-              * before the thread is really started. */
+              * before the thread is really started.
+              */
 
              /* Only report warning if lag is more than the shortest period
               * of all registered leases. */
@@ -826,7 +829,8 @@ collectExpired(
     v_leaseUnlock(leaseAction->lease);
 
     /* Add to expiredLeases if the current expiry time is
-     * equal or later than the lease expiry time */
+     * equal or later than the lease expiry time
+     */
     expired = v_leaseTimeCompare(a->expiryTime, leaseExpiryTime);
 
     if (expired == OS_MORE) {
@@ -834,10 +838,10 @@ collectExpired(
         a->expiredLeases = c_iterAppend(a->expiredLeases, c_keep(leaseAction));
 
         /* Warn if the lease expiry processing is very late (twice the duration),
-           but not for the DEADLINE_MISSED cases as those tend to have very short
-           duration and cause too many warnings on highly loaded machines. For
-           aperiodic leases, we do not have enough information available.
-           (See OSPL-1681.) */
+         * but not for the DEADLINE_MISSED cases as those tend to have very short
+         * duration and cause too many warnings on highly loaded machines. For
+         * aperiodic leases, we do not have enough information available.
+         */
         if (leaseAction->actionId == V_LEASEACTION_READER_DEADLINE_MISSED ||
             leaseAction->actionId == V_LEASEACTION_WRITER_DEADLINE_MISSED) {
             logWarning = FALSE;

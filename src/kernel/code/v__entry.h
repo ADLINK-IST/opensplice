@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,20 +39,6 @@ void
 v_entryFree (
     v_entry _this);
 
-/**
- * Adds the group to the entry. Returns TRUE if the entry was not yet connected
- * to the group and the group has thus been added. Returns FALSE otherwise.
- *
- * @param   _this   The entry to add the group to
- * @param   g       The group to be added to the entry
- * @return          TRUE if the group was added, FALSE if the group was already
- *                  in the entry
- */
-c_bool
-v_entryAddGroup (
-    v_entry _this,
-    v_group g);
-
 void
 v_entryRemoveGroup (
     v_entry _this,
@@ -62,13 +49,24 @@ v_entryGroupExists(
     v_entry entry,
     v_group group);
 
-c_bool
+v_alignState
 v_entryNotifyGroupStateChange(
     v_entry _this,
-    v_group g);
+    v_handle groupHandle,
+    v_alignState alignState);
 
 c_long
 v_entryDurableGroupCount(
+    v_entry _this);
+
+c_bool
+v_entryWalkGroups(
+    v_entry _this,
+    c_action action,
+    c_voidp actionArg);
+
+c_iter
+v_entryGetGroups(
     v_entry _this);
 
 #endif

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -322,8 +323,7 @@ sd_printReference(
     c_ulong result;
     int snpRes;
 
-    /* Check if this is a null reference. In that case, we should still print
-       something */
+    /* Check if this is a null reference. In that case, we should still print something */
     if (sd_isValidReference(object)) {
         snpRes = snprintf(dataPtr, sizeof(SD_VALID_REF_IMAGE), "%s", SD_VALID_REF_IMAGE);
     } else {
@@ -720,7 +720,8 @@ sd_XMLSerCallbackPost(
 
 
 /* An implementation for counting: do the serialization but overwrite
-   a static buffer. Count anyway and return the count. */
+ *a static buffer. Count anyway and return the count.
+ */
 static c_bool sd_XMLCountCallback(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
 
 static c_bool
@@ -865,8 +866,9 @@ sd_serializerXMLSerializeTyped(
 
 #define SD_CHARS_CHAR    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define SD_CHARS_DIGIT   "1234567890"
-/* Note: Some characters are serialized using octal representation. These are omitted from the following set,
- * except for '\', required to recognize the octal representations (i.e. '\001') */
+/* NOTE: Some characters are serialized using octal representation. These are omitted from the following set,
+ * except for '\', required to recognize the octal representations (i.e. '\001')
+ */
 #define SD_CHARS_SPECIAL "!\"#$%'()*+,-./:;=?@[\\]^_`{|}~"
 #define SD_CHARS_SPACES  " \t\n"
 
@@ -940,7 +942,8 @@ sd_skipPrim(
  * This would mean that if you have a locale (like nl_NL and fr_FR)
  * that uses a comma as decimal point (aka LC_NUMERIC), then you
  * would run into trouble because the rest of the ospl system uses
- * a point as decimal point. */
+ * a point as decimal point.
+ */
 static c_long
 sd_scanDoubleNoSkip(
     c_char  *dataPtr,
@@ -1482,8 +1485,8 @@ sd_scanCharData(
 }
 
 
-/** Peek for string between tags. Note that no escape sequences
- *  are allowed here, nor are mixes of strings and CDATA
+/* Peek for string between tags. Note that no escape sequences
+ * are allowed here, nor are mixes of strings and CDATA
  */
 c_char *
 sd_peekTaggedCharData(
@@ -1766,7 +1769,8 @@ sd_XMLDeserInterface(
 
     if (isValidRef) {
         /* treat a non-instantiated interface the same
-                 as a NULL pointer. This avoids memleaks. */
+         * as a NULL pointer. This avoids memleaks.
+         */
         if (!(*placeHolder)) {
             if ((*placeHolder = c_new_s(c_type(interf))) == NULL) {
                 SD_VALIDATION_SET_ERROR(errorInfo, OUT_OF_MEMORY, NULL, NULL);

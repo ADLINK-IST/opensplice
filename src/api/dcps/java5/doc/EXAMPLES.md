@@ -6,7 +6,7 @@ Examples                                                                        
 DCPS Examples                                                                   {#java5_examples_dcpslist}
 =============
 
-The examples source code can be found in the examples folder of your OpenSplice installation.
+The examples source code can be found in the examples folder of your Vortex OpenSplice installation.
 The descriptions below summarize what each example demonstrates. Towards the bottom of the page
 you will find instructions on how to build and run the examples.
 
@@ -84,7 +84,7 @@ Building the examples                                           {#java5_build_ex
 =========================================
 
 In the following sections `$OSPL_HOME` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be exported as a variable
+Vortex OpenSplice. *Note* it is not however required that this be exported as a variable
 in the shell environment.
 
 In order to build and or run applications that use java5 the library `dcpssaj5.jar` for standalone java or `dcpscj5.jar`
@@ -97,31 +97,30 @@ POSIX:                                                                          
 
 ### General posix build/run environment setup                                           {#posixgeneral}
 In the following examples `$OSPL_HOME` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be exported as a variable
+Vortex OpenSplice. *Note* it is not however required that this be exported as a variable
 in the shell environment.
 
 A script `release.com` is provided. It exports a value of `OSPL_URI` to indicate
-the file `$OSPL_HOME/etc/config/ospl.xml` and also makes the OpenSplice libraries
+the file `$OSPL_HOME/etc/config/ospl.xml` and also makes the Vortex OpenSplice libraries
 available on the library load path.
 
 ### Building a single example
 
-Change directory to the example source directory and `make`. E.g.:
+Change directory to the example source directory and call maven `mvn`. E.g.:
 
     $ cd $OSPL_HOME
     $ ./release.com
     $ cd $OSPL_HOME/examples/dcps/HelloWorld/java5
-    $ make
+    $ mvn
 
 ### Building all examples
 
-The top-level makefile `Makefile.All_Java` can be used to build all
-the examples.
+To build all the examples just run maven in the top level examples directory E.g.:
 
     $ cd $OSPL_HOME
     $ ./release.com
     $ cd $OSPL_HOME/examples
-    $ make -f Makefile.All_Java
+    $ mvn
 
 Windows:                                                                                {#buildwindows}
 --------
@@ -129,35 +128,34 @@ Windows:                                                                        
 ### General windows build/run environment setup                                         {#windowsgeneral}
 
 In the following examples `%%OSPL_HOME%` identifies the installation directory of
-OpenSplice. *Note* it is not however required that this be set as a variable
+Vortex OpenSplice. *Note* it is not however required that this be set as a variable
 in the console environment.
 
 A script `release.bat` is provided. It exports a value of `OSPL_URI` to indicate
-the file `%%OSPL_HOME%\etc\config\ospl.xml` and also makes the OpenSplice
+the file `%%OSPL_HOME%\etc\config\ospl.xml` and also makes the Vortex OpenSplice
 executables and dynamic-link libraries available on the `PATH`.
 
-A shortcut within the OpenSplice HDE folder on the Start Menu: **OpenSplice DDS
+A shortcut within the Vortex OpenSplice HDE folder on the Start Menu: **Vortex OpenSplice
 command prompt** creates a `cmd.exe` console session with this environment ready
 set.
 
 ### Building a single example
 
-Change directory to the example source directory and `make`. E.g.:
+Change directory to the example source directory and call maven `mvn`. E.g.:
 
-    open the OpenSplice DDS command prompt
-    "<<< OpenSplice HDE Release V6.5.0 For x86_64.win64, Date 2015-01-22 >>>"
-    C:\ospl\V6.5.0\HDE\x86_64.win64>cd examples\HelloWorld\java5
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5>BUILD_java.bat
+    open the Vortex OpenSplice command prompt
+    "<<< OpenSplice HDE Release V6.9.1 For x86_64.win64, Date 2018-02-28 >>>"
+    C:\ospl\V6.9.1\HDE\x86_64.win64>cd examples\HelloWorld\java5
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>mvn
 
 ### Building all examples
 
-The top-level makefile `Makefile.All_Java` can be used to build all
-the examples.
+To build all the examples just run maven in the top level examples directory E.g.:
 
-    open the OpenSplice DDS command prompt
-    "<<< OpenSplice HDE Release V6.5.0 For x86_64.win64, Date 2015-01-22 >>>"
-    C:\ospl\V6.5.0\HDE\x86_64.win64>cd examples
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples>BUILD_All_Java.bat
+    open the Vortex OpenSplice command prompt
+    "<<< OpenSplice HDE Release V6.9.1 For x86_64.win64, Date 2018-02-28 >>>"
+    C:\ospl\V6.9.1\HDE\x86_64.win64>cd examples
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples>mvn
 
 Running examples                                                               {#java5_examples_running}
 ================
@@ -177,9 +175,9 @@ To run an example in _single process_ mode:
 
     $ cd $OSPL_HOME
     $ ./release.com
-    $ cd examples/HelloWorld/java5/standalone
-    $ java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes HelloWorldDataSubscriber &
-    $ java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes HelloWorldDataPublisher
+    $ cd examples/HelloWorld/java5/
+    $ java -jar sub/java5_HelloWorld_sub.jar  &
+    $ java -jar pub/java5_HelloWorld_pub.jar
 
 To run an exmaple in _shared memory_ mode you might do:
 
@@ -187,10 +185,10 @@ To run an exmaple in _shared memory_ mode you might do:
     $ ./release.com
     $ OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml
     $ export OSPL_URI
-    $ cd examples/HelloWorld/java5/standalone
+    $ cd examples/HelloWorld/java5/
     $ ospl start
-    $ java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes HelloWorldDataSubscriber &
-    $ java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes HelloWorldDataPublisher
+    $ java -jar sub/java5_HelloWorld_sub.jar  &
+    $ java -jar pub/java5_HelloWorld_pub.jar
     $ ospl stop
 
 Windows:                                                                                {#runwindows}
@@ -198,20 +196,21 @@ Windows:                                                                        
 
 To run an example in _single process_ mode:
 
-    open the OpenSplice DDS command prompt
-    "<<< OpenSplice HDE Release V6.5.0 For x86_64.win64, Date 2015-01-22 >>>"
-    C:\ospl\V6.5.0\HDE\x86_64.win64>cd examples\HelloWorld\java5\standalone
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>start /b java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes HelloWorldDataSubscriber
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes HelloWorldDataPublisher
+    open the Vortex OpenSplice command prompt
+    "<<< OpenSplice HDE Release V6.9.1 For x86_64.win64, Date 2018-02-28 >>>"
+    C:\ospl\V6.9.1\HDE\x86_64.win64>cd examples\HelloWorld\java5
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>start /b java -jar sub/java5_HelloWorld_sub.jar
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>java -jar pub/java5_HelloWorld_pub.jar
 
 
 To run an example in _shared memory_ mode you might do:
 
-    open the OpenSplice DDS command prompt
-    "<<< OpenSplice HDE Release V6.5.0 For x86_64.win64, Date 2015-01-22 >>>"
-    C:\ospl\V6.5.0\HDE\x86_64.win64>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml
-    C:\ospl\V6.5.0\HDE\x86_64.win64>cd examples\HelloWorld\java5\standalone
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>ospl start
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>start /b java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes HelloWorldDataSubscriber
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes HelloWorldDataPublisher
-    C:\ospl\V6.5.0\HDE\x86_64.win64\examples\HelloWorld\java5\standalone>ospl stop
+    open the Vortex OpenSplice command prompt
+     "<<< OpenSplice HDE Release V6.9.1 For x86_64.win64, Date 2018-02-28 >>>"
+    C:\ospl\V6.9.1\HDE\x86_64.win64>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml
+    C:\ospl\V6.9.1\HDE\x86_64.win64>cd examples\HelloWorld\java5
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>ospl start
+    C:\ospl\V6.9.1\HDE\x86_64.win64>cd examples\HelloWorld\java5
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>start /b java -jar sub/java5_HelloWorld_sub.jar
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>java -jar pub/java5_HelloWorld_pub.jar
+    C:\ospl\V6.9.1\HDE\x86_64.win64\examples\HelloWorld\java5>ospl stop

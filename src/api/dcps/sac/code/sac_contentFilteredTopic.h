@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,6 +35,7 @@ DDS_ContentFilteredTopicNew (
 DDS_ReturnCode_t
 DDS_ContentFilteredTopic_get_parameters (
     DDS_ContentFilteredTopic _this,
-    c_value **params);
+    c_value **params,
+    DDS_unsigned_long *nrOfParams);
 
 #endif

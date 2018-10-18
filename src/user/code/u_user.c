@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,6 +38,7 @@
 C_CLASS(u_domainAdmin);
 C_STRUCT(u_domainAdmin) { /* protected by global user lock */
     u_domain domain;
+    os_address kernel;
 };
 
 C_CLASS(u_user);
@@ -46,8 +48,7 @@ C_STRUCT(u_user) {
      */
     os_mutex mutex;
     os_cond cond;
-    /*
-     * The domainList attribute holds information about all connected domains.
+    /* The domainList attribute holds information about all connected domains.
      * The domainCount attribute specifies the max index in the domainList.
      * So any search range on the list can be limited to 1..domainCount.
      * domains that are detached are removed from the list and the entry in the
@@ -65,14 +66,27 @@ C_STRUCT(u_user) {
     /* Should only be modified by pa_(in/de)crement! */
     os_uint32 protectCount;
     /* The detachThreadId will have to be set by the detaching thread while
-     * holding the user->mutex and be re-set to NULL before releasing the
+     * holding the user->mutex and be re-set to 0 before releasing the
      * lock. A lock-boundary should thus never be crossed with detachThreadId
      * set to a different value than when the lock was acquired! */
-    os_threadId detachThreadId;
+    os_ulong_int detachThreadId;
     os_uint detached;
     os_boolean detachingDomain;
     /* Indicates whether u_userSetupSignalHandling has been called */
     os_boolean signalHandlingSetup;
+    os_boolean initialized;
+};
+
+C_CLASS(u_exceptionThreadContext);
+C_STRUCT(u_exceptionThreadContext) {
+    os_ulong_int threadId;
+    c_bool isInProtectedArea;
+    os_int32 domainId;
+};
+
+C_CLASS(u_exitRequestThreadContext);
+C_STRUCT(u_exitRequestThreadContext) {
+    os_ulong_int threadId;
 };
 
 /** \brief Counter that keeps track of number of times user-layer is initialized.
@@ -87,7 +101,8 @@ static pa_uint32_t _ospl_userInitCount = PA_UINT32_INIT(0);
  * This reference is only initialized once and implements the root to
  * all user (process) specific information.
  */
-void *user = NULL;
+void * user = NULL;
+static C_STRUCT(u_user) userAdmin;
 
 /* This method will lock the user-layer and return the reference to the user-layer object if successful.
  * If this method returns NULL then the user-layer is either not initialized or
@@ -106,11 +121,11 @@ u__userLock(void)
     r = os_mutexLock_s(&u->mutex);
     if (r != os_resultSuccess) {
         /* The mutex is not valid so apparently the user-layer is either
-         * destroyed or in process of destruction. */
+         * destroyed or in process of destruction.
+         */
         u = NULL;
-    } else if (u->detached || (os_threadIdToInteger(u->detachThreadId) != 0 &&
-               (os_threadIdToInteger(u->detachThreadId) !=
-                os_threadIdToInteger(os_threadIdSelf()))))
+    } else if (u->detached || (u->detachThreadId != 0 &&
+               (u->detachThreadId != os_threadIdToInteger(os_threadIdSelf()))))
     {
         /* Another thread is busy destroying the user-layer or the user-
          * layer is already destroyed. No access is allowed (anymore).
@@ -123,8 +138,7 @@ u__userLock(void)
     return u;
 }
 
-/* This method will unlock the user-layer.
- */
+/* This method will unlock the user-layer. */
 static void
 u__userUnlock(void)
 {
@@ -139,7 +153,8 @@ u__userUnlock(void)
 
 static u_result
 u__userDetach(
-    _In_ os_uint32 flags)
+    _In_ os_uint32 flags,
+    _In_ os_ulong_int detachingThread)
 {
     u_user u;
     os_uint32 i;
@@ -149,15 +164,23 @@ u__userDetach(
     u = u_user(user);
 
     os_mutexLock(&u->mutex);
+    if ((flags & U_USER_EXCEPTION) && detachingThread != 0 && detachingThread == u->detachThreadId) {
+        OS_REPORT(OS_ERROR, "u__userDetach", U_RESULT_INTERNAL_ERROR,
+                  "Exception occurred, but u_userDetach already in progress. Bailing out.");
+        os_mutexUnlock(&u->mutex);
+        return U_RESULT_ALREADY_DELETED;
+    }
+
     /* Disable access to user-layer for all other threads except for this thread.
      * Any following user access from other threads is gracefully
-     * aborted. */
-    if(os_threadIdToInteger(u->detachThreadId) != 0) {
+     * aborted.
+     */
+    if(u->detachThreadId != 0) {
         while(!u->detached) {
             os_condWait(&u->cond, &u->mutex);
         }
     } else {
-        u->detachThreadId = os_threadIdSelf();
+        u->detachThreadId = os_threadIdToInteger(os_threadIdSelf());
 
         /* Unlock the user-layer
          * Part of following code requires to unlock the user object
@@ -173,7 +196,8 @@ u__userDetach(
         }
 
         /* Now signal other threads waiting on u__userDetach(...) that the
-         * work is done. */
+         * work is done.
+         */
         os_mutexLock(&u->mutex);
         u->detached = 1;
         os_condBroadcast(&u->cond);
@@ -197,6 +221,12 @@ u__userDomainDetach(
         u = u__userLock();
         if (u) {
             domain = u->domainList[idx].domain;
+
+            if (domain && u_domainIsSingleProcess(domain)) {
+                u__userUnlock();
+                return U_RESULT_OK;
+            }
+
             if (domain) {
                 detach = u_domainSetDetaching(domain, flags);
             }
@@ -233,9 +263,10 @@ u__userGetDetachThreadId(void)
     r = os_mutexLock_s(&u->mutex);
     if (r != os_resultSuccess) {
         /* The mutex is not valid so apparently the user-layer is either
-         * destroyed or in process of destruction. Let id be 0*/
+         * destroyed or in process of destruction. Let id be 0
+         */
     } else {
-        threadId = os_threadIdToInteger(u->detachThreadId);
+        threadId = u->detachThreadId;
     }
     os_mutexUnlock(&u->mutex);
     return threadId;
@@ -248,29 +279,36 @@ u_userDetach(
     u_result result = U_RESULT_OK;
 
     if(!os_serviceGetSingleProcess()) {
-        result = u__userDetach(flags);
+        result = u__userDetach(flags, 0);
     }
-
     return result;
 }
 
 static os_result
-u__userExceptionHandler(
-    os_callbackArg exceptionCallbackArg,
-    void *unused)
+u__userExceptionHandler(void *callingThreadContext, void *arg)
 {
-    OS_UNUSED_ARG(unused);
+    u_exceptionThreadContext thrContext = (u_exceptionThreadContext) callingThreadContext;
 
-    if ((exceptionCallbackArg.ThreadId == 0) ||
-        (exceptionCallbackArg.ThreadId != u__userGetDetachThreadId()))
-    {
+    OS_UNUSED_ARG(arg);
+
+    /**
+     * Because we are handling a synchronous exception here, which means the thread receiving the signal
+     * is  now blocked on the signal handler, we can safely access its thread specific context here.
+     * If there is no thread specific context, then the thread in question has never accessed shared
+     * memory, so we can safely detach. If the proctectCount is 0, then the thread in question is currently
+     * not accessing any shared memory, and so we can also safely detach. In all other cases, shared
+     * memory is at risk, just bail out immediately (without detaching) in order to dump shared memory
+     * contents as intact as possible.
+     */
+    assert(thrContext);
+    if (!thrContext->isInProtectedArea) {
         OS_REPORT(OS_ERROR, "u__userExceptionHandler", U_RESULT_INTERNAL_ERROR,
-                  "An exception occurred, the process will now disconnects from all DDS domains");
-        u__userDetach(U_USER_BLOCK_OPERATIONS | U_USER_EXCEPTION);
-    } else {
+                  "An exception occurred, the process will now disconnect from all DDS domains");
+        u__userDetach(U_USER_BLOCK_OPERATIONS | U_USER_EXCEPTION, thrContext->threadId);
+    }
+    else {
         OS_REPORT(OS_ERROR, "u__userExceptionHandler", U_RESULT_INTERNAL_ERROR,
-                  "An exception occurred within the detach operation, "
-                  "the Exception Handler cannot contineu and will ignore this signal.");
+                  "Exception occurred while accessing shared memory: bailing out immediately");
     }
 
     return os_resultSuccess;
@@ -279,30 +317,67 @@ u__userExceptionHandler(
 static os_result
 u__userExitRequestHandler(
     os_callbackArg exitCallbackArg,
-    void *unused)
+    void *callingThreadContext,
+    void * unused)
 {
+    u_exitRequestThreadContext thrContext = (u_exitRequestThreadContext) callingThreadContext;
+
     OS_UNUSED_ARG(unused);
 
-    if (!os_serviceGetSingleProcess()) {
-        /* Only in shared memory configuration there is a need to detach from the service.
-         * This is the user layers responsibility and is performed by the u_userDetach operation.
-         * Exit request is a normal condition so inform the u_userDetach operation to delete all
-         * remaining entities that belong to this process.
-         */
-        if ((exitCallbackArg.ThreadId == 0) ||
-            (exitCallbackArg.ThreadId != u__userGetDetachThreadId()))
-        {
-            OS_REPORT(OS_INFO, "u__userExitRequestHandler", U_RESULT_OK,
-                      "Process received a termination signal and will detach from all DDS domains.");
-            u__userDetach(U_USER_DELETE_ENTITIES);
-        } else {
-            OS_REPORT(OS_WARNING, "u__userExitRequestHandler", U_RESULT_OK,
-                      "Process received a termination signal from within the detach operation, "
-                      "the Exit Handler will ignore this signal and NOT detach from the DDS domains.");
-        }
+    if ((thrContext->threadId == 0) || (thrContext->threadId != u__userGetDetachThreadId())) {
+        OS_REPORT(OS_WARNING, "u__userExitRequestHandler", U_RESULT_OK,
+                  "Process received a termination signal and will detach from all DDS domains.");
+        u__userDetach(U_USER_DELETE_ENTITIES, thrContext->threadId);
+    }
+    else {
+        OS_REPORT(OS_WARNING, "u__userExitRequestHandler", U_RESULT_OK,
+                  "Process received a termination signal from within the detach operation, "
+                  "the Exit Handler will ignore this signal and NOT detach from the DDS domains.");
     }
 
     return os_signalHandlerFinishExitRequest(exitCallbackArg);
+}
+
+static void *
+u__userExceptionAllocThreadContextHandler()
+{
+    return os_malloc(C_SIZEOF(u_exceptionThreadContext));
+}
+
+static void
+u__userExceptionGetThreadContextHandler(void *threadContext)
+{
+    u_exceptionThreadContext callingThreadContext = (u_exceptionThreadContext) threadContext;
+
+    callingThreadContext->threadId = os_threadIdToInteger(os_threadIdSelf());
+    callingThreadContext->domainId = v_kernelThreadInfoGetDomainId();
+    callingThreadContext->isInProtectedArea = v_kernelThreadInProtectedArea();
+}
+
+static void
+u__userExceptionFreeThreadContextHandler(void *threadContext)
+{
+    os_free(threadContext);
+}
+
+static void *
+u__userExitRequestAllocThreadContextHandler()
+{
+    return os_malloc(C_SIZEOF(u_exitRequestThreadContext));
+}
+
+static void
+u__userExitRequestGetThreadContextHandler(void *threadContext)
+{
+    u_exitRequestThreadContext callingThreadContext = (u_exitRequestThreadContext) threadContext;
+
+    callingThreadContext->threadId = os_threadIdToInteger(os_threadIdSelf());
+}
+
+static void
+u__userExitRequestFreeThreadContextHandler(void *threadContext)
+{
+    os_free(threadContext);
 }
 
 /* This operation starts the os abstraction signal handler if not already started and
@@ -326,10 +401,20 @@ u_userSetupSignalHandling(
             (void) os_signalHandlerNew();
             if (!os_serviceGetSingleProcess()) {
                 (void) os_signalHandlerEnableExceptionSignals();
-                (void) os_signalHandlerRegisterExceptionCallback(u__userExceptionHandler, NULL);
+                (void) os_signalHandlerRegisterExceptionCallback(
+                        u__userExceptionHandler,
+                        u__userExceptionAllocThreadContextHandler,
+                        u__userExceptionGetThreadContextHandler,
+                        u__userExceptionFreeThreadContextHandler,
+                        NULL);
             }
             if (!isService) {
-                (void) os_signalHandlerRegisterExitRequestCallback(u__userExitRequestHandler, NULL);
+                (void) os_signalHandlerRegisterExitRequestCallback(
+                        u__userExitRequestHandler,
+                        u__userExitRequestAllocThreadContextHandler,
+                        u__userExitRequestGetThreadContextHandler,
+                        u__userExitRequestFreeThreadContextHandler,
+                        NULL);
             }
         }
         u__userUnlock();
@@ -354,10 +439,8 @@ u_result
 u_userInitialise(
     void)
 {
-    u_user u;
     u_result rm = U_RESULT_OK;
     os_uint32 initCount;
-    void* initUser;
 
     initCount = pa_inc32_nv(&_ospl_userInitCount);
     /* Any participant being an application or service may call this operation but
@@ -383,46 +466,49 @@ u_userInitialise(
         /* Prepare the service component. */
         u__serviceInitialise();
 
+        /* Prepare the u_domain component. */
+        u__domainMutexInit();
+
         /* Use indirection, as user != NULL is a precondition for user-layer
          * functions, so make sure it only holds true when the user-layer is
-         * initialized. */
-        initUser = os_malloc(sizeof(C_STRUCT(u_user)));
+         * initialized.
+         */
 
-        u = u_user(initUser);
-        os_mutexInit(&u->mutex, NULL);
-        os_condInit(&u->cond ,&u->mutex, NULL);
-        u->domainCount = 0;
-        u->protectCount = 0;
-        u->detachThreadId = OS_THREAD_ID_NONE;
-        u->detached = 0;
-        u->detachingDomain = OS_FALSE;
-        u->signalHandlingSetup = OS_FALSE;
+        os_mutexInit(&userAdmin.mutex, NULL);
+        os_condInit(&userAdmin.cond, &userAdmin.mutex, NULL);
+        userAdmin.domainCount = 0;
+        userAdmin.protectCount = 0;
+        userAdmin.detachThreadId = 0;
+        userAdmin.detached = 0;
+        userAdmin.detachingDomain = OS_FALSE;
+        userAdmin.signalHandlingSetup = OS_FALSE;
 
-        memset(u->domainList, 0, sizeof u->domainList);
+        memset(userAdmin.domainList, 0, sizeof userAdmin.domainList);
 
         os_procAtExit(u__userAtExitHandler);
 
         /* This will mark the user-layer initialized */
-        user = initUser;
+        user = &userAdmin;
     } else {
         if(user == NULL){
-            os_duration sleep = OS_DURATION_INIT(0, 100000); /* 100ms */
+            os_duration sleep = OS_DURATION_INIT(0, 100000000); /* 100ms */
             /* Another thread is currently initializing the user-layer. Since
              * user != NULL is a precondition for calls after u_userInitialise(),
              * a sleep is performed, to ensure that (if succeeded) successive
-             * user-layer calls will also actually pass.*/
-            os_sleep(sleep);
+             * user-layer calls will also actually pass.
+             */
+            ospl_os_sleep(sleep);
         }
 
         if(user == NULL){
             /* Initialization did not succeed, undo increment and return error */
-            initCount = pa_dec32_nv(&_ospl_userInitCount);
             rm = U_RESULT_INTERNAL_ERROR;
             OS_REPORT(OS_ERROR,"u_userInitialise", rm,
                         "Internal error: User-layer should be initialized "
                         "(initCount = %d), but user == NULL (waited 100ms).",
                         initCount);
         }
+        (void) pa_dec32_nv(&_ospl_userInitCount); /* Decrement when > 1 to avoid possible overflow. */
     }
     return rm;
 }
@@ -443,9 +529,19 @@ u_userAddDomain(
         if (u->domainCount + 1 < MAX_DOMAINS) {
             u->domainCount++;
             for (index = 1;(index < MAX_DOMAINS) && (u->domainList[index].domain != NULL); index++) { }
-            ka = &u->domainList[index];
-            ka->domain = domain;
-            u_domainIdSetThreadSpecific(domain);
+            if (index == MAX_DOMAINS) {
+                result = U_RESULT_OUT_OF_MEMORY;
+                OS_REPORT(OS_ERROR,
+                        "u_userAddDomain",result,
+                    "Max connected Domains (%d) reached!", MAX_DOMAINS - 1);
+            } else {
+                ka = &u->domainList[index];
+                ka->domain = domain;
+                /* Cache the address to prevent locking for (read-only) lookups in multi-domain context,
+                 * when the u_domain is already freed */
+                ka->kernel = (os_address)domain->kernel;
+                u_domainIdSetThreadSpecific(domain);
+            }
         } else {
             /* Isn't it possible that if I have added and removed a domain 128 times, that you
              * have a domainList that is empty, but with a count of max?
@@ -608,7 +704,7 @@ u_userServerId(
         kernel = v_objectKernel(o);
         for (i=1; i<MAX_DOMAINS; i++) {
             if (u->domainList[i].domain) {
-                if (u_domainAddress(u->domainList[i].domain) == (os_address)kernel) {
+                if (u->domainList[i].kernel == (os_address)kernel) {
                     id = i << 24;
                 }
             }
@@ -654,7 +750,8 @@ u_userGetProcessName(void)
     size = os_procFigureIdentity(name, _INITIAL_LENGTH_);
     if(size >= _INITIAL_LENGTH_){
         /* Output was truncated, only realloc once, since the identity is
-         * not changing. */
+         * not changing.
+         */
         name = os_realloc(name, (unsigned) size + 1);
         size = os_procFigureIdentity(name, (unsigned) size + 1);
     }

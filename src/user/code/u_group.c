@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,7 +64,8 @@ u_groupInit(
 
 /* -------------------------- "Normal" functions ---------------------------- */
 /* These functions can be called by any application having a u_group entity.
- * The functions themselves do the protecting */
+ * The functions themselves do the protecting
+ */
 
 u_group
 u_groupNew(
@@ -92,7 +94,7 @@ u_groupNew(
         topics = v_resolveTopics(kernel,topicName);
         if (c_iterLength(topics) == 0) {
             c_iterFree(topics);
-            os_sleep(timeout);
+            ospl_os_sleep(timeout);
             topics = v_resolveTopics(v_objectKernel(kparticipant),
                                      topicName);
         }

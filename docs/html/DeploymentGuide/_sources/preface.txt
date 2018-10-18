@@ -31,13 +31,13 @@ Organisation
 The :ref:`Overview <Overview>` gives a general description of the
 Vortex OpenSplice architecture.
 
-This is followed by :ref:`Service Descriptions <Service Descriptions>`, which 
-explain how Vortex OpenSplice provides integration of real-time DDS and the 
+This is followed by :ref:`Service Descriptions <Service Descriptions>`, which
+explain how Vortex OpenSplice provides integration of real-time DDS and the
 non-/near-real-time enterprise DBMS domains.
 
 The :ref:`Tools <Tools>` section introduces the OpenSplice system management tools.
 
-Full details of the configuration elements and attributes of all 
+Full details of the configuration elements and attributes of all
 Vortex OpenSplice services are given in the :ref:`Configuration <Configuration>`
 section.
 
@@ -45,24 +45,24 @@ section.
 Conventions
 ***********
 
-The icons shown below are used in PrismTech product documentation 
-to help readers to quickly identify information relevant to their 
+The icons shown below are used in ADLINK product documentation
+to help readers to quickly identify information relevant to their
 specific use of Vortex OpenSplice.
 
 
- ========= ================================================================== 
- *Icon*    *Meaning*  
- ========= ================================================================== 
- |caution| Item of special significance or where caution needs to be taken.  
- |info|    Item contains helpful hint or special information.                
- |windows| Information applies to Windows (*e.g.* XP, 2003, Windows 7) only. 
- |unix|    Information applies to Unix-based systems (*e.g.* Solaris) only.  
- |linux|   Information applies to Linux-based systems (*e.g.* Ubuntu) only.  
- |c|       C language specific.                                              
- |cpp|     C++ language specific.                                            
- |csharp|  C# language specific.                                             
- |java|    Java language specific.                                           
- ========= ================================================================== 
+ ========= ==================================================================
+ *Icon*    *Meaning*
+ ========= ==================================================================
+ |caution| Item of special significance or where caution needs to be taken.
+ |info|    Item contains helpful hint or special information.
+ |windows| Information applies to Windows (*e.g.* XP, 2003, Windows 7) only.
+ |unix|    Information applies to Unix-based systems (*e.g.* Solaris) only.
+ |linux|   Information applies to Linux-based systems (*e.g.* Ubuntu) only.
+ |c|       C language specific.
+ |cpp|     C++ language specific.
+ |csharp|  C# language specific.
+ |java|    Java language specific.
+ ========= ==================================================================
 
 
 
@@ -86,4 +86,4 @@ specific use of Vortex OpenSplice.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+

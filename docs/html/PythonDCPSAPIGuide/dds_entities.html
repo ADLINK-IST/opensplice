@@ -1,0 +1,482 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Python API for Vortex DDS &mdash; Python DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Python DCPS API Guide" href="index.html" />
+    <link rel="next" title="6. Quality of Service (QoS)" href="qos_provider.html" />
+    <link rel="prev" title="4. Examples" href="examples.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="python-api-for-vortex-dds">
+<span id="id1"></span><h1>5. Python API for Vortex DDS<a class="headerlink" href="#python-api-for-vortex-dds" title="Permalink to this headline">¶</a></h1>
+<p>The Python DCPS API provides users with Python classes to model DDS communication using Python and pure
+DDS applications.</p>
+<p>The Python DCPS API consists of 2 modules.</p>
+<ul class="simple">
+<li>dds module</li>
+<li>ddsutil module</li>
+</ul>
+<p>This section provides an overview of the main DDS concepts and Python API examples for these DDS concepts.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last">
+<li><p class="first">The Python DCPS API can be found in the following directory:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/tools/python/docs/html</em></p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="api-usage-patterns">
+<h2>5.1. API Usage Patterns<a class="headerlink" href="#api-usage-patterns" title="Permalink to this headline">¶</a></h2>
+<p>The typical usage pattern for the Python DCPS API for Vortex DDS is the following:</p>
+<ul class="simple">
+<li>optional - Model your DDS topics using IDL.  Alternatively, the python scripts can use topics that already exist in the DDS system.</li>
+<li>optional - Statically generate Python topic classes using <tt class="docutils literal"><span class="pre">idlpp</span> <span class="pre">-l</span> <span class="pre">python</span></tt>.  If using IDL, the user also has the option to dynamically generate Python topic classes in python scripts.  See <a class="reference internal" href="python_idl_mapping.html#python-generation-from-idl"><em>Python Generation from IDL</em></a>.</li>
+<li>Start writing your Python program using the Python API for Vortex DDS.</li>
+</ul>
+<p>The core classes you must use are <tt class="docutils literal"><span class="pre">dds.Topic</span></tt>, <tt class="docutils literal"><span class="pre">dds.DomainParticipant</span></tt> and either <tt class="docutils literal"><span class="pre">dds.DataReader</span></tt> or <tt class="docutils literal"><span class="pre">dds.DataWriter</span></tt>.
+Other classes may be required, especially if you need to adjust the Quality of Service (QoS) defaults.
+For details on setting QoS values with the API, see <a class="reference internal" href="qos_provider.html#qos-provider"><em>Quality of Service (QoS)</em></a>.</p>
+<p>The following list shows the sequence in which you would use the Vortex classes:</p>
+<ul class="simple">
+<li>Create a <tt class="docutils literal"><span class="pre">dds.DomainParticipant</span></tt> instance.</li>
+<li>Create one or more <tt class="docutils literal"><span class="pre">dds.Topic</span></tt> instances for the IDL topics your program will read or write.</li>
+<li>If you require publisher or subscriber level non-default QoS settings, create <tt class="docutils literal"><span class="pre">dds.Publisher</span></tt> and/or <tt class="docutils literal"><span class="pre">dds.Subscriber</span></tt> instances. (The most common reason for changing publisher/subscriber QoS is to define non-default partitions.)</li>
+<li>Create <tt class="docutils literal"><span class="pre">dds.DataReader</span></tt> and/or <tt class="docutils literal"><span class="pre">dds.DataWriter</span></tt> classes using the <tt class="docutils literal"><span class="pre">dds.Topic</span></tt> instances that you created.</li>
+<li>If you required data filtering, create <tt class="docutils literal"><span class="pre">dds.QueryCondition</span></tt> objects.</li>
+<li>Create the core of program, creating instances of your topic classes and writing them; or, reading data and processing it.</li>
+</ul>
+</div>
+<div class="section" id="dds-topic">
+<h2>5.2. dds.Topic<a class="headerlink" href="#dds-topic" title="Permalink to this headline">¶</a></h2>
+<p>The Python Topic class represents a DDS topic type.  The DDS topic corresponds to a single data type.  In DDS, data is distributed by publishing and subscribing topic data samples.</p>
+<p>For a DDS Topic type definition, a corresponding Python class must be defined.
+These topic classes are either a class created statically using <tt class="docutils literal"><span class="pre">idlpp</span></tt>, dynamically using an idl file or dynamically for an existing topic discovered in the system.  (see <a class="reference internal" href="topic.html#topic-generation-and-discovery"><em>Topic Generation and Discovery</em></a>)</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS topic named &#8216;Msg1&#8217; based on the DDS Topic type <tt class="docutils literal"><span class="pre">Msg</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">TOPIC_NAME</span> <span class="o">=</span> <span class="s">&#39;Msg1&#39;</span>
+<span class="n">TOPIC_TYPE</span> <span class="o">=</span> <span class="s">&#39;HelloWorldData::Msg&#39;</span>
+<span class="n">IDL_FILE</span> <span class="o">=</span> <span class="s">&#39;idl/HelloWorldData.idl&#39;</span>
+
+<span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="n">IDL_FILE</span><span class="p">,</span> <span class="n">TOPIC_TYPE</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span>
+    <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="n">TOPIC_NAME</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dds-domainparticipant">
+<h2>5.3. dds.DomainParticipant<a class="headerlink" href="#dds-domainparticipant" title="Permalink to this headline">¶</a></h2>
+<p>The Python``dds.DomainParticipant`` class represents a DDS domain participant entity.</p>
+<p>In DDS - “A domain participant represents the local membership of the application in a domain.  A domain is a distributed concept that links all the applications able to communicate with each other.  It represents a communication plane: only the publishers and subscribers attached to the same domain may interact.”</p>
+<p>The dds.DomainParticipant has two optional parameters on creation.  If these parameters are not provided, defaults are used.</p>
+<p>Parameters:</p>
+<ul class="simple">
+<li>qos (Qos) – Participant QoS. Default: None</li>
+<li>listener (Listener) – Participant listener Default: None</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain participant. Returns participant or throws a <tt class="docutils literal"><span class="pre">dds.DDSException</span></tt> if the participant cannot be created.</p>
+<p>Create a domain participant in the default DDS domain (the one specified by the OSLP_URI environment variable).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Create a participant on default domain with QoS profile.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+
+<span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_participant_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Create a participant on domain with QoS profile and listener.  TODO</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+
+<span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_participant_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dds-publisher">
+<h2>5.4. dds.Publisher<a class="headerlink" href="#dds-publisher" title="Permalink to this headline">¶</a></h2>
+<p>The Python <tt class="docutils literal"><span class="pre">dds.Publisher</span></tt> class represents a DDS publisher entity.</p>
+<p>In DDS, a publisher is “an object responsible for data distribution.  It may publish data of different data types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">dds.Publisher</span></tt> class is optional.
+In it&#8217;s place, you can use a <tt class="docutils literal"><span class="pre">dds.DomainParticipant</span></tt> instance.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">dds.Publisher</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of publisher creation and deletion.</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a DDS Publisher entity. Returns publisher or throws a <tt class="docutils literal"><span class="pre">dds.DDSException</span></tt> if the publisher cannot be created.</p>
+<p>Create a publisher with participant.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create publisher</span>
+<span class="n">pub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Create a publisher with participant and QoS profile.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+
+<span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_participant_qos</span><span class="p">())</span>
+
+<span class="c"># Create publisher</span>
+<span class="n">pub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_publisher_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dds-datawriter">
+<h2>5.5. dds.DataWriter<a class="headerlink" href="#dds-datawriter" title="Permalink to this headline">¶</a></h2>
+<p>The Python <tt class="docutils literal"><span class="pre">dds.Writer</span></tt> class represents a DDS data writer entity.</p>
+<p>In DDS - “The DataWriter is the object the application must use to communicate to a publisher the existence and value of data-objects of a given type.”</p>
+<p>A <tt class="docutils literal"><span class="pre">dds.DataWriter</span></tt> class is required in order to write data to a DDS domain.
+It is attached to a DDS publisher or a DDS domain participant.</p>
+<p>A <tt class="docutils literal"><span class="pre">dds.DataWriter</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">dds.Topic</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain writer. Returns writer or throws a <tt class="docutils literal"><span class="pre">dds.DDSException</span></tt> if the writer cannot be created.</p>
+<p>Create a writer within a domain participant, and with default QoS.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="s">&#39;idl/HelloWorldData.idl&#39;</span><span class="p">,</span> <span class="s">&#39;HelloWorldData::Msg&#39;</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&#39;Msg1&#39;</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a writer</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_datawriter</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a writer within a publisher, and with default QoS.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create publisher</span>
+<span class="n">pub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="s">&#39;idl/HelloWorldData.idl&#39;</span><span class="p">,</span> <span class="s">&#39;HelloWorldData::Msg&#39;</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&#39;Msg1&#39;</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a writer</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">pub</span><span class="o">.</span><span class="n">create_datawriter</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a writer with publisher or participant, topic and QoS profile.</p>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create publisher</span>
+<span class="n">pub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="s">&#39;idl/HelloWorldData.idl&#39;</span><span class="p">,</span> <span class="s">&#39;HelloWorldData::Msg&#39;</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&#39;Msg1&#39;</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a writer</span>
+<span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">pub</span><span class="o">.</span><span class="n">create_datawriter</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">pub</span><span class="o">.</span><span class="n">create_datawriter</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_writer_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Write a Msg topic class instance to a writer.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Topic data class</span>
+<span class="n">idMessage</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">message1</span> <span class="o">=</span> <span class="s">&#39;Hello World&#39;</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">topic_data_class</span><span class="p">(</span><span class="n">userID</span> <span class="o">=</span> <span class="n">idMessage</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">message1</span><span class="p">)</span>
+
+<span class="c"># Write data</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Dispose a DDS topic instance.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># dispose instance</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">dispose_instance</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Unregister a DDS topic instance.  TODO no equivalent in Python API</p>
+<blockquote>
+<div><p>% writer: a Vortex.Writer instance
+% ShapeType: a &#8216;topic class&#8217; created manually or via IDLPP
+data = ShapeType(); % create an object instance
+% set data key values...
+data.color = &#8216;RED&#8217;;</p>
+<p>ddsStatus = writer.unregister(data);</p>
+</div></blockquote>
+</div>
+<div class="section" id="dds-subscriber">
+<h2>5.6. dds.Subscriber<a class="headerlink" href="#dds-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>The Python <tt class="docutils literal"><span class="pre">dds.Subscriber</span></tt> class represents a DDS subscriber entity.</p>
+<p>In DDS, a subscriber is “an object responsible for receiving published data and making it available to the receiving application.  It may receive and dispatch data of different specified types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">dds.Subscriber</span></tt> class is optional.
+In it&#8217;s place, you can use a <tt class="docutils literal"><span class="pre">dds.DomainParticipant</span></tt> instance.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">dds.Subscriber</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of subscriber creation and deletion.</li>
+</ul>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain subscriber. Returns subscriber or throw a <tt class="docutils literal"><span class="pre">dds.DDSException</span></tt> if the subscriber cannot be created.</p>
+<p>Create a subscriber with participant.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create Subscriber</span>
+<span class="n">sub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_subscriber</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Create a subscriber with participant and QoS profile.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+
+<span class="c"># Create participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_participant_qos</span><span class="p">())</span>
+
+<span class="c"># Create Subscriber</span>
+<span class="n">sub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_subscriber</span><span class="p">(</span><span class="n">qos</span> <span class="o">=</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_subscriber_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dds-datareader">
+<h2>5.7. dds.DataReader<a class="headerlink" href="#dds-datareader" title="Permalink to this headline">¶</a></h2>
+<p>The Python <tt class="docutils literal"><span class="pre">Vortex.Reader</span></tt> class represents a DDS data reader entity.</p>
+<p>In DDS - “To access the received data, the application must use a typed DataReader attached to the subscriber.”</p>
+<p>A <tt class="docutils literal"><span class="pre">dds.DataReader</span></tt> class is required in order to write data to a DDS domain.
+It is attached to a DDS subscriber or a DDS domain participant.</p>
+<p>A <tt class="docutils literal"><span class="pre">dds.DataReader</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">dds.Topic</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a Vortex DDS domain reader. Returns reader or throw a <tt class="docutils literal"><span class="pre">dds.DDSException</span></tt> instance if the reader cannot be created.</p>
+<p>Create a reader for a topic within a participant, and with default QoS.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="s">&#39;idl/HelloWorldData.idl&#39;</span><span class="p">,</span> <span class="s">&#39;HelloWorldData::Msg&#39;</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&#39;Msg1&#39;</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a reader</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_datareader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a reader for a topic within a subscriber, and with default QoS.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create subscriber</span>
+<span class="n">sub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_subscriber</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="n">IDL_FILE</span><span class="p">,</span> <span class="n">TOPIC_TYPE</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="n">TOPIC_NAME</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a reader</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">create_datareader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a reader for a topic within a subscriber or participant, with with a QoS profile.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create domain participant</span>
+<span class="n">dp</span> <span class="o">=</span> <span class="n">DomainParticipant</span><span class="p">()</span>
+
+<span class="c"># Create subscriber</span>
+<span class="n">sub</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">create_subscriber</span><span class="p">()</span>
+
+<span class="c"># Generate python classes from IDL file</span>
+<span class="n">gen_info</span> <span class="o">=</span> <span class="n">ddsutil</span><span class="o">.</span><span class="n">get_dds_classes_from_idl</span><span class="p">(</span><span class="n">IDL_FILE</span><span class="p">,</span> <span class="n">TOPIC_TYPE</span><span class="p">)</span>
+
+<span class="c"># Type support class</span>
+<span class="n">qos</span> <span class="o">=</span> <span class="n">Qos</span><span class="p">([</span><span class="n">DurabilityQosPolicy</span><span class="p">(</span><span class="n">DDSDurabilityKind</span><span class="o">.</span><span class="n">TRANSIENT</span><span class="p">),</span> <span class="n">ReliabilityQosPolicy</span><span class="p">(</span><span class="n">DDSReliabilityKind</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">)])</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">gen_info</span><span class="o">.</span><span class="n">register_topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="n">TOPIC_NAME</span><span class="p">,</span> <span class="n">qos</span><span class="p">)</span>
+
+<span class="c"># Create a reader</span>
+<span class="n">qp</span> <span class="o">=</span> <span class="n">QosProvider</span><span class="p">(</span><span class="s">&#39;file://DDS_DefaultQoS_All.xml&#39;</span><span class="p">,</span> <span class="s">&#39;DDS DefaultQosProfile&#39;</span><span class="p">)</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">create_datareader</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">qp</span><span class="o">.</span><span class="n">get_reader_qos</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Take data from a data reader.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">l</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read data from a data reader.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">l</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Specify a wait timeout, in seconds, before read or take will return without receiving data TODO change description the code is wrong</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create waitset</span>
+<span class="n">waitset</span> <span class="o">=</span> <span class="n">WaitSet</span><span class="p">()</span>
+<span class="n">qc</span> <span class="o">=</span> <span class="n">QueryCondition</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">DDSMaskUtil</span><span class="o">.</span><span class="n">all_samples</span><span class="p">(),</span> <span class="s">&#39;long1 &gt; 1&#39;</span><span class="p">)</span>
+
+<span class="n">waitset</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">qc</span><span class="p">)</span>
+
+<span class="c"># Wait for data</span>
+<span class="n">conditions</span> <span class="o">=</span> <span class="n">waitset</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+<span class="c"># Print data</span>
+<span class="n">l</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dds-querycondition">
+<h2>5.8. dds.QueryCondition<a class="headerlink" href="#dds-querycondition" title="Permalink to this headline">¶</a></h2>
+<p>The Python <tt class="docutils literal"><span class="pre">dds.QueryCondition</span></tt> class represents a DDS query entity.</p>
+<p>A query is a data reader, restricted to accessing data that matches specific status conditions and/or a filter expression.</p>
+<p>A <tt class="docutils literal"><span class="pre">dds.Query</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">dds.DataReader</span></tt> instance.</p>
+<p><strong>API Examples</strong></p>
+<p>Create a <tt class="docutils literal"><span class="pre">dds.QueryCondition</span></tt> with a state mask and a filter expression for a reader and take data.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Create waitset</span>
+<span class="n">waitset</span> <span class="o">=</span> <span class="n">WaitSet</span><span class="p">()</span>
+<span class="n">qc</span> <span class="o">=</span> <span class="n">QueryCondition</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">DDSMaskUtil</span><span class="o">.</span><span class="n">all_samples</span><span class="p">(),</span> <span class="s">&#39;long1 &gt; 1&#39;</span><span class="p">)</span>
+
+<span class="n">waitset</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">qc</span><span class="p">)</span>
+
+<span class="c"># Wait for data</span>
+<span class="n">conditions</span> <span class="o">=</span> <span class="n">waitset</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+<span class="c"># Print data</span>
+<span class="n">l</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sd</span><span class="p">,</span> <span class="n">si</span> <span class="ow">in</span> <span class="n">l</span><span class="p">:</span>
+    <span class="n">sd</span><span class="o">.</span><span class="n">print_vars</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Python API for Vortex DDS</a><ul>
+<li><a class="reference internal" href="#api-usage-patterns">5.1. API Usage Patterns</a></li>
+<li><a class="reference internal" href="#dds-topic">5.2. dds.Topic</a></li>
+<li><a class="reference internal" href="#dds-domainparticipant">5.3. dds.DomainParticipant</a></li>
+<li><a class="reference internal" href="#dds-publisher">5.4. dds.Publisher</a></li>
+<li><a class="reference internal" href="#dds-datawriter">5.5. dds.DataWriter</a></li>
+<li><a class="reference internal" href="#dds-subscriber">5.6. dds.Subscriber</a></li>
+<li><a class="reference internal" href="#dds-datareader">5.7. dds.DataReader</a></li>
+<li><a class="reference internal" href="#dds-querycondition">5.8. dds.QueryCondition</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="previous chapter">4. Examples</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="next chapter">6. Quality of Service (QoS)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dds_entities.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             >previous</a> |</li>
+        <li><a href="index.html">Python DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

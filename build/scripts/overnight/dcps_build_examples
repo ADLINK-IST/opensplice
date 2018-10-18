@@ -451,7 +451,7 @@ unix_windows_examples()
     if check_platform
     then
         PATH="$JAVA_HOME/bin:$PATH"
-        PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
+        PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin:$M2_HOME/bin"
 
         LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
 
@@ -468,7 +468,7 @@ unix_windows_examples()
 
         ODBCINI="$ODBCHOME/etc/odbc.ini"
         ODBCINST="$ODBCHOME/etc/odbcinst.ini"
-        ODBC_MSSQL_SERVER="10.1.0.189"
+        ODBC_MSSQL_SERVER="10.1.5.197"
         ODBC_MYSQL_SERVER="10.1.0.191"
         ODBCSYSINI="$ODBCHOME/etc"
         ODBC_LIB_NAME="odbc"
@@ -482,11 +482,22 @@ unix_windows_examples()
             PATH=$OSPL_EXAMPLE_BUILD_PREFIX_PATH:$PATH
         fi
 
-	# Temporary debugging to try and see why corba builds fail - works OK building
-	# manually on ubunt1604 - REMOVE when done....
-	env | sort > env.log
-	
         echo " ####  Example Build Begin #### "
+        #build all java examples
+
+        if [ -f "pom.xml" ]
+        then
+            mvn package
+            if [ $? != 0 ]
+            then
+                 echo "Failed to build Java5 examples"
+            else
+                echo "Building Java5 examples"
+            fi
+        else
+           echo "No pom.xml not building Java5 examples"
+        fi
+
         for PROJECT in $PROJECTS
         do
             if [ -f "$PROJECT" ]
@@ -503,24 +514,6 @@ unix_windows_examples()
             fi
         done
 
-        #The protobuf example has it's own BUILD files and is not built using MPC
-        cd "$EXAMPLESDIR/protobuf/java5/standalone"
-        if [ $? != 0 ]
-        then
-            echo "INFO: Couldn't locate protobuf java5 example directory in installed HDE."
-        else
-            #Protocol buffers is not currently supported on all platforms so only build
-            #if a BUILD file exists
-            if [ -f "BUILD" ]
-            then
-                bash ./BUILD
-                if [ $? != 0 ]
-                then
-                    echo "Building java5 protobuf example failed"
-                    BUILD_ERROR=1
-                fi
-            fi
-        fi
         cd "$EXAMPLESDIR/protobuf/isocpp2/standalone"
         if [ $? != 0 ]
         then
@@ -580,11 +573,23 @@ unix_windows_examples()
 
         echo "set JAVA_HOME=$JAVA_HOME" >> setenv.bat
 
-        echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin;%PROTOBUF_HOME%\bin;C:\Python27" >> setenv.bat
+        XPATH=`cygpath -d "$M2_HOME"`
+        echo "set MAVEN_HOME=$XPATH" >> setenv.bat
+        echo "set M2_HOME=$XPATH" >> setenv.bat
+        XPATH=`cygpath -d "$MAVEN_UTILS"`
+        echo "set MAVEN_UTILS=$XPATH" >> setenv.bat
+
+        echo "set PATH=%MAVEN_HOME%\bin;%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin;%PROTOBUF_HOME%\bin;C:\Python27" >> setenv.bat
 
         echo "set CLASSPATH=%CLASSPATH%;%JACORB_HOME%\lib\endorsed\jacorb.jar;%JACORB_HOME%\lib\endorsed\logkit.jar;%JACORB_HOME%\lib\idl.jar" >> setenv.bat
 
         echo "set VS_ENV_SCRIPT=$VS_ENV_SCRIPT" >> setenv.bat
+
+        if [ -n "$BOOST_ROOT" ]
+        then
+            XPATH=`cygpath -w "$BOOST_ROOT"`
+            echo "set BOOST_ROOT=$XPATH" >> setenv.bat
+        fi
 
         XPATH=`cygpath -w "$BASE"`
 

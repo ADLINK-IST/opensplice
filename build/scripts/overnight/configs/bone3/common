@@ -1,5 +1,5 @@
-export JAVA_HOME=/usr/local/jdk1.7.0_60
-export JAVA_COMPATJAR=$JAVA_HOME/jre/lib/rt.jar
+export JAVA6_HOME=/usr/local/jdk1.7.0_60
+export JAVA_COMPATJAR=$JAVA6_HOME/jre/lib/rt.jar
 export JAVA_VERSION_OVERRIDE=1.7
 export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
 export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap_arm
@@ -7,3 +7,5 @@ export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 export OVERRIDE_STRICT_CHECKS=no
+export JAVA_HOME=/usr/local/jdk1.7.0
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

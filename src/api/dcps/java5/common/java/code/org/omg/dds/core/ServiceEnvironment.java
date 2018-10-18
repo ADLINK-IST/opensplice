@@ -490,7 +490,7 @@ public abstract class ServiceEnvironment implements DDSObject {
 
         public abstract DynamicDataFactory getDynamicDataFactory();
 
-     // --- Built-in Types -----------------------------------------------------
+        // --- Built-in Types -----------------------------------------------------
 
         public abstract KeyedString newKeyedString();
 

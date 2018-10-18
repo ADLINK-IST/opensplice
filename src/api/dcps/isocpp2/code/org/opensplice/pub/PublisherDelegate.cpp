@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@
 
 #include "u_types.h"
 #include "u_publisher.h"
-
+#include "u_publisherQos.h"
 
 namespace org
 {
@@ -104,7 +105,9 @@ PublisherDelegate::init(ObjectDelegate::weak_ref_type weak_ref)
     this->listener_dispatcher_set(this->dp_.delegate()->listener_dispatcher_get());
     /* This only starts listening when the status mask shows interest. */
     this->listener_enable();
-    /* Enable when needed. */
+    /* Enable when needed; in ISOCPP2 there is no factory for the DomainParticipant,
+     * so the DomainParticipant is always enabled. */
+    assert(this->dp_.delegate()->is_enabled());
     if (this->dp_.delegate()->is_auto_enable()) {
         this->enable();
     }

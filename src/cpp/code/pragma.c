@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -22,11 +23,11 @@
 
 extern void do_pragma (void)
 {
-   char c;
+   int c;
 
    if (in_false_if())
    {
-      while ((c = Get()) != '\n')
+      for (c = Get(); (c != '\n') && (c != -1); c = Get())
          ;
    }
    else
@@ -39,9 +40,9 @@ extern void do_pragma (void)
       outputc('m');
       outputc('a');
       outputc(' ');
-      while ((c = Get()) != '\n')
+      for (c = Get(); (c != '\n') && (c != -1); c = Get())
       {
-         outputc(c);
+         outputc((char)c);
       }
    }
 }

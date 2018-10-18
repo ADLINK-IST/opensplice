@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 
 #include "v__observable.h"
 #include "v__participant.h"
+#include "v__subscriber.h"
 #include "v__dataReader.h"
 #include "v__groupStream.h"
 #include "v__waitset.h"
@@ -41,20 +43,22 @@
 #include "os_report.h"
 #include "os_process.h"
 
+/* The following three operations are depricated. */
+void v_observerLock(v_observer o) { OSPL_LOCK(o); }
+void v_observerUnlock(v_observer o) { OSPL_UNLOCK(o); }
+
 void
 v_observerInit(
-    v_observer o)
+    _Inout_ v_observer o)
 {
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexInit(c_getBase(o), &o->mutex);  /* mutex to protect attributes */
-    c_condInit(c_getBase(o), &o->cv, &o->mutex); /* condition variable */
+    v_observableInit(v_observable(o));
+    c_condInit(c_getBase(o), &o->cv, &v_observable(o)->eventLock); /* condition variable */
     o->waitCount = 0;                     /* number of waiting threads */
     o->eventMask = 0;                     /* specifies, interested events */
     o->eventFlags = 0;                    /* ocurred events */
-    o->eventData = NULL;                  /* general post box for derived classes */
-    v_observableInit(v_observable(o));
 }
 
 void
@@ -63,10 +67,12 @@ v_observerFree(
 {
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexLock(&o->mutex);
+    OSPL_LOCK(o);
+    OSPL_BLOCK_EVENTS(o);
     o->eventFlags |= V_EVENT_OBJECT_DESTROYED;
     c_condBroadcast(&o->cv);
-    c_mutexUnlock(&o->mutex);
+    OSPL_UNBLOCK_EVENTS(o);
+    OSPL_UNLOCK(o);
 
     v_observableFree(v_observable(o));
 }
@@ -90,13 +96,25 @@ v_observerGetEventFlags(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
+    OSPL_BLOCK_EVENTS(o);
     flags = o->eventFlags;
     o->eventFlags &= V_EVENT_OBJECT_DESTROYED;
-
-    EVENT_TRACE("v_observerGetEventFlags(_this = 0x%x, flags = 0x%x)\n",
-                o, flags);
-
+    OSPL_UNBLOCK_EVENTS(o);
+    EVENT_TRACE("v_observerGetEventFlags(_this = 0x%x, flags = 0x%x)\n", o, flags);
     return flags;
+}
+
+void
+v_observerClearEventFlags(
+    v_observer o)
+{
+    assert(o != NULL);
+    assert(C_TYPECHECK(o,v_observer));
+
+    OSPL_BLOCK_EVENTS(o);
+    o->eventFlags &= V_EVENT_OBJECT_DESTROYED;
+    OSPL_UNBLOCK_EVENTS(o);
+    EVENT_TRACE("v_observerClearEventFlags(_this = 0x%x)\n", o);
 }
 
 /**
@@ -119,7 +137,7 @@ v_observerNotify(
      * calling <subclass>Notify(_this, event, userData).
      * This implies that _this cannot be locked within any Notify method
      * to avoid deadlocks.
-     * For consistency _this must be locked by v_observerLock(_this) before
+     * For consistency _this must be locked by OSPL_LOCK(_this) before
      * calling this method.
      */
 
@@ -129,6 +147,7 @@ v_observerNotify(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_observer));
 
+    OSPL_BLOCK_EVENTS(_this);
     /* The observer will be made insensitive to event as soon as the
      * observer is deinitialized. However it may be that destruction
      * of the observer has started before the deinit of the observer
@@ -138,7 +157,6 @@ v_observerNotify(
     if ((_this->eventFlags & V_EVENT_OBJECT_DESTROYED) == 0) {
         /* The observer is valid so the event can be processed.
           */
-
         if (event != NULL ) {
             trigger = event->kind & _this->eventMask;
         } else {
@@ -148,11 +166,6 @@ v_observerNotify(
 
         EVENT_TRACE("v_observerNotify: %s(0x%x), event(0x%x), mask(0x%x), trigger(0x%x) userData(0x%x)\n",
                     v_objectKindImage(_this), _this, event, _this->eventMask, trigger, userData);
-
-        if ((_this->eventFlags & trigger) && (trigger != V_EVENT_TRIGGER)) {
-            notify = FALSE;
-        }
-        _this->eventFlags |= trigger; /* store event before trigger is given to waiting threads or subclasses are notified*/
 
         /* The following code invokes the observers subclass specific
          * notification method.
@@ -164,62 +177,60 @@ v_observerNotify(
          * method will typically be called from another process.
          */
         if (trigger != 0) {
-            switch (v_objectKind(_this)) {
-            case K_DATAREADER:
-                v_dataReaderNotify(v_dataReader(_this), event, userData);
-            break;
-            case K_STATUSCONDITION:
-                v_observableNotify(v_observable(_this), event);
-            break;
-            case K_WAITSET:
-                v_waitsetNotify(v_waitset(_this), event, userData);
-            break;
-            case K_PARTICIPANT:
-                v_participantNotify(v_participant(_this), event, userData);
-            break;
-            case K_TOPIC:
-                v_topicNotify(v_topic(_this), event, userData);
-            break;
-            case K_TOPIC_ADAPTER:
-                v_topicAdapterNotify(v_topicAdapter(_this), event, userData);
-            break;
-            case K_QUERY:
-                /* v_queryNotify(v_query(_this), event, userData); */
-            break;
-            case K_SPLICED: /* intentionally no break */
-            case K_SERVICE:
-            case K_NETWORKING:
-            case K_DURABILITY:
-            case K_NWBRIDGE:
-            case K_CMSOAP:
-            case K_RNR:
-                v_serviceNotify(v_service(_this), event, userData);
-            break;
-            case K_SERVICEMANAGER:
-                v_serviceManagerNotify(v_serviceManager(_this), event, userData);
-            break;
-            case K_WRITER: /* no action for the following observers */
-            case K_PUBLISHER:
-            case K_SUBSCRIBER:
-            case K_GROUPQUEUE:
-            case K_LISTENER:
-            break;
-            default:
-                OS_REPORT(OS_ERROR,"Kernel Observer",V_RESULT_INTERNAL_ERROR,
-                            "Notify called on an unknown observer type: %d",
-                            v_objectKind(_this));
-                assert(FALSE);
-            break;
+            if (event != NULL) {
+                switch (v_objectKind(_this)) {
+                case K_WAITSET:
+                    v_waitsetNotify(v_waitset(_this), event, userData);
+                break;
+                case K_PARTICIPANT:
+                    v_participantNotify(v_participant(_this), event, userData);
+                break;
+                case K_TOPIC_ADAPTER:
+                    v_topicAdapterNotify(v_topicAdapter(_this), event, userData);
+                break;
+                case K_SUBSCRIBER:
+                    v_subscriberNotify(v_subscriber(_this), event, userData);
+                break;
+                case K_SPLICED: /* all services, intentionally no break */
+                case K_SERVICE:
+                case K_NETWORKING:
+                case K_DURABILITY:
+                case K_NWBRIDGE:
+                case K_CMSOAP:
+                case K_RNR:
+                case K_DBMSCONNECT:
+                    v_serviceNotify(v_service(_this), event, userData);
+                break;
+                case K_WRITER: /* no event passing for the following observers */
+                case K_DATAREADER:
+                case K_QUERY:
+                case K_PUBLISHER:
+                case K_TOPIC:
+                case K_GROUPQUEUE:
+                case K_STATUSCONDITION:
+                case K_LISTENER:
+                case K_SERVICEMANAGER:
+                break;
+                default:
+                    OS_REPORT(OS_ERROR,"Kernel Observer",V_RESULT_INTERNAL_ERROR,
+                                "Notify called on an unknown observer type: %d",
+                                v_objectKind(_this));
+                    assert(FALSE);
+                break;
+                }
             }
-            /*
-            * Only trigger condition variable if at least
-            * one thread is waiting AND the event is seen for the first time.
-            */
-            if ((_this->waitCount > 0) && notify)
-            {
-                EVENT_TRACE("v_observerNotify(%s(0x%x), event(0x%x)) => signal blocking threads\n",
-                    v_objectKindImage(_this), _this, event);
+            /* Only trigger condition variable if at least
+             * one thread is waiting AND the event is seen for the first time.
+             */
+            if ((_this->eventFlags & trigger) && (trigger != V_EVENT_TRIGGER)) {
+                notify = FALSE;
+            }
+            /* store event before trigger is given to waiting threads or subclasses are notified*/
+            _this->eventFlags |= trigger;
 
+            if ((_this->waitCount > 0) && notify) {
+                EVENT_TRACE("v_observerNotify(%s(0x%x), event(0x%x)) => signal blocking threads\n",
+                            v_objectKindImage(_this), _this, event);
                 c_condBroadcast(&_this->cv);
             }
         }
@@ -227,94 +238,58 @@ v_observerNotify(
         EVENT_TRACE("v_observerNotify: Event(0x%x) is ignored for %s(0x%x) because it is currently being destroyed\n",
                      event, v_objectKindImage(_this), _this);
     }
+    OSPL_UNBLOCK_EVENTS(_this);
 }
 
 c_ulong
-v__observerWait(
-    v_observer o)
-{
-    v_result result;
-    c_ulong flags = 0;
-
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
-
-    if (o->eventFlags == 0) {
-        o->waitCount++;
-        EVENT_TRACE("v__observerWait: Block on %s(0x%x), eventFlags(0x%x)\n",
-                     v_objectKindImage(o), o, o->eventFlags);
-        result = v_condWait(&o->cv,&o->mutex, OS_DURATION_INFINITE);
-        if (result != V_RESULT_OK) {
-            OS_REPORT(OS_CRITICAL,"v__observerWait",result,
-                        "v_condWait failed with result = %d",
-                        result);
-        }
-        flags = o->eventFlags;
-        EVENT_TRACE("v__observerWait: WakeUp %s(0x%x), eventFlags(0x%x)\n",
-                     v_objectKindImage(o), o, o->eventFlags);
-        o->waitCount--;
-    } else {
-        flags = o->eventFlags;
-        EVENT_TRACE("v__observerWait: Wait fallthrough for %s(0x%x), "
-                    "because of pending eventFlags(0x%x)\n",
-                     v_objectKindImage(o), o, o->eventFlags);
-    }
-
-    /* Reset events but remember destruction event.
-     * To avoid any further use of this observer in case of destruction.
-     */
-    if (o->waitCount == 0)
-    {
-        o->eventFlags &= V_EVENT_OBJECT_DESTROYED;
-    }
-    return flags;
-}
-
-c_ulong
-v_observerWait(
-    v_observer o)
-{
-    c_ulong flags;
-
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
-
-    c_mutexLock(&o->mutex);
-    flags = v__observerWait(o);
-    c_mutexUnlock(&o->mutex);
-
-    return flags;
-}
-
-c_ulong
-v__observerTimedWait(
+v_observerTimedWaitAction(
     v_observer o,
-    const os_duration time)
+    const os_duration time,
+    const c_action action,
+    c_voidp arg)
 {
-    v_result result = V_RESULT_OK;
     c_ulong flags = 0;
+    v_result result = V_RESULT_OK;
+    c_bool relock = FALSE;
 
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
+    OSPL_BLOCK_EVENTS(o);
     if (o->eventFlags == 0) {
-        o->waitCount++;
-        EVENT_TRACE("v__observerTimedWait Block %s(0x%x) eventFlags(0x%x)\n",
-                     v_objectKindImage(o), o, o->eventFlags);
-        result = v_condWait(&o->cv,&o->mutex, time);
-        o->waitCount--;
-        if (result == V_RESULT_TIMEOUT) {
-            o->eventFlags |= V_EVENT_TIMEOUT;
-        }
-        flags = o->eventFlags;
-        EVENT_TRACE("v__observerTimedWait: WakeUp %s(0x%x) eventFlags(0x%x)\n",
-                     v_objectKindImage(o), o, o->eventFlags);
+        if (time <= OS_DURATION_ZERO) {
+            EVENT_TRACE("v__observerTimedWait: Zero-Timeout %s(0x%x), eventFlags(0x%x)\n",
+                         v_objectKindImage(o), o, o->eventFlags);
 
+            result = V_RESULT_TIMEOUT;
+        } else {
+            /* Unlock the OSPL_LOCK, not allowed to sleep while holding this lock.
+             * This lock needs to be re-acquired again after the EVENT_LOCK is released.
+             */
+            relock = TRUE;
+            OSPL_UNLOCK(o);
+            o->waitCount++;
+            EVENT_TRACE("v__observerTimedWait Block %s(0x%x) eventFlags(0x%x)\n",
+                         v_objectKindImage(o), o, o->eventFlags);
+
+            result = v_condWait(&o->cv,&v_observable(o)->eventLock, time);
+            o->waitCount--;
+            EVENT_TRACE("v__observerTimedWait: WakeUp %s(0x%x) eventFlags(0x%x)\n",
+                         v_objectKindImage(o), o, o->eventFlags);
+        }
     } else {
         EVENT_TRACE("v__observerTimedWait: Fallthrough %s(0x%x), eventFlags(0x%x)\n",
                      v_objectKindImage(o), o, o->eventFlags);
     }
 
+    if (o->eventFlags != 0) {
+        flags = o->eventFlags;
+        if (action) {
+            (void)action(o, arg);
+        }
+    } else if (result == V_RESULT_TIMEOUT) {
+        flags = V_EVENT_TIMEOUT;
+    }
 
     /* Reset events but remember destruction event.
      * To avoid any further use of this observer in case of destruction.
@@ -322,40 +297,37 @@ v__observerTimedWait(
     if (o->waitCount == 0) {
         o->eventFlags &= V_EVENT_OBJECT_DESTROYED;
     }
+
+    OSPL_UNBLOCK_EVENTS(o);
+    if (relock) {
+        // Coverity false positve : LOCK is only done when relock is set to TRUE
+        // because this function is entered with the lock, we have to relock in case
+        // we released the lock in this function
+        /* coverity[missing_unlock : FALSE] */
+       OSPL_LOCK(o);
+    }
+
     return flags;
 }
+
 
 c_ulong
 v_observerTimedWait(
     v_observer o,
     const os_duration time)
 {
-    c_ulong flags;
-
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
-
-    c_mutexLock(&o->mutex);
-    flags = v__observerTimedWait(o, time);
-    c_mutexUnlock(&o->mutex);
-
-    return flags;
+    return v_observerTimedWaitAction(o, time, NULL, NULL);
 }
 
 c_ulong
-v__observerSetEvent(
-    v_observer o,
-    c_ulong event)
+v_observerWait(
+    v_observer o)
 {
-    c_ulong eventMask;
-
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
-
-    eventMask = o->eventMask;
-    o->eventMask |= event;
-
-    return eventMask;
+    c_ulong result;
+    OSPL_LOCK(o);
+    result = v_observerTimedWaitAction(o, OS_DURATION_INFINITE, NULL, NULL);
+    OSPL_UNLOCK(o);
+    return result;
 }
 
 c_ulong
@@ -368,9 +340,10 @@ v_observerSetEvent(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexLock(&o->mutex);
-    eventMask = v__observerSetEvent(o, event);
-    c_mutexUnlock(&o->mutex);
+    OSPL_BLOCK_EVENTS(o);
+    eventMask = o->eventMask;
+    o->eventMask |= event;
+    OSPL_UNBLOCK_EVENTS(o);
 
     return eventMask;
 }
@@ -385,10 +358,10 @@ v_observerClearEvent(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexLock(&o->mutex);
+    OSPL_BLOCK_EVENTS(o);
     eventMask = o->eventMask;
     o->eventMask &= ~event;
-    c_mutexUnlock(&o->mutex);
+    OSPL_UNBLOCK_EVENTS(o);
 
     return eventMask;
 }
@@ -403,10 +376,10 @@ v_observerSetEventMask(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexLock(&o->mutex);
+    OSPL_BLOCK_EVENTS(o);
     eventMask = o->eventMask;
     o->eventMask = mask;
-    c_mutexUnlock(&o->mutex);
+    OSPL_UNBLOCK_EVENTS(o);
 
     return eventMask;
 }
@@ -420,25 +393,9 @@ v_observerGetEventMask(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    c_mutexLock(&o->mutex);
+    OSPL_BLOCK_EVENTS(o);
     eventMask = o->eventMask;
-    c_mutexUnlock(&o->mutex);
+    OSPL_UNBLOCK_EVENTS(o);
 
     return eventMask;
-}
-
-c_voidp
-v_observerSetEventData(
-    v_observer o,
-    c_voidp eventData)
-{
-    c_voidp oldEventData;
-
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
-
-    oldEventData = o->eventData;
-    o->eventData = eventData;
-
-    return oldEventData;
 }

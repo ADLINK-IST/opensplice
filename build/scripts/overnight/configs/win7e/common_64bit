@@ -1,4 +1,7 @@
 . ./configs/`hostname`/common
-export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_37"
+export JAVA6_HOME="c:/Program Files/Java/jdk1.6.0_37"
+export JAVA_HOME="c:/Program Files/Java/jdk1.7.0_79"
 export ZLIB_HOME=
 export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_64bit
+export NODEJS_HOME=/home/dds/INSTALLED_FOR_DDS/nodejs/node-v8.11.1-win-x64
+

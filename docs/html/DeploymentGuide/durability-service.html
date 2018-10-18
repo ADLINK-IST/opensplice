@@ -643,21 +643,46 @@ for every name-space, which is the next phase in its lifecycle.</p>
 </div>
 <div class="section" id="master-selection">
 <span id="id23"></span><h3>5.4.3. Master selection<a class="headerlink" href="#master-selection" title="Permalink to this headline">¶</a></h3>
-<p>To ensure a single source for re-publishing of persistent data and to allow parallel
-alignment, each durability service will select a master for every name-space.</p>
-<p>The rules for determining a master are:</p>
+<p>For each Namespace and Role combination there shall be at most one Master Durability
+Service. The Master Durability Service coordinates single source re-publishing of
+persistent data and to allow parallel alignment after system start-up,
+and to coordinate recovery of a split brain syndrome after connecting nodes having
+selected a different Master indicating that more than one state of the data may exist.</p>
+<p>Therefore after system start-up as well as after any topology change (i.e. late joining
+nodes or leaving master node) a master selection process will take place for each
+affected Namespace/Role combination.</p>
+<p>To control the master selection process a masterPriority attribute can be used.</p>
+<p>Each Durability Service will have a configured masterPriority attribute per namespace
+which is an integer value between 0 and 255 and which specifies the eagerness of the
+Durability Service to become Master for that namespace.
+The values 0 and 255 have a special meaning.
+Value 0 is used to indicate that the Durability Service will never become Master.
+The value 255 is used to indicate that the Durability Service will not use priorities
+but instead uses the legacy selection algorithm.
+If not configured the default is 255.</p>
+<p>During the master selection process each Durability service will exchange for each
+namespace the masterPriority and quality. The namespace quality is the timestamp of the
+latest update of the persistent data set stored on disk and only plays a role in master
+selection initially when no master has been chosen before and persistent data has not
+been injected yet.</p>
+<p>Each Durability Service will determine the Master based upon the highest non zero
+masterPriority and in case of multiple masters further select based on namespace
+quality (but only if persistent data has not been injected before) and again in case of
+multiple masters select the highest system id. The local system id is an arbitrary
+value which unique identifies a durability service.
+After selection each Durability Service will communicate their determined master and on
+agreement effectuate the selection, on disagreement which may occur if some Durability
+Services had a temporary different view of the system this process of master selection
+will restart until all Durability Services have the same view of the system and have
+made the same selection.
+If no durability services exists having a masterPriority greater than zero then no
+master will be selected.</p>
+<p>Summarizing, the precedence rules for master selection are (from high to low):</p>
 <ol class="arabic simple">
-<li>If some other durability service in the domain already selected
-a master, pick the same one.</li>
-<li>If no master has been selected, pick the one with the newest
-initial set of persistent data.</li>
-<li>If multiple durability services exist with the newest set of
-initial persistent data, pick the one with the highest id
-(this id is a domain-wide unique number that is
-generated at start-up of each OpenSplice federation).</li>
+<li>The namespace masterPriority</li>
+<li>The namespace quality, if no data has been injected before.</li>
+<li>The Durability Service system id, which is unique for each durability service.</li>
 </ol>
-<p>If an existing master is no longer available, due to a disconnection, crash or
-regular termination, a new master is selected based on the same rules.</p>
 <p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
 a detailed description of:</p>
 <ul class="simple">
@@ -789,6 +814,234 @@ from this situation. The process of merging historical data will be performed ev
 time two separately running systems get (re-)connected.</p>
 </div>
 </div>
+<div class="section" id="threads-description">
+<span id="id29"></span><h2>5.5. Threads description<a class="headerlink" href="#threads-description" title="Permalink to this headline">¶</a></h2>
+<p>This section contains a short description of each durability thread. When applicable,
+relevant configuration parameters are mentioned.</p>
+<div class="section" id="ospl-durability">
+<h3>5.5.1. ospl_durability<a class="headerlink" href="#ospl-durability" title="Permalink to this headline">¶</a></h3>
+<p>This is the main durability service thread. It starts most of the other threads, e.g.
+the listener threads that are used to receive the durability protocol messages,
+and it initiates initial alignment when necessary. This thread is responsible for
+periodically updating the service-lease so that the splice-daemon is aware the service
+is still alive. It also periodically (every 10 seconds) checks the state of all other
+service threads to detect if deadlock has occurred. If deadlock has occurred the service
+will indicate which thread didn&#8217;t make progress and action can be taken (e.g. the service
+refrains from updating its service-lease, causing the splice daemon to execute a failure
+action). Most of the time this thread is asleep.</p>
+</div>
+<div class="section" id="conflictresolver">
+<h3>5.5.2. conflictResolver<a class="headerlink" href="#conflictresolver" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for resolving conflicts. If a conflict has been detected and
+stored in the conflictQueue, the conflictResolver thread takes the conflict, checks
+whether the conflict still exists, and if so, starts the procedure to resolve the conflict
+(i.e., start to determine a new master, send out sample requests, etc).</p>
+</div>
+<div class="section" id="statusthread">
+<h3>5.5.3. statusThread<a class="headerlink" href="#statusthread" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for the sending status messages to other durability services.
+These messages are periodically sent between durability services to inform each other
+about their state (.e.,g INITIALIZING or TERMINATING).</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Watchdog/Scheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="d-adminactionqueue">
+<h3>5.5.4. d_adminActionQueue<a class="headerlink" href="#d-adminactionqueue" title="Permalink to this headline">¶</a></h3>
+<p>The durability service maintains a queue to schedule timed action. The d_adminActionQueue
+periodically checks (every 100 ms) if an action is scheduled.
+Example actions are: electing a new master, detection of new local groups and deleting
+historical data.</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Network/Heartbeat/Scheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="admineventdispatcher">
+<h3>5.5.5. AdminEventDispatcher<a class="headerlink" href="#admineventdispatcher" title="Permalink to this headline">¶</a></h3>
+<p>Communication between the splice-daemon and durability service is managed by events. The
+AdminEventDispatcher thread listens and acts upon these events. For example, the creation
+of a new topic is noticed by the splice-daemon, which generates an event for the
+durability service, which schedules an action on to request historical data for the topic.</p>
+</div>
+<div class="section" id="groupcreationthread">
+<h3>5.5.6. groupCreationThread<a class="headerlink" href="#groupcreationthread" title="Permalink to this headline">¶</a></h3>
+<p>The groupCreationThread is responsible for the creation of groups that exist in other
+federations. When a durability service receives a newGroup message from another
+federation, it must create the group locally in order to acquire data for it.
+Creation of a group may fail in case a topic is not yet known. The thread will retry with
+a 10ms interval.</p>
+</div>
+<div class="section" id="samplerequesthandler">
+<h3>5.5.7. sampleRequestHandler<a class="headerlink" href="#samplerequesthandler" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for the handling of sampleRequests. When a durability
+service receives a d_sampleRequest message (see the sampleRequestListener thread) it
+will not immediately answer the request, but wait some time until the time to combine
+requests has been expired (see
+//OpenSplice/DurabilityService/Network/Alignment/RequestCombinePeriod). When this time
+has expired the sampleRequestHandler will answer the request by collecting the requested
+data and sending the data as d_sampleChain messages to the requestor.</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Network/Alignment/AlignerScheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="resendqueue">
+<h3>5.5.8. resendQueue<a class="headerlink" href="#resendqueue" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for injection of message in the group after it has been rejected
+before. When a durability service has received historical data from another fellow,
+historical data is injected in the group (see d_sampleChain). Injection of historical data
+can be rejected, e.g., when a resource limits are being used. When this happens, a new attempt
+to inject the data is scheduled overusing the resendQueue thread. This thread will try to
+deliver the data 1s later.</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Network/Alignment/AligneeScheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="mastermonitor">
+<h3>5.5.9. masterMonitor<a class="headerlink" href="#mastermonitor" title="Permalink to this headline">¶</a></h3>
+<p>The masterMonitor is the thread that handles the selection of a new master. This thread is
+invoked when the conflict resolver detects that a master conflict has occurred. The
+masterMonitor is responsible for collecting master proposals from other fellows and sending
+out proposals to other fellows.</p>
+</div>
+<div class="section" id="grouplocallisteneractionqueue">
+<h3>5.5.10. groupLocalListenerActionQueue<a class="headerlink" href="#grouplocallisteneractionqueue" title="Permalink to this headline">¶</a></h3>
+<p>This thread is used to handle historical data requests from specific readers, and to handle
+delayed alignment (see //OpenSplice/DurabilityService/NameSpaces/Policy[&#64;delayedAlignment])</p>
+</div>
+<div class="section" id="d-groupsrequest">
+<h3>5.5.11. d_groupsRequest<a class="headerlink" href="#d-groupsrequest" title="Permalink to this headline">¶</a></h3>
+<p>The d_groupsRequest thread is responsible for processing incoming d_groupsRequest messages
+from other fellows. When a durability service receives a message from a fellow, the durability
+service will send information about its groups to the requestor by means of d_newGroup messages.
+This thread collects group information, packs it in d_newGroup messages and send them to the
+requestor. This thread will only do something when a d_groupsRequest has been received from a
+fellow. Most of the time it will sleep.</p>
+</div>
+<div class="section" id="d-namespaces">
+<h3>5.5.12. d_nameSpaces<a class="headerlink" href="#d-namespaces" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for processing incoming d_nameSpaces messages from other fellows.
+Durability services send each other their namespaces state so that they can detect potential
+conflicts. The d_nameSpaces thread processes and administrates every incoming d_nameSpace. When
+a conflict is detected, the conflict is scheduled which may cause the conflictResolver thread
+to kick in.</p>
+</div>
+<div class="section" id="d-namespacesrequest">
+<h3>5.5.13. d_nameSpacesRequest<a class="headerlink" href="#d-namespacesrequest" title="Permalink to this headline">¶</a></h3>
+<p>The d_nameSpacesRequest thread is responsible for processing incoming d_nameSpacesRequest
+messages from other fellows. A durability service can request the namespaces form a fellow by
+sending a d_nameSpacesRequest message to the fellow. Whenever a durability service receives a
+d_nameSpacesRequest messages it will respond by sending its set of namespaces to the fellow.
+The thread handles incoming d_nameSpacesRequest messages. As a side effect new fellows can be
+discovered if a nameSpacesRequest is received from an unknown fellow.</p>
+</div>
+<div class="section" id="d-status">
+<h3>5.5.14. d_status<a class="headerlink" href="#d-status" title="Permalink to this headline">¶</a></h3>
+<p>The d_status thread is responsible for processing incoming d_status messages from other fellows.
+Durability services periodically send each other status information (see the statusThread).
+NOTE: in earlier versions missing d_status messages could lead to the conclusion that a fellows
+has been removed. In recent versions this mechanism has been replaced so that the durability
+service slaves itself to the liveness of remote federations based on heartbeats
+(see thread dcpsHeartbeatListener). Effectivily, the d_status message is not used anymore to
+verify liveliness of remote federations, it is only used to transfer the durability state of
+a remote federation.</p>
+</div>
+<div class="section" id="d-newgroup">
+<h3>5.5.15. d_newGroup<a class="headerlink" href="#d-newgroup" title="Permalink to this headline">¶</a></h3>
+<p>The d_newGroup thread is responsible for handling incoming d_newGroup messages from other fellows.
+Durability services inform each other about groups in the namespaces. They do that by sending
+d_newGroup messages to each other (see also thread d_groupsRequest). The d_newGroup thread is
+responsible for handling incoming groups.</p>
+</div>
+<div class="section" id="d-samplechain">
+<h3>5.5.16. d_sampleChain<a class="headerlink" href="#d-samplechain" title="Permalink to this headline">¶</a></h3>
+<p>The d_sampleChain thread handles incoming d_sampleChain messages from other fellows. When a
+durability service answers an d_sampleRequest, it must collect the requested data and send it
+to the requestor. The collected data is packed in d_sampleChain messages. The d_sampleChain thread
+handles incoming d_sampleChain messages and applies the configured merge policy for the data.
+For example, in case of a MERGE it injects all the received data in the local group and delivers
+the data to the available readers.</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Network/Alignment/AligneeScheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="d-samplerequest">
+<h3>5.5.17. d_sampleRequest<a class="headerlink" href="#d-samplerequest" title="Permalink to this headline">¶</a></h3>
+<p>The d_sampleRequest thread is responsible for handling incoming d_sampleRequest messages from
+other fellows. A durability service can request historical data from a fellow by sending a
+d_sampleRequest message. The d_sampleRequest thread is used to process d_sampleRequest messages.
+Because d_sampleRequest messages are not handled immediately, they are stored in a list and handled
+later on (see thread sampleRequestHandler).</p>
+</div>
+<div class="section" id="d-deletedata">
+<h3>5.5.18. d_deleteData<a class="headerlink" href="#d-deletedata" title="Permalink to this headline">¶</a></h3>
+<p>The d_deleteData thread is responsible for handling incoming d_deleteData messages from other fellows.
+An application can call delete_historical_data(). This causes all historical data up till now to be
+deleted. To propagate deletion of historical data to all available durability services in the system,
+durability services send each other a d_deleteData message. The d_deleteData thread handles incoming
+d_deleteData messages and takes care that the relevant data is deleted. This thread will only be active
+after delete_historical_data() is called.</p>
+</div>
+<div class="section" id="dcpsheartbeatlistener">
+<h3>5.5.19. dcpsHeartbeatListener<a class="headerlink" href="#dcpsheartbeatlistener" title="Permalink to this headline">¶</a></h3>
+<p>The dcpsHeartbeatListener is responsible for the liveliness detection of remote federations. This
+thread listens to DCPSHeartbeat messages that are sent by federation. It is used to detect new
+federations or federations that disconnect. This thread will only do something when there is a change
+in federation topology. Most of the time it will be asleep.</p>
+</div>
+<div class="section" id="d-capability">
+<h3>5.5.20. d_capability<a class="headerlink" href="#d-capability" title="Permalink to this headline">¶</a></h3>
+<p>The thread is responsible for processing d_cability messages from other fellows. As soon as a durability
+service detects a fellow it will send its list of capabilities to the fellow. The fellow can use this
+list to find what functionality is supported by the durability service. Similarly, the durability
+service can receive capabilities from the fellow. This thread is used to process the capabilities sent by
+a fellow. This thread will only do something when a fellow is detected.                                                                                                                                                                                                                                                                                                                                                         |                                                                    |</p>
+</div>
+<div class="section" id="remotereader">
+<h3>5.5.21. remoteReader<a class="headerlink" href="#remotereader" title="Permalink to this headline">¶</a></h3>
+<p>The remoteReader thread is responsible for the detection of remote readers on other federations. The DDSI
+service performs discovery and reader-writing matching. This is an asynchronous mechanism. When a
+durability service (say A) receives a request from a fellow durability service (say B) and DDSI is used
+as networking service, then A cannot be sure that DDSI has already detected the reader on B that should
+receive the answer to the request. To ensure that durability services will only answer if all relevant
+remote readers have been detected, the remoteReader thread keeps track of the readers that have been
+discovered by ddsi. Only when all relevant readers have been discovered durability services are allowed
+to answer requests. This prevents DDSI from dropping messages destined for readers that have not been
+discovered yet.</p>
+</div>
+<div class="section" id="persistentdatalistener">
+<h3>5.5.22. persistentDataListener<a class="headerlink" href="#persistentdatalistener" title="Permalink to this headline">¶</a></h3>
+<p>The persistentDataListenerThread is responsible for persisting durable data. When a durability service
+retrieves persistent data, the data is stored in a queue. The persistentDataListener thread retrieves the
+data from the queue and stores it in the persistent store. For large data sets persisting the data can take
+quite some time, depending mostly on the performance of the disk.</p>
+<p>Note this thread is only created when persistency is enabled
+(//OpenSplice/DurabilityService/Persistent/StoreDirectory has a value set):</p>
+<p>Configuration parameters:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DurabilityService/Persistent/Scheduling</span></tt></li>
+</ul>
+</div>
+<div class="section" id="historicaldatarequesthandler">
+<h3>5.5.23. historicalDataRequestHandler<a class="headerlink" href="#historicaldatarequesthandler" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for handling incoming historicalDataRequest messages from durability clients. In
+case an application does not have the resources to run a durability service but still wants to acquire
+historical data it can configure a client. The client sends HistoricalDataRequest messages to the durability
+service. These messages are handled by the historicalDataRequestHandler thread.</p>
+<p>Note this thread is only created when client durability is enabled
+(//OpenSplice/DurabilityService/ClientDurability element exists)</p>
+</div>
+<div class="section" id="durabilitystatelistener">
+<h3>5.5.24. durabilityStateListener<a class="headerlink" href="#durabilitystatelistener" title="Permalink to this headline">¶</a></h3>
+<p>This thread is responsible for handling incoming durabilityStateRequest messages from durability clients.</p>
+<p>Note this thread is only created when client durability is enabled
+(//OpenSplice/DurabilityService/ClientDurability element exists)</p>
+</div>
+</div>
 </div>
 
 
@@ -836,6 +1089,33 @@ time two separately running systems get (re-)connected.</p>
 <li><a class="reference internal" href="#align-historical-data">5.4.6. Align historical data</a></li>
 <li><a class="reference internal" href="#provide-historical-data">5.4.7. Provide historical data</a></li>
 <li><a class="reference internal" href="#merge-historical-data">5.4.8. Merge historical data</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#threads-description">5.5. Threads description</a><ul>
+<li><a class="reference internal" href="#ospl-durability">5.5.1. ospl_durability</a></li>
+<li><a class="reference internal" href="#conflictresolver">5.5.2. conflictResolver</a></li>
+<li><a class="reference internal" href="#statusthread">5.5.3. statusThread</a></li>
+<li><a class="reference internal" href="#d-adminactionqueue">5.5.4. d_adminActionQueue</a></li>
+<li><a class="reference internal" href="#admineventdispatcher">5.5.5. AdminEventDispatcher</a></li>
+<li><a class="reference internal" href="#groupcreationthread">5.5.6. groupCreationThread</a></li>
+<li><a class="reference internal" href="#samplerequesthandler">5.5.7. sampleRequestHandler</a></li>
+<li><a class="reference internal" href="#resendqueue">5.5.8. resendQueue</a></li>
+<li><a class="reference internal" href="#mastermonitor">5.5.9. masterMonitor</a></li>
+<li><a class="reference internal" href="#grouplocallisteneractionqueue">5.5.10. groupLocalListenerActionQueue</a></li>
+<li><a class="reference internal" href="#d-groupsrequest">5.5.11. d_groupsRequest</a></li>
+<li><a class="reference internal" href="#d-namespaces">5.5.12. d_nameSpaces</a></li>
+<li><a class="reference internal" href="#d-namespacesrequest">5.5.13. d_nameSpacesRequest</a></li>
+<li><a class="reference internal" href="#d-status">5.5.14. d_status</a></li>
+<li><a class="reference internal" href="#d-newgroup">5.5.15. d_newGroup</a></li>
+<li><a class="reference internal" href="#d-samplechain">5.5.16. d_sampleChain</a></li>
+<li><a class="reference internal" href="#d-samplerequest">5.5.17. d_sampleRequest</a></li>
+<li><a class="reference internal" href="#d-deletedata">5.5.18. d_deleteData</a></li>
+<li><a class="reference internal" href="#dcpsheartbeatlistener">5.5.19. dcpsHeartbeatListener</a></li>
+<li><a class="reference internal" href="#d-capability">5.5.20. d_capability</a></li>
+<li><a class="reference internal" href="#remotereader">5.5.21. remoteReader</a></li>
+<li><a class="reference internal" href="#persistentdatalistener">5.5.22. persistentDataListener</a></li>
+<li><a class="reference internal" href="#historicaldatarequesthandler">5.5.23. historicalDataRequestHandler</a></li>
+<li><a class="reference internal" href="#durabilitystatelistener">5.5.24. durabilityStateListener</a></li>
 </ul>
 </li>
 </ul>
@@ -886,7 +1166,7 @@ time two separately running systems get (re-)connected.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2017, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

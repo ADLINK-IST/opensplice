@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -57,16 +58,57 @@ seqNrCompare(
 
 c_equality
 v_messageCompare (
-    v_message m1,
-    v_message m2)
+    v_message insertedMessage,
+    v_message availableMessage)
 {
-    c_equality eq;
+    c_equality eq = C_ER;
 
-    if (m1 == m2) return C_EQ;
-    if ((eq = CMP_TO_EQ(os_timeWCompare(m1->writeTime, m2->writeTime))) == C_EQ &&
-        (eq = v_gidCompare(m1->writerGID, m2->writerGID)) == C_EQ)
-    {
-        eq = seqNrCompare(m1, m2);
+    if (insertedMessage == availableMessage) return C_EQ;
+    if (v_messageStateTest(insertedMessage,L_IMPLICIT)) {
+        /* If the message to be inserted has the L_IMPLICIT flag, then it is by definition
+         * newer than the sample to which it is compared, regardless of their timestamps.
+         * Only exception is when the two samples are from different writers, in which case
+         * the normal rules apply.
+         */
+        if (v_gidCompare(insertedMessage->writerGID, availableMessage->writerGID) == C_EQ) {
+            eq = C_GT;
+        }
+    } else if (v_messageStateTest(availableMessage,L_IMPLICIT)) {
+        /* If the original message has the L_IMPLICIT flag, then it is by definition
+         * older than the sample to which it is compared, regardless of their timestamps.
+         * Only exception is when the two samples are from different writers, in which case
+         * the normal rules apply.
+         */
+        if (v_gidCompare(insertedMessage->writerGID, availableMessage->writerGID) == C_EQ) {
+            eq = C_GT;
+        }
+    }
+    /* If no ordering has been established yet, then apply default ordering rules. */
+    if (eq == C_ER) {
+        if ((eq = CMP_TO_EQ(os_timeWCompare(insertedMessage->writeTime, availableMessage->writeTime))) == C_EQ &&
+            (eq = v_gidCompare(insertedMessage->writerGID, availableMessage->writerGID)) == C_EQ)
+        {
+            eq = seqNrCompare(insertedMessage, availableMessage);
+            if ((eq == C_EQ) &&
+                (v_messageState(insertedMessage) != v_messageState(availableMessage))) {
+                /* If the v_messageState differs then always put registrations
+                 * first and unregistrations last.
+                 */
+                if ((v_messageStateTest(insertedMessage, L_REGISTER)) &&
+                    (!v_messageStateTest(availableMessage, L_REGISTER))) {
+                    eq = C_LT;
+                } else if ((!v_messageStateTest(insertedMessage, L_REGISTER)) &&
+                           (v_messageStateTest(availableMessage, L_REGISTER))) {
+                    eq = C_GT;
+                } else if ((v_messageStateTest(insertedMessage, L_UNREGISTER)) &&
+                           (!v_messageStateTest(availableMessage, L_UNREGISTER))) {
+                    eq = C_GT;
+                } else if ((!v_messageStateTest(insertedMessage, L_UNREGISTER)) &&
+                           (v_messageStateTest(availableMessage, L_UNREGISTER))) {
+                    eq = C_LT;
+                }
+            }
+        }
     }
     return eq;
 }

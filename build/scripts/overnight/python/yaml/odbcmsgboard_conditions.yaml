@@ -25,4 +25,4 @@ parseconditions:
           type: line
           inst: 10
           required: yes
-          line: "SqlToDdsAndDbms: Message no*"
+          line: "DdsToDdsAndDbms: Message no*"

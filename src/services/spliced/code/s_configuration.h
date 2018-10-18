@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,12 +43,6 @@ extern "C" {
 #define S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM      (0.01F)
 #define S_CFG_HEARTBEAT_UPDATE_FACTOR_DEFAULT      (0.2F)
 #define S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM      (1.0F)
-
-#if 0
-#define S_CFG_HEARTBEAT_LATENCY_BUDGET_MINIMUM     (0.0F)
-#define S_CFG_HEARTBEAT_LATENCY_BUDGET_DEFAULT     (0.0F)
-#define S_CFG_HEARTBEAT_LATENCY_BUDGET_MAXIMUM     (2147483647.2147483647F)
-#endif
 
 #define S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MINIMUM (0)
 #define S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_DEFAULT (0)

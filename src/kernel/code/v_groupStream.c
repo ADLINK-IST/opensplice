@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -32,6 +33,7 @@
 #include "v_group.h"
 #include "v_groupSet.h"
 #include "v__observable.h"
+#include "v_messageQos.h"
 #include "c_iterator.h"
 #include "c_collection.h"
 #include "os_report.h"
@@ -124,13 +126,13 @@ v_groupStreamConnectNewGroups(
     v_group group)
 {
     struct groupConnected data;
+    c_bool connected = FALSE;
 
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
-    v_observerLock(v_observer(stream));
+    OSPL_LOCK(stream);
 
-    /*
-     * This means the group is interesting for this
+    /* This means the group is interesting for this
      * groupActionStream. Now I have to check if the stream is already
      * connected to this group, because we wouldn't want to connect
      * multiple times to one single group.
@@ -144,11 +146,11 @@ v_groupStreamConnectNewGroups(
         /*
          * The stream is not connected to the group yet, so connect now.
          */
-        v_groupStreamSubscribeGroup(stream, group);
+        connected = v_groupStreamSubscribeGroup(stream, group);
     }
-    v_observerUnlock(v_observer(stream));
+    OSPL_UNLOCK(stream);
 
-    if(data.connected == FALSE){
+    if(connected == TRUE){
         v_groupStreamHistoricalData(group, stream);
     }
 
@@ -162,6 +164,7 @@ void
 v_groupStreamNotifyDataAvailable(
     v_groupStream stream)
 {
+    C_STRUCT(v_event) event;
     /* This Notify method is part of the observer-observable pattern.
      * It is designed to be invoked when _this object as observer receives
      * an event from an observable object.
@@ -169,20 +172,21 @@ v_groupStreamNotifyDataAvailable(
      * calling <subclass>Notify(_this, event, userData).
      * This implies that _this cannot be locked within any Notify method
      * to avoid deadlocks.
-     * For consistency _this must be locked by v_observerLock(_this) before
+     * For consistency _this must be locked by OSPL_LOCK(_this) before
      * calling this method.
      */
-    C_STRUCT(v_event) event;
-
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
 
     v_statusNotifyDataAvailable(v_entity(stream)->status);
 
+
     event.kind = V_EVENT_DATA_AVAILABLE;
     event.source = v_observable(stream);
     event.data = NULL;
-    v_observableNotify(v_observable(stream), &event);
+    event.handled = TRUE;
+
+    OSPL_THROW_EVENT(stream, &event);
 
     return;
 }
@@ -214,11 +218,12 @@ v_groupStreamInit(
     kernel = v_objectKernel(subscriber);
 
     stream->groups = c_setNew(v_kernelType(kernel,K_GROUP));
-    stream->expr = c_listNew(c_resolve(c_getBase(stream), "::c_string"));
+    stream->expr = c_listNew(c_string_t(c_getBase(stream)));
     c_iterWalk(expr, fillExprList, stream->expr);
 
-    v_readerInit(v_reader(stream), name, subscriber, qos, TRUE);
+    v_readerInit(v_reader(stream), name, subscriber, qos);
     (void)v_subscriberAddReader(subscriber,v_reader(stream));
+    (void)v_entityEnable(v_entity(stream));
 }
 
 void
@@ -254,12 +259,13 @@ v_groupStreamFree(
     v_readerFree(v_reader(stream));
 }
 
-c_bool
+static c_bool
 v_groupStreamSubscribe(
     v_groupStream stream,
     v_partition partition)
 {
     c_iter list;
+    c_iter connected = NULL;
     v_kernel kernel;
     c_value params[1];
     v_group group;
@@ -269,16 +275,50 @@ v_groupStreamSubscribe(
     kernel = v_objectKernel(v_entity(partition));
     params[0] = c_objectValue(partition);
     list = v_groupSetSelect(kernel->groupSet,"partition = %0 ",params);
-    group = c_iterTakeFirst(list);
 
-    while (group != NULL) {
-        v_groupStreamSubscribeGroup(stream, group);
-        c_free(group);
-        group = c_iterTakeFirst(list);
+    if (c_iterLength(list) > 0) {
+        v_observerLock(v_observer(stream));
+        while ((group = c_iterTakeFirst(list)) != NULL) {
+            if (v_groupStreamSubscribeGroup(stream, group)) {
+                connected = c_iterAppend(connected, c_keep(group));
+            }
+            c_free(group);
+        }
+        v_observerUnlock(v_observer(stream));
+        c_iterFree(list);
+
+        while ((group = c_iterTakeFirst(connected)) != NULL) {
+            v_groupStreamHistoricalData(group, stream);
+            c_free(group);
+        }
+        c_iterFree(connected);
     }
-    c_iterFree(list);
 
     return TRUE;
+}
+
+v_result
+v_groupStreamEnable(
+    _Inout_ v_groupStream _this)
+{
+    v_subscriber subscriber;
+    v_result result = V_RESULT_OK;
+    c_iter list;
+    v_partition partition;
+
+    subscriber = v_subscriber(v_reader(_this)->subscriber);
+
+    /* A groupQueue cannot be enabled if the subscriber is disabled */
+    if(v_entityDisabled(v_entity(subscriber))) {
+        return V_RESULT_PRECONDITION_NOT_MET;
+    }
+    list = v_subscriberLookupPartitions(subscriber, "*");
+    while ((partition = c_iterTakeFirst(list)) != NULL) {
+        v_groupStreamSubscribe(_this, partition);
+        c_free(partition);
+    }
+    c_iterFree(list);
+    return result;
 }
 
 c_bool
@@ -286,15 +326,14 @@ v_groupStreamSubscribeGroup(
     v_groupStream stream,
     v_group group)
 {
-    c_bool inserted;
+    c_bool inserted = FALSE;
 
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(group, v_group));
 
     if (v_reader(stream)->qos->durability.v.kind == v_topicQosRef(group->topic)->durability.v.kind) {
         struct groupMatched data;
-        /*
-         * OSPL-1073: Check if the new group matches with the group-expression list. This
+        /* Check if the new group matches with the group-expression list. This
          * is a collection of partition.topic strings that allows users to connect to specific
          * topics rather than connecting to all topics within a partition.
          */
@@ -313,7 +352,7 @@ v_groupStreamSubscribeGroup(
             }
         }
     }
-    return TRUE;
+    return inserted;
 }
 
 c_bool
@@ -333,8 +372,7 @@ v_groupStreamUnSubscribe(
     result = FALSE;
 
     while (group != NULL) {
-        if(strcmp(v_partitionName(partition),
-                  v_partitionName(group->partition)) == 0){
+        if (group->partition == partition) {
             result = v_groupStreamUnSubscribeGroup(stream, group);
         }
         c_free(group);
@@ -372,6 +410,7 @@ v_groupStreamWrite(
     v_groupAction action)
 {
     v_writeResult result;
+    v_readerQos qos;
 
     assert(C_TYPECHECK(stream,v_groupStream));
     assert(C_TYPECHECK(action, v_groupAction));
@@ -380,7 +419,13 @@ v_groupStreamWrite(
 
     switch(v_objectKind(stream)){
         case K_GROUPQUEUE:
-            result = v_groupQueueWrite(v_groupQueue(stream), action);
+            qos = v_readerGetQos(v_reader(stream));
+            if ((action->message == NULL) ||
+                (action->message->qos == NULL) ||
+                (v_messageQos_durabilityKind(action->message->qos) >= qos->durability.v.kind)) {
+                result = v_groupQueueWrite(v_groupQueue(stream), action);
+            }
+            c_free(qos);
             break;
         default:
             OS_REPORT(OS_CRITICAL,"v_groupStreamWrite",result,

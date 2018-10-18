@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -183,16 +184,6 @@ public class ConfigWindowController implements ActionListener {
                         boolean doPrint = pjob.printDialog(aset);
 
                         if(doPrint){
-                            /*
-                            if(currentDialog != null){
-                                currentDialog.setStatus(null, true);
-                            }
-                            DocFlavor flavor = DocFlavor.INPUT_STREAM.POSTSCRIPT;
-                            Doc doc = new SimpleDoc(config.toString(), flavor, null);
-                            DocPrintJob docPrintJob = pjob.getPrintService().createPrintJob();
-                            docPrintJob.print(doc, aset);
-                            handleSetStatus("Configuration printed.", true);
-                            */
                             view.setStatus("Warning: Printing not supported yet.", false);
                             handleSetEnabled(true);
                         } else {

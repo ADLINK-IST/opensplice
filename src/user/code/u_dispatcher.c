@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,12 +21,11 @@
 
 #include "u_user.h"
 #include "u__dispatcher.h"
-#include "u__types.h"
 #include "u__observable.h"
+#include "u__types.h"
 #include "u__entity.h"
 
 #include "v_entity.h"
-#include "v_observable.h"
 #include "v_observer.h"
 #include "v_event.h"
 
@@ -34,11 +34,9 @@
 C_CLASS(u_callback);
 C_STRUCT(u_callback)
 {
-    u_observableListener  listener;
-    void             *usrData; /* data specific for a user, just
-                                  passed as value to the function
-                                  listener
-                                */
+    u_observableListener listener;
+    u_eventMask eventMask;
+    void *usrData; /* data specific for a user, just passed as value to the function listener */
 };
 
 struct callbackExecArg {
@@ -177,6 +175,7 @@ u_dispatcherFree(
 u_result
 u_dispatcherInsertListener(
     const u_dispatcher _this,
+    const u_eventMask eventMask,
     const u_observableListener listener,
     void *userData)
 {
@@ -193,68 +192,28 @@ u_dispatcherInsertListener(
     callback = os_malloc(C_SIZEOF(u_callback));
     callback->listener = listener;
     callback->usrData = userData;
+    callback->eventMask = eventMask;
     _this->callbacks = c_iterInsert(_this->callbacks,callback);
 
-    if (os_threadIdToInteger(_this->threadId) == 0U) {
-        result = u_observableReadClaim(_this->observable, (v_public *)(&ke), C_MM_RESERVATION_ZERO);
-        if(result == U_RESULT_OK) {
-            assert(ke);
+    result = u_observableReadClaim(_this->observable, (v_public *)(&ke), C_MM_RESERVATION_ZERO);
+    if(result == U_RESULT_OK) {
+        assert(ke);
+        if (os_threadIdToInteger(_this->threadId) == 0U) {
             name = v_entityName(ke);
             if (name == NULL) {
                 name = "NoName";
             }
             os_threadAttrInit(&attr);
-            os_threadCreate(&_this->threadId,
-                            name,
-                            &attr,dispatch,
-                            (void *)_this);
-            u_observableRelease(_this->observable, C_MM_RESERVATION_ZERO);
-        } else {
-            OS_REPORT(OS_WARNING, "u_dispatcherInsertListener", result,
-                      "Failed to claim Dispatcher.");
+            os_threadCreate(&_this->threadId, name, &attr,dispatch, (void *)_this);
         }
+        v_observerSetEvent(ke,eventMask);
+        u_observableRelease(_this->observable, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_dispatcherInsertListener", result,
+                  "Failed to claim Dispatcher.");
     }
     os_mutexUnlock(&_this->mutex);
 
-    return result;
-}
-
-u_result
-u_dispatcherAppendListener(
-    const u_dispatcher _this,
-    const u_observableListener listener,
-    void *userData)
-{
-    u_callback callback;
-    os_threadAttr attr;
-    v_observer ko;
-    u_result result = U_RESULT_OK;
-
-    assert(_this != NULL);
-    assert(listener != NULL);
-
-    os_mutexLock(&_this->mutex);
-    callback = os_malloc(C_SIZEOF(u_callback));
-    callback->listener = listener;
-    callback->usrData = userData;
-    _this->callbacks = c_iterAppend(_this->callbacks,callback);
-    if (os_threadIdToInteger(_this->threadId) == 0U) {
-        result = u_observableReadClaim(_this->observable, (v_public *)(&ko), C_MM_RESERVATION_ZERO);
-        if(result == U_RESULT_OK) {
-            assert(ko);
-            os_threadAttrInit(&attr);
-            os_threadCreate(&_this->threadId,
-                            v_entityName(ko),
-                            &attr,
-                            dispatch,
-                            (void *)_this);
-            u_observableRelease(_this->observable, C_MM_RESERVATION_ZERO);
-        } else {
-            OS_REPORT(OS_WARNING, "u_dispatcherAppendListener", result,
-                      "Failed to claim Dispatcher.");
-        }
-    }
-    os_mutexUnlock(&_this->mutex);
     return result;
 }
 
@@ -297,6 +256,7 @@ u_dispatcherRemoveListener(
             result = u_observableReadClaim(_this->observable, (v_public *)(&ko), C_MM_RESERVATION_ZERO);
             if(result == U_RESULT_OK) {
                 assert(ko);
+                v_observerClearEvent(ko,callback->eventMask);
                 /* Wakeup the dispatch thread */
                 v_observerLock(ko);
                 v_observerNotify(ko, NULL, NULL);
@@ -314,75 +274,6 @@ u_dispatcherRemoveListener(
         && (os_threadIdToInteger(tid) != 0U)) {
         os_threadWaitExit(tid, NULL);
         _this->threadId = OS_THREAD_ID_NONE;
-    }
-    return result;
-}
-
-u_result
-u_dispatcherNotify(
-    const u_dispatcher _this)
-{
-    v_observer ko;
-    u_result result = U_RESULT_OK;
-
-    assert(_this != NULL);
-
-    result = u_observableReadClaim(_this->observable, (v_public *)(&ko),C_MM_RESERVATION_ZERO);
-    if (result == U_RESULT_OK) {
-        assert(ko);
-        /* Wakeup the dispatch thread */
-        v_observerLock(ko);
-        v_observerNotify(ko, NULL, NULL);
-        v_observerUnlock(ko);
-        u_observableRelease(_this->observable, C_MM_RESERVATION_ZERO);
-    } else {
-        OS_REPORT(OS_WARNING, "u_dispatcherNotify", result,
-                  "Failed to claim Dispatcher.");
-    }
-    return result;
-}
-
-u_result
-u_dispatcherSetEventMask(
-    const u_dispatcher _this,
-    u_eventMask eventMask)
-{
-    v_observer ko;
-    u_result result = U_RESULT_OK;
-
-    assert(_this != NULL);
-
-    result = u_observableReadClaim(_this->observable, (v_public *)(&ko), C_MM_RESERVATION_ZERO);
-    if (result == U_RESULT_OK) {
-        assert(ko);
-        v_observerSetEventMask(ko,eventMask);
-        u_observableRelease(_this->observable,C_MM_RESERVATION_ZERO);
-    } else {
-        OS_REPORT(OS_WARNING, "u_dispatcherSetEventMask", result,
-                  "Failed to claim Dispatcher.");
-    }
-    return result;
-}
-
-u_result
-u_dispatcherGetEventMask(
-    const u_dispatcher _this,
-    u_eventMask *eventMask)
-{
-    v_observer ko;
-    u_result result = U_RESULT_OK;
-
-    assert(_this != NULL);
-    assert(eventMask != NULL);
-
-    result = u_observableReadClaim(_this->observable, (v_public *)(&ko), C_MM_RESERVATION_ZERO);
-    if (result == U_RESULT_OK) {
-        assert(ko);
-        *eventMask = v_observerGetEventMask(ko);
-        u_observableRelease(_this->observable, C_MM_RESERVATION_ZERO);
-    } else {
-        OS_REPORT(OS_WARNING, "u_dispatcherGetEventMask", result,
-                  "Failed to claim Dispatcher.");
     }
     return result;
 }

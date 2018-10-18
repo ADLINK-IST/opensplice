@@ -9,13 +9,13 @@ The Streams API Reference Guide
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    introduction
    API-ref
-      
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

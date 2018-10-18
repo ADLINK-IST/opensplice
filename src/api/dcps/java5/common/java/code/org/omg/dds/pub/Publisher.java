@@ -157,6 +157,15 @@ extends DomainEntity<PublisherListener, PublisherQos>
      * the same {@link org.omg.dds.domain.DomainParticipant} that was used to create this
      * Publisher. If the Topic was created from a different
      * DomainParticipant, the operation will fail.
+     * <p>
+     * Restictions on QoS policies:<p>
+     * For a coherent writer there exists a constraint on the setting of the History QoS policy.
+     * When a writer is created with publisher that has a presentation QosPolicy with
+     * coherent_access enabled and where the access_scope is either TOPIC or GROUP
+     * then the History QoS policy of the coherent writer should be set to KEEP_ALL.
+     * Applying this constraint is necessary because in case of a keep-last writer the
+     * samples in the writers history could be pushed out by a new sample which causes that
+     * the transaction would not become complete.
      * @return A DataWriter object.
      * @param topic     A reference to the topic for which the DataWriter is created.
      * @param qos       The DataWriterQos for the new DataWriter. In case these settings

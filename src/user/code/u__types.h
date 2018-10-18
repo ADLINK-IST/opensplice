@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -192,13 +193,13 @@ C_STRUCT(u_participant)
 
 C_STRUCT(u_serviceManager) {
     C_EXTENDS(u_entity);
-    u_serviceSplicedaemonListener callback;
-    void *usrData;
 };
 
 C_STRUCT(u_service) {
     C_EXTENDS(u_participant);
     u_serviceManager serviceManager;
+    u_serviceSplicedaemonListener callback;
+    void *usrData;
 };
 
 C_STRUCT(u_spliced) {
@@ -212,6 +213,8 @@ C_STRUCT(u_spliced) {
 #define U_DOMAIN_DELETE_ENTITIES            ((os_uint32)(1 << 30))
 #define U_DOMAIN_BLOCK_IN_KERNEL            ((os_uint32)(1 << 31))
 
+C_CLASS(u_splicedThread);
+
 C_STRUCT(u_domain) {
     C_EXTENDS(u_entity);
     pa_uint32_t     refCount; /* number of domain pointers in user layer objects */
@@ -223,15 +226,15 @@ C_STRUCT(u_domain) {
                               * this purpose. */
     v_kernel        kernel;
     v_processInfo   procInfo;
+    os_uint32       serial; /* copy of procInfo->serial stored outside kernel */
     os_sharedHandle shm;
-    os_threadId     spliced_thread; /* OS_THREAD_ID_NONE for SHM domains */
+    u_splicedThread spliced_thread; /* NULL for SHM domains*/
     c_iter          participants;
     c_iter          waitsets;
     os_char         *uri;
     os_char         *name;
     os_lockPolicy   lockPolicy;
     os_uint32       protectCount;
-    os_uint32       serial;
     u_domainId_t    id;
     os_boolean      owner; /* Used by u_domainClose to destroy SHM if called by spliced */
     os_mutex        mutex;
@@ -254,6 +257,7 @@ C_STRUCT(u_domain) {
     pa_uint32_t     claimed; /* Used to protect access to the process info */
     os_threadId     threadWithAccess;
     c_iter          reportPlugins;
+    os_duration     serviceTerminatePeriod;
 };
 
 #endif

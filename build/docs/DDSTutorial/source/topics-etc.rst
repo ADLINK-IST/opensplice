@@ -6,7 +6,7 @@ Topics, Domains and Partitions
 
 
 The previous chapter introduced the basic concepts of DDS and walked
-through the steps required to write a simple Pub/Sub application. 
+through the steps required to write a simple Pub/Sub application.
 
 This chapter will look at DDS in more depth, starting with
 data management.
@@ -28,7 +28,7 @@ Operating System (OS), so it defines its type system
 along with a space- and time-efficient binary encoding
 for its types. Different syntaxes can be used to express DDS
 topic types, such as :ref:`IDL <ACRO-IDL>`, :ref:`XML <ACRO-XML>`.
-Some vendors, such as PrismTech, also support 
+Some vendors, such as ADLINK, also support
 Google Protocol Buffers.
 
 This Tutorial will focus on the subset of IDL that can be used to
@@ -77,7 +77,7 @@ essentially what you would expect, with just one exception:
 the ``int`` type is not there! This should not be a problem since the
 IDL integral types ``short``, ``long`` and ``long long`` are equivalent
 to the C99 ``int16_t``, ``int32_t`` and ``int64_t``.
-And what is more: in contrast to the ``int`` type, which can have a different 
+And what is more: in contrast to the ``int`` type, which can have a different
 footprint on different platforms, each of these types has specified exactly what
 its footprint is.
 
@@ -114,7 +114,7 @@ not provided the type is assumed to have an unbounded length, meaning
 that the middleware will allocate as much memory as necessary to store
 the values that the application provides.
 
-The table `IDL Constructed Types`_ shows that DDS supports three different 
+The table `IDL Constructed Types`_ shows that DDS supports three different
 kinds of IDL constructed types: ``enum``, ``struct``, and ``union``.
 
 
@@ -145,13 +145,13 @@ kinds of IDL constructed types: ``enum``, ``struct``, and ``union``.
 
 
 
-It should be clear from this that a Topic type is a ``struct`` that can 
+It should be clear from this that a Topic type is a ``struct`` that can
 contain (as fields) nested structures, unions, enumerations,
 and template types, as well as primitive types. In addition, it is possible to
 define multi-dimensional arrays of any DDS-supported or user-defined type.
 
 To tie things together, there are language-specific mappings from the
-IDL types described above to mainstream programming languages such as 
+IDL types described above to mainstream programming languages such as
 C++, Java, and C#.
 
 
@@ -165,9 +165,9 @@ Each Topic comes with an associated key-set. This key-set might be empty
 or it can include an arbitrary number of attributes defined by the Topic
 Type. There are no limitations on the number, kind, or level of nesting,
 of attributes used to establish the key. There are some limitations to
-its kind though: a key should either be a primitive type (see table 
-`Primitive Types`_), an enumeration or a string. A key cannot be constructed 
-type (although it may consist of one or more members of an embedded constructed 
+its kind though: a key should either be a primitive type (see table
+`Primitive Types`_), an enumeration or a string. A key cannot be constructed
+type (although it may consist of one or more members of an embedded constructed
 type), an array or a sequence of any type.
 
 
@@ -187,8 +187,8 @@ monitoring system), it is possible to define a keyless variant of the
 ``TempSensorType`` defined in the
 :ref:`Foundations <IDL definition of a Temperature Sensor>` chapter.
 
-`Keyed and Keyless Topics`_ shows the ``TempSensorType`` with the 
-``id`` attribute defined as its key, along with the ``KeylessTempSensorType`` 
+`Keyed and Keyless Topics`_ shows the ``TempSensorType`` with the
+``id`` attribute defined as its key, along with the ``KeylessTempSensorType``
 showing off an empty key-set as defined in its ``#pragma keylist`` directive.
 
 If two topics associated with the types declared in
@@ -258,7 +258,7 @@ associated with the singleton instance, as shown in
 
 If we write the same samples for the ``TempSensorTopic``, the end-result
 is quite different. The two samples written in the code fragment below
-have two different ``id`` values, respectively ``1`` and ``2``; 
+have two different ``id`` values, respectively ``1`` and ``2``;
 they are referring to two different instances.
 
 .. literalinclude:: ./code/isocpp2/ch2/tspub.cpp
@@ -281,7 +281,7 @@ one queue for each instance.
 
 
 In summary, Topics should be thought of as classes in an object-oriented
-language, and each unique key-value identifies an instance. 
+language, and each unique key-value identifies an instance.
 The life-cycle of topic instances is managed by DDS and to
 each topic instance are allocated memory resources; think of it
 as a queue on the reader side. Keys identify specific data streams
@@ -294,14 +294,14 @@ track the lifecycle of the sensor by tracking the lifecycle of its
 associated instance. It is possible to detect when a new sensor is added into the
 system, because it introduces a new instance; it is possible to detect
 when a sensor has failed, because DDS can report
-when there are no more writers for a specific instance. 
-It is even possible to detect when a sensor has crashed and then recovered 
+when there are no more writers for a specific instance.
+It is even possible to detect when a sensor has crashed and then recovered
 thanks to information about state transitions that is provided by DDS.
 
 Finally, before moving on from DDS instances, it is emphasized that
-DDS subscriptions concern *Topics*. Thus *a subscriber receives* 
+DDS subscriptions concern *Topics*. Thus *a subscriber receives*
 **all** *of the instances produced for that topic*. In some cases
-this is not desirable and some scoping actions are necessary. 
+this is not desirable and some scoping actions are necessary.
 Scoping is discussed in the next section.
 
 
@@ -343,11 +343,11 @@ The mechanism provided by DDS for joining a partition is very flexible as
 a publisher or a subscriber can join by providing its full name, such as
 ``SensorDataPartition``, or it can join all the partitions that match a
 regular expression, such as ``Sens*`` or ``*Data*``. Supported regular
-expressions are the same as those accepted by the POSIX ``fnmatch`` 
+expressions are the same as those accepted by the POSIX ``fnmatch``
 function (see :ref:`POSIX fmatch <POSIX fmatch>`).
 
 To recap: *partitions provide a way of* **scoping** *information*.
-This scoping mechanism can be used to organize topics into different 
+This scoping mechanism can be used to organize topics into different
 coherent sets.
 
 Partitions can also be used to segregate topic instances. *Instance
@@ -371,9 +371,9 @@ partitions for all of the rooms at the first floor in building 1.
 
 In a nutshell, *partitions* can be used to *scope* information, and
 *naming conventions* (such as those used for the example temperature control
-applications) can be used to *emulate hierarchical organization of data* 
-starting from flat partitions. Using the same technique it is possible to 
-slice and access data across different dimensions or views, depending on the 
+applications) can be used to *emulate hierarchical organization of data*
+starting from flat partitions. Using the same technique it is possible to
+slice and access data across different dimensions or views, depending on the
 needs of the application.
 
 .. _`Content Filtering`:
@@ -383,7 +383,7 @@ Content Filtering
 *****************
 
 Domains and Partitions are useful mechanisms for the *structural*
-organization of data, but what if it is neccessary to control the data 
+organization of data, but what if it is neccessary to control the data
 received based on its *content*? Content Filtering enables the creation of
 topics that constrain the values that their instances might take.
 
@@ -476,11 +476,11 @@ This chapter has covered the most important aspects of data
 management in DDS: topics-types and topic instances, and the
 various mechanisms provided by DDS for scoping information.
 
-Information can be structurally organized by means of domains and 
+Information can be structurally organized by means of domains and
 partitions, and special views can be created using content-filtered
-topics and query conditions. 
+topics and query conditions.
 
-It is recommended again that the reader compiles and runs the examples 
+It is recommended again that the reader compiles and runs the examples
 and experiments with the programs developed so far.
 
 

@@ -1,5 +1,5 @@
 #ifndef _SHAPESWIDGET_HPP
-#define	_SHAPESWIDGET_HPP
+#define _SHAPESWIDGET_HPP
 
 /** @file */
 /**
@@ -54,7 +54,6 @@ private:
     QRect currentFilter_;
     bool showCurrentFilter_;
     QPixmap logo_;
-    QPixmap ptpcm_;
     QPixmap simd_;
     bool paused_;
 };

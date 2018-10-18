@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -633,19 +634,19 @@ addressToIndexAndMask(struct sockaddr *addr, unsigned int *ifIndex, struct socka
         if (pIPAddrTable != NULL) {
             if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) != NO_ERROR) {
                 errNo = os_getErrno();
-                os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
-                      "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
+                OS_REPORT(OS_ERROR, "addressToIndexAndMask", 0,
+                          "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
                 result = os_resultFail;
             }
         } else {
-            os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
-                "Failed to allocate %d bytes for IP address table", dwSize);
+            OS_REPORT(OS_ERROR, "addressToIndexAndMask", 0,
+                      "Failed to allocate %d bytes for IP address table", dwSize);
             result = os_resultFail;
         }
     } else {
         errNo = os_getErrno();
-        os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
-                    "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
+        OS_REPORT(OS_ERROR, "addressToIndexAndMask", 0,
+                  "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
         result = os_resultFail;
     }
 
@@ -696,8 +697,8 @@ os_sockQueryInterfaces(
     do {
         pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
         if (!pAddresses) {
-            os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaces", 0,
+                      "Failed to allocate %d bytes for Adapter addresses", outBufLen);
             return os_resultFail;
         }
         retVal = GetAdaptersAddresses(AF_INET, filter, NULL, pAddresses, &outBufLen);
@@ -716,8 +717,7 @@ os_sockQueryInterfaces(
             os_free(pAddresses);
             pAddresses = NULL;
         }
-        os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                "Failed to GetAdaptersAddresses");
+        OS_REPORT(OS_ERROR, "os_sockQueryInterfaces", 0, "Failed to GetAdaptersAddresses");
         return os_resultFail;
     }
 
@@ -810,8 +810,8 @@ os_sockQueryIPv6Interfaces (
     do {
         pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
         if (!pAddresses) {
-            os_report(OS_ERROR, "os_sockQueryIPv6Interfaces", __FILE__, __LINE__, 0,
-                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            OS_REPORT(OS_ERROR, "os_sockQueryIPv6Interfaces", 0,
+                      "Failed to allocate %d bytes for Adapter addresses", outBufLen);
             return os_resultFail;
         }
         retVal = GetAdaptersAddresses(AF_INET6, filter, NULL, pAddresses, &outBufLen);
@@ -830,8 +830,7 @@ os_sockQueryIPv6Interfaces (
             os_free(pAddresses);
             pAddresses = NULL;
         }
-        os_report(OS_ERROR, "os_sockQueryIPv6Interfaces", __FILE__, __LINE__, 0,
-                "Failed to GetAdaptersAddresses");
+        OS_REPORT(OS_ERROR, "os_sockQueryIPv6Interfaces", 0, "Failed to GetAdaptersAddresses");
         return os_resultFail;
     }
 
@@ -946,8 +945,8 @@ os_sockGetInterfaceStatus (
     do {
         pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
         if (!pAddresses) {
-            os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaces", 0,
+                      "Failed to allocate %d bytes for Adapter addresses", outBufLen);
             return os_resultFail;
         }
         retVal = GetAdaptersAddresses(AF_INET, 0, NULL, pAddresses, &outBufLen);
@@ -1014,8 +1013,8 @@ os_sockQueryInterfaceStatusReset(
     ret = NotifyAddrChange(&hand, &info->overlap);
     if (ret != NO_ERROR) {
         if (os_getErrno() != WSA_IO_PENDING) {
-            os_report(OS_ERROR, "os_sockQueryInterfaceStatusReset", __FILE__, __LINE__, 0,
-                          "Failed to reset notifications for network interface address changes");
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusReset", 0,
+                      "Failed to reset notifications for network interface address changes");
         }
     }
 }
@@ -1035,7 +1034,7 @@ os_sockQueryInterfaceStatusInit(
         if (!info->ifName) {
             os_free(info);
             info = NULL;
-            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
                       "Failed to allocate os_sockQueryInterfaceStatusInfo");
         }
     }
@@ -1047,14 +1046,14 @@ os_sockQueryInterfaceStatusInit(
             os_free(info->ifName);
             os_free(info);
             info = NULL;
-            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
                       "Failed to administer for network interface address changes");
         } else {
             info->hHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
             if (info->hHandle == NULL) {
                 int errNo = os_getErrno();
                 char *errorMessage = os_strError(errNo);
-                os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
                           "CreateEvent failed: %d %s", errNo, errorMessage);
 
                 os_sockQueryInterfaceStatusDeinit(info);
@@ -1116,9 +1115,8 @@ os_sockQueryInterfaceStatusSignal(
         if (!SetEvent(info->hHandle)) {
             int errNo = os_getErrno();
             char *errorMessage = os_strError(errNo);
-            os_report(OS_WARNING, "os_sockQueryInterfaceStatusSignal", __FILE__, __LINE__, 0,
-                    "SetEvent failed: %d %s",
-                    errNo, errorMessage);
+            OS_REPORT(OS_WARNING, "os_sockQueryInterfaceStatusSignal", 0,
+                      "SetEvent failed: %d %s", errNo, errorMessage);
         } else {
             result = os_resultSuccess;
         }
@@ -1128,3 +1126,24 @@ os_sockQueryInterfaceStatusSignal(
 
 
 #undef MAX_INTERFACES
+
+os_result
+os_sockSetDontFrag(
+    os_socket s,
+    os_boolean dontFrag)
+{
+    os_result r;
+    int st;
+    os_uint32 len = sizeof(st);
+    int val = (dontFrag) ? 1 : 0;
+
+    if ((r = os_sockGetsockopt(s, SOL_SOCKET, SO_TYPE, (void *)&st, &len)) == os_resultSuccess) {
+        if (st == SOCK_DGRAM) {
+            r = os_sockSetsockopt(s, IPPROTO_IP, IP_DONTFRAGMENT, (void *)&val, sizeof(val));
+        } else {
+            r = os_resultUnavailable;
+        }
+    }
+
+    return r;
+}

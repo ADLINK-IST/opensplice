@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -735,10 +736,9 @@ typedef DDS_unsigned_long DDS_StatusMask;
 /* Opensplice Extensions */
 #define DDS_ALL_DATA_DISPOSED_TOPIC_STATUS      0x80000000U
 
-#define DDS_ANY_STATUS                          0x1FFF /* Depricated, now use DDS_STATUS_MASK_ANY */
-#define DDS_STATUS_MASK_ANY_V1_2                0x1FFF
-#define DDS_STATUS_MASK_ANY                     (DDS_STATUS_MASK_ANY_V1_2 | \
-                                                DDS_ALL_DATA_DISPOSED_TOPIC_STATUS)
+#define DDS_ANY_STATUS                          0x7FFF /* Depricated, now use DDS_STATUS_MASK_ANY */
+#define DDS_STATUS_MASK_ANY_V1_2                0x7FFF
+#define DDS_STATUS_MASK_ANY                     0xFFFFFFFF
 #define DDS_STATUS_MASK_NONE                    0x0
 
 /*
@@ -2407,6 +2407,24 @@ DDS_DomainParticipant_delete_historical_data (
     DDS_DomainParticipant _this,
     const DDS_string partition_expression,
     const DDS_string topic_expression);
+
+struct DDS_Property_s {
+    DDS_string name;
+    DDS_string value;
+};
+
+typedef struct DDS_Property_s DDS_DomainParticipantProperty;
+
+OS_API DDS_ReturnCode_t
+DDS_DomainParticipant_set_property (
+    DDS_DomainParticipant _this,
+    const DDS_DomainParticipantProperty *property);
+        
+OS_API DDS_ReturnCode_t
+DDS_DomainParticipant_get_property (
+    DDS_DomainParticipant _this,
+    DDS_DomainParticipantProperty *property);
+        
 
 /*
  * interface Domain

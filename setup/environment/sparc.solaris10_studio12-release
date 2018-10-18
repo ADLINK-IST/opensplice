@@ -20,6 +20,8 @@ gsoap_check || ERRS=1
 doxygen_check || ERRS=1
 protoc_check || ERRS=1
 c99_check || ERRS=1
+maven_check_inner || ERRS=1
+key_value_store_check || ERRS=1
 
 SPLICE_HOST_FULL=solaris10_studio12.${STUDIO_VERSION}
 SPLICE_TARGET_FULL=$SPLICE_HOST_FULL

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -48,7 +49,7 @@ import org.opensplice.common.model.UserDataFilter;
  */
 public class UserDataTableModel extends DefaultTableModel {
     /**
-     * 
+     *
      */
     private static final long      serialVersionUID = -6808068073551184983L;
 
@@ -158,7 +159,7 @@ public class UserDataTableModel extends DefaultTableModel {
         for (int i = 0; i < names.length; i++) {
             invisibleFieldNames.add(names[i]);
         }
-        
+
         this.makeAllFieldsVisible(struct);
         this.sampleInfoModel = new SampleInfoTableModel();
         int rowCount = this.sampleInfoModel.getRowCount();
@@ -175,7 +176,7 @@ public class UserDataTableModel extends DefaultTableModel {
      * Provides access to the UserData at the specified index.
      *
      * @param index The index of the UserData.
-     * @return The UserData at the supplied ondex, or null if the index was not
+     * @return The UserData at the supplied index, or null if the index was not
      *         available.
      */
     public Sample getDataAt(int index){
@@ -208,7 +209,7 @@ public class UserDataTableModel extends DefaultTableModel {
             return content.size();
         }
     }
-    
+
     public boolean setDataAt(Sample sample, int index){
         boolean match = true;
         String fieldName;
@@ -264,7 +265,7 @@ public class UserDataTableModel extends DefaultTableModel {
         }
         return true;
     }
-    
+
     public boolean addNewSample(Object[] o, Sample sample, int index) {
         boolean match = true;
         synchronized(content){
@@ -369,7 +370,7 @@ public class UserDataTableModel extends DefaultTableModel {
 
         boolean result = true;
         boolean res = false;
-        
+
         synchronized(content){
             res = !content.contains(sample);
         }
@@ -382,11 +383,15 @@ public class UserDataTableModel extends DefaultTableModel {
                 String columnName = null;
                 int columnCount = this.getColumnCount();
                 int nrOfRows = 0;
-                MetaField f = data.getUserDataType().getField(colName);
-                if (f.getTypeName().startsWith("C_SEQUENCE<")) {
-                    nrOfRows = data.getCollectionRealSize(colName);
-                } else {
-                    nrOfRows = ((MetaCollection) f).getMaxSize();
+                if (data.getUserDataType() != null && colName != null) {
+                    MetaField f = data.getUserDataType().getField(colName);
+                    if (f != null) {
+                        if (f.getTypeName().startsWith("C_SEQUENCE<")) {
+                            nrOfRows = data.getCollectionRealSize(colName);
+                        } else {
+                            nrOfRows = ((MetaCollection) f).getMaxSize();
+                        }
+                    }
                 }
 
                 for (int k = 0; k < nrOfRows && result; k++) {
@@ -680,7 +685,7 @@ public class UserDataTableModel extends DefaultTableModel {
 
     /**
      * Removes the supplied filter from the data. Data that was filtered out
-     * of the visibleContent by this filter is readded to the visibleContent.
+     * of the visibleContent by this filter is re-added to the visibleContent.
      *
      * @param filter The filter to remove.
      */
@@ -784,7 +789,7 @@ public class UserDataTableModel extends DefaultTableModel {
             }
         }
     }
-    
+
     public void clean() {
         this.getDataVector().removeAllElements();
     }

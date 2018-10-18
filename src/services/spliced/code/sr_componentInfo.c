@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -41,9 +42,6 @@
 #define RR_RESTART_STR "restart"
 #define RR_HALT_STR    "systemhalt"
 
-/**************************************************************
- * Private functions
- **************************************************************/
 static c_bool
 cfgGetCommand(
     sr_componentInfo ci,
@@ -430,7 +428,8 @@ cfgGetServiceComponentInfo(
     u_cfElementAttributeBoolValue(info, ATTR_ENABLED, &enabled);
 
     /* Services have support for name, command, configuration, arguments
-     * schedule, priority and restart rule */
+     * schedule, priority and restart rule
+     */
     if (enabled) {
         r = cfgGetCommand(ci, info);
         if (r == TRUE) {
@@ -481,9 +480,6 @@ cfgGetApplicationComponentInfo(
     return !((int)r);
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 sr_componentInfo
 sr_componentInfoServiceNew(
     u_cfElement info,
@@ -541,12 +537,3 @@ sr_componentInfoFree(
         os_free(componentInfo);
     }
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
-

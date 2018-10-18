@@ -124,13 +124,13 @@ Adding these new elements and attributes would result in the following XML:
 OpenSplice
 **********
 
-            OpenSplice DDS is highly configurable, even allowing the architecture of the
-            DDS middleware to be chosen by the user at deployment time. OpenSplice DDS can
+            Vortex OpenSplice is highly configurable, even allowing the architecture of the
+            DDS middleware to be chosen by the user at deployment time. Vortex OpenSplice can
             be configured to run using a **shared memory** architecture, where both the
             DDS related administration (including the optional pluggable services) and DDS
-            applications interface directly with shared memory. Alternatively, OpenSplice
-            DDS also supports a **single process** architecture, where one or more DDS
-            applications, together with the OpenSplice administration and services, can all be
+            applications interface directly with shared memory. Alternatively, Vortex OpenSplice
+            also supports a **single process** architecture, where one or more DDS
+            applications, together with the Vortex OpenSplice administration and services, can all be
             grouped into a single operating system process. Both deployment modes support a
             configurable and extensible set of services, providing functionality such as:
 
@@ -141,23 +141,24 @@ OpenSplice
               persistent settings
 
             remote control and monitoring SOAP service - providing remote web-based
-              access using the SOAP protocol from the OpenSplice Tuner tool
+              access using the SOAP protocol from the Vortex OpenSplice Tuner tool
 
             dbms service - providing a connection between the real-time and the enterprise
               domain by bridging data from DDS to DBMS and vice versa
 
-            Because of the pluggable architecture, the OpenSplice middleware
+            Because of the pluggable architecture, the Vortex OpenSplice middleware
             can be easily configured on the fly by specifying which services to
             be used as well as specifying their optimal configuration for the
             application domain (networking parameters, durability levels, etc.).
             Typically, there are many nodes within a system.
 
-            The OpenSplice middleware including its services can be configured
+            The Vortex OpenSplice middleware including its services can be configured
             by means of easy maintainable XML-file(s).
 
 - Full path: //OpenSplice
 - Occurrences min-max: 1-1
 - Child elements: Description
+- Optional attributes: version
 
 Domain
 ******
@@ -171,7 +172,7 @@ Domain
             of all started services, take corrective actions if needed and stop the services when it is terminated.
 
 
-            When a shutdown of the OpenSplice Domain service is requested, it will react by announcing the shutdown using the
+            When a shutdown of the Vortex OpenSplice Domain service is requested, it will react by announcing the shutdown using the
             DDS administration. Applications will not be able to use DDS functionality anymore and services are requested
             to terminate elegantly. Once this has succeeded, the Domain service will destroy the administration and
             finally terminate itself.
@@ -200,8 +201,8 @@ Id
                     Note - for maximum interoperability it is recommended that you only select a domain Id from the range 0 < n < 230. The domain Id
                     value is used by the DDSI2 service to derive values for the required network communiction endpoints and service reconfiguration is
                     required to use domain id values outside of this range.
-                    Please see section 9.6.1 of the Real-time Publish-Subscribe Wire Protocol DDS Interoperability Wire Protocol specification (DDSI), v2.1, formal/2009-01-05 at
-                    http://www.omg.org/spec/DDSI/2.1/ for further information.
+                    Please see section 9.6.1 of the Real-time Publish-Subscribe Wire Protocol DDS Interoperability Wire Protocol specification (DDSI), v2.1, formal/2009-01-05
+                    or v2.2, formal/2014-09-01, at http://www.omg.org/spec/DDSI for further information.
 
 - Full path: //OpenSplice/Domain/Id
 - Format: integer
@@ -245,7 +246,7 @@ ExpiryTime
 
                     This element specifies the interval(in seconds) in which services have to announce their liveliness.
 
-                    Every OpenSplice service including the Domain service itself has to announce its liveliness regularly.
+                    Every Vortex OpenSplice service including the Domain service itself has to announce its liveliness regularly.
                     This allows corrective actions to be taken when one of the services becomes non-responsive. This
                     element specifies the required interval. Decreasing the interval decreases the time in which
                     non-responsiveness of a service is detected, but leads to more processing. Increasing it has
@@ -348,7 +349,7 @@ ServiceTerminatePeriod
                 This may prevent graceful termination and thus leave applications
                 that are still attached to the DDS domain in an undefined state.
                 Consequently the '0' value should only be used when there is
-                some form of process management on top of OpenSplice DDS.
+                some form of process management on top of Vortex OpenSplice.
 
 - Full path: //OpenSplice/Domain/ServiceTerminatePeriod
 - Format: float
@@ -360,12 +361,12 @@ ServiceTerminatePeriod
 SingleProcess
 =============
 
-                    The SingleProcess element specifies whether the OpenSplice Domain and other
-                      OpenSplice services and applications are intended to be all deployed within the
-                      same process, known in OpenSplice as a single process.
+                    The SingleProcess element specifies whether the Vortex OpenSplice Domain and other
+                      Vortex OpenSplice services and applications are intended to be all deployed within the
+                      same process, known in Vortex OpenSplice as a single process.
 
                     Please note that the choice to use the single process deployment also implies
-                      the use of heap memory for the OpenSplice database management instead of shared
+                      the use of heap memory for the Vortex OpenSplice database management instead of shared
                       memory that would be used otherwise. If no database size or size 0 is configured
                       the heap memory is limited by the Operating System, so the Database element under
                       Domain does not take effect when SingleProcess has a value of True.
@@ -373,13 +374,13 @@ SingleProcess
                       heap with that size and the domain service will use it's own memory manager to
                       manage that memory
 
-                    There are two ways in which to deploy an OpenSplice DDS application as a
+                    There are two ways in which to deploy an Vortex OpenSplice application as a
                       single process:
 
                     **Single Process Application** : The user starts an application as a
                       new process. In this case, the DDS create_participant operation will
-                      implicitly start the OpenSplice Domain Service as a thread in the existing
-                      application process. The OpenSplice Domain Service will then also implicitly
+                      implicitly start the Vortex OpenSplice Domain Service as a thread in the existing
+                      application process. The Vortex OpenSplice Domain Service will then also implicitly
                       start all services specified in the configuration as threads within the same
                       process.
                     **Single Process Application Cluster** : This provides the option to
@@ -423,7 +424,7 @@ CPUAffinity
 InProcessExceptionHandling
 ==========================
 
-           The InProcessExceptionHandling element determines whether a process that uses OpenSplice will
+           The InProcessExceptionHandling element determines whether a process that uses Vortex OpenSplice will
             handle exceptions by itself and try to clean up shared resources or not. If the process itself
             refrains from cleaning up its resources, the splice-daemon will attempt to clean up the application
             shared resources asynchronously. If the splice-daemon during clean-up determines that shared
@@ -1102,7 +1103,7 @@ Size
 Threshold
 ---------
 
-                        This element specifies the threshold size used by OpenSplice DDS. Whenever there is less
+                        This element specifies the threshold size used by Vortex OpenSplice. Whenever there is less
                         free shared memory then indicated by the threshold then no new allocations will be allowed
                         within shared memory. Services are allowed to continue allocating shared memory until less then
                         50% of the threshold value is available. It is strongly discouraged to configure a threshold
@@ -1132,15 +1133,21 @@ Address
                     default values per platform:
 
                     
-                    - 0x20000000 (Linux2.6 on x86)
-                    - 00x140000000 (Linux2.6 on x86_64)
-                    - 00x40000000 (Windows on x86)
-                    - 00x40000000 (Windows on x86_64)
-                    - 00xA0000000 (Solaris on SPARC)
-                    - 00xA0000000 (AIX5.3 on POWER5+)
-                    - 00x0 (VxWorks 5.5.1 on PowerPC604)
-                    - 00x60000000 (VxWorks 6.x on PowerPC604)
-                    - 00x20000000 (Integrity on mvme5100)
+                    - 00x20000000 (Linux)
+                    - 00x140000000 (Linux 64-bit)
+                    - 00x40000000 (Windows)
+                    - 00x140000000 (Windows 64-bit)
+                    - 00xA0000000 (Solaris)
+                    - 00xA0000000 (AIX5.3)
+                    - 00x0 (VxWorks 5.5.1)
+                    - 00x60000000 (VxWorks 6.x)
+                    - 00x20000000 (Integrity)
+                    - 00x20000000 (LynxOS)
+                    - 00x140000000 (LynxOS 64-bit)
+                    - 00x0 (PikeOS)
+                    - 00x60000000 (QXN)
+                    - 00x0 (RTEMS)
+                    - 00x00220000 (Windows CE)
 
 - Full path: //OpenSplice/Domain/Database/Address
 - Format: string
@@ -1218,7 +1225,7 @@ name
                     This attribute specifies the name by which the corresponding service is
                     identified in the rest of the configuration file.
 
-                    In the OpenSplice DDS configuration file, services and their settings
+                    In the Vortex OpenSplice configuration file, services and their settings
                     are identified by a name. When the Domain Service starts a particular
                     service, its corresponding name is passed. The service in question uses
                     this name in order to find its own configuration settings in the rest of
@@ -1249,15 +1256,15 @@ Command
                     This element specifies the command to be executed in order to start the service.
 
                     In shared memory mode, Command element specifies the name of the actual service
-                    executable (possibly including its path, but always including its extension, e.g.
-                    .exe on the Windows platform). When no path is included, the Domain Service
-                    will search the PATH environment variable for the corresponding executable. Once
-                    located, it will be started as a separate process.
+                    executable or a script to launch this service (possibly including its path, but always
+                    including its extension, e.g. .exe on the Windows platform). When no path is
+                    included, the Domain Service will search the PATH environment variable for the
+                    corresponding executable. Once located, it will be started as a separate process.
 
                     In single process mode, Command is the name of the entry point function to be
                     invoked and the name of the shared library to be dynamically loaded into the
                     process. The signature of the entry point function is the same as argc/argv usually
-                    seen with main. The OpenSplice services are implemented in such a way that the
+                    seen with main. The Vortex OpenSplice services are implemented in such a way that the
                     entry point name matches that of the shared library, so (for example) specifying
                     durability is all that is required.
 
@@ -1443,13 +1450,31 @@ FailureAction
                         - **skip**: Ignore the non-responsiveness and continue.
                         - **kill**: End the service process by force.
                         - **restart**: End the service process by force and restart it.
-                        - **systemhalt**:  End all OpenSplice services including the Domain service (for the current DDS Domain on this computing node).
+                        - **systemhalt**:  End all Vortex OpenSplice services including the Domain service (for the current DDS Domain on this computing node).
 
 - Full path: //OpenSplice/Domain/Service/FailureAction
 - Format: enumeration
 - Default value: skip
 - Valid values: kill, restart, skip, systemhalt
 - Occurrences min-max: 0-1
+
+GIDKey
+======
+- Full path: //OpenSplice/Domain/GIDKey
+- Occurrences min-max: 0-*
+- Required attributes: groups
+
+groups
+------
+
+                    This attribute specifies the namespace by which the corresponding groups
+                    will use the writer instance gid as key so that data from different writers
+                    don merge as historical data for late joiners.
+
+- Full path: //OpenSplice/Domain/GIDKey[@groups]
+- Format: string
+- Default value: n/a
+- Required: true
 
 Application
 ===========
@@ -1458,7 +1483,7 @@ Application
                 DDS applications by dynamically loading application shared libraries and
                 starting threads within the existing process.
                 A user can add a multiple Application elements to the configuration when they want
-                to 'cluster' multiple DDS applications within an OpenSplice DDS single process.
+                to 'cluster' multiple DDS applications within an Vortex OpenSplice single process.
                 The entry point and shared library for each Application can be specified by using the
                 Command and Library elements that are described below.>/p>
                 **Note that Applications only take effect when the single process configuration is enabled by way of the SingleProcess element.**
@@ -1500,7 +1525,7 @@ Command
                     shared library to be dynamically loaded into the process.  The signature of the entry
                     point function is the same as argc/argv usually seen with main.
 
-                    For example, if Command is "HelloWorld", OpenSpliceDDS will attempt to load
+                    For example, if Command is "HelloWorld", Vortex OpenSplice will attempt to load
                     "libHelloWorld.so" on Unix (or "HelloWorld.dll" on Windows) into the existing process
                     and then  invoke the "HelloWorld" entry point to start that DDS application.
 
@@ -1524,7 +1549,7 @@ Arguments
                     This optional attribute allows the user to specify arguments to be passed to the
                     DDS application's entry point when it is invoked.
 
-                    For example, if Command is "HelloWorld" and Arguments is "arg1 arg2", OpenSplice will
+                    For example, if Command is "HelloWorld" and Arguments is "arg1 arg2", Vortex OpenSplice will
                     invoke the HelloWorld function with the argc = 3 and argv = {"HelloWorld", "arg1", "arg2"}
 
 - Full path: //OpenSplice/Domain/Application/Arguments
@@ -1552,6 +1577,7 @@ BuiltinTopics
 - Full path: //OpenSplice/Domain/BuiltinTopics
 - Occurrences min-max: 0-1
 - Required attributes: enabled
+- Optional attributes: logfile
 
 enabled
 -------
@@ -1565,6 +1591,18 @@ enabled
 - Format: boolean
 - Default value: true
 - Required: true
+
+logfile
+-------
+
+                  This attribute specifies the log file for entity lifecycle messages.
+                  When a logfile is specified the service will open the logfile and
+                  write a corresponding log line for each update of discovered entities.
+
+- Full path: //OpenSplice/Domain/BuiltinTopics[@logfile]
+- Format: string
+- Default value: builtin.log
+- Required: false
 
 PriorityInheritance
 ===================
@@ -1591,7 +1629,7 @@ enabled
 Report
 ======
 
-            The Report element controls some aspects of the OpenSplice domain logging
+            The Report element controls some aspects of the Vortex OpenSplice domain logging
             functionality.
 
 - Full path: //OpenSplice/Domain/Report
@@ -1640,7 +1678,7 @@ Statistics
 ==========
 
             This element specifies the policies regarding statistics. Various statistics
-            can be generated by OpenSplice DDS to help you analyze and tune application
+            can be generated by Vortex OpenSplice to help you analyze and tune application
             behaviour during application development.  Since this introduces extra overhead,
             it is generally turned off in a runtime system.
 
@@ -1751,7 +1789,7 @@ symbol_name
 
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
                 The context parameter is an out reference that can be set to plugin-specific data that
                 will subsequently be passed to any of the other plugin functions. The value of the
                 parameter is meaningless to the service
@@ -1793,7 +1831,7 @@ symbol_name
           resolved, an error message will be generated and the service will not attempt to
           resolve other symbol_names for the report plugin.
           The function is invoked slightly differently for applications using the DDS API and
-          OpenSplice services. OpenSplice services invoke the function once for every report.
+          Vortex OpenSplice services. Vortex OpenSplice services invoke the function once for every report.
           For applications using the DDS API the function is invoked once per API call, in
           which case the XML is extended by one or more DETAIL elements.
           The implementation of this function must have the following signature:
@@ -1801,7 +1839,7 @@ symbol_name
 
           The result value is used to return the status of the call. If it is 0 then the operation
           was successful. If it is not 0 then there was an error and details of the error and the
-          result value are reported to the OpenSplice DDS default report service.
+          result value are reported to the Vortex OpenSplice default report service.
           The context parameter is a reference to the plugin-specific data retrieved from the
           initialize operation.
           The report parameter is an XML string representation of the report data.
@@ -1921,7 +1959,7 @@ symbol_name
 
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
 
 - Full path: //OpenSplice/Domain/ReportPlugin/TypedReport[@symbol_name]
 - Format: string
@@ -1952,7 +1990,7 @@ symbol_name
                 int symbol_name (void \*context)
                 The result value is used to return the status of the call. If it is 0 then the operation
                 was successful. If it is not 0 then there was an error and details of the error and the
-                result value are reported to the OpenSplice DDS default report service.
+                result value are reported to the Vortex OpenSplice default report service.
                 The context parameter is a reference to the plugin-specific data retrieved from the
                 initialize operation.
 
@@ -1979,8 +2017,8 @@ ServicesOnly
 ------------
 
             This attribute specifies whether the log plug-in is to be effective only for processes
-            that are exclusively OpenSplice services. If this value is true then the plug-in will
-            not be used for user applications and/or OpenSplice services collocated with user
+            that are exclusively Vortex OpenSplice services. If this value is true then the plug-in will
+            not be used for user applications and/or Vortex OpenSplice services collocated with user
             applications in single process mode.
 
 - Full path: //OpenSplice/Domain/ReportPlugin/ServicesOnly
@@ -2230,7 +2268,7 @@ UserClock
 =========
 
             The UserClock Service allows you to plug in a custom clock library, allowing
-            OpenSplice to read the time from an external clock source. It expects a root
+            Vortex OpenSplice to read the time from an external clock source. It expects a root
             element named *OpenSplice/Domain/UserClock*. Within this root element,
             the userclock will look for several child-elements. Each of these is listed
             and explained.
@@ -2459,7 +2497,7 @@ cache
 y2038Ready
 ==========
 
-            The y2038Ready element determines that OpenSplice will send timestamps to other nodes
+            The y2038Ready element determines that Vortex OpenSplice will send timestamps to other nodes
             in a 64-bit format which is capable to contain time stamps beyond the year 2038.
 
             Setting this option to true will force the middleware to communicate with time stamps able to go
@@ -2487,11 +2525,90 @@ See ' time stamps and year 2038 limit' for more background information.
 - Default value: false
 - Occurrences min-max: 0-1
 
+Filters
+=======
+
+          Domain Filters are expressions that are applied on the local Domain Service meaning that it affects all local readers
+          including services, i.e. filtered out data will not exist on the node.
+          By using filters the amount of data that is being send or received can be reduced.
+
+
+          Different filters can be specified for different partition-topic
+          combinations using the &lt;Filter&gt;-elements.
+
+
+          Note: that when a filter is set on a partition topic combination the Durability Service can no longer be master for
+          the namespace that contains the given partition-topic combination as it is incomplete by definition.
+
+- Full path: //OpenSplice/Domain/Filters
+- Occurrences min-max: 0-1
+
+Filter
+------
+
+            This element specifies the filter that is used. The &lt;PartitionTopic&gt;-child
+            elements specify the partition-topic combinations to which the
+            filter expression is applied.
+
+
+            If no filter is defined for a particular partition-topic then all data will be
+            send for this partition-topic combination.
+            If multiple filters are defined then the first one that matches will be applied.
+
+- Full path: //OpenSplice/Domain/Filters/Filter
+- Occurrences min-max: 0-*
+- Child elements: PartitionTopic
+- Required attributes: content
+
+content
+^^^^^^^
+
+              This attribute specifies the expression that is used for filtering.
+              The expression is a string that is used as-is without any parameters.
+              The filter expression is essentially the where-clauses of an sql expression.
+              When data is requested for matching partition-topics only the data
+              that matches the filter expression will be aligned. The
+              content attribute defaults to the empty string, which means that
+              no filter is applied at all.
+
+
+              The following escape sequence can be used in expressions: &amp;lt;
+              (less than), &amp;gt; (greater than), &amp;quot; (double quote)
+              &amp;apos; (apostrophe) and &amp;amp; (ampersand).
+
+
+              Examples of expressions are:
+              
+                - x=1 or x=2
+                - (id&amp;lt;10) and (name=&quot;test&quot;)
+              
+
+              If an invalid filter expression is provided an error will be logged
+              in ospl-error.log.
+
+- Full path: //OpenSplice/Domain/Filters/Filter[@content]
+- Format: string
+- Default value: n/a
+- Required: true
+
+PartitionTopic
+^^^^^^^^^^^^^^
+
+              This element specifies the partition-topics to which
+              the filter expression is applied. A partition-topic
+              expression may contain the wildcards '\*' to match any number of
+              characters and '?' to match one single character.
+
+- Full path: //OpenSplice/Domain/Filters/Filter/PartitionTopic
+- Format: string
+- Default value: *.*
+- Occurrences min-max: 0-*
+
 DurabilityService
 *****************
 
                 The responsibilities of the durability service are to realize the durable properties of
-                data in an OpenSplice system. The Durability Service looks for its configuration
+                data in an Vortex OpenSplice system. The Durability Service looks for its configuration
                 within the 'OpenSplice/DurabilityService' element. The configuration parameters
                 that the Durability Service will look for within this element are listed and explained
                 in the following subsections.
@@ -2550,7 +2667,7 @@ EntityNames
 
                     This element specifies the names of the various entities used by the
                     client-durability feature of this DurabilityService. The names specified
-                    here will be displayed in the OpenSplice DDS Tuner when viewing the
+                    here will be displayed in the Vortex OpenSplice Tuner when viewing the
                     DurabilityService.
 
 - Full path: //OpenSplice/DurabilityService/ClientDurability/EntityNames
@@ -2733,7 +2850,7 @@ Heartbeat
 ---------
 
                     During startup and at runtime, the network topology can change
-                    dynamically. This happens when OpenSplice services are started/stopped
+                    dynamically. This happens when Vortex OpenSplice services are started/stopped
                     or when a network cable is plugged in/out. The Durability services
                     need to keep data consistency in that environment. To detect newly
                     joining services as well as detecting nodes that are leaving, the
@@ -2948,8 +3065,14 @@ TimeAlignment
                         the domain can be considered aligned or not. This setting
                         needs to be consistent for all durability services in the
                         domain. In case there is no time alignment, the durability
-                        service needs to align more data since to compensate possible
+                        service needs to align more data to compensate for possible
                         timing gaps between different nodes in the domain.
+
+                        When using DDSI2(e) networking service it is strongly recommended
+                        to set this value to 'false'. The asynchronous nature of the DDSI2
+                        discovery protocol in combination with TimeAlignment could lead to a
+                        gap in transient/persistent data when Durability alignment and DDSI2
+                        discovery coincide, which is normal behavior.
 
 - Full path: //OpenSplice/DurabilityService/Network/Alignment/TimeAlignment
 - Format: boolean
@@ -3088,7 +3211,7 @@ RequestCombinePeriod
                         but will decrease the processing and network load in
                         case multiple Durability services need to resolve the
                         same data around the same time. Increasing the value
-                        is useful in case OpenSplice is started at the same time
+                        is useful in case Vortex OpenSplice is started at the same time
                         with more than two computing nodes.
 
 - Full path: //OpenSplice/DurabilityService/Network/Alignment/RequestCombinePeriod
@@ -3261,6 +3384,38 @@ ServiceName
 - Default value: networking
 - Occurrences min-max: 1-*
 
+MasterElection
+==============
+
+                For every namespace and role a single node is elected master, the one to
+                provide historical data. This optional element can be used to fine-fune the
+                characteristics of the master election algorithm.
+
+                This element is optional, and when used only applies to master election for
+                namespaces with non-legacy masterPriority (see
+                //OpenSplice/DurabilityService/NameSpaces/Policy[@masterPriority]).
+
+- Full path: //OpenSplice/DurabilityService/MasterElection
+- Occurrences min-max: 0-1
+- Child elements: WaitTime
+
+WaitTime
+--------
+
+                    Before the durability service elects a master it can waits some time to
+                    detect other nodes in the system. Waiting might increase the possibility
+                    to elect a better candidate, but slows down the master election process.
+                    Electing a master too early may lead to additional alignment actions when
+                    a better candidate appears later, because a handover of mastership is needed.
+                    When the chance that a better master candicate appears within the WaitTime
+                    is small it is advised to set this value to 0.0 (the default).
+
+- Full path: //OpenSplice/DurabilityService/MasterElection/WaitTime
+- Dimension: seconds
+- Default value: 0.0
+- Valid values: 0.0 / 10.0
+- Occurrences min-max: 0-1
+
 Persistent
 ==========
 
@@ -3274,7 +3429,7 @@ Persistent
                 the persistent properties of the data.
 
                 Note these elements are only available as part of the DDS
-                persistence profile of OpenSplice.
+                persistence profile of Vortex OpenSplice.
 
 - Full path: //OpenSplice/DurabilityService/Persistent
 - Occurrences min-max: 0-1
@@ -3330,20 +3485,16 @@ StoreMode
 
                     This element specifies the plug-in that is used to store the
                     persistent data on disk. With "XML" mode, the service will store
-                    persistent data in XML files. With "MMF", the service will store
-                    persistent data in a Memory Mapped File that exactly represents
-                    the memory that is being used by the persistent store.
-                    With "KV" mode the service will store persistent data in a key-value
-                    store using either sqlite of leveldb to store the data on disk.
-                    !!! The "MMF" store is deprecated from version 6.3 and was only implemented on linux !!!,
-
+                    persistent data in XML files. With "KV" mode the service will store
+                    persistent data in a key-value store using either sqlite of leveldb
+                    to store the data on disk.
                     !!! For "KV" stores, SQLite is supported on linux, Windows, and Solaris; LevelDB is only
                     supported on linux.
 
 - Full path: //OpenSplice/DurabilityService/Persistent/StoreMode
 - Format: enumeration
 - Default value: XML
-- Valid values: XML, MMF, KV
+- Valid values: XML, KV
 - Occurrences min-max: 0-1
 
 SmpCount
@@ -3384,12 +3535,25 @@ type
 ^^^^
 
                         This attribute specifies the third-party product that is used to implement the KV store.
-                        Products currently supported are SQLite and LevelDB
+                        Products currently supported are SQLite and LevelDB.
+                        The following types can be selected:
+                        
+                          - sqlite3 -use sqlite3 as the key value store. Data in the store is stored efficiently
+                              as binary blobs. This is the default.
+                          - sqlite - same as sqlite3. This option is present for backward compatibility.
+                          - sqlitemt - use sqlite3 as the key value store implementation, but
+                             stores the information as readable data. This mode allows a user to inspect the
+                             contents of the store, but the store performance will be lower compared to sqlite3
+                             because each piece of data must be  translated to readable format. This option is
+                             typically used for testing purposes to inspect the contents of the store.
+
+                             (Note: the abbreviation 'mt' stands for 'multi-table').
+                          - leveldb - use leveldb as the key value store
 
 - Full path: //OpenSplice/DurabilityService/Persistent/KeyValueStore[@type]
 - Format: enumeration
 - Default value: sqlite3
-- Valid values: sqlite3, sqlite, leveldb
+- Valid values: sqlite3, sqlite, sqlitemt, leveldb
 - Required: true
 
 StorageParameters
@@ -3484,7 +3648,7 @@ algorithm
                             This attribute specifies the compression algorithm that is used to store the persistent
                             data in the key-value store.
 
-                            The lzf and snappy compression algorithms are built into the OpenSplice
+                            The lzf and snappy compression algorithms are built into the Vortex OpenSplice
                             installation. To use the zlib algorithm a shared library needs to be available on the
                             system, and it must be locatable by way of the current working directory, or via
                             LD_LIBRARY_PATH (on Unix systems) or PATH (on Windows systems).
@@ -3505,61 +3669,6 @@ enabled
 - Format: boolean
 - Default value: true
 - Required: false
-
-MemoryMappedFileStore
----------------------
-
-                    This element specifies the memory mapped file store mode parameters. This
-                    element is only valid when the Persistent/StoreMode element is set to "MMF".
-                    The size and the starting address of the memory file must be supplied
-                    The "MMF" store is deprecated from version 6.3. and was only implemented in Linux
-
-- Full path: //OpenSplice/DurabilityService/Persistent/MemoryMappedFileStore
-- Occurrences min-max: 0-1
-- Child elements: Size, Address
-
-Size
-^^^^
-
-                          This element specifies the size of the memory mapped file used to
-                          store persistent data. Change this value according to the size of
-                          your persistent data. The file should be big enough to store:
-                          
-                          - all persistent data in your specified namespaces
-                          - PLUS a potential backup for all persistent data in namespaces whose content may be replaced by persistent data from another master.
-                          
-
-                          As a rule of thumb, you could state that the persistent store should
-                          be twice the size of your combined persistent data in your specified
-                          namespaces. Please note that the operating system should be configured
-                          to support the requested size.
-
-                            If this value is not specified, the size of the persistent store will be
-                            set to twice the size of the shared memory segment.
-
-- Full path: //OpenSplice/DurabilityService/Persistent/MemoryMappedFileStore/Size
-- Default value: 10485760
-- Valid values: 1048576 /  -
-- Occurrences min-max: 0-1
-
-Address
-^^^^^^^
-
-                      This element specifies the start address where the
-                      file is mapped into the virtual memory.
-                      The possible values are platform dependent.
-
-                      Change this value if the default address is already in
-                      use, for example by another Domain Service or another
-                      product.
-
-                        If this value is not specified, the file will be mapped
-                        just after the shared memory segment.
-
-- Full path: //OpenSplice/DurabilityService/Persistent/MemoryMappedFileStore/Address
-- Format: string
-- Default value: 0x80000000
-- Occurrences min-max: 0-1
 
 StoreOptimizeInterval
 ---------------------
@@ -3749,7 +3858,7 @@ Policy
 - Full path: //OpenSplice/DurabilityService/NameSpaces/Policy
 - Occurrences min-max: 0-*
 - Required attributes: nameSpace, durability, aligner, alignee
-- Optional attributes: delayedAlignment, equalityCheck
+- Optional attributes: delayedAlignment, equalityCheck, masterPriority
 
 Merge
 ^^^^^
@@ -3944,97 +4053,37 @@ equalityCheck
 - Default value: False
 - Required: false
 
-Filters
--------
+masterPriority
+^^^^^^^^^^^^^^
 
-                    Filters are expressions that are applied when historical
-                    data is requested from another durability service. By using
-                    filters the amount of alignment data between durability
-                    services can be reduced.
+                This attribute sets the master selection priority of the namespace.
+                The default value is 255, this allows to modify a single durability service in
+                an existing system to become both preferred master as well as non-preferred master
+                without having to change the configuration of all durability services.
+                The Durability Service will never become master for a namespace when the
+                masterPriority is set to zero.
+                When set to 255 the durability Service will not use priorities at all, and falls back
+                to the legacy master selection algorithm.
+                If the masterPriority is set other than 0 and 255 the Durability Service will become master if
+                it has the highest masterPriority of all discovered Durability Services for the namespace.
+                If multiple Durability Services exist having equally highest masterPriority
+                a further selection will be made based on the highest namespace quality of each
+                Durability Service (but only if persistent data has not been injected before).
+                Then if there are still multiple equally suitable Durability Services the
+                Durability Service with the highest system id will be selected.
 
-
-                    Different filters can be specified for different partition-topic
-                    combinations using the &lt;Filter&gt;-elements.
-
-
-                    **NOTE** A side effect can occur when filters are
-                    used in combination with the ability to align data.
-                    In case a node that has retrieved a subset of historical data
-                    using filters becomes the aligner to other nodes at some
-                    point in time, then only this subset will be aligned to the other
-                    nodes.
-
-- Full path: //OpenSplice/DurabilityService/NameSpaces/Filters
-- Occurrences min-max: 0-1
-
-Filter
-^^^^^^
-
-                      This element specifies the filter expression that is used when
-                      historical data is requested. The &lt;PartitionTopic&gt;-child
-                      elements specify the partition-topic combinations to which the
-                      filter expression is applied.
-
-
-                      If no filter is defined for a particular partition-topic then all data will be
-                      aligned for this partition-topic combination.
-                      If multiple filters are defined then the first one that matches will be applied.
-
-- Full path: //OpenSplice/DurabilityService/NameSpaces/Filters/Filter
-- Occurrences min-max: 0-*
-- Child elements: PartitionTopic
-- Required attributes: content
-
-content
-~~~~~~~
-
-                      This attribute specifies the expression that is used for filtering.
-                      The expression is a string that is used as-is without any parameters.
-                      The filter expression is essentially the where-clauses of an sql expression.
-                      When data is requested for matching partition-topics only the data
-                      that matches the filter expression will be aligned. The
-                      content attribute defaults to the empty string, which means that
-                      no filter is applied at all.
-
-
-                      The following escape sequence can be used in expressions: &amp;lt;
-                      (less than), &amp;gt; (greater than), &amp;quot; (double quote)
-                      &amp;apos; (apostrophe) and &amp;amp; (ampersand).
-
-
-                      Examples of expressions are:
-                      
-                        - x=1 or x=2
-                        - (id&amp;lt;10) and (name=&quot;test&quot;)
-                      
-
-                      If an invalid filter expression is provided an error will be logged
-                      in ospl-error.log.
-
-- Full path: //OpenSplice/DurabilityService/NameSpaces/Filters/Filter[@content]
-- Format: string
-- Default value: n/a
-- Required: true
-
-PartitionTopic
-~~~~~~~~~~~~~~
-
-                  This element specifies the partition-topics to which
-                  the filter expression is applied. A partition-topic
-                  expression may contain the wildcards '\*' to match any number of
-                  characters and '?' to match one single character.
-
-- Full path: //OpenSplice/DurabilityService/NameSpaces/Filters/Filter/PartitionTopic
-- Format: string
-- Default value: *.*
-- Occurrences min-max: 0-*
+- Full path: //OpenSplice/DurabilityService/NameSpaces/Policy[@masterPriority]
+- Format: integer
+- Default value: 255
+- Valid values: 0 / 255
+- Required: false
 
 EntityNames
 ===========
 
                 This element specifies the names of the various entities used by the
                 DurabilityService. The names specified here will be displayed in the
-                OpenSplice DDS Tuner when viewing the DurabilityService.
+                Vortex OpenSplice Tuner when viewing the DurabilityService.
 
 - Full path: //OpenSplice/DurabilityService/EntityNames
 - Occurrences min-max: 0-1
@@ -4256,7 +4305,7 @@ NetworkInterfaceAddress
                     Every Secure Networking service is bound to only one network interface card
                     (NIC). The card can be uniquely identified by its corresponding
                     IP address or by its symbolic name (e.g. eth0). If the
-                    value "first available" is entered here, the OpenSplice
+                    value "first available" is entered here, the Vortex OpenSplice
                     middleware will try to look up an interface that has
                     the required capabilities.
 
@@ -4335,7 +4384,7 @@ EnableMulticastLoopback
 EnableMulticastLoopback specifies whether the secure networking service will allow
           IP multicast packets within the node to be visible to all secure networking participants in the node,
           including itself. It must be TRUE for intra-node multicast communications,
-          but if a node runs only a single OpenSplice secure networking service and does not host
+          but if a node runs only a single Vortex OpenSplice secure networking service and does not host
           any other networking-capable programs, it may be set to FALSE for improved performance.
 
 - Full path: //OpenSplice/SNetworkService/General/EnableMulticastLoopback
@@ -4393,7 +4442,7 @@ allowed
 Partitioning
 ============
 
-                The OpenSplice Secure Networking service is capable of leveraging
+                The Vortex OpenSplice Secure Networking service is capable of leveraging
                 the network's multicast and routing capabilities. If some a-priori
                 knowledge about the participating
                 nodes and their topic and partition interest is available, then the
@@ -4522,7 +4571,7 @@ commas (,) semicolons (;) or spaces ( ). Samples for this partition will be sent
 all addresses that are specified in this list of addresses. To specify the default
 broadcast address, use the expression "broadcast". Addresses can be entered as
 'dotted decimal' IPv4 or 'colon-separated hexadecimal' IPv6 notation or as the
-symbolic hostname, in which case OpenSplice will try to resolve the corresponding
+symbolic hostname, in which case Vortex OpenSplice will try to resolve the corresponding
 IP address.
 
 - Full path: //OpenSplice/SNetworkService/Partitioning/NetworkPartitions/NetworkPartition[@Address]
@@ -4579,11 +4628,11 @@ SecurityProfile
                        security feature has been enabled but no profile is declared, the NULL profile will be
                        used by default.
                        The ordering of network partition declarations in the OSPL configuration file must
-                       be the same for all nodes within the OpenSplice domain. If certain nodes shall not
+                       be the same for all nodes within the Vortex OpenSplice domain. If certain nodes shall not
                        use one of the network partitions, the network partition in question must be declared
                        as connected="false". In this case the declared security profile would not be
                        evaluated or initialized, and the associated secret cipher keys need not to be defined
-                       for the OpenSplice node in question.
+                       for the Vortex OpenSplice node in question.
 
 - Full path: //OpenSplice/SNetworkService/Partitioning/NetworkPartitions/NetworkPartition[@SecurityProfile]
 - Format: string
@@ -4715,7 +4764,7 @@ enabled
                         NULL cipher does not provide for any level of integrity or confidentiality, but
                         message items will be sent unencrypted.
                         In case of enabled="false" the security feature will not be activated, and the
-                        node acts like any other OpenSplice node not being security aware. Security profiles
+                        node acts like any other Vortex OpenSplice node not being security aware. Security profiles
                         defined in the configuration file will not take effect, but will cause the system to log
                         warnings.
 
@@ -4753,9 +4802,9 @@ Cipher
                         have a specific length, 128 bits, 192 bits, 256 bits or none at all. The following
                         case-insensitive values are supported by the current implementation:
                         
-                            - aes128, implements AES cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.
+                            - aes128, implements the AES cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.
                             - aes192, implements the AES cipher with 192 bit cipher-key (24 Bytes, 48 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.
-                            - aes256, implements the AES cipher with 256 bit cipher-key (32 Bytes, 64 hexadecimal characters. This cipher will occupy 34 bytes of each UDP packet being sent.
+                            - aes256, implements the AES cipher with 256 bit cipher-key (32 Bytes, 64 hexadecimal characters). This cipher will occupy 34 bytes of each UDP packet being sent.
                             - blowfish, implements the Blowfish cipher with 128 bit cipher-key (16 Bytes, 32 hexadecimal characters). This cipher will occupy 26 bytes of each UDP packet being sent.
                             - null, implements the NULL cipher. The only cipher that does not require a cipher-key. This cipher will occupy 4 bytes of each UDP packet being sent.
                         
@@ -4783,14 +4832,14 @@ CipherKey
                         will be marked as invalid. Moreover, each network partition referring to the invalid
                         Security Profile will not be operational and thus traffic will be blocked to prevent
                         information leaks.
-                        As all OpenSplice applications require read access to the XML configuration file,
+                        As all Vortex OpenSplice applications require read access to the XML configuration file,
                         for security reasons it is recommended to store the secret key in an external file in
                         the file system, referenced by the URI in the configuration file. The file must be
                         protected against read and write access from other users on the host. Verify that
                         access rights are not given to any other user or group on the host.
 
                         Alternatively, storing the secret key in-place in the XML configuration file will give
-                        read/write access to all DDS applications joining the same OpenSplice node.
+                        read/write access to all DDS applications joining the same Vortex OpenSplice node.
                         Because of this, the 'in-place' method is strongly discouraged.
 
 - Full path: //OpenSplice/SNetworkService/Security/SecurityProfile[@CipherKey]
@@ -4853,7 +4902,7 @@ enabled
 type
 ~~~~
 
-                            The type attribute defines the access control model type. Currently, OpenSplice only
+                            The type attribute defines the access control model type. Currently, Vortex OpenSplice only
                             supports mandatory access control, accordingly the only valid value for this
                             attribute is "MAC".
 
@@ -4910,7 +4959,7 @@ Key
 
                            It is recommended that the absolute path is used. A relative path
                            will be interpreted relative to the directory from which the
-                           OpenSplice daemon is started.
+                           Vortex OpenSplice daemon is started.
 
 - Full path: //OpenSplice/SNetworkService/Security/Authentication/X509Authentication/Credentials/Key
 - Format: string
@@ -4923,7 +4972,7 @@ Cert
 
                            It is recommended that the absolute path is used. A relative path
                            will be interpreted relative to the directory from which the
-                           OpenSplice daemon is started.
+                           Vortex OpenSplice daemon is started.
 
 - Full path: //OpenSplice/SNetworkService/Security/Authentication/X509Authentication/Credentials/Cert
 - Format: string
@@ -4936,7 +4985,7 @@ TrustedCertificates
 
                         It is recommended that the absolute path is used. A relative path
                         will be interpreted relative to the directory from which the
-                        OpenSplice daemon is started.
+                        Vortex OpenSplice daemon is started.
 
 - Full path: //OpenSplice/SNetworkService/Security/Authentication/X509Authentication/TrustedCertificates
 - Format: string
@@ -5157,12 +5206,12 @@ Sending
 
 - Full path: //OpenSplice/SNetworkService/Channels/Channel/Sending
 - Occurrences min-max: 0-1
-- Child elements: CrcCheck, QueueSize, MaxBurstSize, ThrottleLimit, ThrottleThreshold, MaxRetries, RecoveryFactor, DiffServField, DontRoute, TimeToLive
+- Child elements: CrcCheck, QueueSize, MaxBurstSize, ThrottleLimit, ThrottleThreshold, MaxRetries, RecoveryFactor, DiffServField, DontRoute, DontFragment, TimeToLive
 
 CrcCheck
 ~~~~~~~~
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5303,7 +5352,7 @@ DiffServField
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
 
 - Full path: //OpenSplice/SNetworkService/Channels/Channel/Sending/DiffServField
 - Format: integer
@@ -5319,6 +5368,19 @@ The IP DONTROUTE
 - Full path: //OpenSplice/SNetworkService/Channels/Channel/Sending/DontRoute
 - Format: boolean
 - Default value: True
+- Valid values: True, False
+- Occurrences min-max: 0-1
+
+DontFragment
+~~~~~~~~~~~~
+
+                        Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                        Note that not all operating systems support setting this bit. When the operating
+                        system does not support setting the DF bit this option is ignored.
+
+- Full path: //OpenSplice/SNetworkService/Channels/Channel/Sending/DontFragment
+- Format: boolean
+- Default value: False
 - Valid values: True, False
 - Occurrences min-max: 0-1
 
@@ -5395,7 +5457,7 @@ Receiving
 CrcCheck
 ~~~~~~~~
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5683,12 +5745,12 @@ Sending
 
 - Full path: //OpenSplice/SNetworkService/Discovery/Sending
 - Occurrences min-max: 0-1
-- Child elements: CrcCheck, DiffServField, DontRoute, TimeToLive, Interval, SafetyFactor, SalvoSize
+- Child elements: CrcCheck, DiffServField, DontRoute, DontFragment, TimeToLive, Interval, SafetyFactor, SalvoSize
 
 CrcCheck
 ^^^^^^^^
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5726,7 +5788,7 @@ DiffServField
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
 
 - Full path: //OpenSplice/SNetworkService/Discovery/Sending/DiffServField
 - Format: integer
@@ -5742,6 +5804,19 @@ The IP DONTROUTE
 - Full path: //OpenSplice/SNetworkService/Discovery/Sending/DontRoute
 - Format: boolean
 - Default value: True
+- Valid values: True, False
+- Occurrences min-max: 0-1
+
+DontFragment
+^^^^^^^^^^^^
+
+                      Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                      Note that not all operating systems support setting this bit. When the operating
+                      system does not support setting the DF bit this option is ignored.
+
+- Full path: //OpenSplice/SNetworkService/Discovery/Sending/DontFragment
+- Format: boolean
+- Default value: False
 - Valid values: True, False
 - Occurrences min-max: 0-1
 
@@ -5851,7 +5926,7 @@ Receiving
 CrcCheck
 ^^^^^^^^
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -5944,7 +6019,7 @@ Tracing
 
 - Full path: //OpenSplice/SNetworkService/Tracing
 - Occurrences min-max: 0-1
-- Child elements: OutputFile, Timestamps
+- Child elements: OutputFile, Timestamps, Verbosity
 - Optional attributes: enabled
 
 enabled
@@ -6153,6 +6228,26 @@ Discovery
 - Valid values: 0 / 6
 - Occurrences min-max: 0-1
 
+Verbosity
+---------
+
+The Verbosity attribute sets the level of tracing for all Tracing Catagories. This attribute is an additional method besides the Tracing/Catagories tag to specify trace levels. The difference is that Verbosity sets the level for all catagories similar as by other services whereas the Tracing/Catagories element allows to set the trace level per catagory. The verbosity levels are mapped to Catagory levels as following:
+
+- *none*: level 0 (no Networking log)
+- *severe*:   level 1 
+- *warning*:  level 2 
+- *info*:     level 3 
+- *config*:   level 3 
+- *fine*:     level 4 
+- *finer*:    level 5 
+- *finest*:   level 6
+
+- Full path: //OpenSplice/SNetworkService/Tracing/Verbosity
+- Format: enumeration
+- Default value: none
+- Valid values: finest, finer, fine, config, info, warning, severe, none
+- Occurrences min-max: 0-1
+
 Compression
 ===========
 
@@ -6161,7 +6256,7 @@ Compression
                       networking service includes (depending on platform) implementations
                       of zlib, lzf and snappy. Others may be implemented by writing a
                       dynamically-loadable library and configuring it here. See the
-                      OpenSplice release notes for details of how to write such a
+                      Vortex OpenSplice release notes for details of how to write such a
                       library.
 
                       It is imperative that all nodes exchanging compressed data
@@ -6217,7 +6312,7 @@ NetworkService
 
 The Network Service provides a bridge between the local DDS service and a
 network interface.
-The OpenSplice NetworkService supports both Internet Protocol
+The Vortex OpenSplice NetworkService supports both Internet Protocol
 Versions 4 and 6 (IPv4 & IPv6) where possible. Please refer to the Release Notes
 (Known Issues section) to see if the IPv6 capability is present on your operating
 system.
@@ -6245,7 +6340,7 @@ Domain section of the configuration file (Element Application).
 </Service>*
 
 The network configuration expects a root element named
-OpenSplice/NetworkService. Within this root element, the Network Service
+Vortex OpenSplice/NetworkService. Within this root element, the Network Service
 will look for several child-elements. Each of these is listed and explained.
 
 - Full path: //OpenSplice/NetworkService
@@ -6343,7 +6438,7 @@ NetworkInterfaceAddress
                     Every Networking service is bound to only one network interface card
                     (NIC). The card can be uniquely identified by its corresponding
                     IP address or by its symbolic name (e.g. eth0). If the
-                    value "first available" is entered here, the OpenSplice
+                    value "first available" is entered here, the Vortex OpenSplice
                     middleware will try to look up an interface that has
                     the required capabilities.
 
@@ -6423,7 +6518,7 @@ EnableMulticastLoopback
           EnableMulticastLoopback specifies whether the networking service will allow
           IP multicast packets within the node to be visible to all networking participants in the node,
           including itself. It must be TRUE for intra-node multicast communications,
-          but if a node runs only a single OpenSplice networking service and does not host
+          but if a node runs only a single Vortex OpenSplice networking service and does not host
           any other networking-capable programs, it may be set to FALSE for improved performance.
 
 - Full path: //OpenSplice/NetworkService/General/EnableMulticastLoopback
@@ -6481,7 +6576,7 @@ allowed
 Partitioning
 ============
 
-                The OpenSplice Networking service is capable of leveraging
+                The Vortex OpenSplice Networking service is capable of leveraging
                 the network's multicast and routing capabilities. If some a-priori
                 knowledge about the participating
                 nodes and their topic and partition interest is available, then the
@@ -6657,11 +6752,11 @@ SecurityProfile
               security feature has been enabled but no profile is declared, the NULL profile will be
               used by default.
               The ordering of network partition declarations in the OSPL configuration file must
-              be the same for all nodes within the OpenSplice domain. If certain nodes shall not
+              be the same for all nodes within the Vortex OpenSplice domain. If certain nodes shall not
               use one of the network partitions, the network partition in question must be declared
               as connected="false". In this case the declared security profile would not be
               evaluated or initialized, and the associated secret cipher keys need not to be defined
-              for the OpenSplice node in question.
+              for the Vortex OpenSplice node in question.
 
 - Full path: //OpenSplice/NetworkService/Partitioning/NetworkPartitions/NetworkPartition[@SecurityProfile]
 - Format: string
@@ -6978,12 +7073,12 @@ Sending
 
 - Full path: //OpenSplice/NetworkService/Channels/Channel/Sending
 - Occurrences min-max: 0-1
-- Child elements: CrcCheck, QueueSize, MaxBurstSize, ThrottleLimit, ThrottleThreshold, MaxRetries, RecoveryFactor, DiffServField, DontRoute, TimeToLive, ReportInterval
+- Child elements: CrcCheck, QueueSize, MaxBurstSize, ThrottleLimit, ThrottleThreshold, MaxRetries, RecoveryFactor, DiffServField, DontRoute, DontFragment, TimeToLive, ReportInterval
 
 CrcCheck
 ~~~~~~~~
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -7104,7 +7199,7 @@ DiffServField
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
 
 - Full path: //OpenSplice/NetworkService/Channels/Channel/Sending/DiffServField
 - Format: integer
@@ -7120,6 +7215,19 @@ The IP DONTROUTE
 - Full path: //OpenSplice/NetworkService/Channels/Channel/Sending/DontRoute
 - Format: boolean
 - Default value: True
+- Valid values: True, False
+- Occurrences min-max: 0-1
+
+DontFragment
+~~~~~~~~~~~~
+
+                        Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                        Note that not all operating systems support setting this bit. When the operating
+                        system does not support setting the DF bit this option is ignored.
+
+- Full path: //OpenSplice/NetworkService/Channels/Channel/Sending/DontFragment
+- Format: boolean
+- Default value: False
 - Valid values: True, False
 - Occurrences min-max: 0-1
 
@@ -7196,7 +7304,7 @@ Receiving
 CrcCheck
 ~~~~~~~~
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -7495,12 +7603,12 @@ Sending
 
 - Full path: //OpenSplice/NetworkService/Discovery/Sending
 - Occurrences min-max: 0-1
-- Child elements: CrcCheck, DiffServField, DontRoute, TimeToLive, Interval, SafetyFactor, SalvoSize
+- Child elements: CrcCheck, DiffServField, DontRoute, DontFragment, TimeToLive, Interval, SafetyFactor, SalvoSize
 
 CrcCheck
 ^^^^^^^^
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -7538,7 +7646,7 @@ DiffServField
                         For Windows version 7 or higher a new API (qWAVE) has been introduced For these platforms the specified
                         diffserv value is mapped to one of the support traffic types. The mapping is as follows:
                         1-8 background traffic; 9-40 excellent traffic; 41-55 audio/video traffic; 56 voice traffic; 57-63 control traffic.
-                        When OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
+                        When Vortex OpenSplice is run without Administrative priveleges then only the diffserv value of 0, 8, 40 or 56 is allowed.
 
 - Full path: //OpenSplice/NetworkService/Discovery/Sending/DiffServField
 - Format: integer
@@ -7554,6 +7662,19 @@ The IP DONTROUTE
 - Full path: //OpenSplice/NetworkService/Discovery/Sending/DontRoute
 - Format: boolean
 - Default value: True
+- Valid values: True, False
+- Occurrences min-max: 0-1
+
+DontFragment
+^^^^^^^^^^^^
+
+                      Controls whether the "don't fragment" bit (DF) is set on outgoing UDP IPv4 packets.
+                      Note that not all operating systems support setting this bit. When the operating
+                      system does not support setting the DF bit this option is ignored.
+
+- Full path: //OpenSplice/NetworkService/Discovery/Sending/DontFragment
+- Format: boolean
+- Default value: False
 - Valid values: True, False
 - Occurrences min-max: 0-1
 
@@ -7674,7 +7795,7 @@ Receiving
 CrcCheck
 ^^^^^^^^
 
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
+                       In order to protect Vortex OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
@@ -7768,7 +7889,7 @@ Tracing
 
 - Full path: //OpenSplice/NetworkService/Tracing
 - Occurrences min-max: 0-1
-- Child elements: OutputFile, Timestamps
+- Child elements: OutputFile, Timestamps, Verbosity
 - Optional attributes: enabled
 
 enabled
@@ -7977,6 +8098,26 @@ Discovery
 - Valid values: 0 / 6
 - Occurrences min-max: 0-1
 
+Verbosity
+---------
+
+The Verbosity attribute sets the level of tracing for all Tracing Catagories. This attribute is an additional method besides the Tracing/Catagories tag to specify trace levels. The difference is that Verbosity sets the level for all catagories similar as by other services whereas the Tracing/Catagories element allows to set the trace level per catagory. The verbosity levels are mapped to Catagory levels as following:
+
+- *none*: level 0 (no Networking log)
+- *severe*:   level 1 
+- *warning*:  level 2 
+- *info*:     level 3 
+- *config*:   level 3 
+- *fine*:     level 4 
+- *finer*:    level 5 
+- *finest*:   level 6
+
+- Full path: //OpenSplice/NetworkService/Tracing/Verbosity
+- Format: enumeration
+- Default value: none
+- Valid values: finest, finer, fine, config, info, warning, severe, none
+- Occurrences min-max: 0-1
+
 Compression
 ===========
 
@@ -7985,7 +8126,7 @@ Compression
                       networking service includes (depending on platform) implementations
                       of zlib, lzf and snappy. Others may be implemented by writing a
                       dynamically-loadable library and configuring it here. See the
-                      OpenSplice release notes for details of how to write such a
+                      Vortex OpenSplice release notes for details of how to write such a
                       library.
 
                       It is imperative that all nodes exchanging compressed data
@@ -8334,7 +8475,7 @@ When an application is run without Administrative priveleges then only the diffs
 QueueSize
 ^^^^^^^^^
 
-This element specifies the number of messages the network queue for this channel can contain. The OpenSplice kernel writes data to be transmitted to the network queue, and DDSI2E takes them from this queue. If this queue is full when an application tries to write a sample, the sample will be dropped or the writer suspended, depending on the QoS settings of the writer. OpenSplice and its services are optimised for a well-balanced system design, where the queue never becomes full.
+This element specifies the number of messages the network queue for this channel can contain. The Vortex OpenSplice kernel writes data to be transmitted to the network queue, and DDSI2E takes them from this queue. If this queue is full when an application tries to write a sample, the sample will be dropped or the writer suspended, depending on the QoS settings of the writer. Vortex OpenSplice and its services are optimised for a well-balanced system design, where the queue never becomes full.
 
 - Full path: //OpenSplice/DDSI2EService/Channels/Channel/QueueSize
 - Format: integer
@@ -8455,16 +8596,28 @@ The Discovery element allows specifying various parameters related to the discov
 
 - Full path: //OpenSplice/DDSI2EService/Discovery
 - Occurrences min-max: 0-1
-- Child elements: AdvertiseBuiltinTopicWriters, DefaultMulticastAddress, DomainId, GenerateBuiltinTopics, LocalDiscoveryPartition, MaxAutoParticipantIndex, ParticipantIndex, SPDPInterval, SPDPMulticastAddress
+- Child elements: AdvertiseBuiltinTopicWriters, DSGracePeriod, DefaultMulticastAddress, DomainId, GenerateBuiltinTopics, LocalDiscoveryPartition, MaxAutoParticipantIndex, ParticipantIndex, SPDPInterval, SPDPMulticastAddress
 
 AdvertiseBuiltinTopicWriters
 ----------------------------
 
-This element controls whether or not DDSI2E advertises writers for the built-in topics from its discovery for backwards compatibility with older OpenSplice versions.
+This element controls whether or not DDSI2E advertises writers for the built-in topics from its discovery for backwards compatibility with older Vortex OpenSplice versions.
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/AdvertiseBuiltinTopicWriters
 - Format: boolean
 - Default value: true
+- Occurrences min-max: 0-1
+
+DSGracePeriod
+-------------
+
+This setting controls for how long endpoints discovered via a Cloud discovery service will survive after the discovery service disappeared, allowing reconnect without loss of data when the discovery service restarts (or another instance takes over).
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Discovery/DSGracePeriod
+- Format: string
+- Default value: 30 s
 - Occurrences min-max: 0-1
 
 DefaultMulticastAddress
@@ -8504,7 +8657,7 @@ This element controls which partition is monitored by DDSI2E for built-in topics
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/LocalDiscoveryPartition
 - Format: string
-- Default value: __BUILT_IN_PARTITION__
+- Default value: __BUILT-IN PARTITION\__
 - Occurrences min-max: 0-1
 
 MaxAutoParticipantIndex
@@ -8537,6 +8690,8 @@ Peers
 -----
 
 This element statically configures addresses for discovery.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Peers
 - Occurrences min-max: 0-1
@@ -8590,7 +8745,7 @@ This element specifies an IP address to which discovery packets must be sent, in
 Ports
 -----
 
-The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 specification and rarely need to be changed.
+The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 (and 2.2) specification and rarely need to be changed.
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports
 - Occurrences min-max: 0-1
@@ -8599,7 +8754,7 @@ The Ports element allows specifying various parameters related to the port numbe
 Base
 ^^^^
 
-This element specifies the base port number (refer to the DDSI 2.1 specification, section 9.6.1, constant PB).
+This element specifies the base port number (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PB).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/Base
 - Format: integer
@@ -8610,7 +8765,7 @@ This element specifies the base port number (refer to the DDSI 2.1 specification
 DomainGain
 ^^^^^^^^^^
 
-This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant DG).
+This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant DG).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/DomainGain
 - Format: integer
@@ -8620,7 +8775,7 @@ This element specifies the domain gain, relating domain ids to sets of port numb
 MulticastDataOffset
 ^^^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d2).
+This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d2).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/MulticastDataOffset
 - Format: integer
@@ -8630,7 +8785,7 @@ This element specifies the port number for multicast meta traffic (refer to the 
 MulticastMetaOffset
 ^^^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d0).
+This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d0).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/MulticastMetaOffset
 - Format: integer
@@ -8640,7 +8795,7 @@ This element specifies the port number for multicast meta traffic (refer to the 
 ParticipantGain
 ^^^^^^^^^^^^^^^
 
-This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant PG).
+This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PG).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/ParticipantGain
 - Format: integer
@@ -8650,7 +8805,7 @@ This element specifies the participant gain, relating p0, articipant index to se
 UnicastDataOffset
 ^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d3).
+This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d3).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/UnicastDataOffset
 - Format: integer
@@ -8660,7 +8815,7 @@ This element specifies the port number for unicast meta traffic (refer to the DD
 UnicastMetaOffset
 ^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d1).
+This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d1).
 
 - Full path: //OpenSplice/DDSI2EService/Discovery/Ports/UnicastMetaOffset
 - Format: integer
@@ -8722,7 +8877,7 @@ When set to "false" all multicasting is disabled. The default, "true" enables fu
 CoexistWithNativeNetworking
 ---------------------------
 
-This element specifies whether the DDSI2E service operates in conjunction with the OpenSplice RT Networking service. When "false", the DDSI2E service will take care of all communications, including those between OpenSplice nodes; when "true", the DDSI2E service only communicates with DDS implementations other than OpenSplice. In this case the RT Networking service should be configured as well.
+This element specifies whether the DDSI2E service operates in conjunction with the Vortex OpenSplice RT Networking service. When "false", the DDSI2E service will take care of all communications, including those between Vortex OpenSplice nodes; when "true", the DDSI2E service only communicates with DDS implementations other than Vortex OpenSplice. In this case the RT Networking service should be configured as well.
 
 - Full path: //OpenSplice/DDSI2EService/General/CoexistWithNativeNetworking
 - Format: boolean
@@ -8880,7 +9035,7 @@ The Internal elements deal with a variety of settings that evolving and that are
 
 - Full path: //OpenSplice/DDSI2EService/Internal
 - Occurrences min-max: 0-1
-- Child elements: AccelerateRexmitBlockSize, AggressiveKeepLastWhc, AggressiveKeepLastWhc, AssumeMulticastCapable, AuxiliaryBandwidthLimit, BuiltinEndpointSet, ConservativeBuiltinReaderStartup, DDSI2DirectMaxThreads, DefragReliableMaxSamples, DefragUnreliableMaxSamples, DeliveryQueueMaxSamples, ForwardAllMessages, ForwardRemoteData, GenerateKeyhash, LateAckMode, LeaseDuration, LegacyFragmentation, LogStackTraces, MaxParticipants, MaxQueuedRexmitBytes, MaxQueuedRexmitMessages, MaxSampleSize, MeasureHbToAckLatency, MinimumSocketReceiveBufferSize, MinimumSocketSendBufferSize, MirrorRemoteEntities, MonitorPort, NackDelay, PreEmptiveAckDelay, PrimaryReorderMaxSamples, PrioritizeRetransmit, RediscoveryBlacklistDuration, ResponsivenessTimeout, RetransmitMerging, RetransmitMergingPeriod, RetryOnRejectBestEffort, RetryOnRejectDuration, SPDPResponseMaxDelay, ScheduleTimeRounding, SecondaryReorderMaxSamples, SquashParticipants, SuppressSPDPMulticast, SynchronousDeliveryLatencyBound, SynchronousDeliveryPriorityThreshold, UnicastResponseToSPDPMessages, UseMulticastIfMreqn, WriterLingerDuration
+- Child elements: AccelerateRexmitBlockSize, AggressiveKeepLastWhc, AggressiveKeepLastWhc, AssumeMulticastCapable, AutoReschedNackDelay, AuxiliaryBandwidthLimit, BuiltinEndpointSet, ConservativeBuiltinReaderStartup, DDSI2DirectMaxThreads, DefragReliableMaxSamples, DefragUnreliableMaxSamples, DeliveryQueueMaxSamples, ForwardAllMessages, ForwardRemoteData, GenerateKeyhash, HeartbeatInterval, LateAckMode, LeaseDuration, LegacyFragmentation, LogStackTraces, MaxParticipants, MaxQueuedRexmitBytes, MaxQueuedRexmitMessages, MaxSampleSize, MeasureHbToAckLatency, MinimumSocketReceiveBufferSize, MinimumSocketSendBufferSize, MirrorRemoteEntities, MonitorPort, NackDelay, PreEmptiveAckDelay, PrimaryReorderMaxSamples, PrioritizeRetransmit, RediscoveryBlacklistDuration, ResponsivenessTimeout, RetransmitMerging, RetransmitMergingPeriod, RetryOnRejectBestEffort, RetryOnRejectDuration, SPDPResponseMaxDelay, ScheduleTimeRounding, SecondaryReorderMaxSamples, SquashParticipants, SuppressSPDPMulticast, SynchronousDeliveryLatencyBound, SynchronousDeliveryPriorityThreshold, UnicastResponseToSPDPMessages, UseMulticastIfMreqn, WriterLingerDuration
 
 AccelerateRexmitBlockSize
 -------------------------
@@ -8895,7 +9050,7 @@ AccelerateRexmitBlockSize
 AggressiveKeepLastWhc
 ---------------------
 
-**Internal** This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
+**Internal** This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
 
 - Full path: //OpenSplice/DDSI2EService/Internal/AggressiveKeepLastWhc
 - Format: boolean
@@ -8905,7 +9060,7 @@ AggressiveKeepLastWhc
 AggressiveKeepLastWhc
 ---------------------
 
-**Internal** This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
+**Internal** This element controls whether to drop a reliable sample from a DDSI2E WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
 
 - Full path: //OpenSplice/DDSI2EService/Internal/AggressiveKeepLastWhc
 - Format: boolean
@@ -8919,6 +9074,18 @@ AssumeMulticastCapable
 
 - Full path: //OpenSplice/DDSI2EService/Internal/AssumeMulticastCapable
 - Format: string
+- Occurrences min-max: 0-1
+
+AutoReschedNackDelay
+--------------------
+
+**Internal** This setting controls the interval with which a reader will continue NACK'ing missing samples in the absence of a response from the writer, as a protection mechanism against writers incorrectly stopping the sending of HEARTBEAT messages.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/AutoReschedNackDelay
+- Format: string
+- Default value: 1 s
 - Occurrences min-max: 0-1
 
 AuxiliaryBandwidthLimit
@@ -8969,8 +9136,8 @@ ControlTopic
 
 - Full path: //OpenSplice/DDSI2EService/Internal/ControlTopic
 - Occurrences min-max: 0-1
-- Child elements: DeafMute
-- Optional attributes: enable
+- Child elements: Deaf, Mute
+- Optional attributes: enable, initialreset
 
 enable
 ^^^^^^
@@ -8982,12 +9149,34 @@ enable
 - Default value: false
 - Required: false
 
-DeafMute
-^^^^^^^^
+initialreset
+^^^^^^^^^^^^
 
-**Internal** This element controls whether DDSI2E defaults to deaf-mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
+**Internal** This attribute sets the time until the deaf and mute settings are automatically reset to false
 
-- Full path: //OpenSplice/DDSI2EService/Internal/ControlTopic/DeafMute
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/ControlTopic[@initialreset]
+- Format: string
+- Default value: inf
+- Required: false
+
+Deaf
+^^^^
+
+**Internal** This element controls whether DDSI2E defaults to deaf mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/ControlTopic/Deaf
+- Format: boolean
+- Default value: false
+- Occurrences min-max: 0-1
+
+Mute
+^^^^
+
+**Internal** This element controls whether DDSI2E defaults to mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/ControlTopic/Mute
 - Format: boolean
 - Default value: false
 - Occurrences min-max: 0-1
@@ -9062,6 +9251,55 @@ GenerateKeyhash
 - Format: boolean
 - Default value: true
 - Occurrences min-max: 0-1
+
+HeartbeatInterval
+-----------------
+
+**Internal** This element sets the base interval for the asynchronous, periodic writer heartbeats when unacknowledged data is present in its writer history cache. The actual interval is dynamically adjusted, the attributes of this element allow further configuration.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/HeartbeatInterval
+- Format: string
+- Default value: 100 ms
+- Occurrences min-max: 0-1
+- Optional attributes: max, min, minsched
+
+max
+^^^
+
+**Internal** This attribute sets the maximum interval for periodic heartbeats.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/HeartbeatInterval[@max]
+- Format: string
+- Default value: 8 s
+- Required: false
+
+min
+^^^
+
+**Internal** This attribute sets the minimum interval that must have passed since the most recent heartbeat from a writer, before another asynchronous (not directly related to writing) will be sent.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/HeartbeatInterval[@min]
+- Format: string
+- Default value: 5 ms
+- Required: false
+
+minsched
+^^^^^^^^
+
+**Internal** This attribute sets the minimum interval for periodic heartbeats. Other events may still cause heartbeats to go out.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2EService/Internal/HeartbeatInterval[@minsched]
+- Format: string
+- Default value: 20 ms
+- Required: false
 
 LateAckMode
 -----------
@@ -10409,16 +10647,28 @@ The Discovery element allows specifying various parameters related to the discov
 
 - Full path: //OpenSplice/DDSI2Service/Discovery
 - Occurrences min-max: 0-1
-- Child elements: AdvertiseBuiltinTopicWriters, DefaultMulticastAddress, DomainId, GenerateBuiltinTopics, LocalDiscoveryPartition, MaxAutoParticipantIndex, ParticipantIndex, SPDPInterval, SPDPMulticastAddress
+- Child elements: AdvertiseBuiltinTopicWriters, DSGracePeriod, DefaultMulticastAddress, DomainId, GenerateBuiltinTopics, LocalDiscoveryPartition, MaxAutoParticipantIndex, ParticipantIndex, SPDPInterval, SPDPMulticastAddress
 
 AdvertiseBuiltinTopicWriters
 ----------------------------
 
-This element controls whether or not DDSI2 advertises writers for the built-in topics from its discovery for backwards compatibility with older OpenSplice versions.
+This element controls whether or not DDSI2 advertises writers for the built-in topics from its discovery for backwards compatibility with older Vortex OpenSplice versions.
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/AdvertiseBuiltinTopicWriters
 - Format: boolean
 - Default value: true
+- Occurrences min-max: 0-1
+
+DSGracePeriod
+-------------
+
+This setting controls for how long endpoints discovered via a Cloud discovery service will survive after the discovery service disappeared, allowing reconnect without loss of data when the discovery service restarts (or another instance takes over).
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Discovery/DSGracePeriod
+- Format: string
+- Default value: 30 s
 - Occurrences min-max: 0-1
 
 DefaultMulticastAddress
@@ -10458,7 +10708,7 @@ This element controls which partition is monitored by DDSI2 for built-in topics 
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/LocalDiscoveryPartition
 - Format: string
-- Default value: __BUILT_IN_PARTITION__
+- Default value: __BUILT-IN PARTITION\__
 - Occurrences min-max: 0-1
 
 MaxAutoParticipantIndex
@@ -10491,6 +10741,8 @@ Peers
 -----
 
 This element statically configures addresses for discovery.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Peers
 - Occurrences min-max: 0-1
@@ -10544,7 +10796,7 @@ This element specifies an IP address to which discovery packets must be sent, in
 Ports
 -----
 
-The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 specification and rarely need to be changed.
+The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 (and 2.2) specification and rarely need to be changed.
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports
 - Occurrences min-max: 0-1
@@ -10553,7 +10805,7 @@ The Ports element allows specifying various parameters related to the port numbe
 Base
 ^^^^
 
-This element specifies the base port number (refer to the DDSI 2.1 specification, section 9.6.1, constant PB).
+This element specifies the base port number (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PB).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/Base
 - Format: integer
@@ -10564,7 +10816,7 @@ This element specifies the base port number (refer to the DDSI 2.1 specification
 DomainGain
 ^^^^^^^^^^
 
-This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant DG).
+This element specifies the domain gain, relating domain ids to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant DG).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/DomainGain
 - Format: integer
@@ -10574,7 +10826,7 @@ This element specifies the domain gain, relating domain ids to sets of port numb
 MulticastDataOffset
 ^^^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d2).
+This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d2).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/MulticastDataOffset
 - Format: integer
@@ -10584,7 +10836,7 @@ This element specifies the port number for multicast meta traffic (refer to the 
 MulticastMetaOffset
 ^^^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d0).
+This element specifies the port number for multicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d0).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/MulticastMetaOffset
 - Format: integer
@@ -10594,7 +10846,7 @@ This element specifies the port number for multicast meta traffic (refer to the 
 ParticipantGain
 ^^^^^^^^^^^^^^^
 
-This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 specification, section 9.6.1, constant PG).
+This element specifies the participant gain, relating p0, articipant index to sets of port numbers (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant PG).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/ParticipantGain
 - Format: integer
@@ -10604,7 +10856,7 @@ This element specifies the participant gain, relating p0, articipant index to se
 UnicastDataOffset
 ^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d3).
+This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d3).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/UnicastDataOffset
 - Format: integer
@@ -10614,7 +10866,7 @@ This element specifies the port number for unicast meta traffic (refer to the DD
 UnicastMetaOffset
 ^^^^^^^^^^^^^^^^^
 
-This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 specification, section 9.6.1, constant d1).
+This element specifies the port number for unicast meta traffic (refer to the DDSI 2.1 or 2.2 specification, section 9.6.1, constant d1).
 
 - Full path: //OpenSplice/DDSI2Service/Discovery/Ports/UnicastMetaOffset
 - Format: integer
@@ -10676,7 +10928,7 @@ When set to "false" all multicasting is disabled. The default, "true" enables fu
 CoexistWithNativeNetworking
 ---------------------------
 
-This element specifies whether the DDSI2 service operates in conjunction with the OpenSplice RT Networking service. When "false", the DDSI2 service will take care of all communications, including those between OpenSplice nodes; when "true", the DDSI2 service only communicates with DDS implementations other than OpenSplice. In this case the RT Networking service should be configured as well.
+This element specifies whether the DDSI2 service operates in conjunction with the Vortex OpenSplice RT Networking service. When "false", the DDSI2 service will take care of all communications, including those between Vortex OpenSplice nodes; when "true", the DDSI2 service only communicates with DDS implementations other than Vortex OpenSplice. In this case the RT Networking service should be configured as well.
 
 - Full path: //OpenSplice/DDSI2Service/General/CoexistWithNativeNetworking
 - Format: boolean
@@ -10834,7 +11086,7 @@ The Internal elements deal with a variety of settings that evolving and that are
 
 - Full path: //OpenSplice/DDSI2Service/Internal
 - Occurrences min-max: 0-1
-- Child elements: AccelerateRexmitBlockSize, AggressiveKeepLastWhc, AssumeMulticastCapable, BuiltinEndpointSet, ConservativeBuiltinReaderStartup, DDSI2DirectMaxThreads, DefragReliableMaxSamples, DefragUnreliableMaxSamples, DeliveryQueueMaxSamples, ForwardAllMessages, ForwardRemoteData, GenerateKeyhash, LateAckMode, LeaseDuration, LegacyFragmentation, LogStackTraces, MaxParticipants, MaxQueuedRexmitBytes, MaxQueuedRexmitMessages, MaxSampleSize, MeasureHbToAckLatency, MinimumSocketReceiveBufferSize, MinimumSocketSendBufferSize, MirrorRemoteEntities, MonitorPort, NackDelay, PreEmptiveAckDelay, PrimaryReorderMaxSamples, PrioritizeRetransmit, RediscoveryBlacklistDuration, ResponsivenessTimeout, RetransmitMerging, RetransmitMergingPeriod, RetryOnRejectBestEffort, RetryOnRejectDuration, SPDPResponseMaxDelay, ScheduleTimeRounding, SecondaryReorderMaxSamples, SquashParticipants, SuppressSPDPMulticast, SynchronousDeliveryLatencyBound, SynchronousDeliveryPriorityThreshold, UnicastResponseToSPDPMessages, UseMulticastIfMreqn, WriterLingerDuration
+- Child elements: AccelerateRexmitBlockSize, AggressiveKeepLastWhc, AssumeMulticastCapable, AutoReschedNackDelay, BuiltinEndpointSet, ConservativeBuiltinReaderStartup, DDSI2DirectMaxThreads, DefragReliableMaxSamples, DefragUnreliableMaxSamples, DeliveryQueueMaxSamples, ForwardAllMessages, ForwardRemoteData, GenerateKeyhash, HeartbeatInterval, LateAckMode, LeaseDuration, LegacyFragmentation, LogStackTraces, MaxParticipants, MaxQueuedRexmitBytes, MaxQueuedRexmitMessages, MaxSampleSize, MeasureHbToAckLatency, MinimumSocketReceiveBufferSize, MinimumSocketSendBufferSize, MirrorRemoteEntities, MonitorPort, NackDelay, PreEmptiveAckDelay, PrimaryReorderMaxSamples, PrioritizeRetransmit, RediscoveryBlacklistDuration, ResponsivenessTimeout, RetransmitMerging, RetransmitMergingPeriod, RetryOnRejectBestEffort, RetryOnRejectDuration, SPDPResponseMaxDelay, ScheduleTimeRounding, SecondaryReorderMaxSamples, SquashParticipants, SuppressSPDPMulticast, SynchronousDeliveryLatencyBound, SynchronousDeliveryPriorityThreshold, UnicastResponseToSPDPMessages, UseMulticastIfMreqn, WriterLingerDuration
 
 AccelerateRexmitBlockSize
 -------------------------
@@ -10849,7 +11101,7 @@ AccelerateRexmitBlockSize
 AggressiveKeepLastWhc
 ---------------------
 
-**Internal** This element controls whether to drop a reliable sample from a DDSI2 WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
+**Internal** This element controls whether to drop a reliable sample from a DDSI2 WHC before all readers have acknowledged it as soon as a later sample becomes available. It only affects DCPS data writers with a history QoS setting of KEEP_LAST with depth 1. The default setting, *false*, mimics the behaviour of the Vortex OpenSplice RT networking and is necessary to make the behaviour of wait_for_acknowledgements() consistent across the networking services.
 
 - Full path: //OpenSplice/DDSI2Service/Internal/AggressiveKeepLastWhc
 - Format: boolean
@@ -10863,6 +11115,18 @@ AssumeMulticastCapable
 
 - Full path: //OpenSplice/DDSI2Service/Internal/AssumeMulticastCapable
 - Format: string
+- Occurrences min-max: 0-1
+
+AutoReschedNackDelay
+--------------------
+
+**Internal** This setting controls the interval with which a reader will continue NACK'ing missing samples in the absence of a response from the writer, as a protection mechanism against writers incorrectly stopping the sending of HEARTBEAT messages.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/AutoReschedNackDelay
+- Format: string
+- Default value: 1 s
 - Occurrences min-max: 0-1
 
 BuiltinEndpointSet
@@ -10901,7 +11165,7 @@ ControlTopic
 
 - Full path: //OpenSplice/DDSI2Service/Internal/ControlTopic
 - Occurrences min-max: 0-1
-- Child elements: DeafMute
+- Child elements: Deaf, Mute
 - Optional attributes: enable
 
 enable
@@ -10914,12 +11178,22 @@ enable
 - Default value: false
 - Required: false
 
-DeafMute
-^^^^^^^^
+Deaf
+^^^^
 
-**Internal** This element controls whether DDSI2 defaults to deaf-mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
+**Internal** This element controls whether DDSI2 defaults to deaf mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
 
-- Full path: //OpenSplice/DDSI2Service/Internal/ControlTopic/DeafMute
+- Full path: //OpenSplice/DDSI2Service/Internal/ControlTopic/Deaf
+- Format: boolean
+- Default value: false
+- Occurrences min-max: 0-1
+
+Mute
+^^^^
+
+**Internal** This element controls whether DDSI2 defaults to mute mode or to normal mode. This controls both the initial behaviour and what behaviour it auto-reverts to.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/ControlTopic/Mute
 - Format: boolean
 - Default value: false
 - Occurrences min-max: 0-1
@@ -10994,6 +11268,55 @@ GenerateKeyhash
 - Format: boolean
 - Default value: true
 - Occurrences min-max: 0-1
+
+HeartbeatInterval
+-----------------
+
+**Internal** This element sets the base interval for the asynchronous, periodic writer heartbeats when unacknowledged data is present in its writer history cache. The actual interval is dynamically adjusted, the attributes of this element allow further configuration.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/HeartbeatInterval
+- Format: string
+- Default value: 100 ms
+- Occurrences min-max: 0-1
+- Optional attributes: max, min, minsched
+
+max
+^^^
+
+**Internal** This attribute sets the maximum interval for periodic heartbeats.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/HeartbeatInterval[@max]
+- Format: string
+- Default value: 8 s
+- Required: false
+
+min
+^^^
+
+**Internal** This attribute sets the minimum interval that must have passed since the most recent heartbeat from a writer, before another asynchronous (not directly related to writing) will be sent.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/HeartbeatInterval[@min]
+- Format: string
+- Default value: 5 ms
+- Required: false
+
+minsched
+^^^^^^^^
+
+**Internal** This attribute sets the minimum interval for periodic heartbeats. Other events may still cause heartbeats to go out.
+
+Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.
+
+- Full path: //OpenSplice/DDSI2Service/Internal/HeartbeatInterval[@minsched]
+- Format: string
+- Default value: 20 ms
+- Required: false
 
 LateAckMode
 -----------
@@ -13326,7 +13649,7 @@ Storage
 This element specifies a storage to use for recording and/or replaying data.
         Currently the supported storage backends are XML and CDR.
         Note that storages can also be created, or their properties modified, by Record and Replay configuration-commands.
-        These commands use the same syntax to specify configuration data as the OpenSplice configuration file,
+        These commands use the same syntax to specify configuration data as the Vortex OpenSplice configuration file,
         so the description given here also applies to commands.
 
 - Full path: //OpenSplice/RnRService/Storage
@@ -13450,7 +13773,7 @@ reset
 ^^^^^
 This attribute allows to reset the current values of statistics belonging to the storage. Note
             that this only makes sense in a configuration-command for an existing storage, since new storages created
-            from the OpenSplice configuration file always start out with empty statistics.
+            from the Vortex OpenSplice configuration file always start out with empty statistics.
 
 - Full path: //OpenSplice/RnRService/Storage/Statistics[@reset]
 - Format: boolean

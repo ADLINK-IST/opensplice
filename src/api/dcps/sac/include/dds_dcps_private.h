@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,8 +44,7 @@
  */
 #define DDS_RETCODE_HANDLE_EXPIRED (13)
 
-/*
- * This function prototype is an abstract specification of the
+/* This function prototype is an abstract specification of the
  * deallocation operation required for all objects that can be
  * free via the DDS_free operation.
  * All classes need to implement their specific implementation
@@ -177,6 +177,10 @@ typedef enum {
     DDS_ENTITY_KIND_DATAREADER
 } DDS_EntityKind_t;
 
+OS_API const char *
+DDS_EntityKind_image(
+    DDS_EntityKind_t kind);
+
 OS_API DDS_EntityKind_t
 DDS_Entity_get_kind(
     DDS_Entity _this);
@@ -273,8 +277,7 @@ DDS_Condition_get_kind(
     DDS_Condition _this);
 
 
-/*
- * Normally, DDS_WaitSet_wait returns a DDS_ConditionSeq that
+/* Normally, DDS_WaitSet_wait returns a DDS_ConditionSeq that
  * contains triggered DDS_Conditions.
  * However, when the condition was attached to the WaitSet with
  * this function, the alternative pointer (can be NULL) will be
@@ -285,6 +288,15 @@ DDS_WaitSet_attach_condition_alternative (
     DDS_WaitSet _this,
     const DDS_Condition cond,
     void *alternative);
+
+OS_API DDS_ReturnCode_t
+DDS_InstanceHandle_set_userdata(
+    DDS_InstanceHandle_t handle,
+    void *userData);
+
+OS_API void *
+DDS_InstanceHandle_get_userdata(
+    DDS_InstanceHandle_t handle);
 
 #undef OS_API
 #endif /* DDS_DCPS_PRIVATE_H */

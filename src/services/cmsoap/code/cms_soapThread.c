@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -62,16 +63,17 @@ cms_soapThreadNew(
         thread = cms_soapThread(os_malloc(C_SIZEOF(cms_soapThread)));
         if (thread != NULL) {
             cms_object(thread)->kind = CMS_SOAPTHREAD;
-            cms_threadInit(cms_thread(thread), name, &client->service->configuration->clientScheduling);
-            cms_thread(thread)->did = cms_thread(client)->did;
-            cms_thread(thread)->uri = os_strdup(cms_thread(client)->uri);
-            thread->client = client;
-            thread->soap = NULL;
+            if (cms_threadInit(cms_thread(thread), name, &client->service->configuration->clientScheduling)) {
+                cms_thread(thread)->did = cms_thread(client)->did;
+                cms_thread(thread)->uri = os_strdup(cms_thread(client)->uri);
+                thread->client = client;
+                thread->soap = NULL;
 
-            osr = os_mutexInit(&thread->soapMutex, NULL);
-            if(osr == os_resultSuccess){
-                osr = os_condInit(&thread->condition, &thread->soapMutex, NULL);
-            }
+                osr = os_mutexInit(&thread->soapMutex, NULL);
+                if(osr == os_resultSuccess){
+                    osr = os_condInit(&thread->condition, &thread->soapMutex, NULL);
+                }
+            } 
         }
     }
 

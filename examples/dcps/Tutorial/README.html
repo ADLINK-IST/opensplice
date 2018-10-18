@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - Tutorial</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -38,9 +39,9 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <h3>2) Design</h3>
 <p>The 3 executables are:</p>
- <ul><li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_chatter" data-langjava="chatroom.Chatter" data-langjava5="chatroom.Chatter">Chatter</span> : <span class="ex-unit-desc">sends messages to the chat box</span></li>
-     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_message_board" data-langjava="chatroom.MessageBoard" data-langjava5="chatroom.MessageBoard">MessageBoard</span> : <span class="ex-unit-desc">displays all available chat messages</span></li>
-     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_user_load" data-langjava="chatroom.UserLoad" data-langjava5="chatroom.UserLoad">UserLoad</span> : <span class="ex-unit-desc">keeps track of when users join and leave the chat box</span></li></ul>
+ <ul><li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_chatter" data-langjava="chatroom.Chatter" data-langjava5="chatter/target/classes/chatroom.Chatter">Chatter</span> : <span class="ex-unit-desc">sends messages to the chat box</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_message_board" data-langjava="chatroom.MessageBoard" data-langjava5="messageboard/target/classes/chatroom.MessageBoard">MessageBoard</span> : <span class="ex-unit-desc">displays all available chat messages</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_user_load" data-langjava="chatroom.UserLoad" data-langjava5="userload/target/classes/chatroom.UserLoad">UserLoad</span> : <span class="ex-unit-desc">keeps track of when users join and leave the chat box</span></li></ul>
 
 <h3>3) Scenario</h3>
 
@@ -113,10 +114,9 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_tutorial_chatter.jar </li>
-                        <li>saj5_tutorial_messageboard.jar </li>
-                        <li>saj5_tutorial_userload.jar </li>
-                        <li>saj5_tutorial_types.jar </li>
+                <ul><li>java5_Chatter.jar </li>
+                        <li>java5_Messageboard.jar </li>
+                        <li>java5_Userload.jar </li>
                 </ul>
 
 <h4>Running the example</h4>
@@ -146,7 +146,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
         <ul>
           <li><b><i>MessageBoard [userid] &</i></b> for C/C++/ISO C++ 2  </li>
           <li><b><i>java -jar saj_tutorial_messageboard.jar [userid] &</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_messageboard.jar [userid] &</i></b> for Java5 </li>
+          <li><b><i>java -jar messageboard/java5_Messageboard.jar [userid] &</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
@@ -160,7 +160,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
        <ul>
           <li><b><i>UserLoad &</i></b> for C/C++/ISO C++ 2 </li>
           <li><b><i>java -jar saj_tutorial_userload.jar &</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_userload.jar &</i></b> for Java5 </li>
+          <li><b><i>java -jar userload/java5_Userload.jar &</i></b> for Java5 </li>
            </ul>
     </ul>
 
@@ -169,7 +169,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
        <ul>
           <li><b><i>Chatter [userid] [username]</i></b> for C/C++/ISO C++ 2 </li>
           <li><b><i>java -jar saj_tutorial_chatter.jar [userid] [username]</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_chatter.jar [userid] [username]</i></b> for Java5 </li>
+          <li><b><i>java -jar chatter/java5_Chatter.jar [userid] [username]</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>
@@ -181,7 +181,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
        <ul>
           <li><b><i>Chatter -1</i></b> for C/C++/ISO C++ 2 </li>
           <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
+          <li><b><i>java -jar chatter/java5_Chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
 
@@ -226,11 +226,10 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
                 </ul>
 
 <p>For Java5</p>
-                <ul><li>saj5_tutorial_chatter.jar </li>
-                        <li>saj5_tutorial_messageboard.jar </li>
-                        <li>saj5_tutorial_userload.jar </li>
-                        <li>saj5_tutorial_types.jar </li>
-                </ul>
+                <ul><li>java5_Chatter.jar </li>
+                        <li>java5_Messageboard.jar </li>
+                        <li>java5_Userload.jar </li>
+                   </ul>
 
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
    <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
@@ -260,7 +259,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>MessageBoard [userid]$</i></b> for C/C++/ISO C++ 2 </li>
           <li><b><i>sacs_tutorial_messageboard [userid]$</i></b> for C# </li>
           <li><b><i>java -jar saj_tutorial_messageboard.jar [userid] &</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_messageboard.jar [userid] &</i></b> for Java5 </li>
+          <li><b><i>java -jar messageboard/java5_Messageboard.jar [userid] &</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
@@ -275,7 +274,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>UserLoad &</i></b> for C/C++/ISO C++ 2 </li>
           <li><b><i>sacs_tutorial_userload &</i></b> for C# </li>
           <li><b><i>java -jar saj_tutorial_userload.jar &</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_userload.jar &</i></b> for Java5 </li>
+          <li><b><i>java -jar userload/java5_Userload.jar &</i></b> for Java5 </li>
            </ul>
     </ul>
 
@@ -285,7 +284,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>Chatter [userid] [username]</i></b> for C/C++/ISO C++ 2  </li>
           <li><b><i>sacs_tutorial_chatter [userid] [username]</i></b> for C#  </li>
           <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
+          <li><b><i>java -jar chatter/java5_Chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>
@@ -298,7 +297,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
           <li><b><i>Chatter -1</i></b> for C/C++/ISO C++ 2  </li>
           <li><b><i>sacs_tutorial_chatter -1</i></b> for C# </li>
           <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
-          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
+          <li><b><i>java -jar chatter/java5_Chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -39,9 +40,6 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-
-#define V_KERNEL_VERSION "Kernel 4.1.0"
-
 #define C_REPORT(s) printf(s)
 
 /**
@@ -72,9 +70,10 @@ extern "C" {
 #define v_objectKernel(o) (v_kernel(v_object(o)->kernel))
 #define v_objectKind(o)   (v_object(o)->kind)
 
-char *
+_Ret_z_
+const char *
 v_objectKindImage(
-    v_object _this);
+    _In_ v_object _this);
 
 #define v_kernelType(k,kind) (v_kernel(k)->type[kind])
 
@@ -130,22 +129,25 @@ v_isEnabledStatistics (
     v_kernel _this,
     const char *categoryName);
 
+_Check_return_
+_Ret_maybenull_
+_Success_(return != NULL)
 OS_API v_kernel
 v_kernelNew (
-    c_base b,
-    const c_char *name,
-    v_kernelQos qos,
-    v_processInfo *procInfo);
+    _In_ c_base base,
+    _In_z_ const c_char *name,
+    _In_ v_kernelQos qos,
+    _Outptr_ v_processInfo* procInfo);
 
 OS_API void
 v_kernelEnable(
-    v_kernel kernel,
-    const c_char *name);
+    _Inout_ v_kernel kernel);
 
 OS_API v_kernel
 v_kernelAttach (
     c_base b,
     const c_char *name,
+    os_duration timeout,
     v_processInfo *procInfo /* Don't free this reference */);
 
 OS_API c_ulong
@@ -225,15 +227,20 @@ v_resolveParticipants (
     v_kernel _this,
     const c_char *name);
 
+_Check_return_
+_Ret_notnull_
+_Pre_satisfies_(kind >= K_KERNEL && kind < K_TYPECOUNT)
 OS_API v_object
 v_objectNew (
-    v_kernel _this,
-    v_kind kind);
+    _In_ v_kernel _this,
+    _In_ v_kind kind);
 
+_Check_return_
+_Ret_maybenull_
 OS_API v_object
 v_objectNew_s (
-    v_kernel _this,
-    v_kind kind);
+    _In_ v_kernel _this,
+    _In_ v_kind kind);
 
 OS_API v_object
 v_new (
@@ -291,6 +298,27 @@ v_kernelCreatePersistentSnapshot(
     const c_char * topic_expression,
     const c_char * uri);
 
+typedef v_result (*v_domainReadAction)(const v_group group, const v_groupInstance instance, const v_message msg, const void *actionArg);
+
+OS_API v_result
+v_kernelRead(
+    const v_kernel _this,
+    const os_char *partition,
+    const os_char *topic,
+    const os_char *query,
+    const v_domainReadAction action,
+    const void *actionArg);
+
+typedef v_result (*v_domainGroupReadAction)(const v_group group, const void *actionArg);
+
+OS_API v_result
+v_kernelGroupRead(
+    const v_kernel _this,
+    const os_char *partition,
+    const os_char *topic,
+    const v_domainGroupReadAction action,
+    const void *actionArg);
+
 OS_API v_accessMode
 v_kernelPartitionAccessMode(
     v_kernel _this,
@@ -311,9 +339,10 @@ v_kernel_lookup_type(
     v_kernel _this,
     const os_char *type_name);
 
+_Ret_z_
 OS_API const os_char *
 v_resultImage (
-    v_result result);
+    _In_ v_result result);
 
 OS_API const os_char *
 v_writeResultImage(
@@ -376,7 +405,7 @@ v_kernelGetProcessInfo(
 _Ret_notnull_
 _Must_inspect_result_
 OS_API v_processInfo
-v_kernelGetOwnProcessInfo(
+v_kernelGetOwnProcessInfoWeakRef(
     _Inout_ v_kernel _this);
 
 #define V_KERNEL_THREAD_FLAGS_GET           (0U)
@@ -388,6 +417,9 @@ OS_API os_uint32
 v_kernelThreadFlags (
     _In_ os_uint32 mask,
     _In_ os_uint32 value);
+
+OS_API c_bool
+v_kernelThreadInProtectedArea();
 
 OS_API os_uint32
 v_kernelThreadProtectCount (
@@ -462,6 +494,10 @@ _Ret_maybenull_
 OS_API void *
 v_kernelUnprotect(void);
 
+OS_API void
+v_kernelUnprotectFinalize(
+    void * usrData);
+
 OS_API os_int32
 v_kernelThreadInfoGetDomainId(void);
 
@@ -472,23 +508,82 @@ v_kernelThreadInfoGetDomainId(void);
  */
 OS_API c_bool
 v_kernelGetDurabilitySupport(
-    v_kernel kernel);
+    _In_ _Const_ v_kernel kernel);
+
+OS_API c_bool
+v_kernelHasDurabilityService(
+    _In_ _Const_ v_kernel kernel);
 
 /**
  * This call acquires the kernel group transaction access lock.
  * Taking the kernel group transaction access lock ensures that the group transaction
  * information can be read without being modified by a writer.
  */
-OS_API v_result
+OS_API void
 v_kernelGroupTransactionBeginAccess(
-    v_kernel _this);
+    _Inout_ v_kernel _this);
 
 /**
  * This call releases the kernel group transaction access lock.
  */
-OS_API v_result
+OS_API void
 v_kernelGroupTransactionEndAccess(
+    _Inout_ v_kernel _this);
+
+
+OS_API c_bool
+v_kernelGetAlignedState(
     v_kernel _this);
+
+OS_API void
+v_kernelSetAlignedState(
+    v_kernel _this,
+    c_bool aligned);
+
+OS_API void
+v_kernelTransactionsPurge(
+    v_kernel _this);
+
+/* The operation WalkPublications will visit all discovered publication messages and
+ * invoke the given publication action function on each publication message.
+ * The given argument arg is passed as context information to the invoked action function.
+ * The walk will stop when all messages are processed or when the action function returns FALSE.
+ */
+typedef os_boolean (*v_publication_action)(const v_message publication, void *arg);
+
+OS_API v_result
+v_kernelWalkPublications(
+    v_kernel _this,
+    v_publication_action action,
+    void *arg);
+
+/* The operation WalkSubscriptions will visit all discovered subscription messages and
+ * invoke the given subscription action function on each subscription message.
+ * The given argument arg is passed as context information to the invoked action function.
+ * The walk will stop when all messages are processed or when the action function returns FALSE.
+ */
+typedef os_boolean (*v_subscription_action)(const v_message subscription, void *arg);
+
+OS_API v_result
+v_kernelWalkSubscriptions(
+    v_kernel _this,
+    v_subscription_action action,
+    void *arg);
+
+#define V_ISOLATE_NONE (0)
+#define V_ISOLATE_DEAF (1)
+#define V_ISOLATE_MUTE (2)
+#define V_ISOLATE_ALL (V_ISOLATE_DEAF | V_ISOLATE_MUTE)
+
+OS_API v_result
+v_kernelSetIsolate(
+    const v_kernel _this,
+    const os_uint32 isolate);
+
+OS_API v_result
+v_kernelGetIsolate(
+    const v_kernel _this,
+    os_uint32 *isolate);
 
 #undef OS_API
 

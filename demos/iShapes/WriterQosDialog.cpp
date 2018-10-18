@@ -34,7 +34,13 @@ WriterQosDialog::get_qos()
     qos_ = tmpQos;
 
     if (qosForm_.reliableRButt->isChecked())
+    {
         qos_ << dds::core::policy::Reliability::Reliable();
+    }
+    else
+    {
+        qos_ << dds::core::policy::Reliability::BestEffort();
+    }
 
     switch (qosForm_.durabilityComboBox->currentIndex())
     {
@@ -58,6 +64,10 @@ WriterQosDialog::get_qos()
     {
         qos_ << dds::core::policy::Ownership::Exclusive();
         qos_ << dds::core::policy::OwnershipStrength(qosForm_.strengthSpinBox->value());
+    }
+    else
+    {
+        qos_ << dds::core::policy::Ownership::Shared();
     }
 
     if (qosForm_.keepLastWButton->isChecked())

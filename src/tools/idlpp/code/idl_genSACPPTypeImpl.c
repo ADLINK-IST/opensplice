@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -253,7 +254,7 @@ idl_arrayTypeImpl(
     idl_fileOutPrintf(idl_fileCur(),"}\n\n");
 }
 
-/* @brief callback function called on opening the IDL input file.
+/** @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
  * - mutiple inclusion prevention
@@ -285,7 +286,7 @@ idl_fileOpen(
     return idl_explore;
 }
 
-/* @brief callback function called on closing the IDL input file.
+/** @brief callback function called on closing the IDL input file.
  *
  * Generate standard file footer consisting of:
  * - mutiple inclusion prevention closure
@@ -716,8 +717,7 @@ idl_genSacppTypeImplProgram(
     return &idl_genSacppTypeImpl;
 }
 
-/*
- * Implementation Considerations:
+/* Implementation Considerations:
  *
  * - Mapping structures:
  * The members of a structure have a type, which can be arrays, sequences, strings
@@ -726,5 +726,4 @@ idl_genSacppTypeImplProgram(
  * all compilers can handle this. Therefore we will generate these type-defs at the module
  * level of the structure. The structure definition it self will be built on heap and written
  * to the output file in the idl_structureClose() callback.
- *
  */

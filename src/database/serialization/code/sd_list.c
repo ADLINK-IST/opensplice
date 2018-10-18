@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -385,8 +386,7 @@ sd_listIndexOf (
 
     return i;
 }
-/*
- * Inserts 'object' at index 'index', which causes all elements from index 'index' and higher
+/* Inserts 'object' at index 'index', which causes all elements from index 'index' and higher
  * to move one higher in the list.
  */
 void
@@ -416,8 +416,7 @@ sd_listInsertAt(
     after->prev = node;
 }
 
-/*
- * This method inserts 'object' before 'beforeObject'.
+/* This method inserts 'object' before 'beforeObject'.
  *
  * Precondition: 'beforeObject' is in the list.
  * Postcondition: 'object' is in the list, before 'beforeObject'.

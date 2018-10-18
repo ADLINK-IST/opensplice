@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,19 +21,14 @@
 #include "v_deliveryServiceEntry.h"
 #include "v_kernel.h"
 #include "v_reader.h"
-#include "v_observer.h"
+#include "v__observer.h"
+#include "v__observable.h"
 #include "v_messageQos.h"
 #include "v__deliveryService.h"
 #include "v__entry.h"
 
 #include "os_report.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_deliveryServiceEntry
 v_deliveryServiceEntryNew(
     v_deliveryService deliveryService,
@@ -68,28 +64,19 @@ v_deliveryServiceEntryWrite(
 
     /* Only write if the message is not produced by an incompatible writer. */
     reader = v_entryReader(_this);
-    v_observerLock(v_observer(reader));
+    OSPL_LOCK(reader);
 
     /* Filter-out all QoS-incompatible messages. */
     if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
-        v_observerUnlock(v_observer(reader));
+        OSPL_UNLOCK(reader);
         return V_WRITE_SUCCESS;
     }
 
-    /* If Alive then claim instance and trigger with sample event.
-     */
+    /* If Alive then claim instance and trigger with sample event. */
     ackMsg = (v_deliveryInfoTemplate)message;
     result = v_deliveryServiceWrite(v_deliveryService(reader),ackMsg);
 
-    v_observerUnlock(v_observer(reader));
+    OSPL_UNLOCK(reader);
 
     return result;
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

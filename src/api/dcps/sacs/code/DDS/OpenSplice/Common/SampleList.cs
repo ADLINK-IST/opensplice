@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@ using DDS.OpenSplice.CustomMarshalers;
 namespace DDS.OpenSplice.Common
 {
     /** \brief Callback function to copy samples into the language binding.
-         *
+     *
      * When there are samples within the list, then this callback will be called
      * by cmn_samplesList_read() or cmn_samplesList_flush(). The language binding
      * can use this call to copy the provided sample into its' own types.

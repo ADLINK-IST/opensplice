@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,7 +39,7 @@ extern "C" {
 
 #define u_domain(p) ((u_domain)(p))
 
-#define DOMAIN_NAME "The default Domain"
+#define U_DOMAIN_NAME "The default Domain"
 #define U_DOMAIN_ID_DEFAULT 0
 #define U_DOMAIN_ID_ANY 0x7fffffff
 #define U_DOMAIN_ID_INVALID -1
@@ -204,7 +205,7 @@ OS_API u_result
 u_domainWalkParticipants(
     const u_domain _this,
     const u_participantAction action,
-          void *actionArg);
+    void *actionArg);
 
 OS_API u_participant
 u_domainCreateParticipant (
@@ -232,23 +233,58 @@ u_domain_get_xml_descriptor (
 
 OS_API u_domainId_t
 u_domainId(
-    _In_ const u_domain _this) __nonnull_all__;
+    _In_ const u_domain _this);
 
 OS_API const char *
 u_domainName(
-    _In_ const u_domain _this) __nonnull_all__;
+    _In_ const u_domain _this);
 
 OS_API c_type
 u_domain_lookup_type(
     const u_domain _this,
     const os_char *type_name);
 
+/** \brief The Domain Read Operation
+ *
+ * This operation performs a read action on durable messages matching a given interest.
+ * The interest is specified by partition-topic expression and message query.
+ *
+ * \param domain    the domain containing the durable data.
+ * \param partition an expression specifying partition interest.
+ * \param topic     an expression specifying topic interest.
+ * \param query     an expression specifying message interest.
+ * \param action    the action function that is executed on each matching message.
+ * \param actionArg a user data context that is passed to each invokation of the action function.
+ *
+ * \return the result of this operation.
+ */
+typedef u_result (*u_domainReadAction)(const v_group group, const v_groupInstance instance, const v_message msg, void *actionArg);
+
+OS_API u_result
+u_domainRead(
+    _In_ const u_domain _this,
+    _In_ const os_char *partition,
+    _In_ const os_char *topic,
+    _In_ const os_char *query,
+    _In_ const u_domainReadAction action,
+    _In_ const void *actionArg);
+
+typedef u_result (*u_domainGroupReadAction)(const v_group group, void *actionArg);
+
+OS_API u_result
+u_domainGroupRead(
+    _In_ const u_domain _this,
+    _In_ const os_char *partition,
+    _In_ const os_char *topic,
+    _In_ const u_domainGroupReadAction action,
+    _In_ const void *actionArg);
+
 /** \brief Compare domainId with the domain domainURI and domainName.
  */
 OS_API u_bool
 u_domainCompareId(
-    const u_domain _this,
-    const u_domainId_t id);
+    _In_ const u_domain _this,
+    _In_ const u_domainId_t id);
 
 OS_API os_sharedHandle
 u_domainSharedMemoryHandle (
@@ -267,6 +303,24 @@ u_domainEnableStatistics(
     const u_domain _this,
     const os_char *categoryName);
 
+OS_API u_result
+u_domainGetAlignedState(
+    const u_domain _this,
+    os_boolean *aligned);
+
+OS_API u_result
+u_domainSetAlignedState(
+    const u_domain _this,
+    os_boolean aligned);
+
+OS_API u_result
+u_domainTransactionsPurge(
+    const u_domain _this);
+
+#define U_ISOLATE_NONE V_ISOLATE_NONE
+#define U_ISOLATE_DEAF V_ISOLATE_DEAF
+#define U_ISOLATE_MUTE V_ISOLATE_MUTE
+#define U_ISOLATE_ALL  V_ISOLATE_ALL
 #undef OS_API
 
 #if defined (__cplusplus)

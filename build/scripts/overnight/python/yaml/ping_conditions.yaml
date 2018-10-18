@@ -27,21 +27,3 @@ parseconditions:
           inst: 0
           required: no
           line: "Usage * blocks blocksize topic_id WRITE_PARTITION READ_PARTITION"
-
-        - name: Active Ping Table
-          type: block
-          inst: 4
-          threshold: 20
-          linecount: 105
-          firstline: Starting ping example         
-          lastline: Completed ping example
-          pluslines:
-            # colon-space in next line hence quotes
-            - line: "PING: TIMEOUT - message lost"
-              maxinst: 5
-            - line: "PING: TIMEOUT 2 - message lost"
-              maxinst: 5   
-            - line: "Invalid *"
-              maxinst: 1
-            - line: "Usage *"
-              maxinst: 1     

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,13 +25,6 @@
 #include <assert.h>
 #include <string.h>
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 ut_stack
 ut_stackNew(
     os_uint32 increment)
@@ -57,14 +51,6 @@ ut_stackFree(
     return UT_RESULT_OK;
 }
 
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/
 ut_result
 ut_stackPush(
     ut_stack stack,
@@ -76,7 +62,7 @@ ut_stackPush(
     assert(stack->ptr <= stack->depth);
 
     if (stack->ptr == stack->depth) {
-        newStack = os_malloc(sizeof(void *) * 
+        newStack = os_malloc(sizeof(void *) *
                        (stack->depth + stack->increment));
         if (newStack != NULL) {
             memcpy(newStack, stack->stack, (sizeof(void *) * stack->depth));
@@ -128,16 +114,11 @@ ut_stackWalk(
     void *arg)
 {
     ut_result utr;
-    os_uint32 i;
-    
+    os_uint32 i = stack->ptr;
+
     utr = UT_RESULT_OK;
-    if (stack->ptr > 0) {
-        i = stack->ptr-1;
-        while ((i > 0) && (utr == UT_RESULT_OK)) {
-            utr = action(stack->stack[i], arg);
-            i--;
-        }
-        utr = action(stack->stack[i], arg);
-    }
+    if (i) do {
+        utr = action(stack->stack[--i], arg);
+    } while (i > 0 && utr == UT_RESULT_OK);
     return utr;
 }

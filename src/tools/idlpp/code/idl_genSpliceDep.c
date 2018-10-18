@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -407,42 +408,41 @@ idl_getControl(
 /* idl_genSpliceDep specifies the local
    callback routines
 */
-static struct idl_program
-idl_genSpliceDep = {
-        /* The following control is required to allow idl_walk	*/
-	/* to analyse anonymous types within structs and unions */
-	/* A special program for that would be more clear but   */
-	/* also slower                                          */
-    idl_getControl,
-    idl_fileOpen,
-    NULL, /* idl_fileClose */
-    idl_moduleOpen,
-    NULL, /* idl_moduleClose */
-    idl_structureOpen,
-    NULL, /* idl_structureClose */
-    idl_structureMemberOpenClose,
-    NULL, /* idl_enumerationOpen */
-    NULL, /* idl_enumerationClose */
-    NULL, /* idl_enumerationElementOpenClose */
-    idl_unionOpen,
-    NULL, /* idl_unionClose */
-    idl_unionCaseOpenClose,
-    NULL, /* idl_unionLabelsOpenClose */
-    NULL, /* idl_unionLabelOpenClose */
-    idl_typedefOpenClose,
-    NULL, /* idl_boundedStringOpenClose */
-    NULL, /* idl_sequenceOpenClose */
-	idl_constantOpenClose,
-    NULL, /* idl_artificialDefaultLabelOpenClose */
-    NULL  /* userData */
-};
+static struct idl_program idl_genSpliceDep;
 
 /* genSpliceDepProgram returns the local
    table of callback routines.
 */
 idl_program
 idl_genSpliceDepProgram(
-    void)
+    void *userData)
 {
+    /* The following control is required to allow idl_walk  */
+    /* to analyse anonymous types within structs and unions */
+    /* A special program for that would be more clear but   */
+    /* also slower                                          */
+    idl_genSpliceDep.idl_getControl                     = idl_getControl;
+    idl_genSpliceDep.fileOpen                           = idl_fileOpen;
+    idl_genSpliceDep.fileClose                          = NULL;
+    idl_genSpliceDep.moduleOpen                         = idl_moduleOpen;
+    idl_genSpliceDep.moduleClose                        = NULL;
+    idl_genSpliceDep.structureOpen                      = idl_structureOpen;
+    idl_genSpliceDep.structureClose                     = NULL;
+    idl_genSpliceDep.structureMemberOpenClose           = idl_structureMemberOpenClose;
+    idl_genSpliceDep.enumerationOpen                    = NULL;
+    idl_genSpliceDep.enumerationClose                   = NULL;
+    idl_genSpliceDep.enumerationElementOpenClose        = NULL;
+    idl_genSpliceDep.unionOpen                          = idl_unionOpen;
+    idl_genSpliceDep.unionClose                         = NULL;
+    idl_genSpliceDep.unionCaseOpenClose                 = idl_unionCaseOpenClose;
+    idl_genSpliceDep.unionLabelsOpenClose               = NULL;
+    idl_genSpliceDep.unionLabelOpenClose                = NULL;
+    idl_genSpliceDep.typedefOpenClose                   = idl_typedefOpenClose;
+    idl_genSpliceDep.boundedStringOpenClose             = NULL;
+    idl_genSpliceDep.sequenceOpenClose                  = NULL;
+    idl_genSpliceDep.constantOpenClose                  = idl_constantOpenClose;
+    idl_genSpliceDep.artificialDefaultLabelOpenClose    = NULL;
+    idl_genSpliceDep.userData                           = userData;
+
     return &idl_genSpliceDep;
 }

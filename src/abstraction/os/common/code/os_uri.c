@@ -905,32 +905,32 @@ os_uriGetScheme(
 os_int
 os_uriSetScheme(
     os_uri uri,
-    const os_char *str)
+    const os_char *scheme)
 {
-    os_char *ptr, *scheme;
+    os_char *ptr, *bak;
     os_int retcode = OS_RETCODE_OK;
 
     assert (uri != NULL);
 
-    if (str == NULL) {
+    if (scheme == NULL) {
         os_free (uri->scheme);
         uri->scheme = NULL;
     } else if (uri->relative == OS_URI_RELATIVE_TRUE) {
         retcode = OS_RETCODE_BAD_PARAMETER;
     } else {
-        scheme = uri->scheme;
-        ptr = os__uriParseScheme (uri, str);
-        if (ptr == NULL) {
-            uri->scheme = scheme;
-            retcode = OS_RETCODE_OUT_OF_RESOURCES;
-        } else if (ptr != str && *ptr == '\0') {
-            os_free (scheme);
+        bak = uri->scheme;
+        uri->scheme = NULL;
+        ptr = os__uriParseScheme(uri, scheme);
+        if (ptr != NULL && ptr != scheme && *ptr == '\0') {
+            os_free(bak);
         } else {
-            if (ptr != str) {
-                os_free (uri->scheme);
+            os_free(uri->scheme);
+            uri->scheme = bak;
+            if (ptr == NULL) {
+                retcode = OS_RETCODE_OUT_OF_RESOURCES;
+            } else {
+                retcode = OS_RETCODE_BAD_PARAMETER;
             }
-            uri->scheme = scheme;
-            retcode = OS_RETCODE_BAD_PARAMETER;
         }
     }
 
@@ -948,31 +948,30 @@ os_uriGetUserinfo(
 os_int
 os_uriSetUserinfo(
     os_uri uri,
-    const os_char *str)
+    const os_char *userinfo)
 {
-    os_char *ptr, *userinfo;
+    os_char *ptr, *bak;
     os_int retcode = OS_RETCODE_BAD_PARAMETER;
 
     assert (uri != NULL);
 
-    if (str == NULL) {
+    if (userinfo == NULL) {
         os_free (uri->userinfo);
         uri->userinfo = NULL;
         retcode = OS_RETCODE_OK;
     } else if (uri->host != NULL) {
-        userinfo = uri->userinfo;
-        ptr = os__uriParseUserinfo (uri, str);
-        if (ptr == NULL) {
-            uri->userinfo = userinfo;
-            retcode = OS_RETCODE_OUT_OF_RESOURCES;
-        } else if (ptr != str && *ptr == '\0') {
-            os_free (userinfo);
+        bak = uri->userinfo;
+        uri->userinfo = NULL;
+        ptr = os__uriParseUserinfo(uri, userinfo);
+        if (ptr != NULL && ptr != userinfo && *ptr == '\0') {
+            os_free(bak);
             retcode = OS_RETCODE_OK;
         } else {
-            if (ptr != str) {
-                os_free (uri->userinfo);
+            os_free(uri->userinfo);
+            uri->userinfo = bak;
+            if (ptr == NULL) {
+                retcode = OS_RETCODE_OUT_OF_RESOURCES;
             }
-            uri->userinfo = userinfo;
         }
     }
 
@@ -1069,35 +1068,35 @@ os_uriGetPath(
 os_int
 os_uriSetPath(
     os_uri uri,
-    const os_char *str)
+    const os_char *path)
 {
-    os_char *path, *ptr;
+    os_char *ptr, *bak;
     os_int retcode = OS_RETCODE_OK;
 
     assert (uri != NULL);
 
-    if (str == NULL) {
+    if (path == NULL) {
         os_free (uri->path);
         uri->path = NULL;
     } else {
-        path = uri->path;
+        bak = uri->path;
+        uri->path = NULL;
         if (uri->userinfo != NULL || uri->host != NULL || uri->port != 0) {
-            ptr = os__uriParsePathAbsolute (uri, str);
+            ptr = os__uriParsePathAbsolute (uri, path);
         } else {
-            ptr = os__uriParsePathRootless (uri, str);
+            ptr = os__uriParsePathRootless (uri, path);
         }
 
-        if (ptr == NULL) {
-            uri->path = path;
-            retcode = OS_RETCODE_OUT_OF_RESOURCES;
-        } else if (ptr != str && *ptr == '\0') {
-            os_free (path);
+        if (ptr != NULL && ptr != path && *ptr == '\0') {
+            os_free(bak);
         } else {
-            if (ptr != str) {
-                os_free (uri->path);
+            os_free(uri->path);
+            uri->path = bak;
+            if (ptr == NULL) {
+                retcode = OS_RETCODE_OUT_OF_RESOURCES;
+            } else {
+                retcode = OS_RETCODE_BAD_PARAMETER;
             }
-            uri->path = path;
-            retcode = OS_RETCODE_BAD_PARAMETER;
         }
     }
 
@@ -1115,30 +1114,30 @@ os_uriGetQuery(
 os_int
 os_uriSetQuery(
     os_uri uri,
-    const os_char *str)
+    const os_char *query)
 {
-    os_char *ptr, *query;
+    os_char *ptr, *bak;
     os_int retcode = OS_RETCODE_OK;
 
     assert (uri != NULL);
 
-    if (str == NULL) {
-        os_free (uri->query);
+    if (query == NULL) {
+        os_free(uri->query);
         uri->query = NULL;
     } else {
-        query = uri->query;
-        ptr = os__uriParseQuery (uri, str);
-        if (ptr == NULL) {
-            uri->query = query;
-            retcode = OS_RETCODE_OUT_OF_RESOURCES;
-        } else if (ptr != str && *ptr == '\0') {
-            os_free (query);
+        bak = uri->query;
+        uri->query = NULL;
+        ptr = os__uriParseQuery(uri, query);
+        if (ptr != NULL && ptr != query && *ptr != '\0') {
+            os_free(bak);
         } else {
-            if (ptr != str) {
-                os_free (uri->query);
+            os_free(uri->query);
+            uri->query = bak;
+            if (ptr == NULL) {
+                retcode = OS_RETCODE_OUT_OF_RESOURCES;
+            } else {
+                retcode = OS_RETCODE_BAD_PARAMETER;
             }
-            uri->query = query;
-            retcode = OS_RETCODE_BAD_PARAMETER;
         }
     }
 
@@ -1156,30 +1155,30 @@ os_uriGetFragment(
 os_int
 os_uriSetFragment(
     os_uri uri,
-    const os_char *str)
+    const os_char *fragment)
 {
-    os_char *ptr, *fragment;
+    os_char *ptr, *bak;
     os_int retcode = OS_RETCODE_OK;
 
     assert (uri != NULL);
 
-    if (str == NULL) {
-        os_free (uri->fragment);
+    if (fragment == NULL) {
+        os_free(uri->fragment);
         uri->fragment = NULL;
     } else {
-        fragment = uri->fragment;
-        ptr = os__uriParseFragment (uri, str);
-        if (ptr == NULL) {
-            uri->query = fragment;
-            retcode = OS_RETCODE_OUT_OF_RESOURCES;
-        } else if (ptr != str && *ptr == '\0') {
-            os_free (fragment);
+        bak = uri->fragment;
+        uri->fragment = NULL;
+        ptr = os__uriParseFragment(uri, fragment);
+        if (ptr != NULL && ptr != fragment && *ptr == '\0') {
+            os_free(bak);
         } else {
-            if (ptr != str) {
-                os_free (uri->fragment);
+            os_free(uri->fragment);
+            uri->fragment = bak;
+            if (ptr == NULL) {
+                retcode = OS_RETCODE_OUT_OF_RESOURCES;
+            } else {
+                retcode = OS_RETCODE_BAD_PARAMETER;
             }
-            uri->fragment = fragment;
-            retcode = OS_RETCODE_BAD_PARAMETER;
         }
     }
 

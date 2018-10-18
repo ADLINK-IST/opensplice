@@ -11,3 +11,4 @@ else
 fi
 unset TMP_PLAT_ARCH
 unset QTDIR
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

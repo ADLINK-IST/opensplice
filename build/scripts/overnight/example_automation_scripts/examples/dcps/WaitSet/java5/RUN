@@ -8,11 +8,11 @@ startOSPL
 
 echo "=== Launching WaitSet "
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP WaitSetDataSubscriber > subResult.txt &
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar sub/java5_WaitSet_sub.jar > subResult.txt &
 
 sleep 5
 
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP WaitSetDataPublisher > pubResult.txt
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -jar pub/java5_WaitSet_pub.jar > pubResult.txt
 
 sleep 10
 

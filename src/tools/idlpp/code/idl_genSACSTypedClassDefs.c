@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -55,7 +56,7 @@ idl_fileOpen(
     c_char *tmplPath;
     c_char *orbPath;
     int tmplFile;
-    struct os_stat tmplStat;
+    struct os_stat_s tmplStat;
     unsigned int nRead;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
     OS_UNUSED_ARG(scope);
@@ -189,12 +190,14 @@ idl_structureOpen(
         c_char spaces[128];
         idl_tmplExp te;
         SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+        c_type structType = idl_typeSpecDef(idl_typeSpec(structSpec));
         char *scopeName = idl_CsharpId(
                 idl_scopeElementName(idl_scopeCur(scope)),
                 csUserData->customPSM,
                 FALSE);
         char *structName = idl_CsharpId(name, csUserData->customPSM, FALSE);
         char *scopedTypeName = idl_scopeStack(scope, "::", name);
+        char *dbTypeName = idl_CsharpScopeStackFromCType(structType, csUserData->customPSM, TRUE, FALSE);
         const char *internalTypeName = idl_internalTypeNameForBuiltinTopic(scopedTypeName);
         const char *keyList = idl_keyResolve(idl_keyDefDefGet(), scope, name);
         if ((strlen(internalTypeName) != 0) &&
@@ -207,6 +210,7 @@ idl_structureOpen(
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", scopeName));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", structName));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("dbTypename", dbTypeName));
         idl_macroSetAdd(
                 idlpp_macroSet,
                 idl_macroNew("scoped-meta-type-name", scopedTypeName));
@@ -228,9 +232,10 @@ idl_structureOpen(
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
 
+        os_free(dbTypeName);
         os_free(scopedTypeName);
-        os_free(scopeName);
         os_free(structName);
+        os_free(scopeName);
     }
     return idl_abort;
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -178,7 +179,7 @@ template <typename D>
 const dds::topic::BuiltinTopicKey& TPublicationBuiltinTopicData<D>::participant_key() const
 {
     ISOCPP_REPORT_STACK_NC_BEGIN();
-    return this->delegate().key();
+    return this->delegate().participant_key();
 }
 
 template <typename D>
@@ -321,7 +322,7 @@ template <typename D>
 const dds::topic::BuiltinTopicKey& TSubscriptionBuiltinTopicData<D>::participant_key() const
 {
     ISOCPP_REPORT_STACK_NC_BEGIN();
-    return this->delegate().key();
+    return this->delegate().participant_key();
 }
 
 template <typename D>
@@ -428,243 +429,6 @@ const ::dds::core::policy::GroupData& TSubscriptionBuiltinTopicData<D>::group_da
     ISOCPP_REPORT_STACK_NC_BEGIN();
     return this->delegate().group_data();
 }
-
-#if 0
-
-//TCMParticipantBuiltinTopicData
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMParticipantBuiltinTopicData<D>::key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).key();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ProductData& TCMParticipantBuiltinTopicData<D>::product() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).product();
-}
-
-//TCMPublisherBuiltinTopicData
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMPublisherBuiltinTopicData<D>::key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).key();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ProductData& TCMPublisherBuiltinTopicData<D>::product() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).product();
-}
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMPublisherBuiltinTopicData<D>::participant_key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).participant_key();
-}
-
-template <typename D>
-const std::string& TCMPublisherBuiltinTopicData<D>::name() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).name();
-}
-
-template <typename D>
-const ::dds::core::policy::EntityFactory& TCMPublisherBuiltinTopicData<D>::entity_factory() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).entity_factory();
-}
-
-template <typename D>
-const ::dds::core::policy::Partition& TCMPublisherBuiltinTopicData<D>::partition() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).partition();
-}
-
-//TCMSubscriberBuiltinTopicData
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMSubscriberBuiltinTopicData<D>::key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).key();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ProductData& TCMSubscriberBuiltinTopicData<D>::product() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).product();
-}
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMSubscriberBuiltinTopicData<D>::participant_key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).participant_key();
-}
-
-template <typename D>
-const std::string& TCMSubscriberBuiltinTopicData<D>::name() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).name();
-}
-
-template <typename D>
-const ::dds::core::policy::EntityFactory& TCMSubscriberBuiltinTopicData<D>::entity_factory() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).entity_factory();
-}
-
-template <typename D>
-const ::dds::core::policy::Partition& TCMSubscriberBuiltinTopicData<D>::partition() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).partition();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::Share& TCMSubscriberBuiltinTopicData<D>::share() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).share();
-}
-
-//TCMDataWriterBuiltinTopicData
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMDataWriterBuiltinTopicData<D>::key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).key();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ProductData& TCMDataWriterBuiltinTopicData<D>::product() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).product();
-}
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMDataWriterBuiltinTopicData<D>::publisher_key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).publisher_key();
-}
-
-template <typename D>
-const std::string& TCMDataWriterBuiltinTopicData<D>::name() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).name();
-}
-
-template <typename D>
-const ::dds::core::policy::History& TCMDataWriterBuiltinTopicData<D>::history() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).history();
-}
-
-template <typename D>
-const ::dds::core::policy::ResourceLimits& TCMDataWriterBuiltinTopicData<D>::resource_limits() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).resource_limits();
-}
-
-template <typename D>
-const ::dds::core::policy::WriterDataLifecycle& TCMDataWriterBuiltinTopicData<D>::writer_data_lifecycle() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).writer_data_lifecycle();
-}
-
-//TCMDataReaderBuiltinTopicData
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMDataReaderBuiltinTopicData<D>::key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).key();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ProductData& TCMDataReaderBuiltinTopicData<D>::product() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).product();
-}
-
-template <typename D>
-const dds::topic::BuiltinTopicKey& TCMDataReaderBuiltinTopicData<D>::subscriber_key() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).subscriber_key();
-}
-
-template <typename D>
-const std::string& TCMDataReaderBuiltinTopicData<D>::name() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).name();
-}
-
-template <typename D>
-const ::dds::core::policy::History& TCMDataReaderBuiltinTopicData<D>::history() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).history();
-}
-
-template <typename D>
-const ::dds::core::policy::ResourceLimits& TCMDataReaderBuiltinTopicData<D>::resource_limits() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).resource_limits();
-}
-
-template <typename D>
-const ::dds::core::policy::ReaderDataLifecycle& TCMDataReaderBuiltinTopicData<D>::reader_data_lifecycle() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).reader_data_lifecycle();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::SubscriptionKey& TCMDataReaderBuiltinTopicData<D>::subscription_keys() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).subscription_keys();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::ReaderLifespan& TCMDataReaderBuiltinTopicData<D>::reader_lifespan() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).reader_lifespan();
-}
-
-template <typename D>
-const ::org::opensplice::core::policy::Share& TCMDataReaderBuiltinTopicData<D>::share() const
-{
-    ISOCPP_REPORT_STACK_NC_BEGIN();
-    return ((D)this->delegate()).share();
-}
-#endif
 
 }
 }

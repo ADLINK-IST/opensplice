@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@
 #include "u__domain.h"
 #include "u__user.h"
 #include "v_dataView.h"
+#include "v_instance.h"
 #include "v_handle.h"
 #include "v_public.h"
 #include "v_dataReader.h"
@@ -209,15 +211,52 @@ u_instanceHandleFix(
             reader = v_collection(v_dataViewGetReader(v_dataView(reader)));
         }
         topic = v_dataReaderGetTopic(v_dataReader(reader));
-        message = v_topicMessageNew(topic);
-        data = (void *) (message + 1);
-        data->key = u_instanceHandleToGID(_this);
-        instance = (v_public)v_dataReaderLookupInstance(v_dataReader(reader),
-                                                        message);
-        translator.handle = u_instanceHandleNew(instance);
-        c_free(instance);
-        c_free(topic);
-        c_free(message);
+
+        if(topic){
+            message = v_topicMessageNew(topic);
+            data = (void *) (message + 1);
+            data->key = u_instanceHandleToGID(_this);
+            instance = (v_public)v_dataReaderLookupInstance(v_dataReader(reader),
+                                                            message);
+            translator.handle = u_instanceHandleNew(instance);
+            c_free(instance);
+            c_free(topic);
+            c_free(message);
+        } else {
+            translator.handle = U_INSTANCEHANDLE_NIL;
+        }
     }
     return translator.handle;
+}
+
+u_result
+u_instanceHandleSetUserData(
+    u_instanceHandle _this,
+    void *userData)
+{
+    u_result result;
+    v_instance instance;
+
+    result = u_instanceHandleClaim(_this, &instance);
+    if (result == U_RESULT_OK) {
+        (void)v_instanceSetUserData(instance, userData);
+        (void)u_instanceHandleRelease(_this);
+    }
+    return result;
+}
+
+void *
+u_instanceHandleGetUserData(
+    u_instanceHandle _this)
+{
+    u_result result;
+    v_instance instance;
+    void *userData = NULL;
+
+    result = u_instanceHandleClaim(_this, &instance);
+    if (result == U_RESULT_OK) {
+        userData = v_instanceGetUserData(instance);
+        (void)u_instanceHandleRelease(_this);
+    }
+    return userData;
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,18 +25,25 @@ import org.omg.dds.core.policy.Deadline;
 import org.omg.dds.core.policy.DestinationOrder;
 import org.omg.dds.core.policy.Durability;
 import org.omg.dds.core.policy.DurabilityService;
+import org.omg.dds.core.policy.EntityFactory;
+import org.omg.dds.core.policy.GroupData;
 import org.omg.dds.core.policy.History;
 import org.omg.dds.core.policy.LatencyBudget;
 import org.omg.dds.core.policy.Lifespan;
 import org.omg.dds.core.policy.Liveliness;
 import org.omg.dds.core.policy.Ownership;
+import org.omg.dds.core.policy.Partition;
+import org.omg.dds.core.policy.Presentation;
 import org.omg.dds.core.policy.QosPolicy;
+import org.omg.dds.core.policy.ReaderDataLifecycle;
 import org.omg.dds.core.policy.QosPolicy.ForTopic;
 import org.omg.dds.core.policy.Reliability;
 import org.omg.dds.core.policy.ResourceLimits;
+import org.omg.dds.core.policy.TimeBasedFilter;
 import org.omg.dds.core.policy.TopicData;
 import org.omg.dds.core.policy.TransportPriority;
 import org.omg.dds.core.policy.TypeConsistencyEnforcement;
+import org.omg.dds.core.policy.UserData;
 import org.omg.dds.core.policy.TypeConsistencyEnforcement.Kind;
 import org.omg.dds.topic.TopicQos;
 import org.opensplice.dds.core.EntityQosImpl;
@@ -46,17 +54,24 @@ import org.opensplice.dds.core.policy.DeadlineImpl;
 import org.opensplice.dds.core.policy.DestinationOrderImpl;
 import org.opensplice.dds.core.policy.DurabilityImpl;
 import org.opensplice.dds.core.policy.DurabilityServiceImpl;
+import org.opensplice.dds.core.policy.EntityFactoryImpl;
+import org.opensplice.dds.core.policy.GroupDataImpl;
 import org.opensplice.dds.core.policy.HistoryImpl;
 import org.opensplice.dds.core.policy.LatencyBudgetImpl;
 import org.opensplice.dds.core.policy.LifespanImpl;
 import org.opensplice.dds.core.policy.LivelinessImpl;
 import org.opensplice.dds.core.policy.OwnershipImpl;
+import org.opensplice.dds.core.policy.PartitionImpl;
 import org.opensplice.dds.core.policy.PolicyConverter;
+import org.opensplice.dds.core.policy.PresentationImpl;
+import org.opensplice.dds.core.policy.ReaderDataLifecycleImpl;
 import org.opensplice.dds.core.policy.ReliabilityImpl;
 import org.opensplice.dds.core.policy.ResourceLimitsImpl;
+import org.opensplice.dds.core.policy.TimeBasedFilterImpl;
 import org.opensplice.dds.core.policy.TopicDataImpl;
 import org.opensplice.dds.core.policy.TransportPriorityImpl;
 import org.opensplice.dds.core.policy.TypeConsistencyEnforcementImpl;
+import org.opensplice.dds.core.policy.UserDataImpl;
 
 public class TopicQosImpl extends EntityQosImpl<ForTopic> implements TopicQos {
     private static final long serialVersionUID = -1401988185243587729L;
@@ -83,72 +98,100 @@ public class TopicQosImpl extends EntityQosImpl<ForTopic> implements TopicQos {
 
     @Override
     public TopicData getTopicData() {
-        return (TopicData) this.policies.get(TopicData.class);
+        synchronized (this.policies) {
+            return (TopicData) this.policies.get(TopicData.class);
+        }
     }
 
     @Override
     public Durability getDurability() {
-        return (Durability) this.policies.get(Durability.class);
+        synchronized (this.policies) {
+            return (Durability) this.policies.get(Durability.class);
+        }
     }
 
     @Override
     public DurabilityService getDurabilityService() {
-        return (DurabilityService) this.policies.get(DurabilityService.class);
+        synchronized (this.policies) {
+            return (DurabilityService) this.policies.get(DurabilityService.class);
+        }
     }
 
     @Override
     public Deadline getDeadline() {
-        return (Deadline) this.policies.get(Deadline.class);
+        synchronized (this.policies) {
+            return (Deadline) this.policies.get(Deadline.class);
+        }
     }
 
     @Override
     public LatencyBudget getLatencyBudget() {
-        return (LatencyBudget) this.policies.get(LatencyBudget.class);
+        synchronized (this.policies) {
+            return (LatencyBudget) this.policies.get(LatencyBudget.class);
+        }
     }
 
     @Override
     public Liveliness getLiveliness() {
-        return (Liveliness) this.policies.get(Liveliness.class);
+        synchronized (this.policies) {
+            return (Liveliness) this.policies.get(Liveliness.class);
+        }
     }
 
     @Override
     public Reliability getReliability() {
-        return (Reliability) this.policies.get(Reliability.class);
+        synchronized (this.policies) {
+            return (Reliability) this.policies.get(Reliability.class);
+        }
     }
 
     @Override
     public DestinationOrder getDestinationOrder() {
-        return (DestinationOrder) this.policies.get(DestinationOrder.class);
+        synchronized (this.policies) {
+            return (DestinationOrder) this.policies.get(DestinationOrder.class);
+        }
     }
 
     @Override
     public History getHistory() {
-        return (History) this.policies.get(History.class);
+        synchronized (this.policies) {
+            return (History) this.policies.get(History.class);
+        }
     }
 
     @Override
     public ResourceLimits getResourceLimits() {
-        return (ResourceLimits) this.policies.get(ResourceLimits.class);
+        synchronized (this.policies) {
+            return (ResourceLimits) this.policies.get(ResourceLimits.class);
+        }
     }
 
     @Override
     public TransportPriority getTransportPriority() {
-        return (TransportPriority) this.policies.get(TransportPriority.class);
+        synchronized (this.policies) {
+            return (TransportPriority) this.policies.get(TransportPriority.class);
+        }
     }
 
     @Override
     public Lifespan getLifespan() {
-        return (Lifespan) this.policies.get(Lifespan.class);
+        synchronized (this.policies) {
+            return (Lifespan) this.policies.get(Lifespan.class);
+        }
     }
 
     @Override
     public Ownership getOwnership() {
-        return (Ownership) this.policies.get(Ownership.class);
+        synchronized (this.policies) {
+            return (Ownership) this.policies.get(Ownership.class);
+        }
     }
 
     @Override
     public DataRepresentation getRepresentation() {
-        return (DataRepresentation) this.policies.get(DataRepresentation.class);
+        synchronized (this.policies) {
+            return (DataRepresentation) this.policies.get(DataRepresentation.class);
+        }
     }
 
     @Override
@@ -158,20 +201,63 @@ public class TopicQosImpl extends EntityQosImpl<ForTopic> implements TopicQos {
 
     @Override
     protected void setupMissingPolicies() {
-        this.policies.putIfAbsent(TopicData.class, new TopicDataImpl(this.environment));
-        this.policies.putIfAbsent(Durability.class, new DurabilityImpl(this.environment));
-        this.policies.putIfAbsent(DurabilityService.class, new DurabilityServiceImpl(this.environment));
-        this.policies.putIfAbsent(Deadline.class, new DeadlineImpl(this.environment));
-        this.policies.putIfAbsent(LatencyBudget.class, new LatencyBudgetImpl(this.environment));
-        this.policies.putIfAbsent(Liveliness.class, new LivelinessImpl(this.environment));
-        this.policies.putIfAbsent(Reliability.class, new ReliabilityImpl(this.environment));
-        this.policies.putIfAbsent(DestinationOrder.class, new DestinationOrderImpl(this.environment));
-        this.policies.putIfAbsent(History.class, new HistoryImpl(this.environment));
-        this.policies.putIfAbsent(ResourceLimits.class, new ResourceLimitsImpl(this.environment));
-        this.policies.putIfAbsent(TransportPriority.class, new TransportPriorityImpl(this.environment));
-        this.policies.putIfAbsent(Lifespan.class, new LifespanImpl(this.environment));
-        this.policies.putIfAbsent(Ownership.class, new OwnershipImpl(this.environment));
-        this.policies.putIfAbsent(DataRepresentation.class, new DataRepresentationImpl(this.environment));
+        synchronized (this.policies) {
+            if (!this.policies.containsKey(TopicData.class)) {
+                this.policies.put(TopicData.class, new TopicDataImpl(
+                        environment));
+            }
+            if (!this.policies.containsKey(Durability.class)) {
+                this.policies.put(Durability.class, new DurabilityImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(DurabilityService.class)) {
+                this.policies.put(DurabilityService.class,
+                        new DurabilityServiceImpl(this.environment));
+            }
+            if (!this.policies.containsKey(Deadline.class)) {
+                this.policies.put(Deadline.class,
+                        new DeadlineImpl(this.environment));
+            }
+            if (!this.policies.containsKey(LatencyBudget.class)) {
+                this.policies.put(LatencyBudget.class, new LatencyBudgetImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Liveliness.class)) {
+                this.policies.put(Liveliness.class, new LivelinessImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Reliability.class)) {
+                this.policies.put(Reliability.class, new ReliabilityImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(DestinationOrder.class)) {
+                this.policies.put(DestinationOrder.class, new DestinationOrderImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(History.class)) {
+                this.policies.put(History.class, new HistoryImpl(this.environment));
+            }
+            if (!this.policies.containsKey(ResourceLimits.class)) {
+                this.policies.put(ResourceLimits.class, new ResourceLimitsImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(TransportPriority.class)) {
+                this.policies.put(TransportPriority.class, new TransportPriorityImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(Lifespan.class)) {
+                this.policies.put(Lifespan.class,
+                        new LifespanImpl(this.environment));
+            }
+            if (!this.policies.containsKey(Ownership.class)) {
+                this.policies.put(Ownership.class, new OwnershipImpl(
+                        this.environment));
+            }
+            if (!this.policies.containsKey(DataRepresentation.class)) {
+                this.policies.put(DataRepresentation.class, new DataRepresentationImpl(
+                        this.environment));
+            }
+        }
     }
 
     @Override
@@ -181,7 +267,9 @@ public class TopicQosImpl extends EntityQosImpl<ForTopic> implements TopicQos {
 
     @Override
     public TopicQos withPolicies(QosPolicy.ForTopic... policy) {
-        return new TopicQosImpl(this, policy);
+        synchronized (this.policies) {
+            return new TopicQosImpl(this, policy);
+        }
     }
 
     public static TopicQosImpl convert(OsplServiceEnvironment env,

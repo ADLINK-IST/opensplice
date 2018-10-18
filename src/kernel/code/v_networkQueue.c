@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -83,7 +84,8 @@ v_networkQueueUpdateNextWakeup(
         TIMEE_TO_MSEC(now, msecsTime);
         /* Do a ++ because we are doing a ceil and TIME_TO_MSEC is doing a trunc.
          * Only if time was an exact multiple of milliseconds, this approach is
-         * not completely correct. But it saves us the hassle and this works fine */
+         * not completely correct. But it saves us the hassle and this works fine
+         */
         msecsTime++;
         msecsLeftOver = (msecsTime - queue->phaseMilliSeconds) % queue->msecsResolution;
         msecsResult = msecsTime - msecsLeftOver + queue->msecsResolution;
@@ -142,7 +144,7 @@ v_networkQueueNew(
         result->freeStatusMarkers = NULL;
         result->freeSamples = NULL;
         /* Init cv stuff */
-        c_mutexInit(c_getBase(result), &result->mutex);
+        (void)c_mutexInit(c_getBase(result), &result->mutex);
         c_condInit(c_getBase(result), &result->cv, &result->mutex);
         /* Currently no differentiation wrt qos */
         result->priority = priority;
@@ -210,7 +212,6 @@ v_networkQueueWrite(
     c_mutexLock(&queue->mutex);
     sendBefore = OS_TIMEE_ZERO;
 
-    /* numberOfSamplesArrived statistics */
     if (queue->statistics) {
         queue->statistics->numberOfSamplesArrived++;
     }
@@ -229,7 +230,6 @@ v_networkQueueWrite(
     if (!v_messageStateTest(msg,L_UNREGISTER)) {
         if (queue->currentMsgCount >= queue->maxMsgCount) {
             c_mutexUnlock(&queue->mutex);
-            /* numberOfSamplesRejected stat */
             if (queue->statistics) {
                 queue->statistics->numberOfSamplesRejected++;
             }
@@ -331,7 +331,6 @@ v_networkQueueWrite(
 
     queue->currentMsgCount++;
 
-    /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
     if (queue->statistics) {
         queue->statistics->numberOfSamplesInserted++;
         v_fullCounterValueInc(&queue->statistics->numberOfSamplesWaiting);
@@ -393,9 +392,10 @@ v_networkQueueTakeFirst(
     c_mutexLock(&queue->mutex);
 
     currentMarker = queue->firstStatusMarker;
-    /* Note: the current design expects that this function has been preceded
+    /* NOTE: the current design expects that this function has been preceded
      *       by a NetworkReaderWait. Therefore, the currentMarker should never
-     *       be NULL. */
+     *       be NULL.
+     */
 
     if (currentMarker != NULL) {
         sample = currentMarker->firstSample;
@@ -419,7 +419,6 @@ v_networkQueueTakeFirst(
         /* Remove and free holder */
         queue->currentMsgCount--;
 
-        /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
         if (queue->statistics) {
             queue->statistics->numberOfSamplesTaken++;
             v_fullCounterValueDec(&queue->statistics->numberOfSamplesWaiting);
@@ -466,7 +465,6 @@ v_networkQueueTakeAction(
         if (sample != NULL) {
             proceed = action(sample, arg);
             queue->currentMsgCount--;
-            /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
             if (queue->statistics) {
                 queue->statistics->numberOfSamplesTaken++;
                 v_fullCounterValueDec(&queue->statistics->numberOfSamplesWaiting);

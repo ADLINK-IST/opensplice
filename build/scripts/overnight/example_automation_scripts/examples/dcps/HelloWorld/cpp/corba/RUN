@@ -6,13 +6,13 @@ startOSPL
 
 echo "=== Launching HelloWorld "
 ./HelloWorldDataSubscriber > subResult.txt&
+cmd_pid=$!
 
 sleep 5
 ./HelloWorldDataPublisher > pubResult.txt
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination HelloWorldDataPublisher  30
-waitForProcessTermination HelloWorldDataSubscriber 30
+waitForProcessTermination $cmd_pid 30
 
 helloworldCheckResult
 

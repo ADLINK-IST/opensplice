@@ -1,5 +1,5 @@
 #ifndef _DDSSHAPEDYNAMICS_HPP
-#define	_DDSSHAPEDYNAMICS_HPP
+#define _DDSSHAPEDYNAMICS_HPP
 
 /** @file */
 
@@ -61,7 +61,6 @@ public:
     virtual void simulate();
 
 private:
-    //DDSShapeDynamics(const DDSShapeDynamics& orig);
     WeakSharedShape shape_;
     int x0_;
     int y0_;

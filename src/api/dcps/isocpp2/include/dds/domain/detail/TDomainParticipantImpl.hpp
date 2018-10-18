@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,7 +30,6 @@
  */
 #include <dds/domain/TDomainParticipant.hpp>
 #include <org/opensplice/domain/DomainParticipantDelegate.hpp>
-#include <org/opensplice/domain/DomainParticipantRegistry.hpp>
 #include <org/opensplice/core/ReportUtils.hpp>
 
 
@@ -48,13 +48,8 @@ TDomainParticipant<DELEGATE>::TDomainParticipant(uint32_t did):
                          NULL,
                          dds::core::status::StatusMask::none()))
 {
-    void *o = static_cast<void *>(this->delegate().get());
-
-    org::opensplice::domain::DomainParticipantDelegate *p = reinterpret_cast<org::opensplice::domain::DomainParticipantDelegate *>(o);
-
     ISOCPP_REPORT_STACK_DDS_BEGIN(*this);
     this->delegate()->init(this->impl_);
-    org::opensplice::domain::DomainParticipantRegistry::insert(*this);
 }
 
 template <typename DELEGATE>
@@ -66,7 +61,6 @@ TDomainParticipant<DELEGATE>::TDomainParticipant(uint32_t id,
 {
     ISOCPP_REPORT_STACK_DDS_BEGIN(*this);
     this->delegate()->init(this->impl_);
-    org::opensplice::domain::DomainParticipantRegistry::insert(*this);
 }
 
 template <typename DELEGATE>

@@ -5,7 +5,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <title>OpenSplice examples - Throughput</title>
-<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+<link rel="stylesheet" href="../../../docs/css/style.css" type="text/css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -39,8 +40,8 @@ from a publisher.</p>
 
 <h3>2) Design</h3>
 <p>It consists of 2 units :</p>
- <ul><li class="ex-unit"><span class="ex-unit-key">publisher</span> : <span class="ex-unit-desc">Sends samples at a specified size and rate</span></li>
-     <li class="ex-unit"><span class="ex-unit-key">subscriber</span> : <span class="ex-unit-desc">Receives samples and outputs statistics about throughput</span></li></ul>
+ <ul><li class="ex-unit"><span class="ex-unit-key" data-langjava5="pub/target/classes/publisher">publisher</span> : <span class="ex-unit-desc">Sends samples at a specified size and rate</span></li>
+     <li class="ex-unit"><span class="ex-unit-key" data-langjava5="sub/target/classes/subscriber">subscriber</span> : <span class="ex-unit-desc">Receives samples and outputs statistics about throughput</span></li></ul>
 
 <h3>3) Scenario</h3>
 
@@ -134,8 +135,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <p>For Java5</p>
                 <ul>
-                    <li>Saj5_Throughput_Publisher.jar</li>
-                    <li>Saj5_Throughput_Subscriber.jar</li>
+                    <li>java5_Throughput_pub.jar</li>
+                    <li>java5_Throughput_sub.jar</li>
                     <li>Saj5_Throughput_Types.jar</li>
                 </ul>
 
@@ -233,9 +234,8 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
 
 <p>For Java5</p>
                 <ul>
-                    <li>Saj5_Throughput_Publisher.jar</li>
-                    <li>Saj5_Throughput_Subscriber.jar</li>
-                    <li>Saj5_Throughput_Types.jar</li>
+                    <li>java5_Throughput_pub.jar</li>
+                    <li>java5_Throughput_sub.jar</li>
                 </ul>
 
 
@@ -266,7 +266,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
         <ul>
           <li><b><i>publisher.exe</i></b> for C/C++</li>
           <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes publisher</i></b> for Java</li>
-          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes publisher</i></b> for Java5</li>
+          <li><b><i>java -jar pub/java5_Throughput_pub.jar</i></b> for Java5</li>
         </ul>
     </li>
    </ul>
@@ -283,7 +283,7 @@ To do this open an <i>OpenSplice Command Prompt</i> which will set up the enviro
        <ul>
           <li><b><i>subscriber.exe</i></b> for C/C++  </li>
           <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes subscriber</i></b> for Java</li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes subscriber</i></b> for Java5</li>
+          <li><b><i>java -jar sub/java5_Throughput_sub.jar</i></b> for Java5</li>
         </ul>
     </ul>
 

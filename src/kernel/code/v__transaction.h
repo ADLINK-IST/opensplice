@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,10 +39,10 @@
  * - A v_transactionWriter class  : Internal class implementing an administration record
  *                                  for each discovered matching coherent DataWriter which
  *                                  will hold all active transactions.
- * - A v_transaction class        : Internal class implementing an administration record 
+ * - A v_transaction class        : Internal class implementing an administration record
  *                                  for each active transaction which will hold all
  *                                  received messages.
- * - A v_transactionElement class : Internal class implementing an administration record 
+ * - A v_transactionElement class : Internal class implementing an administration record
  *                                  for each received transaction message.
  */
 
@@ -55,7 +56,7 @@ extern "C" {
  * \brief The following MARCROs are defined to cast references to the correct type.
  *
  * If compiled with the NDEBUG flag not set, these macros will additionally perform
- * runtime type checking, and in case of providing an incorrect type these macros will 
+ * runtime type checking, and in case of providing an incorrect type these macros will
  * return a NULL reference.
  */
 #define v_messageEOT(o) (C_CAST(o,v_messageEOT))
@@ -81,9 +82,9 @@ typedef void (*v_transactionAction) (v_instance instance, v_message message, c_v
  */
 v_transactionAdmin
 v_transactionAdminNew(
-    v_object owner,
-    v_transactionGroupAdmin groupAdmin,
-    v_topic topic);
+        _In_ v_object owner,
+        _In_opt_ v_transactionGroupAdmin groupAdmin,
+        _In_ v_topic topic);
 
 /**
  * \brief              This operation notifies the transactionAdmin about discovered
@@ -136,7 +137,7 @@ v_transactionAdminInsertMessage(
     c_bool *complete);
 
 /**
- * \brief              This operation will perform a user action on all transactions. 
+ * \brief              This operation will perform a user action on all transactions.
  *
  * \param _this      : The transaction administration this operation operates on.
  * \param action     : The user action that is executed on each transaction.
@@ -170,16 +171,20 @@ v_transactionAdminWalkWriters(
  *
  *                     This operation is executed when a transaction has become complete
  *                     and will insert all messages belonging to the transaction into the
- *                     reader's history and delete the transaction from this administration. 
+ *                     reader's history and delete the transaction from this administration.
  *
  * \param _this      : The transaction this operation operates on.
- *                     
+ *
  * \return           : Not applicable.
  */
 void
+v_transactionFlush_nl(
+    v_transaction _this);
+
+/* similar as v_transactionFlush_nl but also takes lock of the transaction owner. */
+void
 v_transactionFlush(
-    v_transaction _this,
-    v_transactionAdmin owner);
+    v_transaction _this);
 
 /**
  * \brief              This operation will invoke the given action routine for all
@@ -231,15 +236,6 @@ v_transactionGetGroupAdmin(
     v_transactionAdmin _this);
 
 void
-v_transactionTriggerList(
-    v_transaction _this,
-    c_iter triggerList);
-
-void
-v_transactionAdminTrigger(
-    v_transactionAdmin _this);
-
-void
 v_transactionNotifySampleLost(
     v_transaction _this,
     v_transactionAdmin admin);
@@ -267,8 +263,12 @@ v_transactionAdminNoMessageFromWriterExist(
     v_gid writerGid);
 
 void
-v_transactionAdminPurgeHistory(
-    v_transactionAdmin _this);
+v_transactionLink(
+    v_transaction _this);
+
+void
+v_transactionUnlink(
+    v_transaction _this);
 
 #if defined (__cplusplus)
 }

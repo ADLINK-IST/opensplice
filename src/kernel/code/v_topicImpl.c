@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -57,13 +58,42 @@ v_partitionDetermineTopicAccessMode(
     v_kernel kernel);
 
 static c_type
-messageTypeNew(
+messageTypeExtNew(
     v_kernel kernel,
-    const c_char *typeName)
+    c_type dataType)
 {
     c_base base;
     c_metaObject o;
-    c_type baseType,dataType,type, foundType;
+    c_type type;
+
+    static const char baseTypeName[] = "kernelModule::v_messageExt";
+
+    assert(C_TYPECHECK(kernel,v_kernel));
+
+    base = c_getBase(kernel);
+    assert (base);
+
+    type = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+    c_class(type)->extends = c_class(c_resolve(base, baseTypeName));
+    assert(c_class(type)->extends);
+    o = c_metaDeclare(c_metaObject(type), USERDATA_FIELD_NAME, M_ATTRIBUTE);
+    c_property(o)->type = dataType;
+    c_free(o);
+    c_metaObject(type)->definedIn = c_keep(base);
+    c_metaFinalize(c_metaObject(type));
+
+    return type;
+}
+
+static c_type
+messageTypeNew(
+    v_kernel kernel,
+    c_type dataType)
+{
+    c_base base;
+    c_metaObject o;
+    c_type baseType, type, foundType;
+    c_char *typeName;
     c_char *name;
     os_size_t length;
     int sres;
@@ -71,23 +101,9 @@ messageTypeNew(
     assert(C_TYPECHECK(kernel,v_kernel));
 
     base = c_getBase(kernel);
-    if (base == NULL) {
-        OS_REPORT(OS_ERROR,
-                    "v_topic::messageTypeNew", V_RESULT_INTERNAL_ERROR,
-                    "Could not create type 'v_message<%s>', "
-                    "invalid kernel reference.",
-                    typeName);
-        return NULL;
-    }
-    dataType = c_resolve(base,typeName);
-    if (dataType == NULL) {
-        OS_REPORT(OS_ERROR,
-                    "v_topic::messageTypeNew", V_RESULT_INTERNAL_ERROR,
-                    "Could not create type 'v_message<%s>', unknown type '%s'.",
-                    typeName, typeName);
-        return NULL;
-    }
-/* TODO: wrong place to do kernel locking, so v_kernelType should deal with it. */
+    assert (base);
+
+    /* TODO: wrong place to do kernel locking, so v_kernelType should deal with it. */
     c_lockWrite(&kernel->lock);
     baseType = v_kernelType(kernel,K_MESSAGE);
     c_lockUnlock(&kernel->lock);
@@ -95,9 +111,7 @@ messageTypeNew(
 
     type = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
     c_class(type)->extends = c_keep(c_class(baseType));
-    o = c_metaDeclare(c_metaObject(type),
-                      USERDATA_FIELD_NAME,
-                      M_ATTRIBUTE);
+    o = c_metaDeclare(c_metaObject(type), USERDATA_FIELD_NAME, M_ATTRIBUTE);
     c_property(o)->type = dataType;
     c_free(o);
     c_metaObject(type)->definedIn = c_keep(base);
@@ -106,11 +120,13 @@ messageTypeNew(
 
 #define MESSAGE_FORMAT "v_message<%s>"
 #define MESSAGE_NAME "v_message<>"
+    typeName = c_metaScopedName(c_metaObject(dataType));
     length = sizeof(MESSAGE_NAME) + strlen(typeName); /* sizeof contains \0 */
     name = os_malloc(length);
     sres = snprintf(name,length,MESSAGE_FORMAT,typeName);
     assert(sres >= 0 && (os_size_t) sres == (length-1));
     OS_UNUSED_ARG(sres);
+    os_free(typeName);
 #undef MESSAGE_FORMAT
 #undef MESSAGE_NAME
     foundType = c_type(c_metaBind(c_metaObject(base),name,c_metaObject(type)));
@@ -359,133 +375,101 @@ static c_bool
 isTopicConsistent(
     const v_topicImpl found,
     const c_char *name,
-    const c_char *typeName,
+    const c_type type,
     const v_topicQos qos,
     const c_char *keyExpr)
 {
     c_bool consistent = TRUE;
-    c_bool equal;
 
-    if (c_compareString(v_topicName(found), name) == C_EQ) {
-        c_char *rTypeName = c_metaScopedName(c_metaObject(found->dataType));
-        equal = (c_compareString(rTypeName, typeName) == C_EQ);
-        if (equal == TRUE) {
-            if (found->qos) {
-                c_bool valid = v_durabilityPolicyIEqual(found->qos->durability, qos->durability);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Durability'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_durabilityServicePolicyIEqual(found->qos->durabilityService, qos->durabilityService);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'DurabilityService'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_deadlinePolicyIEqual(found->qos->deadline, qos->deadline);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Deadline'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_latencyPolicyIEqual(found->qos->latency, qos->latency);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Latency'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_livelinessPolicyIEqual(found->qos->liveliness, qos->liveliness);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Liveliness'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_reliabilityPolicyIEqual(found->qos->reliability, qos->reliability);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Reliability'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_orderbyPolicyIEqual(found->qos->orderby, qos->orderby);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'OrderBy'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_resourcePolicyIEqual(found->qos->resource, qos->resource);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Resource'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_transportPolicyIEqual(found->qos->transport, qos->transport);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Transport'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_lifespanPolicyIEqual(found->qos->lifespan, qos->lifespan);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Lifespan'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_ownershipPolicyIEqual(found->qos->ownership, qos->ownership);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'Ownership'.",
-                                name);
-                    consistent = FALSE;
-                }
-                valid = v_historyPolicyIEqual(found->qos->history, qos->history);
-                if (!valid) {
-                    OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Create Topic <%s> failed: Unmatching QoS Policy: 'History'.",
-                                name);
-                    consistent = FALSE;
-                }
-            } else {
-                OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                            "Create Topic \"%s\" failed: QoS value undefined",
-                            name);
-                consistent = FALSE;
-            }
-            if (equal == TRUE) {
-                c_bool valid = keysConsistent(found, keyExpr);
-                if (!valid)
-                {
-                    OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                                "Precondition not met: Topic (%s) key \"%s\" doesn't match already existing Topic key \"%s\".",
-                                name, keyExpr?keyExpr:"NULL",
-                                found->keyExpr?found->keyExpr:"NULL");
-                    consistent = FALSE;
-                }
-            }
-        } else {
-            OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                        "Precondition not met: Create Topic \"%s\" failed: typename <%s> differs exiting definition <%s>.",
-                        name, rTypeName, typeName);
-            consistent = FALSE;
-        }
-        os_free(rTypeName);
-    } else {
+    if (c_compareString(v_topicName(found), name) != C_EQ) {
         OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
-                    "Precondition not met: Create Topic \"%s\" failed: name <%s> differs existing name <%s>.",
-                    name, name, v_topicName(found));
-        consistent = FALSE;
+                  "Precondition not met: Create Topic \"%s\" failed: name <%s> differs existing name <%s>.",
+                  name, name, v_topicName(found));
+        return FALSE;
+    }
+    if (found->dataType != type) {
+        c_char *typeName1 = c_metaScopedName(c_metaObject(found->dataType));
+        c_char *typeName2 = c_metaScopedName(c_metaObject(type));
+        OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Precondition not met: Create Topic \"%s\" failed: type <%s> differs existing type <%s>.",
+                  name, typeName2, typeName1);
+        os_free(typeName1);
+        os_free(typeName2);
+        return FALSE;
     }
 
+    if (found->qos == NULL) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic \"%s\" failed: QoS value undefined", name);
+        return FALSE;
+    }
+
+    if (!v_durabilityPolicyIEqual(found->qos->durability, qos->durability)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Durability'.", name);
+        consistent = FALSE;
+    }
+    if (!v_durabilityServicePolicyIEqual(found->qos->durabilityService, qos->durabilityService)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'DurabilityService'.", name);
+        consistent = FALSE;
+    }
+    if (!v_deadlinePolicyIEqual(found->qos->deadline, qos->deadline)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Deadline'.", name);
+        consistent = FALSE;
+    }
+    if (!v_latencyPolicyIEqual(found->qos->latency, qos->latency)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Latency'.", name);
+        consistent = FALSE;
+    }
+    if (!v_livelinessPolicyIEqual(found->qos->liveliness, qos->liveliness)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Liveliness'.", name);
+        consistent = FALSE;
+    }
+    if (!v_reliabilityPolicyIEqual(found->qos->reliability, qos->reliability)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Reliability'.", name);
+        consistent = FALSE;
+    }
+    if (!v_orderbyPolicyIEqual(found->qos->orderby, qos->orderby)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'OrderBy'.", name);
+        consistent = FALSE;
+    }
+    if (!v_resourcePolicyIEqual(found->qos->resource, qos->resource)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Resource'.", name);
+        consistent = FALSE;
+    }
+    if (!v_transportPolicyIEqual(found->qos->transport, qos->transport)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Transport'.", name);
+        consistent = FALSE;
+    }
+    if (!v_lifespanPolicyIEqual(found->qos->lifespan, qos->lifespan)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Lifespan'.", name);
+        consistent = FALSE;
+    }
+    if (!v_ownershipPolicyIEqual(found->qos->ownership, qos->ownership)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'Ownership'.", name);
+        consistent = FALSE;
+    }
+    if (!v_historyPolicyIEqual(found->qos->history, qos->history)) {
+        OS_REPORT(OS_WARNING, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: Unmatching QoS Policy: 'History'.", name);
+        consistent = FALSE;
+    }
+    if (!keysConsistent(found, keyExpr)) {
+        OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INCONSISTENT_QOS,
+                  "Create Topic <%s> failed: key \"%s\" doesn't match already existing Topic key \"%s\".",
+                  name, keyExpr?keyExpr:"NULL", found->keyExpr?found->keyExpr:"NULL");
+        consistent = FALSE;
+    }
     return consistent;
 }
 
@@ -501,8 +485,8 @@ v_topicImplNew(
     v_result result;
     v_topicImpl topic,found;
     c_type type;
+    c_type msgType;
     c_array keyList;
-    c_property field;
     v_topicQos newQos;
     c_char *str;
     v_message builtinMsg = NULL;
@@ -520,15 +504,22 @@ v_topicImplNew(
         return NULL;
     }
 
-    if (v_topicQosCheck(qos) == V_RESULT_OK) {
-        newQos = v_topicQosNew(kernel,qos);
-        if (newQos == NULL) {
-            OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_INTERNAL_ERROR,
-                        "Topic '%s' is not created: cannot create topic QoS.",
-                        name);
-            return NULL;
-        }
-    } else {
+    if (v_topicQosCheck(qos) != V_RESULT_OK) {
+        OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_ILL_PARAM,
+                  "Topic '%s' is not created: Topic QoS is invalid.", name);
+        return NULL;
+    }
+    type = c_resolve(c_getBase(kernel),typeName);
+    if (type == NULL) {
+        OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_ILL_PARAM,
+                  "Topic '%s' is not created: Type '%s' is not found.", name, typeName);
+        return NULL;
+    }
+    newQos = v_topicQosNew(kernel,qos);
+    if (newQos == NULL) {
+        OS_REPORT(OS_FATAL, "v_topicNew", V_RESULT_INTERNAL_ERROR,
+                  "Topic '%s' is not created: failed to copy topic QoS.", name);
+        c_free(type);
         return NULL;
     }
 
@@ -538,7 +529,7 @@ v_topicImplNew(
         /* Check found topic with new topic */
         /* compare topic, if inconsistent, reject creation! */
 
-        if(isTopicConsistent(found, name, typeName, newQos, keyExpr)) {
+        if(isTopicConsistent(found, name, type, newQos, keyExpr)) {
             topic = c_keep(found);
         }
 
@@ -546,38 +537,33 @@ v_topicImplNew(
         /* newQos is not used because the existing topic is returned */
         v_topicQosFree(newQos);
     } else {
-        type = messageTypeNew(kernel,typeName);
-        if (type != NULL) {
-            if (createMessageKeyList(type, keyExpr, &keyList) == FALSE) {
+        msgType = messageTypeNew(kernel,type);
+        if (msgType != NULL) {
+            if (createMessageKeyList(msgType, keyExpr, &keyList) == FALSE) {
                 topic = NULL; /* illegal key expression */
                 v_topicQosFree(newQos);
                 OS_REPORT(OS_ERROR, "v_topicNew", V_RESULT_ILL_PARAM,
                             "Failed to create Topic '%s': invalid key expression '%s'.",
                             name, keyExpr);
             } else {
-                field = c_property(c_metaResolve(c_metaObject(type),
-                                                 USERDATA_FIELD_NAME));
-                assert(field != NULL);
-                assert((size_t) field->offset == sizeof (struct v_message_s));
-
                 topic = v_topicImpl(v_objectNew(kernel,K_TOPIC));
-                v_entityInit(v_entity(topic), name, TRUE);
-                topic->messageType = type;
+                v_entityInit(v_entity(topic), name);
+                topic->messageExtType = messageTypeExtNew(kernel,type);
+                topic->messageType = msgType;
                 topic->messageKeyList = keyList;
                 topic->keyType = createKeyType(name,keyList);
-                topic->dataType = c_keep (field->type);
+                topic->dataType = c_keep(type);
                 topic->qos = newQos;
                 topic->keyExpr = c_stringNew(c_getBase(kernel), keyExpr);
                 topic->accessMode = v_partitionDetermineTopicAccessMode(name, kernel);
-                c_free (field);
 
                 /* determine CRC codes */
-                str = c_metaScopedName(c_metaObject(field->type));
+                str = c_metaScopedName(c_metaObject(type));
                 topic->crcOfName = ut_crcCalculate(name, strlen(name));
                 topic->crcOfTypeName = ut_crcCalculate(str, strlen(str));
                 os_free(str);
                 assert(found == NULL);
-                result = v_topicImplEnable(topic);
+                result = v_entityEnable(v_entity(topic));
                 switch(result)
                 {
                     case V_RESULT_OK:
@@ -610,7 +596,7 @@ v_topicImplNew(
                                 name);
                 }
             }
-            c_free(type);
+            c_free(msgType);
         } else {
             topic = NULL;
             v_topicQosFree(newQos);
@@ -632,8 +618,8 @@ v_topicImplNew(
  * However this is currently implicitly done in the new operator.
  */
 v_result
-v_topicImplEnable (
-    v_topicImpl topic)
+v__topicImplEnable (
+    _Inout_ v_topicImpl topic)
 {
     v_kernel kernel;
     v_topicImpl found;
@@ -642,46 +628,23 @@ v_topicImplEnable (
     assert(topic);
     assert(C_TYPECHECK(topic,v_topicImpl));
 
-    if (topic) {
-        kernel = v_objectKernel(topic);
-        found = v_topicImpl(v__addTopic(kernel,v_topic(topic)));
-        /*
-         * If the topic was already added to the kernel,
-         * then the calling method should know so it can perform
-         * a roll-back.
-         */
-        if(found != topic)
-        {
-            c_char *typeName = c_metaScopedName(c_metaObject(topic->dataType));
-
-            if(typeName)
-            {
-                if(isTopicConsistent(found, v_topicName(topic), typeName, topic->qos, topic->keyExpr))
-                {
-                    /* Compatible and already enabled topic found,
-                     * so this request is superfluous.
-                     */
-                    result = V_RESULT_PRECONDITION_NOT_MET;
-                }
-                else
-                {
-                    result = V_RESULT_INCONSISTENT_QOS;
-                }
-
-                os_free(typeName);
-            }
-            else
-            {
-                result = V_RESULT_INTERNAL_ERROR;
-            }
-        }
-        else
-        {
-            result = V_RESULT_OK;
+    kernel = v_objectKernel(topic);
+    found = v_topicImpl(v__addTopic(kernel,v_topic(topic)));
+    /* If the topic was already added to the kernel,
+     * then the calling method should know so it can perform
+     * a roll-back.
+     */
+    if(found != topic) {
+        if (isTopicConsistent(found, v_topicName(topic), topic->dataType, topic->qos, topic->keyExpr)) {
+            /* Compatible and already enabled topic found, so this request is superfluous.  */
+            result = V_RESULT_PRECONDITION_NOT_MET;
+        } else {
+            result = V_RESULT_INCONSISTENT_QOS;
         }
     } else {
-        result = V_RESULT_ILL_PARAM;
+        result = V_RESULT_OK;
     }
+
     return result;
 }
 
@@ -697,7 +660,7 @@ v_topicImplAnnounce(
     /* publish V_TOPICINFO_TOPIC. */
 
     kernel = v_objectKernel(v_object(topic));
-/* TODO: wrong place to do kernel locking, so v_builtinCreateTopicInfo should deal with it. */
+    /* TODO: wrong place to do kernel locking, so v_builtinCreateTopicInfo should deal with it. */
     c_lockWrite(&kernel->lock);
     builtinMsg = v_builtinCreateTopicInfo(kernel->builtin,v_topic(topic));
     c_lockUnlock(&kernel->lock);
@@ -899,9 +862,9 @@ v_topicImplGetQos(
     assert(_this);
     assert(C_TYPECHECK(_this,v_topicImpl));
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
     qos = c_keep(_this->qos);
-    v_observerUnlock(v_observer(_this));
+    OSPL_UNLOCK(_this);
 
     return qos;
 }
@@ -923,20 +886,20 @@ v_topicImplSetQos(
      */
     result = v_topicQosCheck(tmpl);
     if (result == V_RESULT_OK) {
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         kernel = v_objectKernel(_this);
         qos = v_topicQosNew(kernel, tmpl);
         if (!qos) {
-            v_observerUnlock(v_observer(_this));
+            OSPL_UNLOCK(_this);
             return V_RESULT_OUT_OF_MEMORY;
         }
-        result = v_topicQosCompare(_this->qos, qos, v_entityEnabled(v_entity(_this)), &cm);
+        result = v_topicQosCompare(_this->qos, qos, v__entityEnabled_nl(v_entity(_this)), &cm);
         if ((result == V_RESULT_OK) && (cm != 0)) {
             c_free(_this->qos);
             _this->qos = c_keep(qos);
             builtinMsg = v_builtinCreateTopicInfo(kernel->builtin,v_topic(_this));
         }
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
         if (builtinMsg != NULL) {
             v_writeBuiltinTopic(kernel, V_TOPICINFO_ID, builtinMsg);
             c_free(builtinMsg);
@@ -972,8 +935,8 @@ v_topicImplNotifyInconsistentTopic(
     e.source = v_observable(topic);
     e.data = NULL;
 
-    (void)v_entityNotifyListener(v_entity(topic), &e);
-    v_observableNotify(v_observable(topic), &e);
+    e.handled = v_entityNotifyListener(v_entity(topic), &e);
+    OSPL_THROW_EVENT(topic, &e);
 }
 
 void
@@ -988,9 +951,8 @@ v_topicImplNotifyAllDataDisposed(
     e.kind = V_EVENT_ALL_DATA_DISPOSED;
     e.source = v_observable(topic);
     e.data = NULL;
-
-    (void)v_entityNotifyListener(v_entity(topic), &e);
-    v_observableNotify(v_observable(topic), &e);
+    e.handled = v_entityNotifyListener(v_entity(topic), &e);
+    OSPL_THROW_EVENT(topic, &e);
 }
 
 v_result
@@ -1007,14 +969,14 @@ v_topicImplGetInconsistentTopicStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_topicStatus(status)->inconsistentTopic, arg);
         if (reset) {
             v_statusReset(status, V_EVENT_INCONSISTENT_TOPIC);
         }
         v_topicStatus(status)->inconsistentTopic.totalChanged = 0;
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
     }
 
     return result;
@@ -1034,14 +996,14 @@ v_topicImplGetAllDataDisposedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_topicStatus(status)->allDataDisposed, arg);
         if (reset) {
             v_statusReset(status, V_EVENT_ALL_DATA_DISPOSED);
         }
         v_topicStatus(status)->allDataDisposed.totalChanged = 0;
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
     }
 
     return result;
@@ -1331,4 +1293,3 @@ v_topicImplNewFromTopicInfo (
     }
     return newTopic;
 }
-

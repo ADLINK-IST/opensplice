@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -71,6 +72,7 @@ void
 os_processModuleExit(void)
 {
     os_free(processName);
+    processName = NULL;
 }
 
 /* public functions */
@@ -175,6 +177,7 @@ strip_quotes(char *str) {
  * sets the scheduling properties of the child process
  * accordingly by calling \b sched_setscheduler.
  */
+#define MAX_ARGUMENTS (64)
 os_result
 os_procCreate(
     const char *executable_file,
@@ -186,7 +189,7 @@ os_procCreate(
     os_result rv = os_resultSuccess;
 #if !defined INTEGRITY && !defined PIKEOS_POSIX
     pid_t pid;
-    char *argv[64];
+    char *argv[MAX_ARGUMENTS];
     int argc = 1;
     int go_on = 1;
     int i = 0;
@@ -237,7 +240,7 @@ os_procCreate(
         os_strcpy(argin, arguments);
         argv[0] = os_malloc(strlen(name) + 1);
         argv[0] = os_strcpy(argv[0], name);
-        while (go_on && (unsigned int)argc <= (sizeof(argv)/(sizeof(char *)))) {
+        while (go_on && (argc < (MAX_ARGUMENTS-1)) && (unsigned int)argc <= (sizeof(argv)/(sizeof(char *)))) {
             /* Get the start of the next argument. */
             while (argin[i] == ' ' || argin[i] == '\t' ) {
                 i++;
@@ -312,11 +315,19 @@ os_procCreate(
             if (getuid() == 0) {
                 /* first set the gid */
                 if (procAttr->userCred.gid) {
-                    setgid(procAttr->userCred.gid);
+                    if (setgid(procAttr->userCred.gid) == -1) {
+                        OS_REPORT(OS_WARNING, OS_FUNCTION, 1,
+                                    "setgid failed with error %d (%s). Requested gid was %u, current is %u",
+                                    os_getErrno(), name, (os_uint32)procAttr->userCred.gid, (os_uint32)getgid());
+                    }
                 }
                 /* then set the uid */
                 if (procAttr->userCred.uid) {
-                    setuid(procAttr->userCred.uid);
+                    if (setuid(procAttr->userCred.uid) == -1) {
+                        OS_REPORT(OS_WARNING, OS_FUNCTION, 1,
+                                    "setuid failed with error %d (%s). Requested uid was %u, current is %u",
+                                    os_getErrno(), name, procAttr->userCred.uid, 0);
+                    }
                 }
             }
             /* Set the process name via environment variable SPLICE_PROCNAME */
@@ -334,11 +345,11 @@ os_procCreate(
             os_procExit(OS_EXIT_FAILURE);
         } else {
             /* parent process */
-            os_free(argv[0]);
-            os_free(argin);
             *procId = pid;
             rv = os_resultSuccess;
         }
+        os_free(argv[0]);
+        os_free(argin);
     }
 #endif
 
@@ -544,7 +555,7 @@ os_procServiceDestroy(
             printf (".");
             fflush(stdout);
         }
-        os_sleep(sleepTime);    /* shutdown attempt interval */
+        ospl_os_sleep(sleepTime);    /* shutdown attempt interval */
         sleepCount--;
 
     }
@@ -626,7 +637,7 @@ os_procServiceDestroy(
                 fflush(stdout);
             }
 
-            os_sleep(sleepTime);  /* shutdown attempt interval */
+            ospl_os_sleep(sleepTime);  /* shutdown attempt interval */
             sleepCount--;
 
         }

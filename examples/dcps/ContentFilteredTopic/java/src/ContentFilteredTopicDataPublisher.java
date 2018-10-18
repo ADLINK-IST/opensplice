@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -72,7 +73,7 @@ public class ContentFilteredTopicDataPublisher {
 
 			ge.price = ge.price + (new Random()).nextFloat();
 			stockWriter.write(ge, geHandle);
-
+			System.out.println(ge.ticker + ": " + ge.price + " " + msft.ticker + ": " + msft.price);
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {

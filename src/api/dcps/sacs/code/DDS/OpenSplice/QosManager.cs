@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -252,7 +253,7 @@ namespace DDS.OpenSplice
             int errorCount = 0;
             if (o.Sec < 0 || o.NanoSec > 1000000000)
             {
-                if (o != Time.Invalid) 
+                if (o != Time.Invalid)
                 {
                 errorCount++;
                 ReportStack.Report(DDS.ReturnCode.BadParameter, "Time { " + o.Sec + ", " + o.NanoSec + "} is not properly normalized");
@@ -450,6 +451,13 @@ namespace DDS.OpenSplice
             {
                 errorCount++;
             }
+            if (o.MaxSamples != Length.Unlimited &&
+                o.MaxSamplesPerInstance != Length.Unlimited &&
+                o.MaxSamples < o.MaxSamplesPerInstance)
+            {
+                errorCount++;
+            }
+
             return errorCount;
         }
 
@@ -715,7 +723,7 @@ namespace DDS.OpenSplice
                     {
                         ReportStack.Report(result,
                             "ReaderDataLifecycle.InvalidSampleVisibility.kind 'ALL_INVALID_SAMPLES' is unsupported.");
-                        result = DDS.ReturnCode.Unsupported; // See OSPL-433
+                        result = DDS.ReturnCode.Unsupported; // See CYCL-15
                     }
                 }
             } else {

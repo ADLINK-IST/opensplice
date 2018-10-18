@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -55,7 +56,7 @@ public class SampleImpl<TYPE> implements org.opensplice.dds.sub.Sample<TYPE> {
         }
         return this.data;
     }
-    
+
     @Override
     public TYPE getKeyValue() {
         return this.data;
@@ -64,15 +65,15 @@ public class SampleImpl<TYPE> implements org.opensplice.dds.sub.Sample<TYPE> {
     public void setData(TYPE data){
         this.data = data;
     }
-    
+
     public void setInfo(DDS.SampleInfo info){
         this.info = info;
     }
-    
+
     public DDS.SampleInfo getInfo(){
         return this.info;
     }
-    
+
     public void setContent(TYPE data, DDS.SampleInfo info){
         this.data = data;
         this.info = info;

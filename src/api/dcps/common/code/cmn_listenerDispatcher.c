@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -361,10 +362,11 @@ cmn_listenerDispatcher_stop (
     switch (_this->threadState) {
         /* Instruct thread to terminate and wait for state to be STOPPED. */
         case RUNNING:
+            _this->threadState = STOPPING;
             uResult = u_listenerTrigger (_this->uListener);
             result = v_resultToReturnCode (uResult);
-            if (result == OS_RETCODE_OK) {
-                _this->threadState = STOPPING;
+            if (result != OS_RETCODE_OK) {
+                /* _this->threadState = ERROR; */
             }
             break;
         case STARTING:

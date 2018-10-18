@@ -11,7 +11,7 @@ echo "==== Calling startOSPL ===="
 call %FUNCTIONS% :startOSPL
 
 echo "==== Starting java subscriber ====="
-java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes BuildInTopicsDataSubscriber > subResult.txt
+java -jar java5_BuiltInTopics.jar > subResult.txt
 %SLEEP5% > NUL
 
 echo "===== Calling builtintopicsCheckResult ===="

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,7 +35,6 @@
 #include "c__collection.h"
 #include "c__field.h"
 #include "c__metabase.h"
-#include "q__parser.h"
 #include "c_module.h"
 
 /* If set the meta descriptions c_union, c_interface and c_structure will
@@ -44,11 +44,15 @@
 #define TYPE_REFC_COUNTS_OBJECTS 0
 #define CONFIDENCE (0x504F5448)
 
-#define REFCOUNT_MASK             0xffffffu
-#define REFCOUNT_FLAG_ATOMIC     0x1000000u
-#define REFCOUNT_FLAG_TRACE      0x2000000u
-#define REFCOUNT_FLAG_TRACETYPE  0x4000000u
+#define REFCOUNT_MASK            0x1ffffffu
+#define REFCOUNT_FLAG_CLAMP      0x1000000u
+#define REFCOUNT_FLAG_ATOMIC     0x2000000u
+#define REFCOUNT_FLAG_TRACE      0x4000000u
+#define REFCOUNT_FLAG_TRACETYPE  0x8000000u
 #define REFCOUNT_FLAG_GARBAGE   0x10000000u
+#if (REFCOUNT_FLAG_CLAMP << 1) != REFCOUNT_MASK + 1
+#error "REFCOUNT_FLAG_CLAMP must be the top bit of REFCOUNT_MASK"
+#endif
 
 #define c_oid(o)    ((c_object)(C_ADDRESS(o) + HEADERSIZE))
 #define c_header(o) ((c_header)(C_ADDRESS(o) - HEADERSIZE))
@@ -169,7 +173,8 @@ c_stringMalloc(
          * 'empty' string, so in this case return a reference to the intern. This
          * saves precious resources in case of big amounts of empty strings, since
          * each empty string does not only contain the '\0' terminator but also
-         * 36-40 bytes of header information. */
+         * 36-40 bytes of header information.
+         */
         assert(base->emptyString[0] == '\0');
         return c_keep(base->emptyString);
     }
@@ -190,7 +195,8 @@ c_stringMalloc_s(
          * 'empty' string, so in this case return a reference to the intern. This
          * saves precious resources in case of big amounts of empty strings, since
          * each empty string does not only contain the '\0' terminator but also
-         * 36-40 bytes of header information. */
+         * 36-40 bytes of header information.
+         */
         assert(base->emptyString[0] == '\0');
         return c_keep(base->emptyString);
     }
@@ -255,7 +261,8 @@ c_wstringMalloc(
          * 'empty' string, so in this case return a reference to the intern. This
          * saves precious resources in case of big amounts of empty strings, since
          * each empty string does not only contain the '\0' terminator but also
-         * 36-40 bytes of header information. */
+         * 36-40 bytes of header information.
+         */
         assert(base->emptyWstring[0] == 0);
         return c_keep(base->emptyWstring);
     }
@@ -277,7 +284,8 @@ c_wstringMalloc_s(
          * 'empty' string, so in this case return a reference to the intern. This
          * saves precious resources in case of big amounts of empty strings, since
          * each empty string does not only contain the '\0' terminator but also
-         * 36-40 bytes of header information. */
+         * 36-40 bytes of header information.
+         */
         assert(base->emptyWstring[0] == 0);
         return c_keep(base->emptyWstring);
     }
@@ -303,7 +311,8 @@ c_stringNew(
     len = strlen(str) + 1;
     if((s = c_stringMalloc(base, len)) != NULL && len > 1){
         /* str is nul-terminated (since we could determine len), so memcpy str
-         * including the nul-terminator. */
+         * including the nul-terminator.
+         */
         memcpy(s, str, len);
     }
 
@@ -329,7 +338,8 @@ c_stringNew_s(
      len = strlen(str) + 1;
      if((s = c_stringMalloc_s(base, len)) != NULL && len > 1){
          /* str is nul-terminated (since we could determine len), so memcpy str
-          * including the nul-terminator. */
+          * including the nul-terminator.
+          */
          memcpy(s, str, len);
      }
 
@@ -397,7 +407,8 @@ initInterface(
     c_object o)
 {
     /* The vast majority of classes that get defined during initialisation have the scope already
-       allocated by c_metaDefine, but not all of them. */
+     * allocated by c_metaDefine, but not all of them.
+     */
     if(c_interface(o)->scope == NULL) {
         c_interface(o)->scope = (c_scope)c_scopeNew(c__getBase(o));
     }
@@ -510,7 +521,8 @@ c_baseSetMaintainObjectCount (
     c_bool enable)
 {
     /* Not bothering with locking here, so it is undefined when
-       exactly other threads take note (but they will eventually) */
+     * exactly other threads take note (but they will eventually)
+     */
     base->maintainObjectCount = enable;
 }
 
@@ -520,7 +532,8 @@ c_baseSetY2038Ready (
     c_bool enable)
 {
     /* Not bothering with locking here, so it is undefined when
-       exactly other threads take note (but they will eventually) */
+     * exactly other threads take note (but they will eventually)
+     */
     base->y2038Ready = enable;
 }
 
@@ -536,7 +549,8 @@ c_baseGetScopeAttr(
     c_base base)
 {
     /* Use shared mutexes only when this base
-     * is within shared memory. */
+     * is within shared memory.
+     */
     if (c_mmMode(base->mm) == MM_SHARED) {
         return OS_SCOPE_SHARED;
     } else {
@@ -576,17 +590,18 @@ c_baseInit (
     c_metaObject(base)->name = NULL;
 
     /* c_module init */
-    c_mutexInit(base, &((c_module)base)->mtx);
+    (void)c_mutexInit(base, &((c_module)base)->mtx);
     /* scope is initialized when scope-type is bootstrapped */
 
     /* c_base init */
     base->confidence = CONFIDENCE;
     ut_avlInit (&c_base_bindings_td, &base->bindings);
-    c_mutexInit(base, &base->bindLock);
-    c_mutexInit(base, &base->serLock);
+    (void)c_mutexInit(base, &base->bindLock);
+    (void)c_mutexInit(base, &base->serLock);
 
     /* metaType[M_COUNT], string_type and emptyString are initialized when types
-     * are available. */
+     * are available.
+     */
 
     /* c_base init */
     c_queryCacheInit (&base->baseCache.queryCache);
@@ -600,8 +615,9 @@ c_baseInit (
 #endif
 #endif
 
-/** Declare class type.
-    this is required because all meta meta objects are defined as class. **/
+    /* Declare class type.
+     * this is required because all meta meta objects are defined as class.
+     */
     size = MEMSIZE(C_SIZEOF(c_class));
     header = (c_header)c_mmMalloc(base->mm,size);
     if (!header) {
@@ -636,8 +652,9 @@ c_baseInit (
     C_META_TYPEINIT_(o,c_collectionType);
     base->metaType[M_COLLECTION] = c_type(o);
 
-/** Declare scope class type.
-    this is required because all meta meta objects are managed in the base scope. **/
+    /* Declare scope class type.
+     * this is required because all meta meta objects are managed in the base scope.
+     */
 
     scopeType = c_type(c_new(base->metaType[M_COLLECTION]));
     c_baseObject(scopeType)->kind = M_COLLECTION;
@@ -645,8 +662,9 @@ c_baseInit (
     c_collectionType(scopeType)->maxSize = 0;
     C_META_TYPEINIT_(scopeType,c_scope);
 
-/** Declare base class type and initialize the base scope.
-    this is required because all meta meta objects are bound to the base scope. **/
+    /* Declare base class type and initialize the base scope.
+     * this is required because all meta meta objects are bound to the base scope.
+     */
 
     o = c_metaObject(c_new(base->metaType[M_CLASS]));
     c_baseObject(o)->kind = M_CLASS;
@@ -654,14 +672,15 @@ c_baseInit (
     base->metaType[M_BASE] = c_type(o);
 
     /* Overwrite as header->type points to type of metatype class
-     * i.o. NULL  */
+     * i.o. NULL
+     */
     c_header(base)->type = c_keep(o);
 
     /* c_module->scope init */
     c_module(base)->scope = c_scope(c_new(scopeType));
     c_scopeInit(c_module(base)->scope);
 
-    /** Declare c_string type, this is required to be able to bind objects to names. **/
+    /* Declare c_string type, this is required to be able to bind objects to names. */
     o = c_metaObject(c_new(base->metaType[M_COLLECTION]));
     c_baseObject(o)->kind = M_COLLECTION;
     c_collectionType(o)->kind = OSPL_C_STRING;
@@ -692,16 +711,18 @@ c_baseInit (
     assert(found == c_metaObject(scopeType));
     c_free(found);
 
-/** Now allocate, bind and pre-initialize all meta meta objects.
-    pre-initialize will only set size and kind making the meta meta objects
-    ready to be used for meta creation.
-    At this point reflection will be unavailable until the meta meta objects
-    are fully initialized. **/
+    /* Now allocate, bind and pre-initialize all meta meta objects.
+     * pre-initialize will only set size and kind making the meta meta objects
+     * ready to be used for meta creation.
+     * At this point reflection will be unavailable until the meta meta objects
+     * are fully initialized.
+     */
 
     /* Initialize the interned empty string. Strings can now be allocated, so
      * even though in the baseInit no empty strings are used, initialisation
      * is needed here to guarantee the assertions of c_stringNew and
-     * c_stringMalloc. */
+     * c_stringMalloc.
+     */
     base->emptyString = c__stringMalloc(base, 1, FALSE);
     base->emptyString[0] = '\0';
 
@@ -716,12 +737,12 @@ c_baseInit (
     base->baseCache.typeCache.c_property_t = _META_(base,c_property);
     base->baseCache.typeCache.c_type_t = _META_(base,c_type);
 
-    /** At last set the subType of c_scope type. **/
+    /* At last set the subType of c_scope type. */
     c_collectionType(scopeType)->subType = ResolveType(base,c_metaObject);
     c_free(scopeType); /* we can now free our local ref as we don't use it anymore */
     scopeType = NULL;
 
-    /** Declare meta types **/
+    /* Declare meta types */
     base->metaType[M_LITERAL] =      _META_(base,c_literal);
     base->metaType[M_CONSTOPERAND] = _META_(base,c_constOperand);
     base->metaType[M_EXPRESSION] =   _META_(base,c_expression);
@@ -769,11 +790,12 @@ c_baseInit (
 
 #undef _META_
 
-/** Now allocation of meta objects is operational.
-    For initialization of the meta meta object we need to allocate the meta objects
-    for all internal types. **/
+    /* Now allocation of meta objects is operational.
+     * For initialization of the meta meta object we need to allocate the meta objects
+     * for all internal types.
+     */
 
-    /** Definition of the meta objects specifying all internal primitive types. **/
+    /* Definition of the meta objects specifying all internal primitive types. */
 
 #define INITPRIM(s,n,k) \
     o = c_metaDeclare(c_metaObject(s),#n,M_PRIMITIVE); \
@@ -1025,11 +1047,12 @@ c_baseInit (
     c_free(o);
 
 
-/** Now all meta meta references required for initialization are available.
-    The following statements will initialize all meta meta objects.
-    After initialization reflection will be operational. **/
+    /* Now all meta meta references required for initialization are available.
+     * The following statements will initialize all meta meta objects.
+     * After initialization reflection will be operational.
+     */
 
-    /** Initialize abstract meta types **/
+    /* Initialize abstract meta types */
 
 #define _INITCLASS_(s,c,p) \
     c_metaObject(initClass(ResolveType(s,c),ResolveType(s,p)))
@@ -1084,7 +1107,7 @@ c_baseInit (
         C_META_FINALIZE_(o);
         c_free(o);
 
-    /** Initialize meta types **/
+    /* Initialize meta types */
     o = _INITCLASS_(base,c_literal,c_operand);
         type = ResolveType(base,c_value);
         C_META_ATTRIBUTE_(c_literal,o,value,type);
@@ -1457,7 +1480,6 @@ c_baseInit (
     c_property(found)->type = c_ulong_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "ID", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Optional */
@@ -1467,7 +1489,6 @@ c_baseInit (
     c_property(found)->type = c_bool_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "optional", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Key */
@@ -1477,7 +1498,6 @@ c_baseInit (
     c_property(found)->type = c_bool_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "Key", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Shared */
@@ -1487,7 +1507,6 @@ c_baseInit (
     c_property(found)->type = c_bool_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "Shared", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::BitBound */
@@ -1497,7 +1516,6 @@ c_baseInit (
     c_property(found)->type = c_ushort_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "BitBound", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Value */
@@ -1507,14 +1525,12 @@ c_baseInit (
     c_property(found)->type = c_ulong_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "Value", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::BitSet */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
     c_metaBind(c_metaObject(_intern), "BitSet", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Nested */
@@ -1524,7 +1540,6 @@ c_baseInit (
     c_property(found)->type = c_bool_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "Nested", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     temp = c_metaDefine(c_metaObject(base),M_ENUMERATION);
@@ -1543,7 +1558,6 @@ c_baseInit (
     c_property(found)->type = c_type(temp);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "Extensibility", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::MustUnderstand */
@@ -1553,7 +1567,6 @@ c_baseInit (
     c_property(found)->type = c_bool_t(base);
     c_free(found);
     c_metaBind(c_metaObject(_intern), "MustUnderstand", o);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Verbatim */
@@ -1592,7 +1605,6 @@ c_baseInit (
     found = c_metaDeclare(o, "text", M_ATTRIBUTE);
     c_property(found)->type = c_string_t(base);
     c_free(found);
-    /*c_metaFinalize(o);*/
     c_free(o);
 
     c_fieldInit(base);
@@ -1650,8 +1662,6 @@ c_create (
         c_baseInit(base, mm);
 
         ospl_c_bind(base,"c_baseModule");
-
-        q_parserInit();
     }
     return base;
 }
@@ -1708,8 +1718,6 @@ c_open (
                     base->confidence,CONFIDENCE);
         return NULL;
     }
-
-    q_parserInit();
 
     return base;
 }
@@ -2002,8 +2010,7 @@ c__newBaseArrayObjectCommon (
 
                 o = c_oid(header);
 
-                /*
-                 * When an array is freed via c_free, it also checks whether it contains
+                /* When an array is freed via c_free, it also checks whether it contains
                  * references and if they need to be freed. If the user did not fill the whole array
                  * a c_free on garbage data could be performed, which causes undefined behaviour.
                  * Therefore the whole array is set on 0.
@@ -2104,20 +2111,137 @@ void
 c__assertValidDatabaseObject(
     c_voidp o)
 {
+    c_header header;
     assert(o);
-    assert(c_header(o)->confidence == CONFIDENCE);
-    assert((pa_ld32(&c_header(o)->refCount) & REFCOUNT_MASK) > 0);
+    header = c_header(o);
+    assert(header->confidence == CONFIDENCE);
+    assert((pa_ld32(&header->refCount) & REFCOUNT_MASK) > 0);
 }
 #endif
 
-static c_bool _c_freeReferences(c_metaObject metaObject, c_object o);
-#define c_freeReferences(m,o) ((m && o)? _c_freeReferences(m,o):TRUE)
-#define freeReference(p,t) (p?_freeReference(p,t):TRUE)
+/**
+ * Object Free functionality
+ *
+ * The c_free decreases the refcount of a database object and releases claimed memory resources
+ * when the refcount reaches zero, in other words the object is no longer reachable / used.
+ *
+ * The free will also free other referenced objects when an object is destroyed, this traversal
+ * of references is solved in an iterative algorithm and not recursively to avoid stack memory depletion.
+ *
+ * The algorithm works by:
+ * - first initialize a freelist intended to hold any references that are encountered that also need to be freed.
+ * - enter the processing loop
+ * - then decrease the refcount of the object.
+ * - if the refcount reaches zero then add all direct referenced objects to the freelist.
+ * - release the objects memory resources.
+ * - get the next object from the freelist and goto the start of the loop.
+ *
+ * Performance considerations:
+ * The freelist is ia stretchy fifo queue that is implemented as an array allocated on heap to avoid
+ * memory allocation and deallocation, however when the number of elements exceeds the array size (REFBUF_SIZE)
+ * then the freelist will allocate additional buffers forming a chain of buffers.
+ * Allocated buffers in the chain that become empty when taking object from the queue are freed on the fly.
+ * The size of the buffer becomes less effective the greater it gets and considering that the initial buffer
+ * is allocated on stack it should not be too big.
+ */
+
+#define REFBUF_SIZE (256)
+
+/* The class c_refbuf implements the chainable object buffer. */
+C_CLASS(c_refbuf);
+C_STRUCT(c_refbuf) {
+    c_object element[REFBUF_SIZE];
+    c_refbuf next;
+};
+
+#define c_refbuf(o) ((c_refbuf)o)
+
+/* The class c_freelist implements the stretchy fifo queue used by the iterative free algorithm. */
+C_CLASS(c_freelist);
+C_STRUCT(c_freelist) {
+    C_EXTENDS(c_refbuf);  /* Initial object buffer that is initialized on stack. */
+    c_refbuf tail_buf;    /* Tail buffer of the queue, objects are read from this buffer. */
+    c_refbuf head_buf;    /* Head buffer of the queue, objects are inserted in this buffer. */
+    os_uint32 tail_idx;   /* Tail buffer index of the queue, oldest object that is next to be read. */
+    os_uint32 head_idx;   /* Head buffer index of the queue, place where the next object will be inserted. */
+};
+
+/* This function is used to initialize a new freelist heap object. */
+static void
+c_freelistInit(
+    c_freelist freelist)
+{
+    c_refbuf(freelist)->next = NULL;
+    freelist->tail_buf = c_refbuf(freelist);
+    freelist->head_buf = c_refbuf(freelist);
+    freelist->tail_idx = 0;
+    freelist->head_idx = 0;
+}
+
+/* This function inserts an object at the head of the freelist. */
+static void
+c_freelistInsert(
+    c_freelist freelist,
+    c_object object)
+{
+    if (object == NULL) return;
+    assert(c_header(object)->confidence == CONFIDENCE);
+    if (freelist->head_idx == REFBUF_SIZE) {
+        freelist->head_buf->next = os_malloc(sizeof(C_STRUCT(c_refbuf)));
+        freelist->head_buf = freelist->head_buf->next;
+        freelist->head_buf->next = NULL;
+        freelist->head_idx = 0;
+    }
+    freelist->head_buf->element[freelist->head_idx++] = object;
+}
+
+/* This function will remove the oldest object from the freelist. */
+static c_object
+c_freelistTake(
+    c_freelist freelist)
+{
+    c_object object = NULL;
+    c_refbuf freebuf;
+
+    if (freelist->tail_idx == REFBUF_SIZE) {
+        /* Reached the end of a buffer so it is empty and if allocated can be freed. */
+        freelist->tail_idx = 0;
+        freebuf = freelist->tail_buf;
+        freelist->tail_buf = freelist->tail_buf->next;
+
+        if (freebuf != c_refbuf(freelist)) {
+            /* The empty buffer was allocated so free it now. */
+            assert(freebuf == c_refbuf(freelist)->next);
+            os_free(freebuf);
+        }
+        c_refbuf(freelist)->next = freelist->tail_buf;
+        if (freelist->tail_buf == NULL) {
+            /* If the tail_buf is NULL then the queue is empty meaning that it can conveniently
+             * be reinitialized as a new freelist.
+             */
+            c_freelistInit(freelist);
+        }
+    }
+    if (freelist->head_idx > freelist->tail_idx || freelist->head_buf != freelist->tail_buf )
+    {
+        /* the freelist is not empty so take an object from the freelist. */
+        object = freelist->tail_buf->element[freelist->tail_idx++];
+    } else if (freelist->tail_buf != c_refbuf(freelist)) {
+        /* The freelist is empty but also has an allocated buffer so free it now. */
+        os_free(freelist->tail_buf);
+    }
+    return object;
+}
+
+static c_bool _c_freeReferences(c_metaObject metaObject, c_object o, c_freelist freelist);
+#define c_freeReferences(m,o,l) ((m && o)? _c_freeReferences(m,o,l):TRUE)
+#define freeReference(p,t,l) (p?_freeReference(p,t,l):TRUE)
 
 static c_bool
 _freeReference (
     c_voidp *p,
-    c_type type)
+    c_type type,
+    c_freelist freelist)
 {
     c_type t = type;
 
@@ -2131,21 +2255,21 @@ _freeReference (
     case M_CLASS:
     case M_INTERFACE:
     case M_ANNOTATION:
-        c_free(c_object(*p));
+        c_freelistInsert(freelist, c_object(*p));
     break;
     case M_BASE:
     case M_COLLECTION:
         if ((c_collectionType(t)->kind == OSPL_C_ARRAY) &&
             (c_collectionType(t)->maxSize != 0)) {
-            c_freeReferences(c_metaObject(t), p);
+            c_freeReferences(c_metaObject(t), p, freelist);
         } else {
-            c_free(c_object(*p));
+            c_freelistInsert(freelist, c_object(*p));
         }
     break;
     case M_EXCEPTION:
     case M_STRUCTURE:
     case M_UNION:
-        c_freeReferences(c_metaObject(type),p);
+        c_freeReferences(c_metaObject(type),p, freelist);
     break;
     case M_PRIMITIVE:
         switch (c_primitive(t)->kind) {
@@ -2175,7 +2299,8 @@ _freeReference (
 static c_bool
 _c_freeReferences (
     c_metaObject metaObject,
-    c_object o)
+    c_object o,
+    c_freelist freelist)
 {
     c_type type;
     c_class cls;
@@ -2213,7 +2338,7 @@ _c_freeReferences (
             for (i=0;i<length;i++) {
                 property = c_property(c_interface(cls)->references[i]);
                 type = property->type;
-                freeReference(C_DISPLACE(o,property->offset),type);
+                freeReference(C_DISPLACE(o,property->offset),type, freelist);
             }
             cls = cls->extends;
         }
@@ -2224,7 +2349,7 @@ _c_freeReferences (
         for (i=0;i<length;i++) {
             property = c_property(c_interface(metaObject)->references[i]);
             type = property->type;
-            freeReference(C_DISPLACE(o,property->offset),type);
+            freeReference(C_DISPLACE(o,property->offset),type, freelist);
         }
     break;
     case M_EXCEPTION:
@@ -2233,7 +2358,7 @@ _c_freeReferences (
         for (i=0;i<length;i++) {
             member = c_member(c_structure(metaObject)->references[i]);
             type = c_specifier(member)->type;
-            freeReference(C_DISPLACE(o,member->offset),type);
+            freeReference(C_DISPLACE(o,member->offset),type, freelist);
         }
     break;
     case M_UNION:
@@ -2268,7 +2393,7 @@ _c_freeReferences (
                 while ((j<nrOfLabs) && (type == NULL)) {
                     if (c_valueCompare(v,c_literal(labels[j])->value) == C_EQ) {
                         c_freeReferences(c_metaObject(references[i]),
-                                         C_DISPLACE(o,c_type(metaObject)->alignment));
+                                         C_DISPLACE(o,c_type(metaObject)->alignment), freelist);
                         type = c_specifier(references[i])->type;
                     }
                     j++;
@@ -2293,13 +2418,13 @@ _c_freeReferences (
 
             if (c_typeIsRef(type)) {
                 for (i=0;i<length;i++) {
-                    c_free(ar[i]);
+                    c_freelistInsert(freelist, ar[i]);
                 }
             } else {
                 if (c_typeHasRef(type)) {
                     size = type->size;
                     for (i=0;i<length;i++) {
-                        freeReference(C_DISPLACE(ar,(i*size)),type);
+                        freeReference(C_DISPLACE(ar,(i*size)),type, freelist);
                     }
                 }
             }
@@ -2315,23 +2440,23 @@ _c_freeReferences (
     case M_BASE:
     break;
     case M_TYPEDEF:
-        c_freeReferences(c_metaObject(c_typeDef(metaObject)->alias),o);
+        c_freeReferences(c_metaObject(c_typeDef(metaObject)->alias),o, freelist);
     break;
     case M_ATTRIBUTE:
     case M_RELATION:
         ACTUALTYPE(type,c_property(metaObject)->type);
-        freeReference(C_DISPLACE(o,c_property(metaObject)->offset),type);
+        freeReference(C_DISPLACE(o,c_property(metaObject)->offset),type, freelist);
     break;
     case M_MEMBER:
         ACTUALTYPE(type,c_specifier(metaObject)->type);
-        freeReference(C_DISPLACE(o,c_member(metaObject)->offset),type);
+        freeReference(C_DISPLACE(o,c_member(metaObject)->offset),type, freelist);
     break;
     case M_UNIONCASE:
         ACTUALTYPE(type,c_specifier(metaObject)->type);
-        freeReference(o,type);
+        freeReference(o,type, freelist);
     break;
     case M_MODULE:
-        c_free(c_module(o)->scope);
+        c_freelistInsert(freelist, c_module(o)->scope);
     break;
     case M_PRIMITIVE:
         /* Do nothing */
@@ -2347,9 +2472,7 @@ _c_freeReferences (
 }
 
 #ifndef NDEBUG
-/*
- * Function used in OS_REPORT in c_free
- */
+/* Function used in OS_REPORT in c_free */
 static const c_char *
 metaKindImage (
     c_metaKind kind)
@@ -2393,149 +2516,156 @@ c_free (
 {
     c_header header;
     c_type type, headerType;
+    C_STRUCT(c_freelist) freelist;
     os_uint32 safeCount;
 #if CHECK_REF
     c_bool matchesRefRequest = FALSE;
 #endif
+
     if (object == NULL) {
         return;
     }
 
-    header = c_header (object);
+    c_freelistInit(&freelist);
+
+    while (object) {
+        header = c_header (object);
 
 #ifndef NDEBUG
-    assert(header->confidence == CONFIDENCE);
-    if ((pa_ld32(&header->refCount) & REFCOUNT_MASK) == 0) {
+        assert(header->confidence == CONFIDENCE);
+        if ((pa_ld32(&header->refCount) & REFCOUNT_MASK) == 0) {
 #if CHECK_REF
-        UT_TRACE("\n\n===========Free(%p) already freed =======\n", object);
+            UT_TRACE("\n\n===========Free(%p) already freed =======\n", object);
 #endif
-        OS_REPORT(OS_ERROR,
-                    "Database",0,
-                    "Object (%p) of type '%s', kind '%s' already deleted",
-                    object,
-                    c_metaName(c_metaObject(header->type)),
-                    metaKindImage(c_baseObject(header->type)->kind));
-        assert(0);
-    }
+            OS_REPORT(OS_ERROR,
+                        "Database",0,
+                        "Object (%p) of type '%s', kind '%s' already deleted",
+                        object,
+                        c_metaName(c_metaObject(header->type)),
+                        metaKindImage(c_baseObject(header->type)->kind));
+            assert(0);
+        }
 #endif /* NDEBUG */
 
 #if CHECK_REF
-    /* Take a local pointer, since header->type pointer will be deleted */
-    headerType = header->type;
-    ACTUALTYPE(type,headerType);
-    if (type && c_metaObject(type)->name) {
-      if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-        if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-            matchesRefRequest = TRUE;
-        }
-      }
-    }
-#endif
-
-    safeCount = pa_dec32_nv(&header->refCount);
-    if ((safeCount & REFCOUNT_MASK) != 0)
-    {
-        if (safeCount & REFCOUNT_FLAG_TRACE) {
-            c_type headerType = header->type, type;
-            void *block;
-            ACTUALTYPE (type, headerType);
-            if ((c_baseObjectKind (type) == M_COLLECTION) && ((c_collectionTypeKind (type) == OSPL_C_ARRAY) || (c_collectionTypeKind (type) == OSPL_C_SEQUENCE))) {
-                block = c_arrayHeader (object);
-            } else {
-                block = header;
-            }
-            c_mmTrackObject (type->base->mm, block, C_MMTRACKOBJECT_CODE_MIN + 1);
-        }
-    }
-    else
-    {
-        c_base base;
-
         /* Take a local pointer, since header->type pointer will be deleted */
-#if ! CHECK_REF
         headerType = header->type;
         ACTUALTYPE(type,headerType);
+        if (type && c_metaObject(type)->name) {
+          if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+            if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+                matchesRefRequest = TRUE;
+            }
+          }
+        }
+#endif
+        safeCount = pa_dec32_nv(&header->refCount);
+
+        if ((safeCount & REFCOUNT_MASK) != 0) {
+            if (safeCount & REFCOUNT_FLAG_TRACE) {
+                c_type headerType = header->type, type;
+                void *block;
+                ACTUALTYPE (type, headerType);
+                if ((c_baseObjectKind (type) == M_COLLECTION) &&
+                    ((c_collectionTypeKind (type) == OSPL_C_ARRAY) ||
+                     (c_collectionTypeKind (type) == OSPL_C_SEQUENCE)))
+                {
+                    block = c_arrayHeader (object);
+                } else {
+                    block = header;
+                }
+                c_mmTrackObject (type->base->mm, block, C_MMTRACKOBJECT_CODE_MIN + 1);
+            }
+        } else {
+            c_base base;
+
+            /* Take a local pointer, since header->type pointer will be deleted */
+#if ! CHECK_REF
+            headerType = header->type;
+            ACTUALTYPE(type,headerType);
 #endif
 
-        base = type->base;
-        if (!(safeCount & REFCOUNT_FLAG_ATOMIC)) {
-            c_freeReferences(c_metaObject(type),object);
-        }
+            base = type->base;
+            if (!(safeCount & REFCOUNT_FLAG_ATOMIC)) {
+                c_freeReferences(c_metaObject(type),object, &freelist);
+            }
 #ifndef NDEBUG
 #ifdef OBJECT_WALK
-        {
-            c_object *prevNext;
-            c_object *nextPrev;
-
-            if (header->prevObject != NULL) {
-                prevNext = &c_header(header->prevObject)->nextObject;
-            } else {
-                prevNext = &type->base->firstObject;
-            }
-            if (header->nextObject != NULL) {
-                nextPrev = &c_header(header->nextObject)->prevObject;
-            } else {
-                nextPrev = &type->base->lastObject;
-            }
-            *prevNext = header->nextObject;
-            *nextPrev = header->prevObject;
-        }
-#endif
-#endif
-
-        if ((c_baseObjectKind(type) == M_COLLECTION) &&
-            ((c_collectionTypeKind(type) == OSPL_C_ARRAY) ||
-             (c_collectionTypeKind(type) == OSPL_C_SEQUENCE))) {
-            c_arrayHeader hdr;
-
-            hdr = c_arrayHeader(object);
-#ifdef OSPL_STRICT_MEM
             {
-                c_long size;
-                size = c_arraySize(object);
-                memset(hdr,0xff,ARRAYMEMSIZE(size));
+                c_object *prevNext;
+                c_object *nextPrev;
+
+                if (header->prevObject != NULL) {
+                    prevNext = &c_header(header->prevObject)->nextObject;
+                } else {
+                    prevNext = &type->base->firstObject;
+                }
+                if (header->nextObject != NULL) {
+                    nextPrev = &c_header(header->nextObject)->prevObject;
+                } else {
+                    nextPrev = &type->base->lastObject;
+                }
+                *prevNext = header->nextObject;
+                *nextPrev = header->prevObject;
             }
 #endif
-            if (safeCount & REFCOUNT_FLAG_TRACE) {
-                c_mmTrackObject (base->mm, hdr, C_MMTRACKOBJECT_CODE_MIN + 3);
-            }
-            c_mmFree(base->mm, hdr);
-        } else {
+#endif
+
+            if ((c_baseObjectKind(type) == M_COLLECTION) &&
+                ((c_collectionTypeKind(type) == OSPL_C_ARRAY) ||
+                 (c_collectionTypeKind(type) == OSPL_C_SEQUENCE))) {
+                c_arrayHeader hdr;
+
+                hdr = c_arrayHeader(object);
 #ifdef OSPL_STRICT_MEM
-            {
-                /* Only when OSPL_STRICT_MEM has been set so that we can abort on the detection of illegal usage
-                   of a deleted mutex or conditon, without blocking the calling thread indefinitely */
-                c_long size;
-                size = c_typeSize(type);
-                memset(header,0xff,MEMSIZE(size));
-            }
+                {
+                    c_long size;
+                    size = c_arraySize(object);
+                    memset(hdr,0xff,ARRAYMEMSIZE(size));
+                }
 #endif
-            if (safeCount & REFCOUNT_FLAG_TRACE) {
-                c_mmTrackObject (base->mm, header, C_MMTRACKOBJECT_CODE_MIN + 3);
+                if (safeCount & REFCOUNT_FLAG_TRACE) {
+                    c_mmTrackObject (base->mm, hdr, C_MMTRACKOBJECT_CODE_MIN + 3);
+                }
+                c_mmFree(base->mm, hdr);
+            } else {
+#ifdef OSPL_STRICT_MEM
+                {
+                    /* Only when OSPL_STRICT_MEM has been set so that we can abort on the detection of illegal usage
+                     * of a deleted mutex or conditon, without blocking the calling thread indefinitely
+                     */
+                    c_long size;
+                    size = c_typeSize(type);
+                    memset(header,0xff,MEMSIZE(size));
+                }
+#endif
+                if (safeCount & REFCOUNT_FLAG_TRACE) {
+                    c_mmTrackObject (base->mm, header, C_MMTRACKOBJECT_CODE_MIN + 3);
+                }
+                c_mmFree(base->mm, header);
             }
-            c_mmFree(base->mm, header);
-        }
-        /* Do not use type, as it refers to an actual type, while
-         * we incremented the header->type.
-         */
-        if (base->maintainObjectCount) {
-            /* Since no special actions need to be performed on going to 0, the
-             * return-value of the decrement isn't needed. */
-            (void) pa_dec32_nv(&headerType->objectCount);
-        }
+            /* Do not use type, as it refers to an actual type, while
+             * we incremented the header->type.
+             */
+            if (base->maintainObjectCount) {
+                /* Since no special actions need to be performed on going to 0, the
+                 * return-value of the decrement isn't needed.
+                 */
+                (void) pa_dec32_nv(&headerType->objectCount);
+            }
 #if TYPE_REFC_COUNTS_OBJECTS
-        c_free(headerType); /* free the header->type */
+            c_free(headerType); /* free the header->type */
 #endif
-    }
+        }
 
 #if CHECK_REF
-    if(matchesRefRequest)
-    {
-          UT_TRACE("\n\n============ Free(%p): %d -> %d =============\n",
-                   object, (safeCount & REFCOUNT_MASK)+1, safeCount & REFCOUNT_MASK);
-
-    }
+        if (matchesRefRequest) {
+            UT_TRACE("\n\n============ Free(%p): %d -> %d =============\n",
+                     object, (safeCount & REFCOUNT_MASK)+1, safeCount & REFCOUNT_MASK);
+        }
 #endif
+        object = c_freelistTake(&freelist);
+    }
 }
 
 c_object
@@ -2568,6 +2698,15 @@ c_keep (
     oldCount = pa_ld32(&header->refCount);
     assert((oldCount & REFCOUNT_MASK) > 0);
     pa_inc32(&header->refCount); /* FIXME: should add pa_inc32_ov and use it here */
+    if (oldCount & REFCOUNT_FLAG_CLAMP) {
+        /* Protect against wrap-around of reference count by forcing
+         * the refcount up once half the range (24 bits) has been used
+         * up. The memory will then never be freed, but a memory leak
+         * is still better than a crash. This resets the flags, which
+         * is fine for the current set of flags
+         */
+        pa_st32 (&header->refCount, (REFCOUNT_FLAG_CLAMP | (REFCOUNT_FLAG_CLAMP >> 1)));
+    }
     if (oldCount & REFCOUNT_FLAG_TRACE) {
         c_type headerType = header->type, type;
         void *block;
@@ -2808,7 +2947,7 @@ c_baseObjectWalk(
  * The following deleteGarbage function is therefore created to deal with this leakage at
  * database destruction. The deleteGarbage function is called by the c_destruct operation.
  * This function will walk over all remaining objects and collect one reference to each object
- * in a trashcan and afterwards free the allocated memory of each object referenced by the trashcan. 
+ * in a trashcan and afterwards free the allocated memory of each object referenced by the trashcan.
  *******/
 
 #define OBJECTTYPE(t,o) ACTUALTYPE(t,c_header(o)->type)
@@ -2831,7 +2970,7 @@ c_metaObject o,
 c_voidp trashcan)
 {
     CHECKOBJECT(o);
-    c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
+    ((c_trashcan)trashcan)->references = c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
 }
 
 static c_bool
@@ -2840,7 +2979,7 @@ c_object o,
 c_voidp trashcan)
 {
     CHECKOBJECT(o);
-    c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
+    ((c_trashcan)trashcan)->references = c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
     return TRUE;
 }
 
@@ -2862,7 +3001,7 @@ collectReferenceGarbage(
     case M_INTERFACE:
     case M_ANNOTATION:
         CHECKOBJECT(*p);
-        c_iterAppend(trashcan->references, c_object(*p));
+        trashcan->references = c_iterAppend(trashcan->references, c_object(*p));
     break;
     case M_BASE:
     case M_COLLECTION:
@@ -2872,7 +3011,7 @@ collectReferenceGarbage(
             walkReferences((c_metaObject)t, p, trashcan);
         } else {
             CHECKOBJECT(*p);
-            c_iterAppend(trashcan->references, c_object(*p));
+            trashcan->references = c_iterAppend(trashcan->references, c_object(*p));
         }
     break;
     case M_EXCEPTION:
@@ -3004,7 +3143,7 @@ walkReferences(
                     /* Need to check type again as it might have been fixed */
                     if (c_typeIsRef(type)) {
                         CHECKOBJECT(ar[i]);
-                        c_iterAppend(trashcan->references, ar[i]);
+                        trashcan->references = c_iterAppend(trashcan->references, ar[i]);
                     } else {
                         walkReferences(c_metaObject(type),ar[i],trashcan);
                     }
@@ -3048,7 +3187,7 @@ walkReferences(
     break;
     case M_MODULE:
         CHECKOBJECT(c_module(o)->scope);
-        c_iterAppend(trashcan->references, c_module(o)->scope);
+        trashcan->references = c_iterAppend(trashcan->references, c_module(o)->scope);
     break;
     case M_PRIMITIVE:
         /* Do nothing */
@@ -3071,7 +3210,7 @@ static void freeBindings (void *binding, void *arg)
     c_type type;
     c_object o;
 
-    c_iterInsert(a->trashcan->references, b->object);
+    a->trashcan->references = c_iterInsert(a->trashcan->references, b->object);
     while ((o = c_iterTakeFirst(a->trashcan->references)) != NULL) {
         header = c_header(o);
         /* skip already freed or corrupted */
@@ -3085,19 +3224,19 @@ static void freeBindings (void *binding, void *arg)
                 switch (c_collectionTypeKind(type)) {
                 case OSPL_C_ARRAY:
                 case OSPL_C_SEQUENCE:
-                    c_iterInsert(a->trashcan->arrays, o);
+                    a->trashcan->arrays = c_iterInsert(a->trashcan->arrays, o);
                 break;
                 case OSPL_C_SCOPE:
-                    c_iterInsert(a->trashcan->scopes, o);
+                    a->trashcan->scopes = c_iterInsert(a->trashcan->scopes, o);
                 break;
                 case OSPL_C_STRING:
-                    c_iterInsert(a->trashcan->trash, o);
+                    a->trashcan->trash = c_iterInsert(a->trashcan->trash, o);
                 break;
                 default:
-                    c_iterInsert(a->trashcan->collections, o);
+                    a->trashcan->collections = c_iterInsert(a->trashcan->collections, o);
                 }
             } else {
-                c_iterInsert(a->trashcan->trash, o);
+                a->trashcan->trash = c_iterInsert(a->trashcan->trash, o);
             }
         }
     }
@@ -3120,17 +3259,17 @@ deleteGarbage(
 
     mm = base->mm;
 
-    trashcan.trash = c_iterNew(NULL);
-    trashcan.arrays = c_iterNew(NULL);
-    trashcan.scopes = c_iterNew(NULL);
-    trashcan.collections = c_iterNew(NULL);
-    trashcan.references = c_iterNew(NULL);
+    trashcan.trash = NULL;
+    trashcan.arrays = NULL;
+    trashcan.scopes = NULL;
+    trashcan.collections = NULL;
+    trashcan.references = NULL;
 
     barg.trashcan = &trashcan;
     barg.mm = mm;
 
     ut_avlFreeArg (&c_base_bindings_td, &base->bindings, freeBindings, &barg);
-    OS_REPORT(OS_INFO,"Database close",0,"Removed %d objects",c_iterLength(trashcan.trash));
+    OS_REPORT_NOW(OS_INFO,"Database close",0,-1,"Removed %d objects",c_iterLength(trashcan.trash));
 
     while ((trash = c_iterTakeFirst(trashcan.scopes)) != NULL)
     {

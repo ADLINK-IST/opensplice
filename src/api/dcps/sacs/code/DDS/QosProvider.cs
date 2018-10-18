@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -147,27 +148,27 @@ namespace DDS
             /* let's assign defaults and see what happens */
 
             loadQosInputAttr(
-                    new NamedDomainParticipantQosMarshaler(),
+                    new __NamedDomainParticipantQosMarshaler(),
                     typeof(NamedDomainParticipantQos),
                     ref attr.participantQos);
             loadQosInputAttr(
-                    new NamedTopicQosMarshaler(),
+                    new __NamedTopicQosMarshaler(),
                     typeof(NamedTopicQos),
                     ref attr.topicQos);
             loadQosInputAttr(
-                    new NamedPublisherQosMarshaler(),
+                    new __NamedPublisherQosMarshaler(),
                     typeof(NamedPublisherQos),
                     ref attr.publisherQos);
             loadQosInputAttr(
-                    new NamedSubscriberQosMarshaler(),
+                    new __NamedSubscriberQosMarshaler(),
                     typeof(NamedSubscriberQos),
                     ref attr.subscriberQos);
             loadQosInputAttr(
-                    new NamedDataWriterQosMarshaler(),
+                    new __NamedDataWriterQosMarshaler(),
                     typeof(NamedDataWriterQos),
                     ref attr.dataWriterQos);
             loadQosInputAttr(
-                    new NamedDataReaderQosMarshaler(),
+                    new __NamedDataReaderQosMarshaler(),
                     typeof(NamedDataReaderQos),
                     ref attr.dataReaderQos);
 

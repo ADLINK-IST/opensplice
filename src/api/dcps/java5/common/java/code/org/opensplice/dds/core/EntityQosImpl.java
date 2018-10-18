@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,9 +21,9 @@
 package org.opensplice.dds.core;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.omg.dds.core.EntityQos;
 import org.omg.dds.core.ServiceEnvironment;
@@ -33,32 +34,36 @@ public abstract class EntityQosImpl<T extends QosPolicy> implements
         EntityQos<T> {
     private static final long serialVersionUID = -5714560284083338546L;
     protected final OsplServiceEnvironment environment;
-    protected ConcurrentHashMap<Class<? extends T>, T> policies;
+    protected HashMap<Class<? extends T>, T> policies;
 
     public EntityQosImpl(OsplServiceEnvironment environment,
             Collection<T> policies) {
         this.environment = environment;
-        this.policies = new ConcurrentHashMap<Class<? extends T>, T>();
+        this.policies = new HashMap<Class<? extends T>, T>();
         this.setupPolicies(policies);
         this.setupMissingPolicies();
     }
 
     public EntityQosImpl(OsplServiceEnvironment environment, T... policies) {
         this.environment = environment;
-        this.policies = new ConcurrentHashMap<Class<? extends T>, T>();
+        this.policies = new HashMap<Class<? extends T>, T>();
         this.setupPolicies(policies);
         this.setupMissingPolicies();
     }
 
     protected void setupPolicies(Collection<T> policies) {
-        for (T p : policies) {
-            this.policies.put(this.getClassIdForPolicy(p), p);
+        synchronized(this.policies) {
+            for (T p : policies) {
+                this.policies.put(this.getClassIdForPolicy(p), p);
+            }
         }
     }
 
     protected void setupPolicies(T... policies) {
-        for (T p : policies) {
-            this.policies.put(this.getClassIdForPolicy(p), p);
+        synchronized(this.policies) {
+            for (T p : policies) {
+                this.policies.put(this.getClassIdForPolicy(p), p);
+            }
         }
     }
 
@@ -104,22 +109,30 @@ public abstract class EntityQosImpl<T extends QosPolicy> implements
 
     @Override
     public boolean containsKey(Object arg0) {
-        return this.policies.containsKey(arg0);
+        synchronized (this.policies) {
+            return this.policies.containsKey(arg0);
+        }
     }
 
     @Override
     public boolean containsValue(Object arg0) {
-        return this.policies.containsValue(arg0);
+        synchronized (this.policies) {
+            return this.policies.containsValue(arg0);
+        }
     }
 
     @Override
     public Set<java.util.Map.Entry<Class<? extends T>, T>> entrySet() {
-        return this.policies.entrySet();
+        synchronized (this.policies) {
+            return this.policies.entrySet();
+        }
     }
 
     @Override
     public T get(Object arg0) {
-        return this.policies.get(arg0);
+        synchronized (this.policies) {
+            return this.policies.get(arg0);
+        }
     }
 
     @Override
@@ -129,17 +142,23 @@ public abstract class EntityQosImpl<T extends QosPolicy> implements
 
     @Override
     public Set<Class<? extends T>> keySet() {
-        return this.policies.keySet();
+        synchronized (this.policies) {
+            return this.policies.keySet();
+        }
     }
 
     @Override
     public T put(Class<? extends T> arg0, T arg1) {
-        return this.policies.put(arg0, arg1);
+        synchronized (this.policies) {
+            return this.policies.put(arg0, arg1);
+        }
     }
 
     @Override
     public void putAll(Map<? extends Class<? extends T>, ? extends T> arg0) {
-        this.policies.putAll(arg0);
+        synchronized (this.policies) {
+            this.policies.putAll(arg0);
+        }
     }
 
     @Override
@@ -155,17 +174,23 @@ public abstract class EntityQosImpl<T extends QosPolicy> implements
 
     @Override
     public int size() {
-        return this.policies.size();
+        synchronized (this.policies) {
+            return this.policies.size();
+        }
     }
 
     @Override
     public Collection<T> values() {
-        return this.policies.values();
+        synchronized (this.policies) {
+            return this.policies.values();
+        }
     }
 
     @Override
     public <POLICY extends T> POLICY get(Class<POLICY> id) {
-        return id.cast(this.policies.get(id));
+        synchronized (this.policies) {
+            return id.cast(this.policies.get(id));
+        }
     }
 
     @Override

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,7 +43,7 @@
 #define v_indexDataReader(_this) \
         v_dataReader(v_index(_this)->reader)
 
-typedef void (*v_indexNewAction)(v_index index, v_topic topic, c_voidp arg);
+typedef c_bool (*v_indexNewAction)(v_index index, v_topic topic, c_voidp arg);
 
 v_index
 v_indexNew(

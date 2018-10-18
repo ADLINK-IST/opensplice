@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -51,6 +52,7 @@
 #define BE_NEEDS_BSWAP 0
 #endif
 
+/* Defines for debugging purposes : */
 /*#define PRINTTYPE*/
 /*#define PRINTSIZE*/
 /*#define PRINTPROG*/
@@ -584,7 +586,8 @@ static int convclass_body (struct convtype_context *ctx, struct ser_type **rt, u
   assert (count_arg.n > 0);
 
   /* For our purposes, a class really is like a struct, but the
-     the meta data is represented very differently. */
+   * the meta data is represented very differently.
+   */
   if ((*rt = convtype_alloc (&ctx->alloc, TK_STRUCT, label, cls->_parent._parent.size, count_arg.n * sizeof ((*rt)->u.strukt.ms[0]))) == NULL)
     return SD_CDR_OUT_OF_MEMORY;
   (*rt)->u.strukt.n = count_arg.n;
@@ -598,9 +601,10 @@ static int convclass_body (struct convtype_context *ctx, struct ser_type **rt, u
   convert_arg.error = 0;
 
   /* First field is the parent class (if any) -- so convert that one
-     first.  Then call metaWalk to walk the attributes of the class.
-     The resulting "struct conversion" is unordered in offset, hence
-     the sorting. */
+   * first.  Then call metaWalk to walk the attributes of the class.
+   * The resulting "struct conversion" is unordered in offset, hence
+   * the sorting.
+   */
   if (cls->extends)
   {
     (*rt)->u.strukt.ms[convert_arg.i].off = 0;
@@ -649,8 +653,9 @@ static unsigned long long convunion_discvalue (const struct c_type_s *dtype0, co
       switch (c_primitiveKind ((c_type) dtype))
       {
         /* All types are treated as unsigned by serializer when
-           reading from source, so should also treat label values as
-           unsigned even when they aren't. */
+         * reading from source, so should also treat label values as
+         * unsigned even when they aren't.
+         */
         case P_BOOLEAN: return lab->value.is.Boolean;
         case P_CHAR: return lab->value.is.Octet;
         case P_SHORT: return lab->value.is.UShort;
@@ -724,7 +729,8 @@ static int convunion_getcases (struct convtype_context *ctx, int *hasdefault, st
   }
 
   /* move default to the end if it isn't, then sort on increasing
-     label value (when interpreted as unsigned 64-bit) */
+   * label value (when interpreted as unsigned 64-bit)
+   */
   if (defidx != idx - 1)
   {
     struct ser_unionmember tmp = ms[idx - 1];
@@ -875,7 +881,9 @@ static int convtype (struct convtype_context *ctx, struct ser_type **rt, const s
             }
             else
             {
-              /*fprintf (stderr, "convtype: CATS\n");*/
+#ifdef PRINTTYPE
+              fprintf (stderr, "convtype: CATS\n");
+#endif
               assert (ctype->maxSize > 0);
               if ((*rt = convtype_alloc (&ctx->alloc, TK_STRING_TO_ARRAY, label, sizeof (char *), 0)) == NULL)
                 return SD_CDR_OUT_OF_MEMORY;
@@ -900,7 +908,9 @@ static int convtype (struct convtype_context *ctx, struct ser_type **rt, const s
                 rc = mk_array (ctx, rt, label, ctype->maxSize, subtype);
               else
               {
-                /*fprintf (stderr, "convtype: STAC\n");*/
+#ifdef PRINTTYPE
+                fprintf (stderr, "convtype: STAC\n");
+#endif
                 assert (ctype->maxSize > 0);
                 assert ((c_address) ctype->maxSize == type->size);
                 if ((*rt = convtype_alloc (&ctx->alloc, TK_ARRAY_TO_STRING, label, type->size, 0)) == NULL)
@@ -966,34 +976,32 @@ static int convtype (struct convtype_context *ctx, struct ser_type **rt, const s
 
 /****************** SERIALIZED SIZE *******************/
 
-/*
-Stream alignment is represented as (a,k), where:
-  - stream position = k mod a
-  - a `elem` {1,2,4,8}
-  - k `elem` N && k < a
-
-If a < A, where A is the alignment requirement of the next type to be
-appended to (or read from) the stream, then the stream must be aligned
-dynamically by moving forward:
-
-  align A pos = if pos `mod` A == 0 then 0 else A - (pos `mod` A))
-
-If a >= A, then the required shift is known statically:
-
-  if k `mod` A == 0 then 0 else A - (k `mod` A)
-
-For arrays and sequences, the alignment steps in the first element may
-be different from those in the second and further elements: the stream
-alignment (a,k) for the second and further elements is determined by
-the one before the first element and the type of the elements, whereas
-that for the first element is determined by what precedes the array of
-sequence.
-
-merge (a_i,k_i) = (a',k'), where:
-  - a' is the maximum a' <= a_i s.t.
-  - forall i. (k_i mod a_i) mod a' = k' mod a'
-*/
-
+/* Stream alignment is represented as (a,k), where:
+ * - stream position = k mod a
+ * - a `elem` {1,2,4,8}
+ * - k `elem` N && k < a
+ *
+ * If a < A, where A is the alignment requirement of the next type to be
+ * appended to (or read from) the stream, then the stream must be aligned
+ * dynamically by moving forward:
+ *
+ * align A pos = if pos `mod` A == 0 then 0 else A - (pos `mod` A))
+ *
+ * If a >= A, then the required shift is known statically:
+ *
+ * if k `mod` A == 0 then 0 else A - (k `mod` A)
+ *
+ * For arrays and sequences, the alignment steps in the first element may
+ * be different from those in the second and further elements: the stream
+ * alignment (a,k) for the second and further elements is determined by
+ * the one before the first element and the type of the elements, whereas
+ * that for the first element is determined by what precedes the array of
+ * sequence.
+ *
+ * merge (a_i,k_i) = (a',k'), where:
+ * - a' is the maximum a' <= a_i s.t.
+ * - forall i. (k_i mod a_i) mod a' = k' mod a'
+ */
 struct mmsz_context {
   size_t minsize;
   size_t maxsize;
@@ -1005,22 +1013,23 @@ struct mmsz_context {
 static struct ser_cdralign merge_cdralign (struct ser_cdralign a0, unsigned n, const struct ser_cdralign *as)
 {
   /* At all times, all ser_cdralign have 0 <= off < align, so each
-     time we reduce a.align, we recalculate a.off. */
+   * time we reduce a.align, we recalculate a.off.
+   */
   struct ser_cdralign a = a0;
   unsigned i;
   for (i = 0; i < n && a.align > 1; i++)
   {
     if (as[i].align < a.align)
     {
-      /* a.align <= max a0.align, s[i].align */
       a.align = as[i].align;
       a.off = a.off % a.align;
     }
     /* a.align <= as[i].align, so a.off and as[i].off may be congruent
-       mod a.align (in which case all is well) or not (in which case
-       we know less about the alignment than a.align); the lazy way is
-       to just do this by trial and error, as we can halve a.align at
-       most 3 times to reach a={.align=1,.off=0}, or nothing known. */
+     * mod a.align (in which case all is well) or not (in which case
+     * we know less about the alignment than a.align); the lazy way is
+     * to just do this by trial and error, as we can halve a.align at
+     * most 3 times to reach a={.align=1,.off=0}, or nothing known.
+     */
     while (a.off != (as[i].off % a.align))
     {
       a.align /= 2;
@@ -1035,9 +1044,10 @@ static void mmsz_calc1 (struct mmsz_context *ctx, const struct ser_type *type);
 static void mmsz_update (struct mmsz_context *ctx, size_t addmin, size_t addmax, size_t align)
 {
   /* If required alignment higher than we our current basis, re-align
-     (and do so conservatively: e.g., ctx->align=={4,3} and align==8
-     => need 1 or 5 bytes, not something in 0 .. 7), else if the
-     offset makes it misaligned, add a known amount of padding */
+   * (and do so conservatively: e.g., ctx->align=={4,3} and align==8
+   * => need 1 or 5 bytes, not something in 0 .. 7), else if the
+   * offset makes it misaligned, add a known amount of padding
+   */
 #ifdef PRINTSIZE
   fprintf (stderr, "mmsz_update: %u,%u [%zu,%zu] %zu => ", ctx->align.align, ctx->align.off, addmin, addmax, align);
 #endif
@@ -1064,8 +1074,9 @@ static void mmsz_update (struct mmsz_context *ctx, size_t addmin, size_t addmax,
   ctx->minsize += addmin;
   ctx->maxsize += addmax;
   /* If min and max sizes are equal, i.e., a definite size, then we
-     compute the exact effect on the alignment; else we simply assume
-     there is no alignment guarantee beyond "align" */
+   * compute the exact effect on the alignment; else we simply assume
+   * there is no alignment guarantee beyond "align"
+   */
   if (addmin == addmax) {
     ctx->align.off = (ctx->align.off + addmin) % ctx->align.align;
 #ifdef PRINTSIZE
@@ -1107,13 +1118,14 @@ static void mmsz_context_subsume_fixed (struct mmsz_context *ctx, unsigned n, co
 {
   struct mmsz_context ctx1;
   /* For the 2nd and later array elements, the size is exactly the
-     same (if it is fixed in the first place), and the alignment at
-     the end is also the same, except for the possibility that the
-     offset can be different for N vs N+1 copies.  However, the offset
-     necessarily repeats itself at least every ALIGN copies.  E.g.,
-     array[]{octet} starting with (8,0) results in (8,n mod 8); and
-     array[]{struct{short;octet}} starting with (8,0) toggles between
-     (8,3) and (8,7) as alignment. */
+   * same (if it is fixed in the first place), and the alignment at
+   * the end is also the same, except for the possibility that the
+   * offset can be different for N vs N+1 copies.  However, the offset
+   * necessarily repeats itself at least every ALIGN copies.  E.g.,
+   * array[]{octet} starting with (8,0) results in (8,n mod 8); and
+   * array[]{struct{short;octet}} starting with (8,0) toggles between
+   * (8,3) and (8,7) as alignment.
+   */
   assert (n > 0);
 #ifdef PRINTSIZE
   fprintf (stderr, "mmsz_context_subsume_fixed %u\n", n);
@@ -1152,7 +1164,8 @@ static void mmsz_context_subsume_variable (struct mmsz_context *ctx, unsigned nm
   else
   {
     /* alignment guaranteed to repeat itself after 8 copies, so
-       unbounded can be treated as 8 */
+     * unbounded can be treated as 8
+     */
     nmax = 8;
   }
   mmsz_context_init (&ctx1, ctx->align);
@@ -1168,8 +1181,7 @@ static void mmsz_context_subsume_variable (struct mmsz_context *ctx, unsigned nm
     ctx->maxsize += (nmax - 1) * ctx1.maxsize;
     ctx->align = merge_cdralign (ctx->align, 1, &ctx1.align);
   }
-  /* Like _fixed, but here we have to allow for the effects of 2, 3,
-     ... nmax copies. */
+  /* Like _fixed, but here we have to allow for the effects of 2, 3,... nmax copies. */
   if (nmax > 2)
   {
     nxoffs = (nmax < 8) ? nmax : 8;
@@ -1232,7 +1244,8 @@ static void mmsz_calc1 (struct mmsz_context *ctx, const struct ser_type *type)
       else
       {
         /* addmin, addmax have to be different, but when it is
-           unbounded the actual value of addmax is irrelevant */
+         * unbounded the actual value of addmax is irrelevant
+         */
         mmsz_unbounded (ctx);
         mmsz_update (ctx, 1, 0, 1);
       }
@@ -1256,10 +1269,11 @@ static void mmsz_calc1 (struct mmsz_context *ctx, const struct ser_type *type)
       mmsz_unbounded (ctx);
       mmsz_calc1 (ctx, &prim4);
       /* drop all alignment info, rather than trying to be precise: at
-         worst we underestimate the minimum serialized size by a few
-         bytes (note that precise alignment tracking is primarily
-         useful for recognising memcpy opportunities, but those don't
-         exist with recursive sequences anyway). */
+       * worst we underestimate the minimum serialized size by a few
+       * bytes (note that precise alignment tracking is primarily
+       * useful for recognising memcpy opportunities, but those don't
+       * exist with recursive sequences anyway).
+       */
       ctx->align.align = 1;
       ctx->align.off = 0;
       break;
@@ -1277,8 +1291,9 @@ static void mmsz_calc1 (struct mmsz_context *ctx, const struct ser_type *type)
       else
       {
         /* class serialized as-if union switch(bool) { case true: T }
-           (though computed as-if sequence<T,1> with a 8-bit length
-           rather than a 32-bit length) */
+         * (though computed as-if sequence<T,1> with a 8-bit length
+         * rather than a 32-bit length)
+         */
         mmsz_calc1 (ctx, &prim1);
         mmsz_context_subsume_variable (ctx, 1, type->u.class.subtype);
       }
@@ -1291,7 +1306,8 @@ static void mmsz_calc1 (struct mmsz_context *ctx, const struct ser_type *type)
         mmsz_calc1 (ctx, &dtype);
         mmsz_context_init (&ctxu, ctx->align);
         /* Set ctxu.minsize to something ridiculously large, then let
-           the iteration over the union clauses bring it down */
+         * the iteration over the union clauses bring it down
+         */
         ctxu.minsize = ~ (size_t) 0;
         for (i = 0; i < type->u.union_list.n + type->u.union_list.hasdefault; i++)
         {
@@ -1925,9 +1941,10 @@ static int lowertype1_multiple (struct lowertype_context *ctx, const struct ser_
 static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *type)
 {
   /* PRE: source positioned at start of type; srcadv tracking is
-     entirely internal to lowering function, VM always advances source
-     for every primitive converted, as well as for every srcadvance
-     instruction */
+   * entirely internal to lowering function, VM always advances source
+   * for every primitive converted, as well as for every srcadvance
+   * instruction
+   */
   struct insnstream *st = ctx->st;
   struct insnstream_marker mjump = { 0 };
   os_size_t srcpos_before, srcpos_after;
@@ -1935,11 +1952,12 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
   int rc;
 
   /* If recursively used, we "call" the code as if it were a function,
-     rather than jump into it. There's no need for a function prologue
-     in the code (we do need an epilogue: INSN_RETURN), but we do need
-     to insert a INSN_CALL.  Note that we never call lowertype1 for a
-     recursive use of the type, only for the first use (thanks to the
-     simple-mindedness of IDL type recursion).  */
+   * rather than jump into it. There's no need for a function prologue
+   * in the code (we do need an epilogue: INSN_RETURN), but we do need
+   * to insert a INSN_CALL.  Note that we never call lowertype1 for a
+   * recursive use of the type, only for the first use (thanks to the
+   * simple-mindedness of IDL type recursion).
+   */
   if (type->recuse)
   {
     if ((rc = is_append_marker_placeholder (&mjump, st, INSN_JUMP)) < 0)
@@ -2034,9 +2052,10 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
     case TK_SEQUENCE:
       {
         /* Type uses 0 to encode maxn, but CDR has a hard limit of
-           2**32-1 on sequence lengths because it encodes them as
-           32-bit unsigned.  Transforming unbounded to 2**32-1 means
-           we need only a single check when deserialising */
+         * 2**32-1 on sequence lengths because it encodes them as
+         * 32-bit unsigned.  Transforming unbounded to 2**32-1 means
+         * we need only a single check when deserialising
+         */
         const os_uint32 maxn = (type->u.sequence.maxn == 0) ? ~(os_uint32)0 : type->u.sequence.maxn;
         struct insnstream_marker mpush, m;
         if ((rc = is_append_marker_placeholder (&mpush, st, INSN_PUSHSTAR)) < 0)
@@ -2076,9 +2095,10 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
     case TK_RSEQUENCE:
       {
         /* Type uses 0 to encode maxn, but CDR has a hard limit of
-           2**32-1 on sequence lengths because it encodes them as
-           32-bit unsigned.  Transforming unbounded to 2**32-1 means
-           we need only a single check when deserialising */
+         * 2**32-1 on sequence lengths because it encodes them as
+         * 32-bit unsigned.  Transforming unbounded to 2**32-1 means
+         * we need only a single check when deserialising
+         */
         const os_uint32 maxn = (type->u.sequence.maxn == 0) ? ~(os_uint32)0 : type->u.sequence.maxn;
         /* label is in context, along with the instruction marker */
         struct insnstream_marker mpush, m;
@@ -2155,9 +2175,10 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
             if ((rc = is_append_srcadv (st, (unsigned) (type->u.union_list.moff - discsz))) < 0)
               goto union_return_rc;
             /* push_srcpos this late so that recursive call sees
-               offset 0; at the end of the union we pop the source pos
-               and advance it beyond the union, so there is no harm in
-               the successive append_srcadv's here. */
+             * offset 0; at the end of the union we pop the source pos
+             * and advance it beyond the union, so there is no harm in
+             * the successive append_srcadv's here.
+             */
             is_push_srcpos (st);
             if ((rc = lowertype1 (ctx, type->u.union_list.ms[i].type)) < 0)
               goto union_return_rc;
@@ -2197,8 +2218,9 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
               break;
             case TK_PRIM8:
               /* insn_dispatch_list8 uses prim8, and therefore has to
-                 be 8-byte aligned.  That means the dispatch
-                 instruction itself must be on an even position */
+               * be 8-byte aligned.  That means the dispatch
+               * instruction itself must be on an even position
+               */
               if ((rc = is_align2 (st)) < 0)
                 goto union_return_rc;
               if ((rc = is_append_count (st, 8, INSN_PRIM8_DISPATCH_LIST, count)) < 0)
@@ -2255,11 +2277,12 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
       if (ctx->depth == 1)
       {
         /* top-level class is ignored: that is handled outside the
-           (de)serializer VM, so all we need to do is process the
-           struct representing the class's members.  SRCPOS is
-           essentially irrelevant for the top-level struct, the
-           fiddling here is just to keep the code handling trailing
-           padding happy. */
+         * (de)serializer VM, so all we need to do is process the
+         * struct representing the class's members.  SRCPOS is
+         * essentially irrelevant for the top-level struct, the
+         * fiddling here is just to keep the code handling trailing
+         * padding happy.
+         */
         is_adv_srcpos (st, sizeof (void *));
         is_push_srcpos (st);
         if ((rc = lowertype1 (ctx, type->u.class.subtype)) < 0)
@@ -2352,9 +2375,10 @@ static int lowertype (struct serprog **prog, const struct ser_type *type, c_type
 static void *extract_pointer_from_code (const char *cptr)
 {
   /* ptr is at least 4 byte aligned, so on 32-bits platforms and on
-     those with hardware-supported misaligned loads, it is best to
-     just load it (but we don't have an easy way of knowing whether
-     our platforms supports misaligned loads) */
+   * those with hardware-supported misaligned loads, it is best to
+   * just load it (but we don't have an easy way of knowing whether
+   * our platforms supports misaligned loads)
+   */
   void *ptr;
   memcpy (&ptr, cptr, sizeof (void *));
   return ptr;
@@ -2891,9 +2915,10 @@ static void serprog_exec_trace (FILE *fp, int *indent, const struct serprog *pro
 static const char *getstring (const char *src)
 {
   /* data is a c_string* is an os_char** is a char** (it's
-     gotta be 'cos it's passed to strlen -- O! the joys of
-     defining aliases for primitive types in C ... FIXME:
-     wstrings? */
+   * gotta be 'cos it's passed to strlen -- O! the joys of
+   * defining aliases for primitive types in C ...
+   * FIXME: wstrings?
+   */
   const char *s = (const char *) (*((const c_string *) src));
   return s;
 }
@@ -2901,10 +2926,11 @@ static const char *getstring (const char *src)
 static int serprog_exec (struct sd_cdrSerdata *sd, const struct serprog *prog, const char *data, os_uint32 size_hint)
 {
   /* os_address really means uintptr_t: unsigned int, or a pointer;
-     stack is unified for loop counts, source pointers and code
-     pointers; when both a loop and a source pointer are are pushed,
-     src goes first (and therefore when both are popped, src comes
-     last) */
+   * stack is unified for loop counts, source pointers and code
+   * pointers; when both a loop and a source pointer are are pushed,
+   * src goes first (and therefore when both are popped, src comes
+   * last)
+   */
   const struct insn_enc *xs = (const struct insn_enc *) prog->buf;
   os_address stk_storage[128];
   os_address *stk = &stk_storage[0];
@@ -3115,8 +3141,9 @@ static int serprog_exec (struct sd_cdrSerdata *sd, const struct serprog *prog, c
           if (n < insn.count)
           {
             /* note that the src is not really needed for clearing,
-               but the function does advance the source pointer,
-               needed or not */
+             * but the function does advance the source pointer,
+             * needed or not
+             */
             ser_clear_multiple_0 (prog->control, sd, &dst, &dstlimit, &s, insn.count - n);
           }
           src += sizeof (char *);
@@ -3318,10 +3345,11 @@ static int ser_write_swap_2 (
 static int serprog_exec_swap (struct sd_cdrSerdata *sd, const struct serprog *prog, const char *data, os_uint32 size_hint)
 {
   /* os_address really means uintptr_t: unsigned int, or a pointer;
-     stack is unified for loop counts, source pointers and code
-     pointers; when both a loop and a source pointer are are pushed,
-     src goes first (and therefore when both are popped, src comes
-     last) */
+   * stack is unified for loop counts, source pointers and code
+   * pointers; when both a loop and a source pointer are are pushed,
+   * src goes first (and therefore when both are popped, src comes
+   * last)
+   */
   const struct insn_enc *xs = (const struct insn_enc *) prog->buf;
   os_address stk_storage[128];
   os_address *stk = &stk_storage[0];
@@ -3531,8 +3559,9 @@ static int serprog_exec_swap (struct sd_cdrSerdata *sd, const struct serprog *pr
           if (n < insn.count)
           {
             /* note that the src is not really needed for clearing,
-               but the function does advance the source pointer,
-               needed or not */
+             * but the function does advance the source pointer,
+             * needed or not
+             */
             ser_clear_multiple_0 (prog->control, sd, &dst, &dstlimit, &s, insn.count - n);
           }
           src += sizeof (char *);
@@ -3619,8 +3648,9 @@ static int serprog_exec_swap (struct sd_cdrSerdata *sd, const struct serprog *pr
 /******************** DESERIALIZE VM (STRAIGHT) ********************/
 
 /* FIXME: natural alignment on input guaranteed to be 4,
-   so can't do address-based alignment and need to use
-   memcpy (on some platforms) for 8 byte objects */
+ * so can't do address-based alignment and need to use
+ * memcpy (on some platforms) for 8 byte objects
+ */
 #define SRC_CHECK_ALIGN(amount, align) do {                             \
     src = blob + alignup_address ((os_address) (src - blob), (align));  \
     if (src + amount > srclimit)                                        \
@@ -3683,9 +3713,10 @@ static int serprog_exec_swap (struct sd_cdrSerdata *sd, const struct serprog *pr
   } while (0)
 #define DESERPROG_EXEC_DISPATCH_list4 DESERPROG_EXEC_DISPATCH_list
 #define DESERPROG_EXEC_DISPATCH_list8 DESERPROG_EXEC_DISPATCH_list
-/* Note: sneakily reading just-deserialized discriminator from result,
-   rather than reading discriminator from source.  Also note the
-   confusingly named "srcadv". */
+/* NOTE: sneakily reading just-deserialized discriminator from result,
+ * rather than reading discriminator from source.  Also note the
+ * confusingly named "srcadv".
+ */
 #define DESERPROG_EXEC_DISPATCH(width, mode) do {               \
     const struct insn_dispatch_##mode *ds =                     \
       (const struct insn_dispatch_##mode *) (xs + 1);           \
@@ -3720,8 +3751,9 @@ static int deserprog_exec (char *dst, const struct serprog *prog, os_uint32 sz, 
     serprog_exec_trace (stderr, &indent, prog, xs - 1, loopcount);
 #endif
     /* FIXME: instruction fields are named for serialisation, so
-       "source advance" suddenly becomes "destination advance" when
-       deserializing */
+     * "source advance" suddenly becomes "destination advance" when
+     * deserializing
+     */
     dst += insn.srcadv;
     switch ((enum insn_opcode) insn.opcode)
     {
@@ -3939,10 +3971,11 @@ static int deserprog_exec (char *dst, const struct serprog *prog, os_uint32 sz, 
         break;
       case INSN_PRIM1_CONST:
         /* Constants are not represented in the deserialized
-           representation, so we can skip them -- or we can require
-           that they have the expected value.  Given it is currently
-           only being used for an optional endianness marker, perhaps
-           it'd be wise to check */
+         * representation, so we can skip them -- or we can require
+         * that they have the expected value.  Given it is currently
+         * only being used for an optional endianness marker, perhaps
+         * it'd be wise to check
+         */
         SRC_CHECK_ALIGN (1, 1);
         if (*src != insn.count)
           return SD_CDR_INVALID;
@@ -4068,8 +4101,9 @@ static int deserprog_exec_swap (char *dst, const struct serprog *prog, os_uint32
     serprog_exec_trace (stderr, &indent, prog, xs - 1, loopcount);
 #endif
     /* FIXME: instruction fields are named for serialisation, so
-       "source advance" suddenly becomes "destination advance" when
-       deserializing */
+     * "source advance" suddenly becomes "destination advance" when
+     * deserializing
+     */
     dst += insn.srcadv;
     switch ((enum insn_opcode) insn.opcode)
     {
@@ -4287,10 +4321,11 @@ static int deserprog_exec_swap (char *dst, const struct serprog *prog, os_uint32
         break;
       case INSN_PRIM1_CONST:
         /* Constants are not represented in the deserialized
-           representation, so we can skip them -- or we can require
-           that they have the expected value.  Given it is currently
-           only being used for an optional endianness marker, perhaps
-           it'd be wise to check */
+         * representation, so we can skip them -- or we can require
+         * that they have the expected value.  Given it is currently
+         * only being used for an optional endianness marker, perhaps
+         * it'd be wise to check
+         */
         SRC_CHECK_ALIGN (1, 1);
         if (*src != insn.count)
           return SD_CDR_INVALID;
@@ -4439,8 +4474,9 @@ void sd_cdrInfoFree (struct sd_cdrInfo *ci)
 int sd_cdrNoteCatsStac (struct sd_cdrInfo *ci, unsigned n, struct c_type_s const * const *typestack)
 {
   /* typestack contains: structs, unions, arrays, sequences +
-     string(cats)/array(stac), i.e., the full path without
-     typedefs. */
+   * string(cats)/array(stac), i.e., the full path without
+   * typedefs.
+   */
   struct sd_catsstac *cs;
   cs = os_malloc (offsetof (struct sd_catsstac, typestack) + n * sizeof (*cs->typestack));
   cs->next = NULL;

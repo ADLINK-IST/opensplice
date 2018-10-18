@@ -16,7 +16,7 @@ command line options:
    [ -I <path> ]
    [ -D <macro>[=<definition>] ]
    < -S | -C >
-   < -l (c | c++ | cpp | java | cs | isocpp | isoc++ | c99) >
+   < -l (c | c++ | cpp | java | cs | isocpp | isoc++ | c99 | simulink) >
    [ -F ]
    [ -j [old]:<new>]
    [ -o <dds-types> | <custom-psm> | <no-equality> | <deprecated-c++11-mapping>]
@@ -72,7 +72,7 @@ All of these options are described in full detail below.
    Specifies ORB integrated mode, which allows application programs to 
    be built and run integrated with an ORB.
 
-**-l (c | c++ | cpp | java | cs | isocpp | isoc++ | isocpp2 | isoc++2 | c99)** 
+**-l (c | c++ | cpp | java | cs | isocpp | isoc++ | isocpp2 | isoc++2 | c99 | simulink)**
    Selects the target language. 
    Note that the Vortex OpenSplice IDL Pre-processor does not support
    every combination of modes and languages. This option is mandatory; when no
@@ -134,6 +134,11 @@ All of these options are described in full detail below.
      c99 types and that bound strings are mapped to char arrays with a
      size one larger than specified in the idl definition to allow for
      the terminating 0 character.
+
+     |simulink|
+   - For Simulink a MATLAB .m file is created representing the simulink
+     bus for the input IDL file. Typically this option is used when 
+     invoking a script from MATLAB to import the IDL into Simulink.
 
    See also
    :ref:`OpenSplice Modes and Languages <OpenSplice Modes and Languages>`

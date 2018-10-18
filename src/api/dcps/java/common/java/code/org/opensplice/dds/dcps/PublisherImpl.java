@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -84,16 +85,20 @@ public class PublisherImpl extends PublisherBase implements DDS.Publisher {
                          * that events that can trigger a listener on an owning
                          * entity are propagated instead of being consumed by
                          * the listener being destroyed. */
-                        set_listener(this.listener, 0);
+                        result = set_listener(this.listener, 0);
                     }
-                    this.disable_callbacks();
-                    result = ((EntityImpl) this).detach_statuscondition();
                     if (result == DDS.RETCODE_OK.value) {
-                        this.participant = null;
-                        this.name = null;
-                        result = jniPublisherFree(uPublisher);
+                        result = this.disable_callbacks();
                         if (result == DDS.RETCODE_OK.value) {
-                            result = super.deinit();
+                            result = ((EntityImpl) this).detach_statuscondition();
+                            if (result == DDS.RETCODE_OK.value) {
+                                this.participant = null;
+                                this.name = null;
+                                result = jniPublisherFree(uPublisher);
+                                if (result == DDS.RETCODE_OK.value) {
+                                    result = super.deinit();
+                                }
+                            }
                         }
                     }
                 } else {

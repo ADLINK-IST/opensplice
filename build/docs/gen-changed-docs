@@ -21,6 +21,7 @@ then
 fi
 
 docs_changed="False"
+comn_changed="False"
 
 DOCS_DIR=$OSPL_HOME/build/docs
 
@@ -89,6 +90,24 @@ do
         "MODL")
             modl_sha=$sha
             ;;
+        "MATL")
+            matl_sha=$sha
+            ;;
+        "SIMU")
+            simu_sha=$sha
+            ;;
+        "COMN")
+            comn_sha=$sha
+            ;;
+        "PYTH")
+            pyth_sha=$sha
+            ;;
+        "LABV")
+            labv_sha=$sha
+            ;;
+        "NODEJS")
+            nodejs_sha=$sha
+            ;;
         *)
    esac
 done < $DOCS_DIR/docs-commit-sha
@@ -96,8 +115,17 @@ done < $DOCS_DIR/docs-commit-sha
 generate_conf_guide ()
 {
    make xml
+   if [ $? != 0 ]
+   then
+      exit 1
+   fi
+
    cd $DOCS_DIR/ConfGuide
    make html
+   if [ $? != 0 ]
+   then
+      exit 1
+   fi
 
    cd ../
    cat $DOCS_DIR/ConfGuide/source/intro.rst > $DOCS_DIR/DeploymentGuide/source/guide.rst 
@@ -174,17 +202,41 @@ check_for_changes()
    echo "saved_sha is ${saved_sha}"
    echo "last_sha is ${last_sha}"
 
-   if [ "${saved_sha}" == "${last_sha}" ];
+   changed="False"
+   
+   if [ "${key}" == "COMN" ];
    then
-      echo "No change to $1"
+      if [ "${saved_sha}" == "${last_sha}" ];
+      then
+         echo "No change to $1"
+      else
+         comn_changed="True"
+         sed -i "s/${key} ${saved_sha}/${key} ${last_sha}/g" docs-commit-sha
+      fi
    else
-      echo "$1 has changed"
-      build_docs $1
-      sed -i "s/${key} ${saved_sha}/${key} ${last_sha}/g" docs-commit-sha
-      docs_changed="True"
+      if [ "${saved_sha}" == "${last_sha}" ];
+      then
+         if [ "$comn_changed" == "False" -o "${key}" == "DDST" ];
+         then
+            echo "No change to $1"
+         else
+            changed="True"
+         fi
+      else
+          changed="True"
+      fi
+
+      if [ "$changed" == "True" ];
+      then
+         echo "$1 has changed"
+         build_docs $1
+         sed -i "s/${key} ${saved_sha}/${key} ${last_sha}/g" docs-commit-sha
+         docs_changed="True"
+      fi
    fi
 }
 
+check_for_changes "common/contacts.rst" ${comn_sha} "COMN"
 check_for_changes "extract.py" ${mcnf_sha} "MCNF"
 check_for_changes "xml2rst.py" ${mcnx_sha} "MCNX"
 check_for_changes "../../src/tools/cm/config/code/splice_metaconfig_6.1.xml" ${mcge_sha} "MCGE"
@@ -204,6 +256,11 @@ check_for_changes "TesterUserGuide" ${test_sha} "TEST"
 check_for_changes "TunerGuide" ${tune_sha} "TUNE"
 check_for_changes "SecureNetworking" ${snet_sha} "SNET"
 check_for_changes "ModelingGuide" ${modl_sha} "MODL"
+check_for_changes "DDSMATLABGuide" ${matl_sha} "MATL"
+check_for_changes "DDSSimulinkGuide" ${simu_sha} "SIMU"
+check_for_changes "PythonDCPSAPIGuide" ${pyth_sha} "PYTH"
+check_for_changes "DDSLabVIEWGuide" ${labv_sha} "LABV"
+check_for_changes "NodeJSDCPSAPIGuide" ${nodejs_sha} "NODEJS"
 
 cd $OSPL_HOME/docs
 
@@ -211,7 +268,7 @@ if [ "$docs_changed" == "True" ];
 then
    git add -A :/
    git commit -a -m "$TAG Updated documentation generated"
-   git push origin HEAD:$BRANCH
+   GIT_SSH="$OSPL_HOME/build/docs/gitsshdocs" git push origin HEAD:$BRANCH   
 else
    echo "No doc changes to commit"
 fi

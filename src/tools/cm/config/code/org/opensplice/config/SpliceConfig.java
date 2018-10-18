@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,14 +27,14 @@ import org.opensplice.config.swing.ConfigWindow;
 public class SpliceConfig extends Initializer {
 
     /**
-     * Starts Splice Tuner. This function is the main class of Splice Tuner;
-     * - It checks for the right version of the JVM, this must be 1.5.0.
+     * Starts Configurator. This function is the main class of the Configurator;
+     * - It checks for the right version of the JVM, this must be > 1.5.0.
      * - It passes on the commandline arguments. Arguments that are supported
      *   are:
      *      -# <java_properties_file>
      *
      * @param args These are passed on to the initialize function of the
-     *             SpliceTuner object.
+     *             SpliceConfig object.
      */
     public static void main(String[] args) {
         boolean redirect = true;

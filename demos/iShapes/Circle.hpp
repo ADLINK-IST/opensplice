@@ -1,5 +1,5 @@
 #ifndef _CIRCLE_HPP
-#define	_CIRCLE_HPP
+#define _CIRCLE_HPP
 
 /** @file */
 /**
@@ -7,7 +7,6 @@
  */
 /** @{*/
 
-//#include <boost/shared_ptr.hpp>
 #include <ShapeDynamics.hpp>
 #include <Shape.hpp>
 

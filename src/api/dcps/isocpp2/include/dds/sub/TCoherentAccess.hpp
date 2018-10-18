@@ -98,6 +98,9 @@ public:
      * Creating a CoherentAccess object, which will begin ‘coherent access’ of
      * received samples using DataReader objects attached to this Subscriber.
      *
+     * Note that a coherent subscriber should first be enabled, otherwise this operation will throw dds::core::NotEnabledError.
+     * Please consult dds::core::Entity::enable() for additional information about coherent access.
+     *
      * @param sub The Subscriber to begin the coherent access on.
      * @throws dds::core::Error
      *                  An internal error has occurred.
@@ -119,6 +122,8 @@ public:
      *
      * If the Subscriber already ended its coherent access (by a call to this very
      * operation), then a call to this operation will have no effect.
+     *
+     * Please consult dds::core::Entity::enable() for additional information about coherent access.
      *
      * @throws dds::core::Error
      *                  An internal error has occurred.

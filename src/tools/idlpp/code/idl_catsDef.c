@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -73,8 +74,8 @@ idl_catsDefFindMemberIndexByName(
     const os_char* name);
 
 /* Create a new cats map specified by scope,
-   type name and catslist
-*/
+ * type name and catslist
+ */
 static idl_catsMap
 idl_catsMapNew (
     const c_metaObject scope,
@@ -142,9 +143,7 @@ idl_catsDefAdd (
     }
 }
 
-/*
- * Check if there is a cats applied to the given key.
- */
+/* Check if there is a cats applied to the given key. */
 c_bool
 idl_isCatsDefFor(
     c_metaObject scope,
@@ -247,8 +246,8 @@ idl_catsListItemIsMemberLocated(
 }
 
 /* Find the cats list related to the specified typename in
-   the specified scope
-*/
+ * the specified scope
+ */
 os_boolean
 idl_catsListItemIsDefined (
     idl_catsDef catsDef,
@@ -312,8 +311,8 @@ idl_catsListItemIsDefined (
                                 {
                                     /* the typeScope has reached the bottom too,
                                      * thus the scopes are equal
-                                     */
-                                    /* If no members were defined for this type, then we will
+                                     *
+                                     * If no members were defined for this type, then we will
                                      * interprete this as a request for all char array
                                      * members to be converted to a string internally.
                                      */

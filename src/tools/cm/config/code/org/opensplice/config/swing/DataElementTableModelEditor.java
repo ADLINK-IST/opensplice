@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,32 +55,32 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
     private DataElementTableModel tableModel = null;
     private DataValue editNode;
     private MetaValue editType;
-    
+
     public DataElementTableModelEditor(DataElementTableModel tableModel){
         this.tableModel = tableModel;
     }
-    
+
     public void setStatusListener(StatusPanel  status){
         this.status = status;
     }
-    
+
     @Override
     public void cancelCellEditing(){
         super.cancelCellEditing();
         curEditor = null;
-        
+
         if(status != null){
             status.setStatus("Editing cancelled", false, false);
         }
     }
-    
+
     @Override
     public boolean stopCellEditing(){
         boolean result = true;
-        
+
         if(curEditor != null){
             result = this.assign().isValid();
-            
+
             if(result){
                 result = super.stopCellEditing();
                 curEditor = null;
@@ -89,21 +90,21 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         }
         return result;
     }
-    
+
     @Override
     public Object getCellEditorValue() {
         return curValue;
     }
-    
+
     public boolean isEditing(){
         assert (editRow != -1) && (editColumn != -1): "Value of editRow || editColumn == null";
         return (curEditor != null);
     }
-    
+
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         Component result = null;
-        
+
         editRow    = row;
         editColumn = column;
         curValue   = value;
@@ -111,7 +112,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         if (editNode != null) {
             editType   = (MetaValue)editNode.getMetadata();
         }
-            
+
         if(editType instanceof MetaValueBoolean){
             String[] values = { "true", "false" };
             JComboBox combo = new JComboBox(values);
@@ -121,7 +122,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         } else if(editType instanceof MetaValueEnum){
             JComboBox combo = new JComboBox();
             result = combo;
-            
+
             for(String posValue: ((MetaValueEnum)editType).getPosValues()){
                 combo.addItem(posValue);
             }
@@ -133,7 +134,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         curEditor = result;
         curEditor.setBackground(editColor);
         curEditor.addKeyListener(this);
-    
+
         return result;
     }
 
@@ -149,16 +150,16 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
                 AssignmentResult test = this.testAssignment();
-                
+
                 if(test.isValid()){
                     curEditor.setBackground(editColor);
-                    
+
                     if(status != null){
                         status.setStatus("Current input valid.", false, false);
                     }
                 } else {
                     curEditor.setBackground(errorColor);
-                    
+
                     if(status != null){
                         status.setStatus("Error: " + test.getErrorMessage(), false, false);
                     }
@@ -166,19 +167,19 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
             } else if(e.getSource() instanceof JComboBox){
                 /*Do nothing.*/
             }
-        }     
+        }
     }
-    
+
     @Override
     public void keyTyped(KeyEvent e) {}
 
     @Override
     public void keyPressed(KeyEvent e) {}
-    
+
     public AssignmentResult testAssignment(){
         AssignmentResult result = new AssignmentResult(true, null);
         String value;
-        
+
         if(curEditor != null){
             try {
                 if((editType instanceof MetaValueNatural) || (editType instanceof MetaValueString)) {
@@ -194,16 +195,16 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         }
         return result;
     }
-    
+
     private AssignmentResult assign(){
         Object value = null;
         AssignmentResult test = this.testAssignment();
-        
+
         if(test.isValid()){
             if(status != null){
                 status.setStatus("Input valid.", false, false);
             }
-            
+
             if(curEditor instanceof JTextField){
                 value = ((JTextField)curEditor).getText();
             } else if(curEditor instanceof JComboBox){

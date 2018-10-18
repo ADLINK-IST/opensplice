@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -48,32 +49,6 @@ public class FileNameValuePanel extends NameValuePanel implements ActionListener
     {
         this(fieldName, defaultValue, emptyInputAllowed, browseText, parent, new Dimension(50, 20), new Dimension(100, 20));
     }
-
-    /*
-    public FileNameValuePanel(
-            String fieldName,
-            String defaultValue,
-            boolean emptyInputAllowed,
-            String browseText,
-            JFrame parent,
-            Dimension labelDim,
-            Dimension fieldDim)
-    {
-        super(fieldName, defaultValue, emptyInputAllowed, labelDim, fieldDim);
-
-        this.parent = parent;
-        field = new JTextField();
-
-        if(defaultValue != null){
-            ((JTextField)field).setText(defaultValue);
-        }
-        field.setMinimumSize(this.fieldDim);
-        field.setPreferredSize(this.fieldDim);
-        field.setMaximumSize(this.fieldDim);
-
-        this.add(field, null);
-    }
-    */
 
     public FileNameValuePanel(
             String fieldName,

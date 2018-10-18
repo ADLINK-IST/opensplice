@@ -6,6 +6,7 @@ startOSPL
 
 echo "=== Launching WaitSet "
 ./sacpp_waitset_sub > subResult.txt &
+cmd_pid=$!
 
 sleep 2
 
@@ -13,8 +14,7 @@ sleep 2
 sleep 1
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination sacpp_waitset_pub 30
-waitForProcessTermination sacpp_waitset_sub 30
+waitForProcessTermination $cmd_pid 30
 
 waitsetCheckResult
 

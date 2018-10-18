@@ -18,10 +18,9 @@ extern "C" {
  *  @brief Vortex Lite Communication Status header
  */
 
-/*
-  Listeners implemented as structs containing callback functions
-  that take listener status types as arguments.
-*/
+/* Listeners implemented as structs containing callback functions
+ * that take listener status types as arguments.
+ */
 
 /* Listener status types */
 /**
@@ -218,9 +217,7 @@ typedef struct dds_participantlistener
 }
 dds_participantlistener_t;
 
-/*
-  get_<status> APIs return the status of an entity and resets the status
-*/
+/* get_<status> APIs return the status of an entity and resets the status */
 
 /**
  * Description : Get the status value corresponding to INCONSISTENT_TOPIC and reset the status

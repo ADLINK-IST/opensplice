@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Installation &mdash; The Vortex OpenSplice MATLAB Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Vortex OpenSplice MATLAB Guide" href="index.html" />
+    <link rel="next" title="3. MATLAB API for Vortex DDS Classes" href="DDS-Classes.html" />
+    <link rel="prev" title="1. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="DDS-Classes.html" title="3. MATLAB API for Vortex DDS Classes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>2. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the procedure to install the Vortex DDS MATLAB Integration on a Linux or Windows platform.</p>
+<div class="section" id="system-requirements">
+<h2>2.1. System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Operating System: Windows or Linux</li>
+<li>MATLAB installed</li>
+<li>Java 1.7 or greater</li>
+</ul>
+</div>
+<div class="section" id="opensplice-ospl-and-dds-matlab-installation">
+<h2>2.2. OpenSplice (OSPL) and DDS MATLAB Installation<a class="headerlink" href="#opensplice-ospl-and-dds-matlab-installation" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic simple">
+<li>Install OSPL.  The DDS MATLAB Integration is included in this installer.</li>
+<li>Setup OSPL license.  Copy the license.lic file into the appropriate license directory.</li>
+</ol>
+<blockquote>
+<div><em>/INSTALLDIR/Vortex_v2/license</em></div></blockquote>
+<ol class="arabic simple" start="3">
+<li>DDS MATLAB files are contained in a tools/matlab folder</li>
+</ol>
+<blockquote>
+<div>Example:
+<em>/INSTALLDIR/Vortex_v2/Device/VortexOpenSplice/6.8.1/HDE/x86_64.linux/tools/matlab</em></div></blockquote>
+</div>
+<div class="section" id="matlab-and-dds-setup">
+<h2>2.3. MATLAB and DDS Setup<a class="headerlink" href="#matlab-and-dds-setup" title="Permalink to this headline">¶</a></h2>
+<p>Steps:</p>
+<ol class="arabic">
+<li><p class="first">Open command shell and run script to setup environment variables.</p>
+<blockquote>
+<div><p><strong>Linux</strong></p>
+<ul>
+<li><p class="first">Open a Linux terminal.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.com file.</p>
+<p><em>/INSTALLDIR/Vortex_v2/Device/VortexOpenSplice/6.8.1/HDE/x86_64.linux</em></p>
+</li>
+<li><p class="first">Run release.com.   (Type in “. release.com” at command line.)</p>
+</li>
+</ul>
+<p><strong>Windows</strong></p>
+<ul>
+<li><p class="first">Open a command prompt.</p>
+</li>
+<li><p class="first">Navigate to directory containing release.bat file.</p>
+<p><em>INSTALLDIR/Vortex_v2/Device/VortexOpenSplice/6.8.1/HDE/x86_64.win64</em></p>
+</li>
+<li><p class="first">Run release.bat.   (Type in “release.bat” at command line.)</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Start MATLAB using the <strong>SAME</strong> command shell used in Step 1.</p>
+<blockquote>
+<div><p><em>NOTE:   If MATLAB is NOT started from a command shell with the correct OSPL environment variables set, exceptions will occur when attempting to use DDS MATLAB classes.</em></p>
+</div></blockquote>
+</li>
+<li><p class="first">In MATLAB, navigate to file “Vortex_DDS_MATLAB_API.mltbx” by typing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cd</span><span class="p">(</span><span class="n">fullfile</span><span class="p">(</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;OSPL_HOME&#39;</span><span class="p">),</span><span class="s">&#39;tools&#39;</span><span class="p">,</span><span class="s">&#39;matlab&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Double click on the file “Vortex_DDS_MATLAB_API.mltbx”.   This will bring up a dialog entitled <strong>Vortex_DDS_MATLAB_API</strong>.
+Select <strong>Install</strong>.</p>
+</li>
+</ol>
+<div class="figure">
+<img alt="DDS" src="_images/linuxInstall1.png" />
+</div>
+</div>
+<div class="section" id="examples">
+<h2>2.4. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Example models have been provided in the examples folder.</p>
+<p>Example:
+<em>/INSTALLDIR/Vortex_v2/Device/VortexOpenSplice/6.8.1/HDE/x86_64.linux/tools/matlab/examples/matlab</em></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Installation</a><ul>
+<li><a class="reference internal" href="#system-requirements">2.1. System Requirements</a></li>
+<li><a class="reference internal" href="#opensplice-ospl-and-dds-matlab-installation">2.2. OpenSplice (OSPL) and DDS MATLAB Installation</a></li>
+<li><a class="reference internal" href="#matlab-and-dds-setup">2.3. MATLAB and DDS Setup</a></li>
+<li><a class="reference internal" href="#examples">2.4. Examples</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">1. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="DDS-Classes.html"
+                        title="next chapter">3. MATLAB API for Vortex DDS Classes</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="DDS-Classes.html" title="3. MATLAB API for Vortex DDS Classes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice MATLAB Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

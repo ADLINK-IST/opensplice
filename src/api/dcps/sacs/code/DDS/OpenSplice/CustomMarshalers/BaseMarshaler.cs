@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -185,7 +186,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 to = IntPtr.Zero;
             }
         }
-        
+
         public static void ReleaseString(ref IntPtr to)
         {
             if (to != IntPtr.Zero) {
@@ -197,7 +198,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 to = IntPtr.Zero;
             }
         }
-        
+
         #endregion
 
         #region Readers
@@ -253,7 +254,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             return dtl.theDouble;
         }
 
-        public static float ReadSingle(IntPtr from, int offset)
+        public static float ReadFloat(IntPtr from, int offset)
         {
             SingleToInt sti = new SingleToInt();
             sti.theInt = Marshal.ReadInt32(from, offset);
@@ -292,11 +293,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             return Marshal.ReadIntPtr(from, offset);
         }
-        
+
         public static string ReadString(IntPtr from)
         {
             string result;
-            
+
             if (from != IntPtr.Zero)
             {
 #if COMPACT_FRAMEWORK
@@ -310,7 +311,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             } else {
                result = null;
             }
-            
+
             return result;
         }
 

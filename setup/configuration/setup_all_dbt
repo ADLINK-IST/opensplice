@@ -24,6 +24,11 @@ then
     else
         unset_var INCLUDE_DBT_SERVICES_DDSI
     fi
+    if [ "_$INCLUDE_SERVICES_DDSI2E" = "_yes" ]; then
+        set_undefined_var INCLUDE_DBT_SERVICES_DDSI2E yes
+    else
+        unset_var INCLUDE_DBT_SERVICES_DDSI2E
+    fi
     if [ "_$INCLUDE_SERVICES_COMMON" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_COMMON yes
     else
@@ -33,6 +38,11 @@ then
         set_undefined_var INCLUDE_DBT_SERVICES_SPLICED yes
     else
         unset_var INCLUDE_DBT_SERVICES_SPLICED
+    fi
+    if [ "_$INCLUDE_SERVICES_DURABILITY" = "_yes" ]; then
+        set_undefined_var INCLUDE_DBT_SERVICES_DURABILITY yes
+    else
+        unset_var INCLUDE_DBT_SERVICES_DURABILITY
     fi
     if [ "_$INCLUDE_SERVICES_DBMS" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_DBMS yes
@@ -129,6 +139,16 @@ then
             set_undefined_var INCLUDE_DBT_API_DCPS_SACS yes
         else
             unset_var INCLUDE_DBT_API_DCPS_SACS
+        fi
+        if [ "_$INCLUDE_API_DCPS_PYTHON" = "_yes" ] ; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_PYTHON yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_PYTHON
+        fi
+        if [ "_$INCLUDE_API_DCPS_NODEJS" = "_yes" ] ; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_NODEJS yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_NODEJS
         fi
         if  [ "_$INCLUDE_API_DCPS_SAJ5" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_JAVA5 yes

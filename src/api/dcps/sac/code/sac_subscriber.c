@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -108,7 +109,7 @@ DDS_SubscriberNew (
         uParticipant = u_participant(_Entity_get_user_entity(participant));
         _participant = _DomainParticipant(participant);
         if (uParticipant != NULL && _participant != NULL) {
-            uSubscriber = u_subscriberNew(uParticipant, name, sQos, FALSE);
+            uSubscriber = u_subscriberNew(uParticipant, name, sQos);
             if (uSubscriber != NULL) {
                 result = DDS_Object_new(DDS_SUBSCRIBER, _Subscriber_deinit, (_Object *)&_this);
                 if (result == DDS_RETCODE_OK) {
@@ -274,7 +275,7 @@ DDS_Subscriber_create_datareader (
     }
     if (result == DDS_RETCODE_OK) {
         DDS_DataReader_set_listener(reader, a_listener, mask);
-        if (factoryAutoEnable) {
+        if (factoryAutoEnable && _Entity_is_enabled(_Entity(sub))) {
             result = DDS_Entity_enable(reader);
             if (result != DDS_RETCODE_OK) {
                 DDS_ReturnCode_t destroyed;
@@ -953,7 +954,7 @@ DDS_Subscriber_copy_from_topic_qos (
     }
 
     if (topicQos != NULL) {
-        DDS__free(topicQos);
+        (void)DDS__free(topicQos);
     }
 
     SAC_REPORT_FLUSH(_this, result != DDS_RETCODE_OK);

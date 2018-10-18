@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,7 +37,7 @@
 #include "cfg_parser.h"
 
 #include "ut_collection.h"
-
+#define QOS_DATABASE_SIZE (2 * 1024 * 1024)
 /* Included load functions; the load-functions are generated with
  * idlpp -m SPLLOAD. */
 #include "dds_builtinTopicsSplLoad.c"
@@ -49,7 +50,7 @@
 #define DDS_TAG                 "dds"
 #define PROFILE_TAG             "qos_profile"
 /* 'DDS for lightweigth CCM v1.1' mandates "participant_qos"; the provided
- * example uses "domainparticipant_qos". We follow the specification. */
+ * example and xsd use "domainparticipant_qos". We follow the example. */
 #define DPQOS_TAG               "domainparticipant_qos"
 #define TQOS_TAG                "topic_qos"
 #define PUBQOS_TAG              "publisher_qos"
@@ -311,7 +312,7 @@ cmn_qosTableLookup(
     if (qos == NULL) {
         OS_REPORT(OS_ERROR, "QosProvider", QP_RESULT_NO_DATA,
                             "Could not find Qos value for profile: \"%s\" and id: \"%s\".",
-                            (defaultProfile == NULL ? "not specified" : defaultProfile),
+                            defaultProfile,
                             (id == NULL ? "not specified" : id));
     }
     return qos;
@@ -739,15 +740,27 @@ processElement(
             QP_TRACE(printf("%*sEND field '%s'\n", --level * 2, "", name));
             c_free(ctx.currentField);
         } else {
-            QP_TRACE(printf("ERROR: Unrecognized element '%s' inside qosPolicy field '%s'\n", name, c_fieldName(ctx.currentField)));
-            result = QP_RESULT_UNKNOWN_ELEMENT;
-            OS_REPORT(
+            if ((strcmp(c_fieldName(ctx.currentField), DWQOS_TAG) == 0) &&
+                (strcmp(name, "durability_service") == 0)) {
+                QP_TRACE(printf("SKIPPING: Unsupported element '%s' inside qosPolicy field '%s'\n", name, c_fieldName(ctx.currentField)));
+                result = QP_RESULT_OK;
+                OS_REPORT(
+                    OS_INFO,
+                    "cmn_qosProvider::processElement",
+                    3,
+                    "Policy '%s' cannot be a member of " DWQOS_TAG " (it is applicable to " TQOS_TAG " only). OpenSpliceDDS will ignore this policy.",
+                    name);
+            } else {
+                QP_TRACE(printf("ERROR: Unrecognized element '%s' inside qosPolicy field '%s'\n", name, c_fieldName(ctx.currentField)));
+                result = QP_RESULT_UNKNOWN_ELEMENT;
+                OS_REPORT(
                     OS_ERROR,
                     "cmn_qosProvider::processElement",
                     3,
                     "Unrecognized element (\"%s\") inside qosPolicy field \"%s\"...",
                     name,
                     c_fieldName(ctx.currentField));
+            }
         }
         break;
     }
@@ -996,8 +1009,8 @@ cmn_qosProviderNew(
         goto err_cfg_parse;
     }
 
-    /* Create a heap database */
-    if((_this->baseAddr = c_create("QOSProvider", NULL, 0, 0)) == NULL){
+    /* Create a heap database */    
+    if((_this->baseAddr = c_create("QOSProvider", NULL, QOS_DATABASE_SIZE, 0)) == NULL){
         OS_REPORT(OS_ERROR, "cmn_qosProviderNew", 1, "Out of memory. Failed to allocate heap database.");
         goto err_c_create;
     }

@@ -69,9 +69,6 @@ ifneq "$(ABSTR_HOME)" "$(OSPL_HOME)/src/abstraction"
 endif
 
 CPPFLAGS += -DOSPL_BUILD_CORE -DMODEL_kernelModule_IMPLEMENTATION -DMODEL_kernelModuleI_IMPLEMENTATION
-ifneq "$(OSPL_OUTER_HOME)" ""
-  CPPFLAGS += -DUSE_ADV_MEM_MNG
-endif
 ifneq "$(findstring yes, $(INCLUDE_PLUGGABLE_REPORTING))" ""
   CPPFLAGS += -DINCLUDE_PLUGGABLE_REPORTING
 endif
@@ -91,18 +88,13 @@ endif
 CFLAGS += $(CFLAGS_XSTRICT) $(CFLAGS_W_ERROR)
 ut_snappy$O c_odlbase$O q_parser$O v_parser$O: \
 	CFLAGS := $(filter-out $(CFLAGS_XSTRICT), $(CFLAGS))
-os_cond$O os_report$O os_time$O os_time_monotonic$O os_socket$O \
-	os_sharedmem$O ut_snappy$O c_odlbase$O q_parser$O v_parser$O \
-	u_cfData$O u_cfValue$O: \
+c_odlbase$O q_parser$O v_parser$O: \
 	CFLAGS := $(filter-out $(CFLAGS_W_ERROR), $(CFLAGS))
 ut_snappy$O: \
 	CFLAGS += $(CFLAGS_PERMISSIVE)
 
 ODLPP_PATH := $(OSPL_HOME)/src/database/odlpp
 ST1_PATH := $(ABSTR_PATH) $(ST1_MODULES:%=$(OSPL_HOME)/src/%)
-ifneq "$(OSPL_OUTER_HOME)" ""
-  ST1_PATH += $(OSPL_OUTER_HOME)/src/database/database
-endif
 vpath %.c $(addsuffix /code, $(ST1_PATH) $(ODLPP_PATH))
 vpath %.l $(addsuffix /code, $(ST1_PATH) $(ODLPP_PATH))
 vpath %.y $(addsuffix /code, $(ST1_PATH) $(ODLPP_PATH))

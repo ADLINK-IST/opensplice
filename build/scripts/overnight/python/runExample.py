@@ -3,7 +3,7 @@
 import os
 import sys
 import json
-from host import host 
+from host import host
 from Durability import durability
 from Example import Example
 from Lifecycle import lifecycle
@@ -23,7 +23,7 @@ def getLogger(debug):
     return examplelogger(debug)
 
 """
-   Get the host for this test run  
+   Get the host for this test run
 """
 def getHost():
     return host()
@@ -32,7 +32,7 @@ def getHost():
    Run all the examples - called if -a provided at the command line - extype will be ""
 """
 def runAllExamples(host, logger, extype):
-    print("Running all examples")
+    print "Running all examples"
     runExampleAll(host, logger, "BuiltInTopics", extype)
     runExampleAll(host, logger, "ContentFilteredTopic", extype)
     runExampleAll(host, logger, "HelloWorld", extype)
@@ -44,28 +44,33 @@ def runAllExamples(host, logger, extype):
     runExampleAll(host, logger, "RoundTrip", extype)
     runExampleAll(host, logger, "Throughput", extype)
     runExampleAll(host, logger, "Tutorial", extype)
+    runExampleAll(host, logger, "RMIClientServer", extype)
+    runExampleAll(host, logger, "RMIHelloWorld", extype)
+    runExampleAll(host, logger, "RMIPrinter", extype)
     runExampleAll(host, logger, "WaitSet", extype)
     runExampleAll(host, logger, "StreamsThroughput", extype)
     runExampleAll(host, logger, "FaceHelloWorld", extype)
     runExampleAll(host, logger, "protobuf", extype)
+    runExampleAll(host, logger, "Durability", extype)
+    runExampleAll(host, logger, "DBMSconnect", extype)
 
 """
    Run all versions of the specifed example e.g. standalone/corba, all languages
    as appropriate to the example
    called from runAllExamples when -a specified at the command line or
-   called from main if -s specified at the command line with args other than example name 
+   called from main if -s specified at the command line with args other than example name
    or all other args specified as "all"
 """
 def runExampleAll(host, logger, example, extype):
     """
-      Running the example expects that the OSPL_URI has been set - done via release.com/release.bat 
+      Running the example expects that the OSPL_URI has been set - done via release.com/release.bat
       or via scripts on overnight test runs
     """
     try:
         cur_uri = os.environ['OSPL_URI']
-    except Exception:
-        print("Exception obtaining OSPL_URI")
-        raise Exception (str(sys.exc_info()[0]))
+    except Exception as e:
+        print "Exception obtaining OSPL_URI"
+        raise Exception (str(e))
 
     expath = ""
     ex_uri = ""
@@ -75,7 +80,7 @@ def runExampleAll(host, logger, example, extype):
 
     """
        Durability has a separate python script due to the complexity of
-       the run i.e. it's not a single publisher/subscriber so set the 
+       the run i.e. it's not a single publisher/subscriber so set the
        expath here
     """
     if example == "Durability":
@@ -97,10 +102,10 @@ def runExampleAll(host, logger, example, extype):
        Get the example class - usually Example.py but may be non-standard
     """
     ex = getExample(host, logger, example)
-    print("Got the example - ", example)
+    print "Got the example - ", example
 
     try:
-        print("Running the " + example + " example on " + host.name)
+        print "Running the " + example + " example on " + host.name
 
         if example == "DBMSconnect" and ex.runDBMSConnect:
             ex.runExample()
@@ -109,15 +114,15 @@ def runExampleAll(host, logger, example, extype):
                 """
                   Run all types of this example e.g. standalone/corba, all languages
                 """
-                ex.runExampleAllTypes()         
+                ex.runExampleAllTypes()
             else:
                 """
                   Run type of example specified e.g. standalone OR corba, all languages
                 """
                 ex.runExampleAll(extype)
-                
-    except Exception:
-        print("Exception running " + str(sys.exc_info()[0]))
+
+    except Exception as e:
+        print "Exception running " + str(e)
 
     os.environ["OSPL_URI"] = cur_uri
 
@@ -126,7 +131,7 @@ def runExampleAll(host, logger, example, extype):
 """
 def getExample(host, logger, example):
 
-    print("Getting example for ", example)
+    print "Getting example for ", example
 
     if "RMI" in example:
         if "ClientServer" in example:
@@ -162,53 +167,53 @@ def getExample(host, logger, example):
 
 """
    Called when a single example has been requested at the command line
-   language can be c / cpp / cs / java / java5 / isocpp / isoccp2 or "all"
+   language can be c / cpp / cs / java / java5 / isoccp2 or "all"
    extype can be standalone / corba / "all" or ""
    types - meant for things like PingPong s / q / f etc - not actually implemented
 """
 def runExampleSingle(host, example, language, extype, types):
 
     ex = getExample(host, logger, example)
-    print("Got the example")
+    print "Got the example"
 
     if example == "DBMSconnect" and ex.runDBMSConnect:
             ex.runExample()
     elif language == "all" and extype == "":
         ex.runExampleAllTypes()
     elif language == "all" and extype == "all":
-        ex.runExampleAllTypes()        
+        ex.runExampleAllTypes()
     else:
-        print("Running example ", example, extype, types)
+        print "Running example ", example, extype, types
         if host.runExample(ex.expath, ex.name, language):
             ex.runExample(language, extype, types)
 
 def usage():
-    print("Usage :-")
-    print("-a to run all examples")
-    print("")
-    print("-f <file name> use to provide a list of examples to run (NOT YET IMPLEMENTED)")
-    print("      <file name> is name of file containing list of examples")
-    print("       in format <example> <language> <type> [types]")
-    print("         e.g. PingPong java standalone all")
-    print("         <example name> e.g. PingPong")
-    print("         <language> e.g. c cpp java java5 isocpp isocpp2 or all to run all languages")
-    print("         <type> e.g. standalone or corba where this exist")
-    print("         <types> e.g. \"m\", \"s\" etc in PingPong example \"all\" (for all types) - can be blank")
-    print(" ")
-    print("-s to run a single example")
-    print("       e.g. -s PingPong java standalone all")
-    print("            -s PingPong all corba")
-    print("            -s HelloWorld ")
-    print("            -s HelloWorld cpp standalone")
-    print("            -s HelloWorld all")
-    print("            -s HelloWorld all standalone")
-    print("            -s DBMSConnect all")
-    print("       e.g. -s RMIClientServer cpp")
-    print("            -s StreamsThroughout cpp")
-    print("            -s FaceHelloWorld java")
-    print(" ")
-    print(" If only the -s <Example Name> is specified then all versions of the example will be run")
-    print("If you want to run with debug (to get extra output) then use -ad, -sd or -fd")
+    print "Usage :-"
+    print "-a to run all examples"
+    print ""
+    print "-f <file name> use to provide a list of examples to run (NOT YET IMPLEMENTED)"
+    print "      <file name> is name of file containing list of examples"
+    print "       in format <example> <language> <type> [types]"
+    print "         e.g. PingPong java standalone all"
+    print "         <example name> e.g. PingPong"
+    print "         <language> e.g. c cpp java java5 isocpp2 or all to run all languages"
+    print "         <type> e.g. standalone or corba where this exist"
+    print "         <types> e.g. \"m\", \"s\" etc in PingPong example \"all\" (for all types) - can be blank"
+    print " "
+    print "-s to run a single example"
+    print "       e.g. -s PingPong java standalone all"
+    print "            -s PingPong all corba"
+    print "            -s HelloWorld "
+    print "            -s HelloWorld cpp standalone"
+    print "            -s HelloWorld all"
+    print "            -s HelloWorld all standalone"
+    print "            -s DBMSConnect all"
+    print "       e.g. -s RMIClientServer cpp "
+    print "            -s StreamsThroughout cpp "
+    print "            -s FaceHelloWorld java"
+    print " "
+    print " If only the -s <Example Name> is specified then all versions of the example will be run"
+    print "If you want to run with debug (to get extra output) then use -ad, -sd or -fd"
     exit()
 
 if __name__ == "__main__":
@@ -220,28 +225,28 @@ if __name__ == "__main__":
 
     runArg = sys.argv[1]
 
-    print("runArg is " + runArg)
+    print "runArg is " + runArg
 
     if runArg == "-a":
         run_all = 1
     elif runArg == "-s":
         run_single = 1
-    elif runArg == "-ad": 
+    elif runArg == "-ad":
         debug = 1
         run_all = 1
     elif runArg == "-sd":
         debug = 1
         run_single = 1
     elif runArg == "-h":
-        usage()  
+        usage()
     else:
         usage()
-              
-    try:   
+
+    try:
         host = getHost()
-    except Exception:
-        print("Unable to get host ")
-        raise Exception (str(sys.exc_info()[0]))
+    except Exception as e:
+        print "Unable to get host "
+        raise Exception (str(e))
 
     logger = getLogger(debug)
 
@@ -249,26 +254,26 @@ if __name__ == "__main__":
         with open ('hosts.json') as data_file:
             data = json.load(data_file)
 
-        print("Hostname is ", host.name.strip())
-        types = data[host.name.strip()]["examples"] 
+        print "Hostname is ", host.name.strip()
+        types = data[host.name.strip()]["examples"]
 
         if run_all:
             if types[0] == "All":
                 runAllExamples(host, logger, "")
             elif types[0] == "AllStandalone":
-                runAllExamples(host, logger, "standalone")            
+                runAllExamples(host, logger, "standalone")
             else:
-                print("TO BE IMPLEMENTED...")
+                print "TO BE IMPLEMENTED..."
 
         else:
-            print("The number of args is " + str(len(sys.argv)))
+            print "The number of args is " + str(len(sys.argv))
             if str(len(sys.argv)) < 3:
-                print("If not running all using -a you must provide -s <Example name> as a minimum")
+                print "If not running all using -a you must provide -s <Example name> as a minimum"
                 usage()
 
             if runArg == "-f":
-                print("NOT YET IMPLEMENTED")
-                #print("The file name is " + sys.argv[2])
+                print "NOT YET IMPLEMENTED"
+                #print "The file name is " + sys.argv[2]
             elif run_single:
 
                 if types[0] == "AllStandalone":
@@ -279,27 +284,27 @@ if __name__ == "__main__":
                 types = "all"
                 language = "all"
 
-                print("The example is " + sys.argv[2])
+                print "The example is " + sys.argv[2]
                 example = sys.argv[2]
 
                 if len(sys.argv) > 3:
-                    print("The language is " + sys.argv[3])
+                    print "The language is " + sys.argv[3]
                     language = sys.argv[3]
 
                     if len(sys.argv) > 4:
-                        print("The type is " + sys.argv[4])
+                        print "The type is " + sys.argv[4]
                         extype = sys.argv[4]
 
                         if len(sys.argv) == 6:
-                            print("The types is " + sys.argv[5])
-                            types = sys.argv[5]                
-                print("Calling runExampleSingle with ", host.name, example, language, extype, types)
+                            print "The types is " + sys.argv[5]
+                            types = sys.argv[5]
+                print "Calling runExampleSingle with ", host.name, example, language, extype, types
                 runExampleSingle(host, example, language, extype, types)
 
                 sys.stdout.flush()
 
-    except Exception:
-        print("Exception running examples ", str(sys.exc_info()[0]))
+    except Exception as e:
+        print "Exception running examples ", str(e)
         sys.stdout.flush()
     finally:
         logger.finalizeResults()

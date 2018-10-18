@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,9 +26,7 @@
 #include "u__usrClock.h"
 #include "u__user.h"
 
-/* User clock isn't a separate service anymore, to be compatible with old service name check both names
- * see ticket OSPL-7348
- */
+/* User clock isn't a separate service anymore, to be compatible with old service name check both names */
 #define U_CONF_USRCLOCK_SERVICENAME         "UserClock"
 #define U_CONF_USRCLOCK_SERVICENAME_OLD     "UserClockService"
 #define U_CONF_USRCLOCK_SERVICEMODULENAME   "UserClockModule"
@@ -123,6 +122,7 @@ u_usrClockInit (
     const char *domainY2038 = NULL;
     os_boolean y2038Ready = OS_FALSE;
     os_boolean domainY2038Ready = OS_FALSE;
+    os_boolean ignoreUserClockforReportStack=OS_FALSE;
 
     assert(config != NULL);
     dc = cf_element(cf_elementChild(config, CFG_DOMAIN));
@@ -134,8 +134,13 @@ u_usrClockInit (
                 OS_REPORT(OS_WARNING, "u_usrClockInit", 0,
                             "Found deprecated tag 'UserClockService' in configuration. Please use 'UserClock'");
             }
+
         }
         if (cfgUsrClockService != NULL) {
+            ignoreUserClockforReportStack = u_usrClockConfigElementAttributeStringToBoolean(cfgUsrClockService, "reporting", OS_TRUE);
+            if ( ignoreUserClockforReportStack == OS_FALSE) {
+                os_reportIgnoreUserClock();
+            }
             cfgUsrClockModule = cf_element(cf_elementChild(cfgUsrClockService, U_CONF_USRCLOCK_SERVICEMODULENAME));
             cfgUsrClockStart = cf_element(cf_elementChild(cfgUsrClockService, U_CONF_USRCLOCK_SERVICESTARTNAME));
             cfgUsrClockStop = cf_element(cf_elementChild(cfgUsrClockService, U_CONF_USRCLOCK_SERVICESTOPNAME));

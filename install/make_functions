@@ -8,19 +8,16 @@
 #
 update_copyright ()
 {
-    if [ "$2" != "" ]
-    then
-       expr=$2
-    else
-       expr=*
-    fi
-
-    if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
-    then
-        find $1 -name "${expr}" -type f  -exec sed -i '' "s/TO_YEAR/${THIS_YEAR}/g" '{}' \;
-    else
-        find $1 -name "${expr}" -type f  -exec sed -i "s/TO_YEAR/${THIS_YEAR}/g" '{}' \;
-    fi
+    upd_docs=`find $1 -type f -print0 | xargs -0 grep -l "to TO_YEAR"`
+    for d in $upd_docs
+    do
+        if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
+        then
+            sed -i '' "s/TO_YEAR/${THIS_YEAR}/g" $d
+        else
+            sed -i "s/TO_YEAR/${THIS_YEAR}/g" $d
+        fi
+    done
 }
 
 #
@@ -258,6 +255,12 @@ install_example()
             ${HDE_dir}/${EXAMPLE_ROOT_PATH}
     fi
 
+    if [ -f "${OSPL_HOME}/${EXAMPLE_ROOT_PATH}/pom.xml" ] && [ "${INCLUDE_API_DCPS_SAJ5}" = "yes" ]
+    then
+        install_ascii_file "${OSPL_HOME}/${EXAMPLE_ROOT_PATH}/pom.xml" \
+            ${HDE_dir}/${EXAMPLE_ROOT_PATH}
+    fi
+
     EXAMPLE_IDL_PATH=${EXAMPLE_ROOT_PATH}/idl
     mkdir -p ${HDE_dir}/${EXAMPLE_IDL_PATH}
 
@@ -317,8 +320,11 @@ install_example()
             mkdir -p ${HDE_dir}/${EXAMPLE_CPP_PATH}/src
             install_ascii_fileset "${OSPL_HOME}/${EXAMPLE_CPP_PATH}/src/*.cpp" \
                 ${HDE_dir}/${EXAMPLE_CPP_PATH}/src
-            install_ascii_fileset "${OSPL_HOME}/${EXAMPLE_CPP_PATH}/src/*.h" \
-                ${HDE_dir}/${EXAMPLE_CPP_PATH}/src
+            if ls ${OSPL_HOME}/${EXAMPLE_CPP_PATH}/src/*.h 1> /dev/null 2>&1
+            then
+                install_ascii_fileset "${OSPL_HOME}/${EXAMPLE_CPP_PATH}/src/*.h" \
+                    ${HDE_dir}/${EXAMPLE_CPP_PATH}/src
+            fi
 
             # standalone
             mkdir -p ${HDE_dir}/${EXAMPLE_CPP_PATH}/standalone
@@ -408,15 +414,7 @@ install_example()
             if [ -d ${OSPL_HOME}/${EXAMPLE_JAVA_PATH} ]
             then
                 mkdir -p ${HDE_dir}/${EXAMPLE_JAVA_PATH}
-
-                mkdir -p ${HDE_dir}/${EXAMPLE_JAVA_PATH}
-                install_ascii_fileset "${OSPL_HOME}/${EXAMPLE_JAVA_PATH}/*.java" \
-                    ${HDE_dir}/${EXAMPLE_JAVA_PATH}
-
-                # standalone
-                mkdir -p ${HDE_dir}/${EXAMPLE_JAVA_PATH}
-                install_ascii_fileset "${OSPL_HOME}/${EXAMPLE_JAVA_PATH}/*.mpc" \
-                    ${HDE_dir}/${EXAMPLE_JAVA_PATH}
+                install_git_files_dir_recursive "${OSPL_HOME}/${EXAMPLE_JAVA_PATH}" "${HDE_dir}/${EXAMPLE_JAVA_PATH}"
             fi
         fi
     fi
@@ -577,9 +575,19 @@ install_demos_target ()
 
             # DDS libs
 
-            for i in ddsi2 dcpsisocpp ddskernel spliced
+            for i in ddsi2 dcpsisocpp dcpsisocpp2 ddskernel durability spliced
             do
                 cp ${OSPL_HOME}/lib/${target}${source_env}/${i}.dll ${DEMOS_dir}/iShapes
+            done
+
+            # Durability plugins
+
+            for i in sqlite3-ospl leveldb-ospl
+            do
+                if [ -f ${OSPL_HOME}/lib/${target}${source_env}/${i}.dll ]
+                then
+                    cp ${OSPL_HOME}/lib/${target}${source_env}/${i}.dll ${DEMOS_dir}/iShapes
+                fi
             done
 
             # GUI toolkit
@@ -618,10 +626,20 @@ install_demos_target ()
 
             # DDS libs
 
-            for i in ddsi2 dcpsisocpp ddskernel spliced
+            for i in ddsi2 dcpsisocpp dcpsisocpp2 ddskernel durability spliced
             do
                 cp ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.${SFX} ${DEMOS_dir}/iShapes
                 strip -x ${DEMOS_dir}/iShapes/lib${i}.${SFX}
+            done
+
+            # Durability plugins
+
+            for i in sqlite3-ospl leveldb-ospl
+            do
+                if [ -f ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.${SFX} ]
+                then
+                    cp ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.${SFX} ${DEMOS_dir}/iShapes
+                fi
             done
 
             # GUI toolkit
@@ -647,6 +665,7 @@ install_demos_target ()
                chmod +x ${DEMOS_dir}/iShapes/${i}
             done
         fi
+        install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${DEMOS_dir}/iShapes" "ospl_metaconfig.xml"
     fi
 }
 
@@ -1627,23 +1646,13 @@ push_doxygen ()
     return 0
 }
 
-generate_javadoc_cj5()
-{
-    if command -v javadoc 2>/dev/null; then
-        CJ5=${OSPL_HOME}/src/api/dcps/java5/cj
-        make -C ${CJ5} doc
-        mkdir -p ${HDE_dir}/docs/java5
-        cp ${OSPL_HOME}/docs/java5/dcpscj5-doc.jar ${HDE_dir}/docs/java5
-    fi
-}
-
 generate_javadoc_saj5()
 {
     if command -v javadoc 2>/dev/null; then
         SAJ5=${OSPL_HOME}/src/api/dcps/java5/saj
         make -C ${SAJ5} doc
         mkdir -p ${HDE_dir}/docs/java5
-        cp ${OSPL_HOME}/docs/java5/dcpssaj5-doc.jar ${HDE_dir}/docs/java5
+        cp ${OSPL_HOME}/docs/java5/dcpssaj5-javadoc.jar ${HDE_dir}/docs/java5
     fi
 }
 
@@ -1655,6 +1664,7 @@ install_face_example()
     echo "*           Example '${EXAMPLE}' ... "
     if [ -d "${OSPL_HOME}/examples/face/${EXAMPLE}" ]
     then
+
         if [ "${INCLUDE_CXX}" = "yes" -a "${INCLUDE_API_DCPS_ISOCPP2}" = "yes" ]
         then
             echo "*             For isocpp2 ... "
@@ -1664,8 +1674,17 @@ install_face_example()
         if [ "${INCLUDE_JAVA}" = "yes" -a "${INCLUDE_API_DCPS_SAJ5}" = "yes" ]
         then
             echo "*             For java5 ... "
-            COMMON=1
-            install_git_files_dir_recursive "${OSPL_HOME}/examples/face/${EXAMPLE}/java" "${HDE_dir}/examples/face/${EXAMPLE}/java"
+            if [ -d "${OSPL_HOME}/examples/face/${EXAMPLE}/java" ]
+            then
+                COMMON=1
+                install_git_files_dir_recursive "${OSPL_HOME}/examples/face/${EXAMPLE}/java" "${HDE_dir}/examples/face/${EXAMPLE}/java"
+                install_ascii_file "${OSPL_HOME}/examples/face/pom.xml" \
+                       "${HDE_dir}/examples/face/"
+                install_ascii_file "${OSPL_HOME}/examples/face/${EXAMPLE}/pom.xml" \
+                       "${HDE_dir}/examples/face/${EXAMPLE}/"
+            else
+                echo "*         Java5 face example missing from '${OSPL_HOME}/examples/face/${EXAMPLE}/java'"
+            fi
         fi
         if [ "${COMMON}" -eq 1 ]
         then
@@ -1757,6 +1776,14 @@ install_hde_target ()
     echo "Ready"
 
     #
+    # Copy QoSProvider files
+    #
+    printf "*     Copy QoSProvider files "
+    cp ${OSPL_HOME}/etc/DDS_DefaultQoS.xml ${HDE_dir}/etc/
+    cp ${OSPL_HOME}/etc/DDS_QoSProfile.xsd ${HDE_dir}/etc/
+    echo "Ready"
+
+    #
     # Copy in the buildinfo if produced from the scoreboard
     #
     if [ -f "${OSPL_HOME}/etc/BUILDINFO" ]
@@ -1830,6 +1857,8 @@ install_hde_target ()
         then
             install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi.xml" "${HDE_dir}/etc/config"
             install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_statistics.xml" "${HDE_dir}/etc/config"
+            install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_1gbps.xml" "${HDE_dir}/etc/config"
+            install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_10gbps.xml" "${HDE_dir}/etc/config"
             # current requirement is the single process configuration with ddsi2 networking should be default:
             if [ "${target_os}" = "lynxos" ]
             then
@@ -1843,7 +1872,7 @@ install_hde_target ()
     fi
 
     # Copy meta-config file used for validating configuration files
-    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${HDE_dir}/etc" "metaconfig.xml"
+    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${HDE_dir}/etc" "ospl_metaconfig.xml"
 
     #
     # Copy library files
@@ -1862,6 +1891,8 @@ install_hde_target ()
         # remove cpp library
         rm -f ${HDE_dir}/lib/*ddscpp*
         rm -f ${HDE_dir}/lib/*ddslic*
+        rm -f ${HDE_dir}/lib/libthingsdk.so
+
     else
         echo "* ##    No target library files detected"
     fi
@@ -2065,6 +2096,7 @@ install_hde_target ()
     install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/vortex_os.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/database/database/include/[cq]_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/database/serialization/include/sd_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/kernel/include/v_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/user/include/u_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/utilities/include/ut_*.h" "${HDE_dir}/include/sys"
@@ -2253,16 +2285,6 @@ install_hde_target ()
             install_ascii_file "$OSPL_HOME/src/api/streams/ccpp/include/ccpp_StreamsUtils.h" "${HDE_dir}/include/streams/SACPP"
             install_ascii_file "$OSPL_HOME/src/api/streams/ccpp/include/ccpp_streams_if.h" "${HDE_dir}/include/streams/SACPP"
         fi
-
-        #
-        # Streams ISOCPP
-        #
-        if [ "${INCLUDE_API_STREAMS_ISOCPP}" = "yes" ]
-        then
-            echo "*           ISO C++"
-            install_git_files_dir_recursive "$OSPL_HOME/src/api/streams/isocpp/include/" "${HDE_dir}/include/streams/isocpp"
-        fi
-
         echo "*       Streams Ready"
     fi
 
@@ -2277,16 +2299,9 @@ install_hde_target ()
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp/include" ${HDE_dir}/include/dcps/C++/isocpp
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp/code"    ${HDE_dir}/custom_lib/isocpp
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/isocpp/*.mp?" "${HDE_dir}/custom_lib"
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/BuiltInTopics/isocpp" ${HDE_dir}/examples/dcps/BuiltInTopics/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/ContentFilteredTopic/isocpp" ${HDE_dir}/examples/dcps/ContentFilteredTopic/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/HelloWorld/isocpp" ${HDE_dir}/examples/dcps/HelloWorld/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Lifecycle/isocpp" ${HDE_dir}/examples/dcps/Lifecycle/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Listener/isocpp" ${HDE_dir}/examples/dcps/Listener/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Ownership/isocpp" ${HDE_dir}/examples/dcps/Ownership/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/QueryCondition/isocpp" ${HDE_dir}/examples/dcps/QueryCondition/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/RoundTrip/isocpp" ${HDE_dir}/examples/dcps/RoundTrip/isocpp
 
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/ContentFilteredTopic/idl" ${HDE_dir}/examples/dcps/ContentFilteredTopic/idl
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Durability/idl" ${HDE_dir}/examples/dcps/Durability/idl
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/HelloWorld/idl" ${HDE_dir}/examples/dcps/HelloWorld/idl
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Lifecycle/idl" ${HDE_dir}/examples/dcps/Lifecycle/idl
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Listener/idl" ${HDE_dir}/examples/dcps/Listener/idl
@@ -2297,10 +2312,6 @@ install_hde_target ()
         #
         # Streams C++ ISOCPP
         #
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Throughput/isocpp" ${HDE_dir}/examples/dcps/Throughput/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Tutorial/isocpp" ${HDE_dir}/examples/dcps/Tutorial/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/WaitSet/isocpp" ${HDE_dir}/examples/dcps/WaitSet/isocpp
-
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Throughput/idl" ${HDE_dir}/examples/dcps/Throughput/idl
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Tutorial/idl" ${HDE_dir}/examples/dcps/Tutorial/idl
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/WaitSet/idl" ${HDE_dir}/examples/dcps/WaitSet/idl
@@ -2316,36 +2327,7 @@ install_hde_target ()
         # We keep them in the repo to simplify bi-directional merges spec <-> wor implementation
         find ${HDE_dir}/include/dcps/C++/isocpp/spec -name "detail" -type d | xargs rm -rf 2>/dev/null
 
-        #The raw generated docs contain references to TFiles and DELEGATES this is not representitive
-        #of the public API and adds unessary complexity to the docs, the following script removes references
-        #to both Tfiles eg. TEntity, TDomainParticipant and references to DELEGATE templated parameters
-        if [ -n "${OSPL_DOCS}" ] && [ "${INCLUDE_API_DCPS_ISOCPP}" = "yes" -a "${OSPL_DOCS}" != "none" -a "${OSPL_DOCS}" != "ship" ]
-        then
-            if [ "${INCLUDE_API_STREAMS_ISOCPP}" = "yes" ]
-            then
-                python ${OSPL_HOME}/src/api/dcps/isocpp/predoxygen.py \
-                                -i ${HDE_dir}/include/streams/isocpp/spec \
-                                -i ${HDE_dir}/include/dcps/C++/isocpp/spec \
-                                -o ${HDE_dir}/include/dcps/C++/isocpp/doxy
-            else
-                python ${OSPL_HOME}/src/api/dcps/isocpp/predoxygen.py \
-                                -i ${HDE_dir}/include/dcps/C++/isocpp/spec \
-                                -o ${HDE_dir}/include/dcps/C++/isocpp/doxy
-
-            fi
-        fi
-        generate_doxygen isocpp ${OSPL_HOME}/etc/doxygen_isocpp_distrib.cfg
-        if [ $? -ne 0 ]
-        then
-            return 1
-        fi
         echo "*           isocpp  Ready"
-
-        if [ -n "${OSPL_DOCS}" ] && [ "${INCLUDE_API_DCPS_ISOCPP}" = "yes" -a "${OSPL_DOCS}" != "none" -a "${OSPL_DOCS}" != "ship" ]
-        then
-            #Delete the temporary file created by predoxygen.py script
-            rm -rv ${HDE_dir}/include/dcps/C++/isocpp/doxy
-        fi
     fi
 
     #
@@ -2355,13 +2337,20 @@ install_hde_target ()
     then
         echo "*           For isocpp2 ... "
         mkdir -p ${HDE_dir}/include/dcps/C++/isocpp2
+        mkdir -p ${HDE_dir}/include/dcps/C++/isocpp2/org/opensplice/dds/iot/
         mkdir -p ${HDE_dir}/custom_lib/isocpp2
+
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/isocpp2/bld/${SPLICE_TARGET}/*.h*" \
+            "${HDE_dir}/include/dcps/C++/isocpp2/org/opensplice/dds/iot"
+
+
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp2/include" ${HDE_dir}/include/dcps/C++/isocpp2
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp2/code"    ${HDE_dir}/custom_lib/isocpp2
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/isocpp2/*.mp?" "${HDE_dir}/custom_lib"
 
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/BuiltInTopics/isocpp2" ${HDE_dir}/examples/dcps/BuiltInTopics/isocpp2
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/ContentFilteredTopic/isocpp2" ${HDE_dir}/examples/dcps/ContentFilteredTopic/isocpp2
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Durability/isocpp2" ${HDE_dir}/examples/dcps/Durability/isocpp2
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/HelloWorld/isocpp2" ${HDE_dir}/examples/dcps/HelloWorld/isocpp2
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Lifecycle/isocpp2" ${HDE_dir}/examples/dcps/Lifecycle/isocpp2
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Listener/isocpp2" ${HDE_dir}/examples/dcps/Listener/isocpp2
@@ -2465,6 +2454,40 @@ install_hde_target ()
         echo "*         C Ready"
     fi
 
+    #
+    # DCPS PYTHON
+    #
+    echo "*         Copying Python API source assembly"
+    mkdir -p ${HDE_dir}/tools/python/
+    install_dir "${OSPL_HOME}/src/api/dcps/python/bld/${SPLICE_TARGET}/src" "${HDE_dir}" "tools/python/src"
+    echo "*         Copying Python API docs"
+    install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/python/docs" "${HDE_dir}/tools/python/docs"
+    echo "*         Copying Python API examples"
+    install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/python/examples" "${HDE_dir}/tools/python/examples"
+    if [ "${INCLUDE_API_DCPS_PYTHON}" = "yes" ]
+    then
+        echo "*         Copying Python API binary package"
+        install_dir "${OSPL_HOME}/src/api/dcps/python/bld/${SPLICE_TARGET}/dist" "${HDE_dir}" "tools/python"
+    fi
+
+	#
+	# DCPS NODEJS
+	#
+	if [ "${INCLUDE_API_DCPS_NODEJS}" = "yes" ]
+    then
+		echo "*     Copying Node.js API package"
+		mkdir -p ${HDE_dir}/tools/nodejs
+		vortexdds_file_path=`find ${OSPL_HOME}/src/api/dcps/nodejs/bld/${SPLICE_TARGET} -name "vortexdds-*.tgz"`
+		vortexdds_file=`basename $vortexdds_file_path`
+		install_bin_file "${OSPL_HOME}/src/api/dcps/nodejs/bld/${SPLICE_TARGET}" "${HDE_dir}" "tools/nodejs" "${vortexdds_file}"
+		echo "*         Copying Node.js API docs"
+		mkdir -p ${HDE_dir}/docs/nodejs
+		cp -r "${OSPL_HOME}/src/api/dcps/nodejs/out" "${HDE_dir}/docs/nodejs/html"
+		echo "*		Copying Node.js API examples"
+		install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/nodejs/examples" "${HDE_dir}/tools/nodejs/examples"
+		echo "*     Node.js ready"
+    fi
+
     if [[ "${INCLUDE_API_DCPS_C99}" = "yes"  || "${OSPL_DOCS}" = "update" ]]
     then
         generate_doxygen c99 ${OSPL_HOME}/etc/doxygen_c99_api.cfg
@@ -2474,7 +2497,6 @@ install_hde_target ()
         fi
         echo "*           C99 doxygen documentation  Ready"
     fi
-
 
     if [[ "${INCLUDE_API_DCPS_SAJ5}" = "yes"  || "${OSPL_DOCS}" = "update" ]]
     then
@@ -2504,15 +2526,6 @@ install_hde_target ()
         fi
 
     fi
-
-    if [ "${INCLUDE_JAVA}" = "yes" -a "${INCLUDE_API_DCPS_CJ5}" = "yes" ]
-    then
-        echo "*         For Java5 with CORBA cohabitation"
-        generate_javadoc_cj5
-    fi
-    echo "*       DCPS Ready"
-    echo "*     Language specific interface files Ready"
-
     #
     # Copy custom CJ
     #
@@ -2603,6 +2616,10 @@ install_hde_target ()
 
     install_ascii_fileset "${OSPL_HOME}/examples/*.mwc" \
             ${HDE_dir}/examples
+    if [ "${INCLUDE_JAVA}" = "yes" -a "${INCLUDE_API_DCPS_SAJ5}" = "yes" ]
+    then
+        install_ascii_file "${OSPL_HOME}/examples/pom.xml" "${HDE_dir}/examples/"
+    fi
 
     if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
     then
@@ -2636,6 +2653,7 @@ install_hde_target ()
         # each Language/corba option is installed only if the target platform is compatible.
 
         install_example "ContentFilteredTopic"
+        install_example "Durability"
         install_example "HelloWorld"
         install_example "Lifecycle"
         install_example "Listener"
@@ -2651,6 +2669,10 @@ install_hde_target ()
 
         install_ascii_file "${OSPL_HOME}/examples/dcps/README.html" \
                    ${HDE_dir}/examples/dcps
+        if [ "${INCLUDE_JAVA}" = "yes" -a "${INCLUDE_API_DCPS_SAJ5}" = "yes" ]
+        then
+            install_ascii_file "${OSPL_HOME}/examples/dcps/pom.xml" "${HDE_dir}/examples/dcps"
+        fi
 
         install_git_files_dir_recursive "${OSPL_HOME}/examples/utilities" "${HDE_dir}/examples/utilities"
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/RoundTrip" \
@@ -2669,17 +2691,6 @@ install_hde_target ()
                 echo "*         Removing Standalone C++ Streams Throughput example"
                 rm -r ${HDE_dir}/examples/streams/Throughput/cpp
             fi
-
-            # OSPL-7252 : ISOCPP Streams example is excluded from all builds until a proper ISOCPP2 implementation is available
-            #if [ "${INCLUDE_API_STREAMS_ISOCPP}" = "no" ]
-            #then
-                echo "*         Removing ISO C++ Streams Throughput example"
-                rm -r ${HDE_dir}/examples/streams/Throughput/isocpp
-            #fi
-
-        # delete the 'detail' directories from the ISO C++ streams spec headers - these are examples to vendors
-        find ${HDE_dir}/include/streams/isocpp/spec -name "detail" -type d | xargs rm -rf 2>/dev/null
-
             echo "*         Ready"
         fi
     fi
@@ -2732,14 +2743,6 @@ install_hde_target ()
             rm -rf ${HDE_dir}/examples/dcps/PingPong/cpp/corba
     fi
 
-    if [ "${INCLUDE_CXX}" != "yes" -o "${INCLUDE_API_DCPS_ISOCPP}" != "yes" ]
-    then
-        rm -rf ${HDE_dir}/examples/dcps/RoundTrip/isocpp
-        rm -rf ${HDE_dir}/examples/dcps/Tutorial/isocpp
-        rm -rf ${HDE_dir}/examples/dcps/Throughput/isocpp
-        rm -rf ${HDE_dir}/examples/streams/Throughput/isocpp
-    fi
-
     if [ "${INCLUDE_CXX}" != "yes" -o "${INCLUDE_API_DCPS_ISOCPP2}" != "yes" ]
     then
         rm -rf ${HDE_dir}/examples/dcps/RoundTrip/isocpp2
@@ -2780,10 +2783,7 @@ install_hde_target ()
         rm -rf ${HDE_dir}/examples/dcps/WaitSet/java5
         rm -rf ${HDE_dir}/examples/dcps/PingPong/java5
     fi
-    if [ "${INCLUDE_JAVA}" != "yes" -o "${INCLUDE_API_DCPS_CJ5}" != "yes" ]
-    then
-        rm -rf ${HDE_dir}/examples/dcps/PingPong/java5/corba
-    fi
+
     # RoundTrip example doesn't seem to work on Kernel Mode VxWorks at the moment.
     if [ "${VXWORKS_KERNEL_MODE}" = "yes" ]
     then
@@ -2840,24 +2840,17 @@ install_hde_target ()
         if [ "${INCLUDE_JAVA}" = "yes" -a "${INCLUDE_API_DCPS_SAJ5}" = "yes" ]
         then
             echo "*               Java5"
-            mkdir -p ${HDE_dir}/examples/protobuf/java5
-            mkdir -p ${HDE_dir}/examples/protobuf/java5/src
-            mkdir -p ${HDE_dir}/examples/protobuf/java5/standalone
-
-            install_ascii_fileset "${OSPL_HOME}/examples/protobuf/java5/src/*.java" \
-               " ${HDE_dir}/examples/protobuf/java5/src"
+            install_ascii_fileset "${OSPL_HOME}/examples/protobuf/pom.xml" \
+                "${HDE_dir}/examples/protobuf/"
+            install_git_files_dir_recursive "${OSPL_HOME}/examples/protobuf/java5" "${HDE_dir}/examples/protobuf/java5"
 
             if [ "${SOURCE_TARGET_SHORT}" = "win" ]
             then
-               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/standalone/RUN.bat \
-                      ${HDE_dir}/examples/protobuf/java5/standalone
-               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/standalone/BUILD.bat \
-                      ${HDE_dir}/examples/protobuf/java5/standalone
+               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/RUN.bat \
+                      ${HDE_dir}/examples/protobuf/java5/
             else
-               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/standalone/RUN \
-                      ${HDE_dir}/examples/protobuf/java5/standalone
-               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/standalone/BUILD \
-                      ${HDE_dir}/examples/protobuf/java5/standalone
+               install_ascii_file ${OSPL_HOME}/examples/protobuf/java5/RUN \
+                      ${HDE_dir}/examples/protobuf/java5/
             fi
             echo "*               ready"
         fi
@@ -3120,36 +3113,7 @@ install_hde_target ()
     rm -rf ${HDE_dir}/docs/makefile
 
     install_ascii_file "${OSPL_HOME}/index.html" "${HDE_dir}"
-    # remove documentation for components that are not installed
-    if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes" ]
-    then
-        rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_Java.pdf
-    fi
-    if [ "${INCLUDE_API_DCPS_SAC}" != "yes" ]
-    then
-        rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_C.pdf
-    fi
-    if [ "${INCLUDE_API_DCPS_SACPP}" != "yes" -a "${INCLUDE_API_DCPS_CCPP}" != "yes" ]
-    then
-        rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_CPP.pdf
-    fi
-    if [ "${INCLUDE_TOOLS_NODEMON}" != "yes" ]
-    then
-        rm -rf ${HDE_dir}/docs/pdf/OpenSplice_NodeMonitorGuide.pdf
-    fi
-    if [ "${INCLUDE_TOOLS_TUNER}" != "yes" ]
-    then
-        rm -rf ${HDE_dir}/docs/pdf/OpenSplice_TunerGuide.pdf
-    fi
-    if [ "${INCLUDE_SERVICES_RNR}" != "yes" ]
-    then
-        rm -rf "$HDE_dir/docs/pdf/OpenSplice_RnRService.pdf"
-        rm -rf "$HDE_dir/docs/pdf/OpenSplice_RnRManagerGuide.pdf"
-    fi
-    if [ "$INCLUDE_API_STREAMS" != "yes" ]
-    then
-        rm -rf "$HDE_dir/docs/pdf/OpenSplice_StreamsAPIReference.pdf"
-    fi
+
     echo "Ready"
 
     #
@@ -3178,7 +3142,6 @@ install_hde_target ()
     if [ -d  ${HDE_dir}/tools ]
     then
         update_copyright ${HDE_dir}/tools
-        sed -i '' "s/TO_YEAR/$THIS_YEAR/g" ${HDE_dir}/tools/wireshark-plugins/packet-ospl.above_1_10
     fi
 
     return 0
@@ -3205,6 +3168,8 @@ install_rts_target ()
         then
             install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi.xml" "${RTS_dir}/etc/config"
             install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_statistics.xml" "${RTS_dir}/etc/config"
+            install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_1gbps.xml" "${RTS_dir}/etc/config"
+            install_configuration_file "${OSPL_HOME}/etc/ospl_sp_ddsi_10gbps.xml" "${RTS_dir}/etc/config"
             # current requirement is the single process configuration with ddsi2 networking should be default:
             if [ "${target_os}" = "lynxos" ]
             then
@@ -3218,7 +3183,7 @@ install_rts_target ()
     fi
 
     # Copy meta-config file used for validating configuration files
-    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${RTS_dir}/etc" "metaconfig.xml"
+    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${RTS_dir}/etc" "ospl_metaconfig.xml"
 
     #
     # Copy in the buildinfo if produced from the scoreboard
@@ -3267,6 +3232,7 @@ install_rts_target ()
         rm -f ${RTS_dir}/lib/*ddscpp*
         rm -f ${RTS_dir}/lib/*ddslic*
         rm -f ${RTS_dir}/lib/lib*.a
+        rm -f ${RTS_dir}/lib/libthingsdk.so
         # remove all windows .lib files
         if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
         then
@@ -3489,5 +3455,14 @@ install_rts_target ()
     if [ -d  ${RTS_dir}/tools ]
     then
         update_copyright ${RTS_dir}/tools
+    fi
+
+    #
+    # DCPS PYTHON
+    #
+    if [ "${INCLUDE_API_DCPS_PYTHON}" = "yes" ]
+    then
+        echo "*         Copying Python API binary package"
+        install_dir "${OSPL_HOME}/src/api/dcps/python/bld/${SPLICE_TARGET}/dist" "${RTS_dir}" "tools/python"
     fi
 }

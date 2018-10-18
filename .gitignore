@@ -9,6 +9,7 @@ jar
 .classpath
 .cproject
 .csettings
+.pydevproject
 *~
 *.[ao]
 /TAGS
@@ -112,6 +113,7 @@ src/api/dcps/java/saj/manifest/
 install/VC
 install/HDE
 install/RTS
+install/DRE
 install/DEMOS
 install/STE
 etc/idlpp/SACPP
@@ -137,8 +139,11 @@ release_info/RELEASE
 install/*.HDE*.opensplice.xml
 install/*.RTS*.opensplice.xml
 install/*.STE*.opensplice.xml
+install/*.DRE*.opensplice.xml
+src/services/ddsi2/code
 examples/tmp/demo/ishapes-java5/generated
 etc/protobuf/SAJ5/DescriptorProtos.java
+etc/protobuf
 src/tools/cm/dataadapter/code/org/opensplice/cmdataadapter/protobuf/ProtobufDataAdapterImpl.java
 src/tools/cm/dataadapter/manifest
 src/tools/protobuf/generated
@@ -161,3 +166,10 @@ examples/protobuf/java5/standalone/generated/
 src/api/streams/sacpp/include/ccpp_streams_if.h
 src/api/streams/sacpp/include/streams_dcps.h
 src/api/streams/sacpp/include/streams_dcpsSplDcps.h
+src/api/dcps/sacs/code/DDS/AssemblyAttributes.cs
+src/api/dcps/java/cj_y2038_ready/manifest
+src/api/face/java/manifest
+examples/**/target
+examples/**/*.jar
+src/api/dcps/java**/target
+src/api/dcps/java**/*.jar

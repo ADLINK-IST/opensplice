@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,12 +21,12 @@
 
 v_copyin_result
 __DDS_Time_t__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::core::Time *from,
     struct _DDS_Time_t *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
-    (void) base;
+    (void) dbType;
 
     to->sec = (c_long)from->sec();
     to->nanosec = (c_ulong)from->nanosec();
@@ -34,12 +35,12 @@ __DDS_Time_t__copyIn(
 
 v_copyin_result
 __DDS_SchedulingClassQosPolicy__copyIn(
-    c_base base,
+    c_type dbType,
     const DDS::SchedulingClassQosPolicy *from,
     struct _DDS_SchedulingClassQosPolicy *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
-    OS_UNUSED_ARG(base);
+    OS_UNUSED_ARG(dbType);
 
     if(((c_long)(*from) >= 0) && ((c_long)(*from) < 3) ){
         to->kind = (enum _DDS_SchedulingClassQosPolicyKind)(*from);
@@ -52,12 +53,12 @@ __DDS_SchedulingClassQosPolicy__copyIn(
 
 v_copyin_result
 __DDS_SchedulingPriorityQosPolicy__copyIn(
-    c_base base,
+    c_type dbType,
     const DDS::SchedulingPriorityQosPolicy *from,
     struct _DDS_SchedulingPriorityQosPolicy *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
-    OS_UNUSED_ARG(base);
+    OS_UNUSED_ARG(dbType);
 
     if((c_long)(*from) >= 0 && (c_long)(*from) < 2 ){
         to->kind = (enum _DDS_SchedulingPriorityQosPolicyKind)(*from);
@@ -70,7 +71,7 @@ __DDS_SchedulingPriorityQosPolicy__copyIn(
 
 v_copyin_result
 __DDS_SchedulingQosPolicy__copyIn(
-    c_base base,
+    c_type dbType,
     const DDS::SchedulingQosPolicy *from,
     struct _DDS_SchedulingQosPolicy *to)
 {
@@ -78,11 +79,11 @@ __DDS_SchedulingQosPolicy__copyIn(
 
     if(V_COPYIN_RESULT_IS_OK(result)){
         org::opensplice::core::policy::SchedulingKind::Type scheduling_kind = from->scheduling_kind();
-        result = __DDS_SchedulingClassQosPolicy__copyIn(base, &scheduling_kind, &to->scheduling_class);
+        result = __DDS_SchedulingClassQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &scheduling_kind, &to->scheduling_class);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
         org::opensplice::core::policy::SchedulingPriorityKind::Type priority_kind = from->scheduling_priority_kind();
-        result = __DDS_SchedulingPriorityQosPolicy__copyIn(base, &priority_kind, &to->scheduling_priority_kind);
+        result = __DDS_SchedulingPriorityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &priority_kind, &to->scheduling_priority_kind);
     }
     to->scheduling_priority = (c_long)from->scheduling_priority();
     return result;
@@ -90,231 +91,231 @@ __DDS_SchedulingQosPolicy__copyIn(
 
 v_copyin_result
 __DDS_DomainParticipantQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::domain::qos::DomainParticipantQos *from,
     struct _DDS_DomainParticipantQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_UserDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::UserData>(), &to->user_data);
+        result = __DDS_UserDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::UserData>(), &to->user_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_EntityFactoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
+        result = __DDS_EntityFactoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_SchedulingQosPolicy__copyIn(base, &(*from)->policy<org::opensplice::core::policy::WatchdogScheduling>(), &to->watchdog_scheduling);
+        result = __DDS_SchedulingQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &(*from)->policy<org::opensplice::core::policy::WatchdogScheduling>(), &to->watchdog_scheduling);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_SchedulingQosPolicy__copyIn(base, &(*from)->policy<org::opensplice::core::policy::ListenerScheduling>(), &to->listener_scheduling);
+        result = __DDS_SchedulingQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &(*from)->policy<org::opensplice::core::policy::ListenerScheduling>(), &to->listener_scheduling);
     }
     return result;
 }
 
 v_copyin_result
 __DDS_TopicQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::topic::qos::TopicQos *from,
     struct _DDS_TopicQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_TopicDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::TopicData>(), &to->topic_data);
+        result = __DDS_TopicDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::TopicData>(), &to->topic_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DurabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Durability>(), &to->durability);
+        result = __DDS_DurabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::Durability>(), &to->durability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DurabilityServiceQosPolicy__copyIn(base, &from->policy<dds::core::policy::DurabilityService>(), &to->durability_service);
+        result = __DDS_DurabilityServiceQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &from->policy<dds::core::policy::DurabilityService>(), &to->durability_service);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DeadlineQosPolicy__copyIn(base, &from->policy<dds::core::policy::Deadline>(), &to->deadline);
+        result = __DDS_DeadlineQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &from->policy<dds::core::policy::Deadline>(), &to->deadline);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LatencyBudgetQosPolicy__copyIn(base, &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
+        result = __DDS_LatencyBudgetQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 4)), &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LivelinessQosPolicy__copyIn(base, &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
+        result = __DDS_LivelinessQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 5)), &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ReliabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Reliability>(), &to->reliability);
+        result = __DDS_ReliabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 6)), &from->policy<dds::core::policy::Reliability>(), &to->reliability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DestinationOrderQosPolicy__copyIn(base, &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
+        result = __DDS_DestinationOrderQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 7)), &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_HistoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::History>(), &to->history);
+        result = __DDS_HistoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 8)), &from->policy<dds::core::policy::History>(), &to->history);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ResourceLimitsQosPolicy__copyIn(base, &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
+        result = __DDS_ResourceLimitsQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 9)), &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_TransportPriorityQosPolicy__copyIn(base, &from->policy<dds::core::policy::TransportPriority>(), &to->transport_priority);
+        result = __DDS_TransportPriorityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 10)), &from->policy<dds::core::policy::TransportPriority>(), &to->transport_priority);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LifespanQosPolicy__copyIn(base, &from->policy<dds::core::policy::Lifespan>(), &to->lifespan);
+        result = __DDS_LifespanQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 11)), &from->policy<dds::core::policy::Lifespan>(), &to->lifespan);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_OwnershipQosPolicy__copyIn(base, &from->policy<dds::core::policy::Ownership>(), &to->ownership);
+        result = __DDS_OwnershipQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 12)), &from->policy<dds::core::policy::Ownership>(), &to->ownership);
     }
     return result;
 }
 
 v_copyin_result
 __DDS_DataWriterQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::pub::qos::DataWriterQos *from,
     struct _DDS_DataWriterQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DurabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Durability>(), &to->durability);
+        result = __DDS_DurabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::Durability>(), &to->durability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DeadlineQosPolicy__copyIn(base, &from->policy<dds::core::policy::Deadline>(), &to->deadline);
+        result = __DDS_DeadlineQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::Deadline>(), &to->deadline);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LatencyBudgetQosPolicy__copyIn(base, &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
+        result = __DDS_LatencyBudgetQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LivelinessQosPolicy__copyIn(base, &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
+        result = __DDS_LivelinessQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ReliabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Reliability>(), &to->reliability);
+        result = __DDS_ReliabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 4)), &from->policy<dds::core::policy::Reliability>(), &to->reliability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DestinationOrderQosPolicy__copyIn(base, &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
+        result = __DDS_DestinationOrderQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 5)), &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_HistoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::History>(), &to->history);
+        result = __DDS_HistoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 6)), &from->policy<dds::core::policy::History>(), &to->history);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ResourceLimitsQosPolicy__copyIn(base, &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
+        result = __DDS_ResourceLimitsQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 7)), &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_TransportPriorityQosPolicy__copyIn(base, &from->policy<dds::core::policy::TransportPriority>(), &to->transport_priority);
+        result = __DDS_TransportPriorityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 8)), &from->policy<dds::core::policy::TransportPriority>(), &to->transport_priority);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LifespanQosPolicy__copyIn(base, &from->policy<dds::core::policy::Lifespan>(), &to->lifespan);
+        result = __DDS_LifespanQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 9)), &from->policy<dds::core::policy::Lifespan>(), &to->lifespan);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_UserDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::UserData>(), &to->user_data);
+        result = __DDS_UserDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 10)), &from->policy<dds::core::policy::UserData>(), &to->user_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_OwnershipQosPolicy__copyIn(base, &from->policy<dds::core::policy::Ownership>(), &to->ownership);
+        result = __DDS_OwnershipQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 11)), &from->policy<dds::core::policy::Ownership>(), &to->ownership);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_OwnershipStrengthQosPolicy__copyIn(base, &from->policy<dds::core::policy::OwnershipStrength>(), &to->ownership_strength);
+        result = __DDS_OwnershipStrengthQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 12)), &from->policy<dds::core::policy::OwnershipStrength>(), &to->ownership_strength);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_WriterDataLifecycleQosPolicy__copyIn(base, &from->policy<dds::core::policy::WriterDataLifecycle>(), &to->writer_data_lifecycle);
+        result = __DDS_WriterDataLifecycleQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 13)), &from->policy<dds::core::policy::WriterDataLifecycle>(), &to->writer_data_lifecycle);
     }
     return result;
 }
 
 v_copyin_result
 __DDS_PublisherQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::pub::qos::PublisherQos *from,
     struct _DDS_PublisherQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_PresentationQosPolicy__copyIn(base, &from->policy<dds::core::policy::Presentation>(), &to->presentation);
+        result = __DDS_PresentationQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::Presentation>(), &to->presentation);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_PartitionQosPolicy__copyIn(base, &from->policy<dds::core::policy::Partition>(), &to->partition);
+        result = __DDS_PartitionQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::Partition>(), &to->partition);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_GroupDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::GroupData>(), &to->group_data);
+        result = __DDS_GroupDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &from->policy<dds::core::policy::GroupData>(), &to->group_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_EntityFactoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
+        result = __DDS_EntityFactoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
     }
     return result;
 }
 
 v_copyin_result
 __DDS_DataReaderQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::sub::qos::DataReaderQos *from,
     struct _DDS_DataReaderQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DurabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Durability>(), &to->durability);
+        result = __DDS_DurabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::Durability>(), &to->durability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DeadlineQosPolicy__copyIn(base, &from->policy<dds::core::policy::Deadline>(), &to->deadline);
+        result = __DDS_DeadlineQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::Deadline>(), &to->deadline);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LatencyBudgetQosPolicy__copyIn(base, &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
+        result = __DDS_LatencyBudgetQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &from->policy<dds::core::policy::LatencyBudget>(), &to->latency_budget);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_LivelinessQosPolicy__copyIn(base, &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
+        result = __DDS_LivelinessQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &from->policy<dds::core::policy::Liveliness>(), &to->liveliness);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ReliabilityQosPolicy__copyIn(base, &from->policy<dds::core::policy::Reliability>(), &to->reliability);
+        result = __DDS_ReliabilityQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 4)), &from->policy<dds::core::policy::Reliability>(), &to->reliability);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_DestinationOrderQosPolicy__copyIn(base, &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
+        result = __DDS_DestinationOrderQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 5)), &from->policy<dds::core::policy::DestinationOrder>(), &to->destination_order);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_HistoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::History>(), &to->history);
+        result = __DDS_HistoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 6)), &from->policy<dds::core::policy::History>(), &to->history);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ResourceLimitsQosPolicy__copyIn(base, &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
+        result = __DDS_ResourceLimitsQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 7)), &from->policy<dds::core::policy::ResourceLimits>(), &to->resource_limits);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_UserDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::UserData>(), &to->user_data);
+        result = __DDS_UserDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 8)), &from->policy<dds::core::policy::UserData>(), &to->user_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_OwnershipQosPolicy__copyIn(base, &from->policy<dds::core::policy::Ownership>(), &to->ownership);
+        result = __DDS_OwnershipQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 9)), &from->policy<dds::core::policy::Ownership>(), &to->ownership);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_TimeBasedFilterQosPolicy__copyIn(base, &from->policy<dds::core::policy::TimeBasedFilter>(), &to->time_based_filter);
+        result = __DDS_TimeBasedFilterQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 10)), &from->policy<dds::core::policy::TimeBasedFilter>(), &to->time_based_filter);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ReaderDataLifecycleQosPolicy__copyIn(base, &from->policy<dds::core::policy::ReaderDataLifecycle>(), &to->reader_data_lifecycle);
+        result = __DDS_ReaderDataLifecycleQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 11)), &from->policy<dds::core::policy::ReaderDataLifecycle>(), &to->reader_data_lifecycle);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_SubscriptionKeyQosPolicy__copyIn(base, &from->policy<org::opensplice::core::policy::SubscriptionKey>(), &to->subscription_keys);
+        result = __DDS_SubscriptionKeyQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 12)), &from->policy<org::opensplice::core::policy::SubscriptionKey>(), &to->subscription_keys);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ReaderLifespanQosPolicy__copyIn(base, &from->policy<org::opensplice::core::policy::ReaderLifespan>(), &to->reader_lifespan);
+        result = __DDS_ReaderLifespanQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 13)), &from->policy<org::opensplice::core::policy::ReaderLifespan>(), &to->reader_lifespan);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ShareQosPolicy__copyIn(base, &from->policy<org::opensplice::core::policy::Share>(), &to->share);
+        result = __DDS_ShareQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 14)), &from->policy<org::opensplice::core::policy::Share>(), &to->share);
     }
     return result;
 }
 
 v_copyin_result
 __DDS_SubscriberQos__copyIn(
-    c_base base,
+    c_type dbType,
     const dds::sub::qos::SubscriberQos *from,
     struct _DDS_SubscriberQos *to)
 {
     v_copyin_result result = V_COPYIN_RESULT_OK;
 
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_PresentationQosPolicy__copyIn(base, &from->policy<dds::core::policy::Presentation>(), &to->presentation);
+        result = __DDS_PresentationQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 0)), &from->policy<dds::core::policy::Presentation>(), &to->presentation);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_PartitionQosPolicy__copyIn(base, &from->policy<dds::core::policy::Partition>(), &to->partition);
+        result = __DDS_PartitionQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 1)), &from->policy<dds::core::policy::Partition>(), &to->partition);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_GroupDataQosPolicy__copyIn(base, &from->policy<dds::core::policy::GroupData>(), &to->group_data);
+        result = __DDS_GroupDataQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 2)), &from->policy<dds::core::policy::GroupData>(), &to->group_data);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_EntityFactoryQosPolicy__copyIn(base, &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
+        result = __DDS_EntityFactoryQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 3)), &from->policy<dds::core::policy::EntityFactory>(), &to->entity_factory);
     }
     if(V_COPYIN_RESULT_IS_OK(result)){
-        result = __DDS_ShareQosPolicy__copyIn(base, &from->policy<org::opensplice::core::policy::Share>(), &to->share);
+        result = __DDS_ShareQosPolicy__copyIn(c_memberType(c_structureMember(dbType, 4)), &from->policy<org::opensplice::core::policy::Share>(), &to->share);
     }
     return result;
 }

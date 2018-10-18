@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -136,15 +137,6 @@ v_serviceStateGetKind(
 OS_API const c_char *
 v_serviceStateGetName(
     v_serviceState serviceState);
-
-/**
- * \todo remove this function and replace it in the garbage collector by
- * a call to change the state.
- */
-OS_API void
-v_serviceStateNotify(
-    v_serviceState serviceState,
-    v_serviceStateKind kind);
 
 #undef OS_API
 

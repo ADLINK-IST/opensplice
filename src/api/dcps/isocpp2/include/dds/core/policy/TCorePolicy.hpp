@@ -681,9 +681,10 @@ public:
     /**
      * Creates a WriterDataLifecycle QoS instance
      *
-     * @param autodispose_unregistered_instances ownership strength
+     * @param autodispose_unregistered_instances Specifies the behavior of the DataWriter
+     * with regards to the lifecycle of the data-instances it manages.
      */
-    explicit TWriterDataLifecycle(bool autodispose_unregistered_instances = false);
+    explicit TWriterDataLifecycle(bool autodispose_unregistered_instances = true);
 
     /**
      * Copies a WriterDataLifecycle QoS instance

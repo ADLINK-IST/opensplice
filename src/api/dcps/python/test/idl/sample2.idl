@@ -1,0 +1,30 @@
+const long length = 3;
+typedef long my_long;
+
+module basic{
+
+	struct Inner{
+		short long1;
+		double double1;
+		//double double2;
+		//long long2;
+		//long long3;
+		long array1[length];
+		string str1;
+	};
+	
+	typedef Inner inner_struct;
+		
+	module test{
+	
+		struct Type1{
+			char long1;
+			//string str1;
+			Sequence<inner_struct> inner1;
+			my_long mylong1;			
+		};
+		
+		#pragma keylist Type1 long1
+	};
+};
+		

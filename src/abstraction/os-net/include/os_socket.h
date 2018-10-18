@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -299,6 +300,11 @@ os_sockSetNonBlocking(
     os_boolean nonblock);
 
 OS_API os_result
+os_sockSetDontFrag(
+    os_socket s,
+    os_boolean dontFrag);
+
+OS_API os_result
 os_sockFree(
     os_socket s);
 
@@ -309,6 +315,17 @@ os_sockSelect(
     fd_set *writefds,
     fd_set *errorfds,
     os_duration timeout);
+
+
+OS_API void
+os_sock_set(
+    os_socket sock,
+    fd_set *fdsetp);
+
+OS_API int
+os_sock_isset(
+    os_socket handle,
+    fd_set *fdsetp);
 
 
 /* docced in implementation file */

@@ -48,9 +48,8 @@ master_doc = u'index'
 # General information about the project.
 project = u'OpenSplice GPB Tutorial'
 
-#copyright = u'2015, PrismTech'
 this_year = time.strftime( '%Y' )
-copyright = u'{y}, PrismTech'.format( y = this_year )
+copyright = u'{y}, ADLINK Technology Limited'.format( y = this_year )
 print 'Copyright string is:', copyright
 
 # The version info for the project you're documenting, acts as replacement for
@@ -269,7 +268,7 @@ latex_elements = {
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'OpenSpliceGPBTutorial', u'OpenSplice GPB Tutorial', [u'PrismTech'], 1)]
+man_pages = [('index', 'OpenSpliceGPBTutorial', u'OpenSplice GPB Tutorial', [u'ADLINK Technology Limited'], 1)]
 # * NOT TESTED
 
 

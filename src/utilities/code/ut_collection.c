@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -314,20 +315,21 @@ ut_bagNew (
 
 #if 1
 /* The original interface has type (os_equality (*) (void *, void *,
-   void *)), but the compare functions all do treat the first two
-   parameters as const.
-
-   Currently os_equality is defined s.t. OS_LT < 0, OS_EQ = 0 and
-   OS_GT > 0, which matches the requirements and usually allows using
-   a ut_compareElementsFunc as if it were a "C standard" compare
-   function returning an int.
-
-   To avoid nasty surprises, we check two things at compile time: that
-   the enum constants indeed satisfy this requirement, and that the
-   sizeof of the return type matches.
-
-   The wrapper is sitting pretty here in case we run into a platform
-   on which the constraints don't hold. */
+ * void *)), but the compare functions all do treat the first two
+ * parameters as const.
+ *
+ * Currently os_equality is defined s.t. OS_LT < 0, OS_EQ = 0 and
+ * OS_GT > 0, which matches the requirements and usually allows using
+ * a ut_compareElementsFunc as if it were a "C standard" compare
+ * function returning an int.
+ *
+ * To avoid nasty surprises, we check two things at compile time: that
+ * the enum constants indeed satisfy this requirement, and that the
+ * sizeof of the return type matches.
+ *
+ * The wrapper is sitting pretty here in case we run into a platform
+ * on which the constraints don't hold.
+ */
 struct tableCmp_constraints {
     char require_LT_lt_0[-1+2*((int) OS_LT < 0)];
     char require_EQ_eq_0[-1+2*((int) OS_EQ == 0)];

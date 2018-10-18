@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -34,6 +35,7 @@
 #include "v_messageQos.h"
 #include "v__policy.h"
 
+#include "vortex_os.h"
 #include "os_report.h"
 #include "os_abstract.h"
 
@@ -95,7 +97,8 @@ v_groupInstanceCheckCount(
 
     /* now check registrations and unregisterMessages lists.
      * first do cross check! messages in registrations may not
-     * occur in unregisterMessages. */
+     * occur in unregisterMessages.
+     */
     inconsistent = 0;
     reg = instance->registrations;
     while (reg != NULL) {
@@ -111,7 +114,8 @@ v_groupInstanceCheckCount(
     }
     /* check for duplicates in both lists.
      * Only check if next item is a duplicate as this is the most likely
-     * place for a duplicate. */
+     * place for a duplicate.
+     */
     reg = instance->registrations;
     while (reg != NULL) {
         unreg = reg->next;
@@ -218,39 +222,32 @@ v_groupAllocInstance(
     assert(_this);
     assert(C_TYPECHECK(_this,v_group));
 
-    if (_this->cachedInstance == NULL) {
-        instance = v_groupInstance(c_new(_this->instanceType));
-        if (instance) {
-            _ABORT_(c_refCount(instance) == 1);
-            kernel = v_objectKernel(_this);
-            v_object(instance)->kernel = kernel;
-            v_objectKind(instance) = K_GROUPINSTANCE;
-            instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
-            instance->group = (c_voidp)_this;
-            if (instance->targetCache == NULL) {
-                OS_REPORT(OS_ERROR,
-                          "v_groupAllocInstance",V_RESULT_INTERNAL_ERROR,
-                          "Failed to allocate targetCache.");
-                assert(FALSE);
-                c_free(instance);
-                instance = NULL;
-            }
-        } else {
-            OS_REPORT(OS_FATAL,
-                      "v_groupAllocInstance",V_RESULT_INTERNAL_ERROR,
-                      "Failed to allocate group instance.");
+    instance = v_groupInstance(c_new(_this->instanceType));
+    if (instance) {
+        _ABORT_(c_refCount(instance) == 1);
+        kernel = v_objectKernel(_this);
+        v_object(instance)->kernel = kernel;
+        v_objectKind(instance) = K_GROUPINSTANCE;
+        instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
+        instance->group = (c_voidp)_this;
+        if (instance->targetCache == NULL) {
+            OS_REPORT(OS_ERROR, "v_groupAllocInstance",
+                      V_RESULT_INTERNAL_ERROR, "Failed to allocate targetCache.");
             assert(FALSE);
+            c_free(instance);
+            instance = NULL;
         }
     } else {
-        instance = _this->cachedInstance;
-        _ABORT_(c_refCount(instance) == 1);
-        _this->cachedInstance = NULL;
-        assert(instance->group == (c_voidp)_this);
+        OS_REPORT(OS_FATAL, "v_groupAllocInstance",
+                  V_RESULT_INTERNAL_ERROR, "Failed to allocate group instance.");
+        assert(FALSE);
     }
     _ABORT_(c_refCount(instance->targetCache) == 1);
 
     return instance;
 }
+
+#define v_groupInstanceGID(o) ((v_groupInstanceGID)(o))
 
 void
 v_groupInstanceInit (
@@ -264,18 +261,20 @@ v_groupInstanceInit (
 
     topicQos = v_topicGetQos(v_groupTopic(_this->group));
 
-    /*
-     * copy the key value of the message into the newly created instance.
-     */
+    /* copy the key value of the message into the newly created instance. */
+    if (v_groupGIDKey(_this->group)) {
+        v_groupInstanceGID(_this)->gid = message->writerInstanceGID;
+    }
     messageKeyList = v_topicMessageKeyList(v_groupTopic(_this->group));
     instanceKeyList = v_groupKeyList(_this->group);
-    nrOfKeys = c_arraySize(messageKeyList);
-    assert(nrOfKeys == c_arraySize(instanceKeyList));
-    for (i=0;i<nrOfKeys;i++) {
-        c_fieldCopy(messageKeyList[i],message,
-                    instanceKeyList[i],_this);
+    if (instanceKeyList) {
+        nrOfKeys = c_arraySize(messageKeyList);
+        assert(nrOfKeys == c_arraySize(instanceKeyList));
+        for (i=0;i<nrOfKeys;i++) {
+            c_fieldCopy(messageKeyList[i],message, instanceKeyList[i],_this);
+        }
     }
-    c_free(instanceKeyList);
+
 
     _this->epoch                = OS_TIMEE_ZERO;
     _this->registrations        = NULL;
@@ -315,11 +314,6 @@ void
 v_groupInstanceFree(
     v_groupInstance instance)
 {
-    v_group group;
-    v_groupSample sample;
-    c_array instanceKeyList;
-    c_ulong i, nrOfKeys;
-
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
@@ -334,32 +328,7 @@ v_groupInstanceFree(
 
         /* make sure it is removed from any purge list! */
         instance->epoch = OS_TIMEE_ZERO;
-
         v_groupCacheDeinit(instance->targetCache);
-        group = v_group(instance->group);
-        if (group->cachedInstance == NULL) {
-            /*
-               Explicit free the sample when this v_groupInstance is
-               cached. Because otherwise the reference is overwritten
-               when the v_groupInstance is re-used.
-               Note: the sample itself is also cached in its own module.
-            */
-            sample = v_groupInstanceHead(instance);
-            c_free(sample);
-            v_groupInstanceSetHead(instance,NULL);
-            /*
-               Also free the key values for this instance, otherwise the
-               reference(s) is/are overwritten when the v_groupInstance
-               is re-used.
-            */
-            instanceKeyList = v_groupKeyList(instance->group);
-            nrOfKeys = c_arraySize(instanceKeyList);
-            for (i = 0; i < nrOfKeys; i++) {
-                c_fieldFreeRef(instanceKeyList[i], instance);
-            }
-            c_free(instanceKeyList);
-            group->cachedInstance = c_keep(instance);
-        }
     }
     c_free(instance);
 }
@@ -382,22 +351,16 @@ v_groupInstanceDisconnect(
 
 static c_equality
 v_registrationMessageCompare (
-    v_registration _this,
-    v_message msg)
+    v_message msg,
+    v_registration _this)
 {
     C_STRUCT(v_message) template;
-
-    /* If the v_registration is an implicit UNREGISTER, then any message may re-register. */
-    if (_this->state & L_IMPLICIT) {
-        assert(_this->state & L_UNREGISTER);
-        return C_LT;
-    }
 
     template.writeTime = _this->writeTime;
     template.writerGID = _this->writerGID;
     template.sequenceNumber = _this->sequenceNumber;
     ((v_node)&template)->nodeState = _this->state & L_IMPLICIT;
-    return v_messageCompare(&template, msg);
+    return v_messageCompare(msg, &template);
 }
 
 v_writeResult
@@ -436,8 +399,7 @@ v_groupInstanceRegister (
         os_duration delay = OS_DURATION_INIT(5, 0);
         os_timeE purgeTime = os_timeESub(os_timeEGet(), delay);
 
-        /*
-         * Keep track of the address of the current registration to be able to
+        /* Keep track of the address of the current registration to be able to
          * redirect the content of the previous item in the registration list
          * when removing the current registration.
          */
@@ -445,20 +407,28 @@ v_groupInstanceRegister (
         while (*registration != NULL && found == NULL) {
             if (v_gidCompare((*registration)->writerGID, message->writerGID) == C_EQ) {
                 found = *registration;
+                if (v_messageStateTest(message,L_UNREGISTER)) {
+                    /* The writers state is already unregisterd so for now ignore unregister message */
+                    return V_WRITE_SUCCESS;
+                }
                 /* Pull registration from list by redirecting the contents of the
-                 * previous registration pointer to the next registration. */
+                 * previous registration pointer to the next registration.
+                 */
                 *registration = found->next;
                 found->next = NULL;
             } else {
                 /* Temporary implementation. Final solution must be more efficient.
                  * e.g. by walking from oldest to newer and use of an active garbage collector.
-                 * The purgeDelay should also be specified via a configuration parameter. */
+                 * The purgeDelay should also be specified via a configuration parameter.
+                 */
                 if (os_timeECompare((*registration)->unregisterTime, purgeTime) == OS_LESS) {
                     found = *registration;
                     /* Pull registration from list by redirecting the contents of the
-                     * previous registration pointer to the next registration. */
+                     * previous registration pointer to the next registration.
+                     */
                     *registration = found->next;
                     found->next = NULL;
+                    v_transactionUnlink(found->transaction);
                     c_free(found);
                     found = NULL;
                 } else {
@@ -494,7 +464,7 @@ v_groupInstanceRegister (
                 /* Registrations are never IMPLICIT, not even when created by IMPLICIT samples. */
                 v_stateClear(found->state, L_IMPLICIT);
                 v_stateSet(found->state, L_REGISTER);
-                found->transaction = NULL; /* Only unregistrations have a transaction ref */
+                found->transaction = NULL; /* Only unregistrations have a transaction backref */
                 found->next = instance->registrations;
                 instance->registrations = found;
                 result = V_WRITE_REGISTERED;
@@ -516,20 +486,22 @@ v_groupInstanceRegister (
              * do miss a generation count increase!
              */
             if (v_messageStateTest(message, L_REGISTER)) {
-                if (v_registrationMessageCompare(found, message) == C_LT)
-                {
+                c_equality eq = v_registrationMessageCompare(message, found);
+                if (eq != C_LT) {
                     c_free(found->qos);
                     found->qos = c_keep(message->qos);
                     found->writeTime = message->writeTime;
                     found->sequenceNumber = message->sequenceNumber;
                     found->state = v_messageState(message);
-                    c_free(found->transaction);
+                    v_transactionUnlink(found->transaction);
                     found->transaction = NULL;
                 }
             }
             result = V_WRITE_SUCCESS;
         }
     } else if (!v_messageStateTest(message, L_UNREGISTER)){
+        c_equality eq;
+
         /* check writeTime of unregister message and given message in case
            the destination order policy is BY_SOURCE_TIMESTAMP.
            In that case If given message is older, return WRITE_SUCCESS,
@@ -546,12 +518,16 @@ v_groupInstanceRegister (
             bySource = (topicQos->orderby.v.kind == V_ORDERBY_SOURCETIME) ? TRUE : FALSE;
             c_free (topicQos);
         }
-        if ( (bySource == TRUE) &&
-             v_registrationMessageCompare(found, message) == C_GT) {
+        if (bySource) {
+            eq = v_registrationMessageCompare(message, found);
+        } else {
+            eq = C_GT;
+        }
+        if (eq != C_GT) {
             /* reinsert as unregister message */
             found->unregisterTime = message->allocTime;
             found->next = instance->unregistrations;
-            c_free(found->transaction);
+            v_transactionUnlink(found->transaction);
             found->transaction = NULL;
             instance->unregistrations = found;
             result = V_WRITE_UNREGISTERED;
@@ -563,7 +539,7 @@ v_groupInstanceRegister (
             found->state = v_messageState(message);
             /* Registrations are never IMPLICIT, not even when created by IMPLICIT samples. */
             v_stateClear(found->state, L_IMPLICIT);
-            c_free(found->transaction);
+            v_transactionUnlink(found->transaction);
             found->transaction = NULL;
             found->next = instance->registrations;
             instance->registrations = found;
@@ -597,8 +573,7 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
     v_groupSample sampleFound;
 
     CHECK_REGISTRATIONS(instance);
-    /*
-     * First find the corresponding unregister message, if available.
+    /* First find the corresponding unregister message, if available.
      * Keep track of the address of the current unregistration to be able to
      * redirect the content of the previous item in the unregistration list
      * when removing the current unregistration.
@@ -620,7 +595,8 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
     if (unregistrationFound != NULL)
     {
         /* Now figure out if the instance contains any messages
-         * from this gid */
+         * from this gid
+         */
         sample = v_groupSample(instance->oldest);
         sampleFound = NULL;
         while (sample != NULL && sampleFound == NULL)
@@ -640,9 +616,11 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
             /* No sample found for this gid so remove the corresponding
              * unregistration message. Pull the registration from the list
              * by redirecting the contents of the previous registration pointer
-             * to the next registration. */
+             * to the next registration.
+             */
             *unregistration = unregistrationFound->next;
             unregistrationFound->next = NULL;
+            v_transactionUnlink(unregistrationFound->transaction);
             c_free(unregistrationFound);
         }
     }
@@ -660,7 +638,6 @@ v_groupInstanceUnregister (
     v_registration *registration;
     v_registration found;
     c_equality equality;
-    v_transaction txn;
 
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
@@ -673,8 +650,7 @@ v_groupInstanceUnregister (
         v_stateClear(instance->state, L_MARK);
     }
 
-    /*
-     * Keep track of the address of the current registration to be able to
+    /* Keep track of the address of the current registration to be able to
      * redirect the content of the previous item in the registration list
      * when removing the current registration.
      */
@@ -698,16 +674,22 @@ v_groupInstanceUnregister (
             registration = &((*registration)->next);
         }
     }
-    if (found != NULL)
-    {
+    if (found != NULL) {
         /* If resolved registration is older than unregister message, or if topic is ordered BY_RECEPTION,
          * then process the unregister. Otherwise skip this unregister since it belongs to an older
          * generation than the current registration.
          */
-        if (v_registrationMessageCompare(found, message) == C_LT ||
-                v_topicQosRef(v_groupInstanceGroup(instance)->topic)->orderby.v.kind == V_ORDERBY_RECEPTIONTIME)
-
-        {
+        if (v_topicQosRef(v_groupInstanceGroup(instance)->topic)->orderby.v.kind == V_ORDERBY_RECEPTIONTIME) {
+            equality = C_GT;
+        } else {
+            equality = v_registrationMessageCompare(message, found);
+        }
+        if (equality != C_GT) {
+            /* reinsert registration */
+            result = V_WRITE_SUCCESS;
+            found->next = instance->registrations;
+            instance->registrations = found;
+        } else {
             /* If message is currently owning instance, reset owner */
             equality = v_gidCompare (message->writerGID, instance->owner.gid);
             if (equality == C_EQ)
@@ -724,20 +706,13 @@ v_groupInstanceUnregister (
             found->state = v_messageState(message);
             /* Use the txn variable to ensure that when txn == transaction the
              * transaction is not accidentally freed. */
-            txn = found->transaction;
-            found->transaction = c_keep(transaction);
-            c_free(txn);
+            v_transactionLink(transaction);
+            v_transactionUnlink(found->transaction);
+            found->transaction = transaction;
             /* Insert the registration into the unregistration list. */
             found->next = instance->unregistrations;
             instance->unregistrations = found;
             result = V_WRITE_UNREGISTERED;
-        }
-        else
-        {
-            /* reinsert registration */
-            result = V_WRITE_SUCCESS;
-            found->next = instance->registrations;
-            instance->registrations = found;
         }
     }
     else
@@ -835,21 +810,15 @@ v_groupInstanceCreateMessage(
     {
         group = v_groupInstanceGroup(_this);
         message = v_topicMessageNew(v_groupTopic(group));
-        if (message != NULL)
-        {
+        if (message != NULL) {
             messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
             instanceKeyList = v_groupKeyList(group);
-            assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
             nrOfKeys = c_arraySize(messageKeyList);
-            for (i=0;i<nrOfKeys;i++)
-            {
-                c_fieldCopy(instanceKeyList[i],_this,
-                            messageKeyList[i],message);
+            assert(c_arraySize(instanceKeyList) == nrOfKeys);
+            for (i=0;i<nrOfKeys;i++) {
+                c_fieldCopy(instanceKeyList[i],_this, messageKeyList[i],message);
             }
-            c_free(instanceKeyList);
-        }
-        else
-        {
+        } else {
             OS_REPORT(OS_ERROR,
                       "v_groupInstance",0,
                       "v_groupInstanceCreateMessage(_this=0x%"PA_PRIxADDR")\n"
@@ -959,7 +928,6 @@ static v_writeResult
 insertSample(
     v_groupInstance instance,
     v_message message,
-    c_bool isTransactionFlush,
     v_transaction transaction)
 {
     v_groupSample sample;
@@ -973,8 +941,14 @@ insertSample(
     group = v_group(instance->group);
     topicQos = v_topicQosRef(group->topic);
 
+    if (v_messageStateTest(message,L_REGISTER) ||
+        (v_messageStateTest(message,L_UNREGISTER) && !v_messageStateTest(message,L_DISPOSED)))
+    {
+        /* Do not insert pure register or unregister messages */
+        return V_WRITE_SUCCESS;
+    }
     if (v_stateTest(instance->state, L_EMPTY)) {
-        if (!isTransactionFlush) {
+        if (!transaction) {
             resourcesClaimed = v_groupInstanceClaimResource(instance, message);
         }
         if (resourcesClaimed) {
@@ -1090,12 +1064,13 @@ insertSample(
                 if (oldest == ptr) {
                     ptr = NULL;
                 }
+                v_transactionUnlink(oldest->transaction);
                 c_free(oldest);
                 instance->oldest = sample;
             }
         }
 
-        if (!isTransactionFlush) {
+        if (!transaction) {
             resourcesClaimed = v_groupInstanceClaimResource(instance, message);
         }
         if (resourcesClaimed) {
@@ -1147,7 +1122,9 @@ insertSample(
 
     sample->instance = instance;
     state = v_nodeState(message);
-    sample->transaction = c_keep(transaction);
+
+    sample->transaction = transaction;
+    v_transactionLink(sample->transaction);
 
     if (v_stateTest(state,L_DISPOSED)) {
         instance->count++;
@@ -1175,91 +1152,37 @@ insertSample(
     return V_WRITE_SUCCESS;
 }
 
-static v_groupActionKind
-determineStreamAction(
-        v_groupInstance instance,
-        os_timeE now,
-        v_groupActionKind intendedAction)
-{
-    os_duration delay;
-    v_topicQos qos;
-    v_groupActionKind resultingAction = intendedAction;
-
-    /* if the instance state is NOWRITERS and DISPOSED then and only
-     * then add the instance to the purge admin.
-     */
-    qos = v_topicQosRef(v_group(instance->group)->topic);
-    if (v_groupInstanceStateTest(instance, L_DISPOSED | L_NOWRITERS)) {
-        delay = qos->durabilityService.v.service_cleanup_delay;
-
-        /* If service_cleanup_delay is zero, remove all samples and
-         * insert instance in emptyList.
-         */
-        if (OS_DURATION_ISZERO(delay)) {
-            if (!v_groupInstanceStateTest(instance,L_EMPTY)) {
-                v_groupInstancePurge(instance);
-            }
-            assert(v_groupInstanceStateTest(instance,L_EMPTY));
-           _empty_purgeList_insert(instance, now);
-           resultingAction = V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE;
-        }
-        /* Else if service_cleanup_delay is finite, insert instance
-         * in disposed list.
-         */
-        else if (!OS_DURATION_ISINFINITE(delay)) {
-            _dispose_purgeList_insert(instance, now);
-            resultingAction = V_GROUP_ACTION_UNREGISTER;
-        }
-        /* If service_cleanup_delay is infinite, do nothing. */
-        else {
-            resultingAction = V_GROUP_ACTION_UNREGISTER;
-        }
-    }
-    return resultingAction;
-}
-
-static void processStreamActions(
+v_ownershipResult
+v_groupInstanceTestOwnership(
     v_groupInstance instance,
-    v_message message,
-    c_bool isTransactionFlush,
-    c_bool stream)
+    v_message message)
 {
-    v_groupActionKind actionKind;
-    v_group group = v_group(instance->group);
-    os_timeE now = os_timeEGet();
-
-    if (v_messageStateTest(message,L_WRITE)) {
-        actionKind = V_GROUP_ACTION_WRITE;
-    } else if (v_messageStateTest(message,L_DISPOSED)) {
-        actionKind = V_GROUP_ACTION_DISPOSE;
-    } else if (v_messageStateTest(message,L_UNREGISTER)) {
-        actionKind = V_GROUP_ACTION_UNREGISTER;
-    } else if (v_messageStateTest(message,L_REGISTER)) {
-        actionKind = V_GROUP_ACTION_REGISTER;
+    struct v_owner ownership;
+    /* Before NULL check on QoS was done here. Instead we now check the writer
+     * GID for validity and require QoS to be set because QoS is only allowed
+     * to be NULL in case of a "dispose all", in which case the writer GID must
+     * be NIL as well.
+     */
+    if (v_gidIsValid (message->writerGID)) {
+        assert (message->qos != NULL);
+        ownership.exclusive = v_messageQos_isExclusive(message->qos);
+        ownership.strength = v_messageQos_getOwnershipStrength(message->qos);
     } else {
-        actionKind = V_GROUP_ACTION_WRITE;
+        assert (message->qos == NULL);
+        ownership.exclusive = 0;
+        ownership.strength = 0;
     }
-    actionKind = determineStreamAction(instance, now, actionKind);
-    /* Only forward to stream when sample is inserted in groupInstance and
-     * when streaming is required */
-    if(stream == TRUE && !isTransactionFlush) {
-        forwardMessageToStreams(group, instance, message, now, actionKind);
-    }
+    ownership.gid = message->writerGID;
+    return v_determineOwnershipByStrength(&instance->owner, &ownership, v_messageState(message));
 }
 
 v_writeResult
 v_groupInstanceInsert(
     v_groupInstance instance,
-    v_message message,
-    c_bool isTransactionFlush,
-    v_transaction transaction,
-    c_bool stream)
+    v_message message)
 {
     v_group group;
-    v_writeResult result;
-    struct v_owner ownership;
-    c_bool complete = FALSE;
-    v_transactionAdmin transactionAdmin;
+    v_writeResult result = V_WRITE_SUCCESS;
 
     assert(message != NULL);
     assert(instance != NULL);
@@ -1271,124 +1194,38 @@ v_groupInstanceInsert(
     CHECK_REGISTRATIONS(instance);
 
     group = v_group(instance->group);
-
-    if (v_messageStateTest(message,L_UNREGISTER) ||
-        v_messageStateTest(message,L_REGISTER)) {
-        if (!isTransactionFlush && v_message_isTransaction(message)) {
-            transactionAdmin = v__groupGetTransactionAdmin(group);
-            if (transactionAdmin) {
-                (void)v_transactionAdminInsertMessage(transactionAdmin, message, v_instance(instance), FALSE, &complete);
-                if (complete) {
-                    if (!v_kernelGroupTransactionLockAccess(v_objectKernel(group))) {
-                        v_kernelGroupTransactionFlush(v_objectKernel(group), transactionAdmin);
-                        v_kernelGroupTransactionUnlockAccess(v_objectKernel(group));
-                    }
-                }
-                c_free(transactionAdmin);
-            }
-        }
-        /* If this is a mixed L_DISPOSED | L_UNREGISTER message, inserted because of a disconnect,
-         * then not only remove the registration, but also process and store the DISPOSE sample.
-         */
-        if (v_messageStateTest(message,L_DISPOSED)) {
-            result = insertSample(instance, message, FALSE, NULL);
-        } else {
-            result = V_WRITE_SUCCESS;
-        }
-        processStreamActions(instance, message, isTransactionFlush, stream);
-        return result;
-    }
-
-    if (v_messageStateTest(message,L_MARK)) {
-        v_stateClear(instance->state, L_MARK);
-    }
-
-    if (v_messageStateTest(message,L_MARK)) {
-        v_stateClear(instance->state, L_MARK);
-    }
-
-    /* Exclusive ownership handling */
-    /* Before NULL check on QoS was done here. Instead we now check the writer
-       GID for validity and require QoS to be set because QoS is only allowed
-       to be NULL in case of a "dispose all", in which case the writer GID must
-       be NIL as well. */
-    if (v_gidIsValid (message->writerGID)) {
-        assert (message->qos != NULL);
-        ownership.exclusive = v_messageQos_isExclusive(message->qos);
-        ownership.strength = v_messageQos_getOwnershipStrength(message->qos);
+    if (v_message_isTransaction(message)) {
+        v_groupInsertTransactionMessage(group, message, instance);
     } else {
-        assert (message->qos == NULL);
-        ownership.exclusive = 0;
-        ownership.strength = 0;
+        result = insertSample(instance, message, NULL);
     }
-
-    ownership.gid = message->writerGID;
-
-    switch (v_determineOwnershipByStrength (
-        &instance->owner, &ownership, TRUE))
-    {
-        case V_OWNERSHIP_INCOMPATIBLE_QOS:
-        case V_OWNERSHIP_NOT_OWNER:
-            if (!isTransactionFlush && v_message_isTransaction(message)) {
-                transactionAdmin = v__groupGetTransactionAdmin(group);
-                if (transactionAdmin) {
-                    (void)v_transactionAdminInsertMessage(transactionAdmin, message, NULL, FALSE, &complete);
-                    if (complete) {
-                        if (!v_kernelGroupTransactionLockAccess(v_objectKernel(group))) {
-                            v_kernelGroupTransactionFlush(v_objectKernel(group), transactionAdmin);
-                            v_kernelGroupTransactionUnlockAccess(v_objectKernel(group));
-                        }
-                    }
-                    c_free(transactionAdmin);
-                }
-            }
-            return V_WRITE_SUCCESS_NOT_STORED;
-            break;
-        default:
-            break;
+    if (v_messageStateTest(message,L_MARK)) {
+        v_stateClear(instance->state, L_MARK);
     }
+    return result;
+}
 
-    if (!isTransactionFlush && v_message_isTransaction(message)) {
-        /* If the sample belongs to an unfinished transaction, then insert it into the
-         * transactional administration. Since this is a newly arriving sample, it still
-         * needs to make a resource claim.
-         */
-        v_topicQos topicQos = v_topicGetQos(v_groupTopic(group));
-        transactionAdmin = v__groupGetTransactionAdmin(group);
-        if (transactionAdmin) {
-            result = v_transactionAdminInsertMessage(transactionAdmin, message, v_instance(instance), FALSE, &complete);
-            if (complete) {
-                if (!v_kernelGroupTransactionLockAccess(v_objectKernel(group))) {
-                    v_kernelGroupTransactionFlush(v_objectKernel(group), transactionAdmin);
-                    v_kernelGroupTransactionUnlockAccess(v_objectKernel(group));
-                }
-            }
-            c_free(transactionAdmin);
-        } else {
-            if (v_groupInstanceClaimResource(instance, message)) {
-                result = V_WRITE_SUCCESS;
-            } else {
-                result = V_WRITE_REJECTED;
-            };
-        }
-        if (result != V_WRITE_REJECTED) {
-            processStreamActions(instance, message, isTransactionFlush, stream);
-        }
-        c_free(topicQos);
+v_writeResult
+v_groupInstanceFlushTransaction(
+    v_groupInstance instance,
+    v_message message,
+    v_transaction transaction)
+{
+    v_writeResult result;
 
-        return result;
+    assert(message != NULL);
+    assert(instance != NULL);
+    assert(C_TYPECHECK(message,v_message));
+    assert(C_TYPECHECK(instance,v_groupInstance));
+    assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
+    assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
+    CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
+
+    result = insertSample(instance, message, transaction);
+    if (v_messageStateTest(message,L_MARK)) {
+        v_stateClear(instance->state, L_MARK);
     }
-
-    /* Insert the sample into the history. Since this is a newly arriving
-     * sample, it still needs to make a resource claim.
-     */
-    result = insertSample(instance, message, isTransactionFlush, transaction);
-
-    if (result == V_WRITE_SUCCESS)
-    {
-        processStreamActions(instance, message, isTransactionFlush, stream);
-    }
-
     return result;
 }
 
@@ -1428,6 +1265,7 @@ v_groupInstanceRemove (
             instance->count--;
         }
         CHECK_COUNT(instance);
+        v_transactionUnlink(sample->transaction);
         c_free(sample);
         if (instance->oldest == NULL) {
             v_stateSet(instance->state, L_EMPTY);
@@ -1589,8 +1427,7 @@ groupInstanceCreateMessageEOT(
     return message;
 }
 
-/*
- * TODO: The code snippet below can be removed when v_groupUnregisterByGidTemplate
+/* TODO: The code snippet below can be removed when v_groupUnregisterByGidTemplate
  * starts using the part in the #if 0 clause instead of in its #else clause as
  * indicated by scdds2805.
  */
@@ -1643,8 +1480,8 @@ v_groupInstancecleanup(
         }
         if (transaction) {
             v_stateSet(v_nodeState(unregMsg), L_TRANSACTION);
-            unregMsg->sequenceNumber = C_MAX_ULONG;
         }
+        unregMsg->sequenceNumber = C_MAX_ULONG;
         unregMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
         unregMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
         unregMsg->writeTime = timestamp;
@@ -1708,6 +1545,36 @@ v_groupInstanceUnregisterByTime (
             }
         }
         registration = registration->next;
+    }
+}
+
+void
+v_groupInstanceKeyToString(
+    v_groupInstance _this,
+    char *keystr,
+    size_t keystr_size)
+{
+    v_group group;
+    c_ulong i, nrOfKeys;
+    size_t pos = 0;
+
+    assert (keystr_size >= 4); /* for ...\0 */
+
+    group = v_groupInstanceGroup(_this);
+    nrOfKeys = c_arraySize(group->keyList);
+    for (i = 0; i < nrOfKeys; i++) {
+        c_value v = c_fieldValue(group->keyList[i], _this);
+        char *vimg = c_valueImage(v);
+        int n = snprintf(keystr + pos, keystr_size - pos, "%s%s", (i == 0) ? "" : ";", vimg);
+        c_valueFreeRef(v);
+        os_free(vimg);
+        if (n > 0) { pos += (size_t)n; } else { break; }
+    }
+    if (i < nrOfKeys || pos >= keystr_size) {
+        if (pos >= keystr_size - 4) {
+            pos = keystr_size - 4;
+        }
+        strcpy(keystr + pos, "...");
     }
 }
 

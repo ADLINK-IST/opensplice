@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -155,6 +156,9 @@ u_publisherGetQos (
         c_free(vQos);
         u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
     }
+    // Coverity false positive: leaking qos: vQos is freed locally, 
+    // qos is passed to caller and is freed there
+    // coverity [leaked_storage : FALSE]
     return result;
 }
 

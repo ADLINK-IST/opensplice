@@ -11,3 +11,4 @@ export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
 #USERPROFILE which has spaces in and does not work, unsetting solves the problem
 unset USERPROFILE
 export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
+export M2_HOME=/home/dds/INSTALLED_FOR_DDS/apache-maven-3.5.3

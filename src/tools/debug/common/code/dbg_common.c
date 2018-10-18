@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -108,7 +109,6 @@ printCollection(
     switch (type->kind) {
     case OSPL_C_ARRAY:
     case OSPL_C_SEQUENCE:
-        /* Walk over all entries */
         switch (type->kind) {
         case OSPL_C_ARRAY:
             if (type->maxSize == 0) {
@@ -432,10 +432,11 @@ printUnion(
     os_size_t dataOffset;
 
     o = c_iterObject(actionData->stack, 0);
-    /* action for the union itself */
-    /* No action, but separate actions for the switch and the data */
-    /* action(c_type(v_union), o, actionArg); */
-    /* action for the switch */
+    /* action for the union itself
+     * No action, but separate actions for the switch and the data
+     * action(c_type(v_union), o, actionArg);
+     * action for the switch
+     */
     printType(v_union->switchType, actionData);
     printf(": ");
 

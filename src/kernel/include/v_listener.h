@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -102,23 +103,14 @@ v_listenerWait(
     const os_duration time);
 
 /**
- * Wake-up the thread(s) waiting on the listener.
- * The event returned to the waiting thread is V_EVENT_TRIGGER.
- *
- * \param _this    a reference to the listener object.
- */
-OS_API void
-v_listenerTrigger(
-    v_listener _this);
-
-/**
  * Notifies the listener on a state change of one of the conditions.
  * Every event the listener receives is stored in a list. The events
  * are grouped on the origin of the event.
  *
  * \param _this    a reference to the listener object.
  * \param e        a reference to the event describing the reason of the
- *                 notification.
+ *                 notification. A NULL event only triggers blocking wait
+ *                 calls to wakeup.
  * \param listener reference to listening entity.
  */
 OS_API void

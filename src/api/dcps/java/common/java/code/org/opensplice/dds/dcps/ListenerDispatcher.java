@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -87,7 +88,12 @@ public class ListenerDispatcher {
                                                 }
                                             } else if (event.kind != Event.TRIGGER) {
                                                 /* Call entity listener */
-                                                event.observer.notify(event);
+                                                if (event.observer != null) {
+                                                    event.observer.notify(event);
+                                                } else {
+                                                    ReportStack.report (DDS.RETCODE_ERROR.value,
+                                                            "ListenerDispatcher observer entity was null for kind: "+ event.kind);
+                                                }
                                             }
                                         }
                                     }
@@ -294,7 +300,7 @@ public class ListenerDispatcher {
             result = observable.set_listener (uListener, mask);
             if (result == DDS.RETCODE_OK.value) {
                 observables.add (observable);
-                start ();
+                result = start ();
                 /* result = start ();
                    TODO: OSPL-6104. Restore original listener if thread fails to start.
                    See cmn_listenerDispatcher_add for more information. */

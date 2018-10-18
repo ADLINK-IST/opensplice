@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,7 +27,7 @@ public class MultiTopicBase extends ObjectImpl {
         return super.deinit();
     }
 
-    public class MultiTopicBaseImpl extends DDS._MultiTopicLocalBase {
+    public static class MultiTopicBaseImpl extends DDS._MultiTopicLocalBase {
         private static final long serialVersionUID = -7047467467646052020L;
 
         /* multitopic operations */

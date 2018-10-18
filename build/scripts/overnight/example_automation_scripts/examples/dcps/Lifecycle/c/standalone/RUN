@@ -13,14 +13,13 @@ echo "=== Launching Lifecycle "
 echo "=== (step 1)" 
 
 ./sac_lifecycle_sub > subResult_1.txt &
+cmd_pid=$!
+
 sleep 2
 ./sac_lifecycle_pub  false dispose > pubResult_1.txt
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination sac_lifecycle_pub 30
-waitForProcessTermination sac_lifecycle_sub 30
-
-
+waitForProcessTermination $cmd_pid 30
 
 stopOSPL
 
@@ -29,14 +28,13 @@ startOSPL
 echo "=== (step 2)" 
 
 ./sac_lifecycle_sub > subResult_2.txt &
+cmd_pid=$!
+
 sleep 2
 ./sac_lifecycle_pub  false unregister > pubResult_2.txt
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination sac_lifecycle_pub 30
-waitForProcessTermination sac_lifecycle_sub 30
-
-
+waitForProcessTermination $cmd_pid 30
 
 stopOSPL
 
@@ -45,14 +43,13 @@ startOSPL
 echo "=== (step 3)" 
 
 ./sac_lifecycle_sub > subResult_3.txt &
+cmd_pid=$!
+
 sleep 2
 ./sac_lifecycle_pub  false stoppub > pubResult_3.txt
 
 echo "=== Waiting for processes to terminate"
-waitForProcessTermination sac_lifecycle_pub 30
-waitForProcessTermination sac_lifecycle_sub 30
-
-
+waitForProcessTermination $cmd_pid 30
 
 lifecycleCheckResult
 

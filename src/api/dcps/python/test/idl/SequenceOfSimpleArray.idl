@@ -1,0 +1,15 @@
+module basic{
+
+	module module_SequenceOfSimpleArray{
+
+		typedef long arr[2];
+		
+		struct SequenceOfSimpleArray_struct{
+			long long1;
+			Sequence<arr> sequence1;
+		};
+		
+		#pragma keylist SequenceOfSimpleArray_struct long1
+	};
+};
+		

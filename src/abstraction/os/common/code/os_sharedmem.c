@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -110,6 +111,9 @@ OS_STRUCT(os__clientShmDomain){
     void *args;
 };
 
+OS_STRUCT(os_implData) {
+    char *lockFileName;
+};
 
 static char *
 getKeyfileFromHandle(os_sharedHandle sharedHandle);
@@ -125,6 +129,9 @@ static os_mutex os__shmAttachedLock;
  *  2. to signal the spliced that the shared memory monitor thread has detected a client side change.
  */
 static os_cond os__shmAttachCond;
+
+/** Defines the file name for the shared mem creation lock file */
+static const char *os_key_file_creation_lock = "spddscreationLock";
 
 
 void
@@ -732,6 +739,28 @@ findDomainByHandle (
     return 0;
 }
 
+OSPL_DIAG_OFF(sign-conversion)
+static void
+os_fd_set(
+    int fd,
+    fd_set *fdsetp)
+{
+    /* FD_SET gives a sign-conversion warning, suppressing it */
+    FD_SET(fd, fdsetp);
+}
+OSPL_DIAG_ON(sign-conversion)
+
+OSPL_DIAG_OFF(sign-conversion)
+static int
+os_fd_isset(
+    int fd,
+    fd_set *fdsetp)
+{
+    /* FD_ISSET gives a sign-conversion warning, suppressing it */
+    return FD_ISSET(fd, fdsetp);
+}
+OSPL_DIAG_ON(sign-conversion)
+
 #ifdef OSPL_SHM_PROCMON
 
 static os_int32
@@ -756,7 +785,7 @@ addSockToSet(
     os__shmClient client = (os__shmClient)obj;
     os__shmClients tc = (os__shmClients)arg;
 
-    FD_SET(client->fd, &tc->rset);
+    os_fd_set(client->fd, &tc->rset);
 
     if(client->fd > tc->maxSock){
         tc->maxSock = client->fd;
@@ -775,7 +804,7 @@ determineTerminatedClients(
     char buffer[32];
     os_ssize_t n;
 
-    if(FD_ISSET(client->fd, &tc->rset)){
+    if(os_fd_isset(client->fd, &tc->rset)){
         memset(buffer, 0, sizeof(buffer));
         n = read(client->fd, buffer, sizeof(buffer));
         if (n < 0) {
@@ -918,7 +947,7 @@ sharedMemoryProcessMonitor(
         FD_ZERO(&shmDomain->clnts->rset);
         shmDomain->clnts->maxSock = shmDomain->osplProcMonSock;
 
-        FD_SET(shmDomain->osplProcMonSock, &shmDomain->clnts->rset);
+        os_fd_set(shmDomain->osplProcMonSock, &shmDomain->clnts->rset);
         os_iterWalk(shmDomain->clnts->runningClients, addSockToSet, shmDomain->clnts);
 
         timeOut.tv_sec = 0;
@@ -933,7 +962,7 @@ sharedMemoryProcessMonitor(
         }
 
         if(selectResult > 0){
-            if(FD_ISSET(shmDomain->osplProcMonSock, &shmDomain->clnts->rset)){
+            if(os_fd_isset(shmDomain->osplProcMonSock, &shmDomain->clnts->rset)){
                 clientSocket = accept(shmDomain->osplProcMonSock, NULL, NULL);
 
                 if (clientSocket < 0){
@@ -1149,7 +1178,8 @@ static ssize_t send_nosigpipe(int fd, const void *buffer, size_t size, int flags
 
 static void
 os__sharedMemoryClientShmDomainFree(
-    os__clientShmDomain clientShmDomain)
+    os__clientShmDomain clientShmDomain,
+    os_boolean waitForExit)
 {
     if (clientShmDomain != NULL) {
         os_mutexLock(&clientShmDomain->mutex);
@@ -1161,10 +1191,11 @@ os__sharedMemoryClientShmDomainFree(
                             "close(client socket failed with errno (%d)", os_getErrno());
                 }
             }
-            os_mutexUnlock(&clientShmDomain->mutex);
+        }
+        os_mutexUnlock(&clientShmDomain->mutex);
+
+        if (waitForExit && clientShmDomain->monitorThread) {
             (void) os_threadWaitExit(clientShmDomain->monitorThread, NULL);
-        } else {
-            os_mutexUnlock(&clientShmDomain->mutex);
         }
         if (clientShmDomain->mySock != -1) {
             close(clientShmDomain->mySock);
@@ -1199,7 +1230,7 @@ os__sharedMemoryClientShmDomainNew(
             OS_REPORT_WID(OS_WARNING,"os__sharedMemoryClientShmDomainNew",0,sharedHandle->id,
                         "socket(AF_UNIX, SOCK_STREAM, 0) failed = (%d)",
                         clientShmDomain->mySock);
-            os__sharedMemoryClientShmDomainFree(clientShmDomain);
+            os__sharedMemoryClientShmDomainFree(clientShmDomain, FALSE);
             clientShmDomain = NULL;
         }
     } else {
@@ -1233,7 +1264,7 @@ os_sharedMemoryRegisterProcess(
      */
     while ((keyFileNameIdentifier == NULL) && (retries < 100)) /* give 100*100ms=10s time for the service to startup */
     {
-        (void) os_sleep(delay);
+        (void) ospl_os_sleep(delay);
         keyFileNameIdentifier = os_svr4_findKeyFileIdentifierByIdAndName(sharedHandle->id, sharedHandle->name);
         retries++;
     }
@@ -1286,14 +1317,14 @@ os_sharedMemoryRegisterProcess(
         retries = 0;
         while ((rc < 0) && (retries < 100)) /* give 100*100ms=10s time for the service to startup */
         {
-            (void) os_sleep(delay);
+            (void) ospl_os_sleep(delay);
             rc = connect(clientShmDomain->mySock, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
             retries++;
         }
         if (rc < 0){
             OS_REPORT_WID(OS_WARNING,"os_sharedMemoryRegisterProcess",0,sharedHandle->id,
                         "connect(client-socket) failed = (%d)", rc);
-            os__sharedMemoryClientShmDomainFree(clientShmDomain);
+            os__sharedMemoryClientShmDomainFree(clientShmDomain, FALSE);
             result = os_resultFail;
         }
     }
@@ -1306,7 +1337,7 @@ os_sharedMemoryRegisterProcess(
         if (n < 0){
             OS_REPORT_WID(OS_ERROR,"os_sharedMemoryRegisterProcess",0,sharedHandle->id,
                         "client-socket send(procId) to server failed = (%ld)", (long) n);
-            os__sharedMemoryClientShmDomainFree(clientShmDomain);
+            os__sharedMemoryClientShmDomainFree(clientShmDomain, FALSE);
             result = os_resultFail;
         } else {
             os_iterInsert(os__shmAttached, clientShmDomain);
@@ -1347,7 +1378,7 @@ os_sharedMemoryDeregisterProcess(
                     result = os_resultFail;
                 }
             }
-            os__sharedMemoryClientShmDomainFree(clientShmDomain);
+            os__sharedMemoryClientShmDomainFree(clientShmDomain, TRUE);
         } else {
             clientShmDomain->detaching = TRUE;
             os_mutexUnlock(&clientShmDomain->mutex);
@@ -1381,7 +1412,7 @@ os_sharedMemoryWaitForServerChanges(
 
     if (sock >= 0) {
         FD_ZERO(&rset);
-        FD_SET(sock, &rset);
+        os_fd_set(sock, &rset);
 
         do { /* Retry select if interrupted by a signal */
             selectResult = select(sock+1, &rset, NULL, NULL, NULL);
@@ -1405,7 +1436,7 @@ os_sharedMemoryWaitForServerChanges(
         detaching = clientShmDomain->detaching;
         os_mutexUnlock(&clientShmDomain->mutex);
         if (detaching) {
-            os__sharedMemoryClientShmDomainFree(clientShmDomain);
+            os__sharedMemoryClientShmDomainFree(clientShmDomain, FALSE);
         }
     }
 
@@ -1543,40 +1574,77 @@ os_sharedMemoryWaitForClientChanges(
     return result;
 }
 
-os_result os_sharedMemoryLock(os_sharedHandle sharedHandle) {
-    os_result returnValue = os_resultUnavailable;
+/* Prevent race condition between creation and attach shared memory segment
+ * create an exclusive lock file during creation.
+ * Don block to long, a previous process could have created the lock file
+ * and didn't clean it up properly due to an exception in creating shared memory segment
+ */
+os_result
+os_sharedMemoryLock(
+    os_sharedHandle sharedHandle)
+{
+    os_result result = os_resultUnavailable;
+    const char *tmpDir;
+    os_size_t len;
+    int retry = 0;
+    int fd;
 
     if (sharedHandle != NULL) {
-        switch (sharedHandle->attr.sharedImpl) {
-            case OS_MAP_ON_FILE:
-                returnValue = os_posix_sharedMemoryLock();
-                break;
-            case OS_MAP_ON_SEG:
-                returnValue = os_svr4_sharedMemoryLock();
-                break;
-
-            default:
-                break;
+        assert(sharedHandle->data);
+        assert(sharedHandle->data->lockFileName == NULL);
+        tmpDir = os_getTempDir();
+        len = strlen(tmpDir) + strlen(os_key_file_creation_lock) + 2;
+        sharedHandle->data->lockFileName = os_malloc(len);
+        (void)snprintf (sharedHandle->data->lockFileName, len, "%s/%s", tmpDir, os_key_file_creation_lock);
+        do {
+            fd = open(sharedHandle->data->lockFileName, O_CREAT | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
+            if (fd == -1) {
+                ospl_os_sleep(OS_DURATION_SECOND/2);
+            }
+        } while ((fd == -1) && (retry++ < 8));
+        if (fd == -1) {
+            result = os_resultFail;
+        } else {
+            if (close(fd) == -1) {
+                OS_REPORT(OS_ERROR, OS_FUNCTION, 0,
+                          "Failed to close exclusive lock file: %s", os_strError(os_getErrno()));
+            }
+            result = os_resultSuccess;
         }
     }
-    return returnValue;
+    return result;
 }
 
-void os_sharedMemoryUnlock(os_sharedHandle sharedHandle) {
-
-    if (sharedHandle != NULL) {
-        switch (sharedHandle->attr.sharedImpl) {
-            case OS_MAP_ON_FILE:
-                os_posix_sharedMemoryUnlock();
-                break;
-            case OS_MAP_ON_SEG:
-                os_svr4_sharedMemoryUnlock();
-                break;
-            default:
-                break;
-        }
+void
+os_sharedMemoryUnlock(
+    os_sharedHandle sharedHandle)
+{
+    if (sharedHandle &&
+        sharedHandle->data &&
+        sharedHandle->data->lockFileName) {
+        (void)remove(sharedHandle->data->lockFileName);
+        os_free(sharedHandle->data->lockFileName);
+        sharedHandle->data->lockFileName = NULL;
     }
-    return;
 }
 
+void
+os_sharedMemoryImplDataCreate(
+    os_sharedHandle sharedHandle)
+{
+    assert(sharedHandle);
+    sharedHandle->data = os_malloc(OS_SIZEOF(os_implData));
+    sharedHandle->data->lockFileName = NULL;
+}
 
+void
+os_sharedMemoryImplDataDestroy(
+    os_sharedHandle sharedHandle)
+{
+    assert(sharedHandle);
+    if (sharedHandle->data &&
+        sharedHandle->data->lockFileName) {
+        os_free(sharedHandle->data->lockFileName);
+    }
+    os_free(sharedHandle->data);
+}

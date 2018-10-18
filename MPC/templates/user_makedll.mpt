@@ -45,6 +45,19 @@ arm-linux-gnueabihf-gcc-5 {
   visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
 }
 
+arm-linux-gnueabihf-gcc-6 {
+  cc        = arm-linux-gnueabihf-gcc-6
+  cxx       = arm-linux-gnueabihf-g++-6
+  linkflags   =
+  pic       = -fpic
+  shflags   = -shared
+  platforms = plat_armhf_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
 powerpc-fsl-linux-gcc {
   cc        = powerpc-fsl-linux-gcc
   cxx       = powerpc-fsl-linux-g++
@@ -170,6 +183,17 @@ arm7a-vfp-neon-linux-gcc {
   platforms = armv7a-vfp-neon_linux_gcc
   compilerflags = -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mfpu=neon --sysroot=$(SDKTARGETSYSROOT)
   linker    = arm-poky-linux-gnueabi-ld
+  pic       = -fPIC
+  shflags   = -shared
+
+}
+
+arm-lafp-linux-gnueabi-gcc {
+  cc        = arm-lafp-linux-gnueabi-gcc
+  cxx       = arm-lafp-linux-gnueabi-g++
+  platforms = armv7a_lafp_neon_linux
+  compilerflags = -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=hard -mfpu=neon --sysroot=$(SDKTARGETSYSROOT)
+  linker    = arm-lafp-linux-gnueabi-ld
   pic       = -fPIC
   shflags   = -shared
 
@@ -459,6 +483,18 @@ clang {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+aarch64-linux-gnu-gcc {
+  cc        = aarch64-linux-gnu-gcc
+  cxx       = aarch64-linux-gnu-g++
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = armv7l_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
 // ***********************************************************************
 // Platform Section
 // ***********************************************************************
@@ -498,7 +534,7 @@ plat_PPCe5500_linux {
 
 plat_armhf_linux {
   gnumake       = 1
-  compile_flags = 
+  compile_flags =
   ldlibs = -lpthread
 }
 
@@ -555,6 +591,13 @@ armv7a-vfp-neon_linux_gcc{
   gnumake       = 1
   cputype       = arm
   linkflags     = -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed --sysroot=$(SDKTARGETSYSROOT)
+  ldlibs        = -lpthread
+}
+
+armv7a_lafp_neon_linux{
+  gnumake       = 1
+  cputype       = arm
+  linkflags     = -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed -mfloat-abi=hard --sysroot=$(SDKTARGETSYSROOT)
   ldlibs        = -lpthread
 }
 

@@ -1,0 +1,21 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <groupId>org.opensplice.dds.api.dcps.java5</groupId>
+    <artifactId>org.opensplice.dds.api.dcps.java5</artifactId>
+    <name>api.dcps.java5</name>
+    <version>1.0</version>
+    <parent>
+        <groupId>org.opensplice.dds.api.dcps</groupId>
+        <artifactId>org.opensplice.dds.api.dcps</artifactId>
+        <version>1.0</version>
+    </parent>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <modules>
+        <module>saj</module>
+    </modules>
+</project>

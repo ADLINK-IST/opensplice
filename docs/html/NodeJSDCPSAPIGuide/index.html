@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Node.js DCPS API Guide &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="node-js-dcps-api-guide">
+<h1>Node.js DCPS API Guide<a class="headerlink" href="#node-js-dcps-api-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-node-js-dcps-api-guide">1.1. About the Node.js DCPS API Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#dds">2.1. DDS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">3. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#dependencies">3.1. Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#linux-64-bit">3.1.1. Linux 64-bit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#windows-64-bit">3.1.2. Windows 64-bit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#python-and-visual-c-build-tools-install">3.1.2.1. Python and Visual C++ build tools install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#opensplice-ospl-and-node-js-dcps-api-installation">3.2. OpenSplice (OSPL) and Node.js DCPS API Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-node-js-dcps-api-in-a-node-js-application">3.3. Installing Node.js DCPS API in a Node.js application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#examples-and-documentation">3.4. Examples and Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">4. Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#example-files">4.1. Example Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#examplestable">4.1.1. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#file-types">4.1.2. File Types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#running-examples">4.2. Running Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dds_entities.html">5. Node.js API for Vortex DDS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#api-usage-patterns">5.1. API Usage Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#participant">5.2. Participant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#topic">5.3. Topic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#publisher">5.4. Publisher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#writer">5.5. Writer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#subscriber">5.6. Subscriber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#reader">5.7. Reader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#waitset">5.8. WaitSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dds_entities.html#querycondition">5.9. QueryCondition</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qos_provider.html">6. Quality of Service (QoS)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#setting-qos-using-qos-provider-xml-file">6.1. Setting QoS Using QoS Provider XML File</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qos_provider.html#qos-profile">6.1.1. QoS Profile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos_provider.html#applying-qos-profile">6.1.2. Applying QoS Profile</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qos_provider.html#setting-qos-using-node-js-dcps-api-classes">6.2. Setting QoS Using Node.js DCPS API Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topic.html">7. Topic Generation and Discovery</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#over-the-wire-discovery">7.1. Over the Wire Discovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#dynamic-generation-of-node-js-topic-classes-using-idl-and-name">7.2. Dynamic Generation of Node.js Topic Classes Using IDL and Name</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topic.html#dynamic-generation">7.2.1. Dynamic Generation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic.html#generated-artifacts">7.2.2. Generated Artifacts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="topic.html#limitations-of-node-js-support">7.3. Limitations of Node.js Support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">8. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">8.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">8.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Node.js DCPS API Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

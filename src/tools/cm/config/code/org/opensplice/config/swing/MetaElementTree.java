@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -45,7 +46,7 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
     private final DefaultTreeModel model;
     private final DefaultTreeCellRenderer initialRenderer;
     private final StatusPanel status;
-    
+
     public MetaElementTree(MetaElement rootElement, StatusPanel status){
         super();
         this.initialRenderer = new DefaultTreeCellRenderer();
@@ -60,7 +61,7 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
         this.setRootVisible(true);
         this.setShowsRootHandles(true);
         this.initElement(this.rootNode, this.rootElement);
-        
+
         if(this.rootNode.getChildCount() > 0){
             this.scrollPathToVisible(
                     new TreePath(
@@ -69,10 +70,10 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
         this.getSelectionModel().addTreeSelectionListener(this);
         this.setSelectionPath(new TreePath(this.rootNode.getPath()));
     }
-    
+
     private void initElement(DefaultMutableTreeNode parent, MetaElement element){
         DefaultMutableTreeNode node;
-        
+
         for(MetaNode child: element.getChildren()){
             if(child instanceof MetaElement){
                 node = new DefaultMutableTreeNode(child);
@@ -81,50 +82,49 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
             }
         }
     }
-    
+
     @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
         Component result = null;
         JLabel temp;
         Object nodeValue;
-        
+
         if(value instanceof DefaultMutableTreeNode){
             nodeValue = ((DefaultMutableTreeNode)value).getUserObject();
-            
+
             if(nodeValue instanceof MetaElement){
                 temp = new JLabel(ConfigUtil.getMetaElementString((MetaElement)nodeValue));
-                
+
                 if(selected){
                     temp.setForeground(UIManager.getColor("Tree.selectionForeground"));
                     temp.setBackground(UIManager.getColor("Tree.selectionBackground"));
-                    temp.setOpaque(true);                   
+                    temp.setOpaque(true);
                 } else {
                     temp.setForeground(UIManager.getColor("Tree.textForeground"));
                     temp.setBackground(UIManager.getColor("Tree.textBackground"));
                 }
-                //temp.setFont(temp.getFont().deriveFont(Font.PLAIN));
                 temp.setFont(temp.getFont().deriveFont(Font.BOLD));
                 result = temp;
             }
         }
-        
+
         if(result == null){
             result = initialRenderer.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
         }
         return result;
     }
-    
+
     public MetaElement getSelectedMetaElement(){
         MetaElement result = null;
         TreePath path      = this.getSelectionPath();
-        
+
         if(path != null){
             result = (MetaElement)
                 ((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
         }
         return result;
     }
-    
+
     public MetaElement getMetaNodeAt(int x, int y) {
         MetaElement retVal = null;
         TreePath path = this.getClosestPathForLocation(x, y);
@@ -138,10 +138,10 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
     @Override
     public void valueChanged(TreeSelectionEvent e) {
         MetaElement me = this.getSelectedMetaElement();
-        
+
         if((me != null) && (status != null)){
             status.setStatus("Element '" + me.getName() + "' selected.", true);
         }
-        
+
     }
 }

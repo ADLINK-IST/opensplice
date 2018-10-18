@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,14 +22,8 @@
 #define IDL_GENSACSTYPE_H
 
 #include "idl_program.h"
-
-struct SACSTypeUserData_s {
-    os_iter idlpp_metaList;
-    c_char *tmplPrefix;
-    c_bool customPSM;
-};
-
-typedef struct SACSTypeUserData_s SACSTypeUserData;
+#include "c_iterator.h"
+#include "idl_genSACSHelper.h"
 
 idl_program idl_genSACSTypeProgram(SACSTypeUserData *userData);
 

@@ -26,20 +26,16 @@ import org.omg.dds.core.ServiceEnvironment;
 
 public abstract class KeyedString implements Cloneable, Serializable, DDSObject
 {
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 5185023295888681379L;
+    private static final long serialVersionUID = 5185023295888681379L;
 
-	
     public static KeyedString newKeyedString(ServiceEnvironment env)
     {
         return env.getSPI().newKeyedString();
     }
 
-	/**
+    /**
      * @param key the key to set
-     * 
+     *
      * @return  this
      */
     public abstract KeyedString setKey(CharSequence key);
@@ -51,7 +47,7 @@ public abstract class KeyedString implements Cloneable, Serializable, DDSObject
 
     /**
      * @param value the value to set
-     * 
+     *
      * @return  this
      */
     public abstract KeyedString setValue(CharSequence value);

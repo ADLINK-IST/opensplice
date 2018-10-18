@@ -15,11 +15,11 @@
  </head>
  <body class="composite">
     <div id="banner">
-       <a href="http://www.prismtech.com" id="bannerLeft">
-          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       <a href="http://ist.adlinktech.com/" id="bannerLeft">
+          <img src="../images/logo_adlink_transparent.png" alt="ADLINK" />
        </a>
-       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
-          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       <a href="http://vortex.adlinktech.com/" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex OpenSplice" />
        </a>
        <div class="clear">
           <hr/>
@@ -27,8 +27,8 @@
     </div>
     <div id="breadcrumbs">
        <div class="xright">
-          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
-          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+          <a href="http://ist.adlinktech.com/" class="externalLink" title="ADLINK on the Web: http://ist.adlinktech.com/">ADLINK on the Web: http://ist.adlinktech.com/</a>
+          | <a href="http://vortex.adlinktech.com/" title="OpenSplice">Vortex OpenSplice</a>
        </div>
        <div class="clear">
          <hr/>
@@ -64,14 +64,14 @@
 
 <h2> <a name="Introduction">Introduction</a> </h2>
 
-<p> This note provides information on using the QoS provider API of OpenSpliceDDS.
+<p> This note provides information on using the QoS provider API of Vortex OpenSplice.
 The QoS provider API allows users to specify the QoS settings of their DCPS
 entities outside of application code in XML. The following sections explain
 the API in a language independent manner and explain how to build QoS Profiles
 in XML.</p>
 
 <h2><a name="APIIntroduction">API reference - Introduction</a></h2>
-The <b>QosProvider</b> is delivered as part of the DCPS API of OpenSpliceDDS and
+The <b>QosProvider</b> is delivered as part of the DCPS API of Vortex OpenSplice and
 has no factory. It is created as an object directly by the natural means in each
 language binding (e.g., using "new" in C#, C++ or Java and
 "DDS_QosProvider__alloc" in C). This is because it is not necessarily associated
@@ -116,11 +116,11 @@ operations, which are explained in detail in the following subsections.
 };
 </pre>
 <h2><a name="APIconstructor">API reference - constructor</a></h2>
-<pre>    /** 
+<pre>    /**
       * Constructs a new QosProvider based on the provided uri and profile.
       *
       * The QosProvider is delivered as part of the DCPS API of
-      * OpenSpliceDDS and has no factory. It is created as an object
+      * Vortex OpenSplice and has no factory. It is created as an object
       * directly by the natural means in each language binding (e.g., using
       * "new" in C#, C++ or Java and "DDS_QosProvider__alloc" in C)
       *
@@ -130,14 +130,14 @@ operations, which are explained in detail in the following subsections.
       *                point to an XML file are supported. If profiles
       *                and/or QoS settings are not uniquely identifiable by
       *                name within the resource pointed to by the uri, a random
-      *                one of them will be stored. 
+      *                one of them will be stored.
       *
       * @param profile The name of the QoS profile that serves as the default
-      *                QoS profile for the get_*_qos operations. 
+      *                QoS profile for the get_*_qos operations.
       *
-      * @return        A QosProvider instance that is instantiated with all 
+      * @return        A QosProvider instance that is instantiated with all
       *                profiles and/or QoS-ses loaded from the location
-      *                specified by the provided uri. Construction of the 
+      *                specified by the provided uri. Construction of the
       *                QosProvider will fail under the following conditions:
       *                - No uri is provided.
       *                - The resource pointed to by uri cannot be found.
@@ -150,10 +150,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_participant_qos">API reference - get_participant_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the DomainParticipantQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The DomainParticipantQos which is initialized by the
       *              operation if the DomainParticipantQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -176,10 +176,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no DomainParticipantQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -195,10 +195,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_topic_qos">API reference - get_topic_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the TopicQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The TopicQos which is initialized by the
       *              operation if the TopicQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -221,10 +221,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no TopicQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -240,10 +240,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_subscriber_qos">API reference - get_subscriber_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the SubscriberQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The SubscriberQos which is initialized by the
       *              operation if the DomainParticipantQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -266,10 +266,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no SubscriberQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -285,10 +285,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_datareader_qos">API reference - get_datareader_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the DataReaderQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The DataReaderQos which is initialized by the
       *              operation if the DataReaderQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -311,10 +311,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no DataReaderQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -330,10 +330,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_publisher_qos">API reference - get_publisher_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the PublisherQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The PublisherQos which is initialized by the
       *              operation if the PublisherQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -356,10 +356,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no PublisherQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -375,10 +375,10 @@ operations, which are explained in detail in the following subsections.
 </pre>
 
 <h2><a name="APIget_datawriter_qos">API reference - get_datawriter_qos</a></h2>
-<pre>    /** 
+<pre>    /**
       * Resolves the DataWriterQos identified by the id from the
       * uri the QosProvider is associated with.
-      * 
+      *
       * @param a_qos The DataWriterQos which is initialized by the
       *              operation if the DataWriterQos identified by the id
       *              parameter can be found and no other errors have occurred.
@@ -401,10 +401,10 @@ operations, which are explained in detail in the following subsections.
       *              NO_DATA               - if no DataWriterQos that
       *                                      matches the provided id can be
       *                                      found within the uri associated
-      *                                      with the QosProvider.            
-      * 
+      *                                      with the QosProvider.
+      *
       *              BAD_PARAMETER         - if a_qos is nil.
-      * 
+      *
       *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
       *                                      properly initialized.
       *
@@ -446,7 +446,7 @@ operations, which are explained in detail in the following subsections.
       <th width="40%">
         <b>Notes</b>
       </th>
-    </tr>  
+    </tr>
     <tr>
       <td>
         Boolean
@@ -667,7 +667,7 @@ is equivalent to the following:
 </pre>
 
 <h2> <a name="Example">Example</a></h2>
-consider the following XML file that describes two QoS profiles; 
+consider the following XML file that describes two QoS profiles;
 <ul>
   <li>FooQosProfile<ul>
     <li>DataReaderQos - TransientKeepLast</li>
@@ -677,7 +677,7 @@ consider the following XML file that describes two QoS profiles;
     <li>DataWriterQos - Persistent</li>
   </ul></li>
 </ul>
-  
+
 <pre>&lt;dds xmlns="http://www.omg.org/dds/"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="file://DDS_QoSProfile.xsd"&gt;
@@ -721,28 +721,28 @@ public class QosProviderExample {
         DataWriterQosHolder dwQosHolder = new DataWriterQosHolder();
         DataWriterQosHolder dwBarQosHolder = new DataWriterQosHolder();
         int result;
-        
+
         try{
             provider = new QosProvider(
-                    "file://path/to/file.xml", 
+                    "file://path/to/file.xml",
                     "FooQosProfile");
-            
-             /* As default QoS profile is "FooQosProfile", requesting 
-              * "TransientKeepLast" in this case is equivalent to requesting 
+
+             /* As default QoS profile is "FooQosProfile", requesting
+              * "TransientKeepLast" in this case is equivalent to requesting
               * "::FooQosProfile::TransientKeepLast".
               */
              result = provider.get_datareader_qos(drQosHolder, "TransientKeepLast");
-             
+
              if(result != RETCODE_OK.value){
                  System.err.println("Unable to resolve ReaderQos.");
                  System.exit(1);
              }
-             /* As default QoS profile is "FooQosProfile", requesting 
-              * "Transient" would have been equivalent to requesting 
+             /* As default QoS profile is "FooQosProfile", requesting
+              * "Transient" would have been equivalent to requesting
               * "::FooQosProfile::Transient".
               */
              result = provider.get_datawriter_qos(dwQosHolder, "::FooQosProfile::Transient");
-             
+
              if(result != RETCODE_OK.value){
                  System.err.println("Unable to resolve WriterQos.");
                  System.exit(1);
@@ -752,17 +752,17 @@ public class QosProviderExample {
               * the "BarQosProfile".
               */
              result = provider.get_datawriter_qos(dwBarQosHolder, "::BarQosProfile::Persistent");
-             
+
              if(result != RETCODE_OK.value){
                  System.err.println("Unable to resolve WriterQos.");
                  System.exit(1);
              }
-             
+
              /* Create DDS DataReader with drQosHolder.value DataReaderQos,
-              * DDS DataWriter with dwQosHolder.value DataWriterQos and 
+              * DDS DataWriter with dwQosHolder.value DataWriterQos and
               * DDS DataWriter with dwBarQosHolder.value DataWriterQos
               */
-             
+
         } catch(NullPointerException npe){
             System.err.println("Initialization of QosProvider failed.");
         }
@@ -785,8 +785,8 @@ public class QosProviderExample {
   same as "&lt;tag&gt;value&lt;/tag&gt;"</li>
   <li>The QosProvider API has been implemented within the DCPS API's for C,
   (CORBA) C++, (CORBA), ISO C++, Java and C# languages.</li>
-  <li>Currently parsing of sequences and arrays only supports sequence of 
-  strings</li> 
+  <li>Currently parsing of sequences and arrays only supports sequence of
+  strings</li>
 </ul>
 <p></p>
   <div class="clear">
@@ -794,7 +794,7 @@ public class QosProviderExample {
     </div>
     <div id="footer">
       <div class="xright">
-       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.
+       Copyright &#169; 2017 <a href="http://ist.adlinktech.com/">ADLINK</a>. All Rights Reserved.
       </div>
      <div class="clear">
      <hr/>

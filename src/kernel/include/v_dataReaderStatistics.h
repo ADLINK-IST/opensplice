@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -40,13 +41,14 @@
  */
 #define v_dataReaderStatistics(s) (C_CAST(s,v_dataReaderStatistics))
 
+_Ret_notnull_
 OS_API v_dataReaderStatistics
 v_dataReaderStatisticsNew(
-    v_kernel k);
+    _In_ v_kernel k);
 
 OS_API void
 v_dataReaderStatisticsInit(
-    v_dataReaderStatistics _this);
+    _Inout_ v_dataReaderStatistics _this);
 
 OS_API void
 v_dataReaderStatisticsDeinit(

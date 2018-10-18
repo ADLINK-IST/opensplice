@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -29,6 +30,7 @@
 #include "v__lifespanAdmin.h"
 #include "v__transaction.h"
 #include "v__observer.h"
+#include "v__observable.h"
 #include "v_state.h"
 #include "v_instance.h"
 #include "v__deadLineInstance.h"
@@ -93,6 +95,14 @@
 #define CHECK_COUNT(_this)
 #endif
 
+#define DECREASE_READER_NOT_READ_COUNT(reader) \
+        (reader)->notReadCount--; \
+        assert((reader)->notReadCount >= 0)
+
+#define INCREASE_READER_NOT_READ_COUNT(reader) \
+        (reader)->notReadCount++; \
+        assert((reader)->notReadCount <= (reader)->resourceSampleCount + (c_long)c_tableCount((reader)->index->objects) + 1)
+
 /**
  * Returns the relative order of a v_message to a v_historyBookmark.
  * @param _this A v_historyBookmark
@@ -100,9 +110,9 @@
  * @return C_EQ, C_LT or C_GT if msg is respectively equal, less or greater than _this bookmark
  */
 static c_equality
-v_historyBookmarkMessageCompare(
-    struct v_historyBookmark *_this,
-    v_message msg)
+compareMessageToBookmark(
+    v_message msg,
+    struct v_historyBookmark *_this)
 {
     C_STRUCT(v_message) template;
 
@@ -110,7 +120,7 @@ v_historyBookmarkMessageCompare(
     template.writerGID = _this->gid;
     template.sequenceNumber = _this->sequenceNumber;
     ((v_node)&template)->nodeState = _this->isImplicit ? L_IMPLICIT : 0;
-    return v_messageCompare(&template, msg);
+    return v_messageCompare(msg, &template);
 }
 
 #ifndef NDEBUG
@@ -222,16 +232,16 @@ invalidSampleResetEventCounters(
          * and raise the L_READ flag to indicate that these samples
          * should no longer influence the notReadCount.
          */
-        if (!v_readerSampleTestStateOr(sample, L_VALIDDATA | L_READ | L_LAZYREAD))
+        if (!v_readerSampleTestStateOr(sample, L_VALIDDATA | L_READ | L_LAZYREAD | L_INMINSEPTIME))
         {
-            reader->notReadCount--;
+            DECREASE_READER_NOT_READ_COUNT(reader);
             v_readerSampleSetState(sample, L_READ);
         }
         sample = v_dataReaderSample(sample->newer);
     }
 }
 
-static void
+static v_dataReaderSample
 updateIntermediateInstanceAndSampleState(
     v_dataReaderInstance _this,
     v_message message,
@@ -242,6 +252,7 @@ updateIntermediateInstanceAndSampleState(
     v_state prevMsgState, nextMsgState;
     v_dataReaderSample s;
     v_state msgState = v_nodeState(message);
+    c_bool invalid = FALSE;
     assert(sample->newer);
 
     /* Valid samples that are part of a transaction that is still in progress do
@@ -253,7 +264,6 @@ updateIntermediateInstanceAndSampleState(
         v_readerSampleSetState(sample, L_VALIDDATA);
         _this->historySampleCount++;
     }
-
     /* If the sample is a an UNREGISTER, it might need to set increase the
      * noWritersCount, but only if the older sample was not a dispose.
      * However, if the previous sample was both a DISPOSE and an UNREGISTER,
@@ -265,8 +275,7 @@ updateIntermediateInstanceAndSampleState(
         {
             prevMsg = v_dataReaderSampleMessage(sample->older);
             prevMsgState = v_nodeState(prevMsg);
-            if (!v_stateTest(prevMsgState, L_DISPOSED) ||
-                    v_stateTest(prevMsgState, L_DISPOSED | L_UNREGISTER))
+            if (!v_stateTest(prevMsgState, L_DISPOSED) || v_stateTest(prevMsgState, L_DISPOSED | L_UNREGISTER))
             {
                 _this->noWritersCount++;
                 s = sample;
@@ -282,6 +291,7 @@ updateIntermediateInstanceAndSampleState(
                 }
             }
         }
+        invalid = TRUE;
     }
 
     /* If the sample is a a DISPOSE, it needs to increase the disposeCount.
@@ -302,8 +312,7 @@ updateIntermediateInstanceAndSampleState(
         /* Intermediate sample, so there is always a newer sample. */
         nextMsg = v_dataReaderSampleMessage(sample->newer);
         nextMsgState = v_nodeState(nextMsg);
-        if (v_stateTest(nextMsgState, L_UNREGISTER) &&
-                !v_stateTest(nextMsgState, L_DISPOSED | L_UNREGISTER))
+        if (v_stateTest(nextMsgState, L_UNREGISTER) && !v_stateTest(nextMsgState, L_DISPOSED | L_UNREGISTER))
         {
             _this->noWritersCount--;
             s = sample;
@@ -318,15 +327,21 @@ updateIntermediateInstanceAndSampleState(
         {
             v_dataReaderInstanceStateSet(_this, L_TRIGGER);
         }
+        invalid = !v_stateTest(msgState, L_WRITE);
     }
     v_deadLineInstanceListUpdate(v_dataReader(v_index(_this->index)->reader)->deadLineList,
                                  v_deadLineInstance(_this),
                                  message->allocTime);
 
-    if (v_dataReaderInstanceStateTest(_this, L_TRIGGER) ||
-        v_stateTest(msgState, L_WRITE)) {
-        reader->notReadCount++;
+    if (invalid || v_stateTest(msgState, L_WRITE))
+    {
+        INCREASE_READER_NOT_READ_COUNT(reader);
     }
+    if (invalid) {
+        v_dataReaderInstanceSampleRemove(_this, sample, TRUE);
+        sample = NULL;
+    }
+    return sample;
 }
 
 static void
@@ -436,6 +451,11 @@ updateFinalInstanceAndSampleState(
         {
             v_dataReaderInstanceStateSetMask(_this, (L_DISPOSED | L_STATECHANGED));
 
+            /* If this is a replace dispose action then mark this instance as replaced */
+            if (v_stateTest(msgState, L_REPLACED)) {
+                v_dataReaderInstanceStateSetMask(_this, L_REPLACED);
+            }
+
             /* If the sample is valid, the update constitutes a readable
              * state change for which observers need to be triggered.
              *
@@ -457,7 +477,8 @@ updateFinalInstanceAndSampleState(
             {
                 /* Don't set the trigger flag when this is a dispose all
                  * and the instance needs to be purge immediately.
-                 * Dispose all is indicated by the lack of a writerGID. */
+                 * Dispose all is indicated by the lack of a writerGID.
+                 */
                 if (!(!v_gidIsValid(message->writerGID) &&
                         qos->lifecycle.v.autopurge_dispose_all))
                 {
@@ -493,10 +514,7 @@ updateFinalInstanceAndSampleState(
              * to the observers when the reader has indicated that
              * it is prepared to receive invalid samples.
              */
-            if (v_stateTest(msgState, L_WRITE) ||
-                    qos->lifecycle.v.enable_invalid_samples ||
-                    hasValidSampleAccessible(_this))
-            {
+            if (qos->lifecycle.v.enable_invalid_samples || hasValidSampleAccessible(_this)) {
                 v_dataReaderInstanceStateSet(_this, L_TRIGGER);
             }
         }
@@ -521,7 +539,7 @@ updateFinalInstanceAndSampleState(
      * flag, to indicate that it does not impact the notReadCount.
      */
     if (v_dataReaderInstanceStateTest(_this, L_TRIGGER)){
-        reader->notReadCount++;
+        INCREASE_READER_NOT_READ_COUNT(reader);
     } else {
         v_readerSampleSetState(sample, L_READ);
     }
@@ -530,7 +548,6 @@ updateFinalInstanceAndSampleState(
      * Otherwise update the instance in the deadline list.
      */
     if (generationEnd) {
-        /* v_instanceRemove(v_instance(_this)); */
         v_deadLineInstanceListRemoveInstance(
             v_dataReaderDeadLineInstanceList(reader),
             v_deadLineInstance(_this));
@@ -538,6 +555,29 @@ updateFinalInstanceAndSampleState(
         v_deadLineInstanceListUpdate(
             v_dataReaderDeadLineInstanceList(reader),
             v_deadLineInstance(_this), message->allocTime);
+    }
+    /* If previous message is an invalid message then remove it as it is no longer required. */
+    if (sample->older &&
+        !v_readerSampleTestState(sample->older, L_VALIDDATA))
+    {
+        c_bool prev_not_read = !v_readerSampleTestState(sample->older, L_READ);
+        v_dataReaderInstanceSampleRemove(_this, sample->older, TRUE);
+        if (v_readerSampleTestState(sample, L_READ) && prev_not_read) {
+            /* If the previous invalid sample was still NOT_READ while we pushed it out of the
+             * history, then its task of communicating its state change passes on to the newly
+             * inserted sample. That means the newly inserted sample should become NOT_READ instead.
+             * However,  the state machine might have decided that the newly inserted message is
+             * considered READ, in which case we will have overrule this decision and set its
+             * sample state to NOT_READ instead. Such a scenario occurs for example when the
+             * previous sample communicated a DISPOSED state, while the newly inserted sample
+             * communicates an UNREGISTER state. The latter was not considered to be a a state change
+             * (since DISPOSED is an end state for the application reader) so the sample was set to
+             * READ. So in this case we will have to transfer the NOT_READ state from the previous
+             * sample to the newly inserted sample.
+             */
+            v_readerSampleClearState(sample, L_READ);
+            INCREASE_READER_NOT_READ_COUNT(reader);
+        }
     }
 }
 
@@ -631,8 +671,7 @@ InsertPending(
         } while ( s!= NULL && equality == C_LT);
     }
 
-    /* If max_samples_per_instance is then handle resource issue.
-     */
+    /* If max_samples_per_instance is then handle resource issue. */
     if (v_messageStateTest(message, L_WRITE) &&
         (qos->resource.v.max_samples_per_instance != V_LENGTH_UNLIMITED) &&
         (qos->resource.v.max_samples_per_instance <= _this->resourceSampleCount))
@@ -729,6 +768,8 @@ MakeSampleAvailable (
 {
     v_dataReader reader;
 
+    if (!sample) return;
+
     reader = v_dataReaderInstanceReader(_this);
     /* If ReaderQos has orderedAccess set to TRUE, then report the sample
      * to the orderedInstance.
@@ -820,7 +861,8 @@ FindHistoryPosition(
              *        sources, then messages with the same timestamp
              *        will be sorted by their writerGID and
              *        sequenceNumber to guarantee eventual consistency
-             *        throughout all DataReaders in the Domain. */
+             *        throughout all DataReaders in the Domain.
+             */
             if ( equality == C_EQ ) {
                 result = V_DATAREADER_DUPLICATE_SAMPLE;
             } else if ( equality == C_LT) {
@@ -836,7 +878,8 @@ FindHistoryPosition(
             if (qos->history.v.kind == V_HISTORY_KEEPLAST && depthBookmark >= qos->history.v.depth) {
                 /* If this sample is older than all VALID samples in the current
                  * history, and the history has already reached its full depth,
-                 * then the sample can discarded. */
+                 * then the sample can discarded.
+                 */
                 if(reader->statistics){
                     reader->statistics->numberOfSamplesDiscarded++;
                 }
@@ -922,6 +965,7 @@ InsertHistory(
     CHECK_COUNT(_this);
 
     result = V_DATAREADER_INSERTED;
+
     /* Filter out messages that violate the time based filter minimum separation time,
      * if the message state is not disposed or unregister and the time_based_filter QoS is enabled
      * Messages part of a transaction are filtered if/when a transaction flush occurs.
@@ -1046,9 +1090,9 @@ InsertHistory(
             if(v_dataReaderInstanceNewest(_this) == sample){
                 updateFinalInstanceAndSampleState(_this, message, sample);
             } else {
-                updateIntermediateInstanceAndSampleState(_this, message, sample);
+                sample = updateIntermediateInstanceAndSampleState(_this, message, sample);
             }
-            if (((v_observerEventMask(reader) & V_EVENT_PREPARE_DELETE) == 0)) {
+            if (((OSPL_GET_EVENT_MASK(reader) & V_EVENT_PREPARE_DELETE) == 0)) {
                MakeSampleAvailable(_this, sample);
             }
         }
@@ -1067,9 +1111,6 @@ InsertSample(
     v_readerQos qos;
     c_equality equality;
     v_dataReaderResult result;
-    c_bool accessLock = FALSE;
-    c_bool insert = TRUE;
-    v_subscriber subscriber;
 
     reader = v_dataReaderInstanceReader(_this);
     qos = v_reader(reader)->qos;
@@ -1079,37 +1120,24 @@ InsertSample(
      * in case of equal timestamps order is determined by the writerGID and
      * then by sequence-number.)
      */
+
     result = V_DATAREADER_INSERTED;
     if (qos->orderby.v.kind == V_ORDERBY_SOURCETIME) {
-        equality = v_historyBookmarkMessageCompare(&_this->lastConsumed, message);
+        equality = compareMessageToBookmark(message, &_this->lastConsumed);
         if (equality == C_EQ) {
             result = V_DATAREADER_DUPLICATE_SAMPLE;
-        } else if (equality == C_GT) {
+        } else if (equality == C_LT) {
             result = V_DATAREADER_SAMPLE_LOST;
         }
     }
     if (result == V_DATAREADER_INSERTED) {
-        subscriber = v_readerSubscriber(v_reader(reader));
-        assert(subscriber);
-
-        if (context != V_CONTEXT_TRANSACTIONFLUSH) {
-            if (v__readerIsGroupOrderedNonCoherent(v_reader(reader))) {
-                /* accessLock only required for group, none coherent, ordered subscribers.  */
-                v_subscriberLock(subscriber);
-                insert = accessLock = v_subscriberTryLockAccess(subscriber);
-                if (accessLock == FALSE) {
-                   result = InsertPending(_this, message, context);
-                }
-                v_subscriberUnlock(subscriber);
-            }
-        }
-        if (insert) {
+        if ((context != V_CONTEXT_TRANSACTIONFLUSH) &&
+            (v__readerIsGroupOrderedNonCoherent(v_reader(reader))) &&
+            (reader->accessBusy))
+        {
+            result = InsertPending(_this, message, context);
+        } else {
             result = InsertHistory(_this, message, context);
-        }
-        if (accessLock) {
-            v_subscriberLock(subscriber);
-            v_subscriberUnlockAccess(subscriber);
-            v_subscriberUnlock(subscriber);
         }
     }
     if (result != V_DATAREADER_INSERTED &&
@@ -1171,9 +1199,7 @@ v_dataReaderInstanceInit (
         _this->owner.exclusive = FALSE;
     }
 
-    /*
-     * copy key value from message into instance.
-     */
+    /* copy key value from message into instance. */
     messageKeyList = v_indexMessageKeyList(index);
     instanceKeyList = v_indexKeyList(index);
     assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
@@ -1261,37 +1287,44 @@ v_dataReaderInstanceWrite (
     v_writeResult result;
     v_dataReaderEntry entry;
     v_dataReaderInstance* thisPtr;
+    v_dataReader reader;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     assert(C_TYPECHECK(msg,v_message));
 
-    if ((_this->owner.exclusive) &&
-        (v_messageQos_getOwnershipStrength(msg->qos) < _this->owner.strength) &&
-        (v_gidIsValid(_this->owner.gid)) &&
-        (!v_gidEqual(_this->owner.gid, msg->writerGID)) /* also choose else-branch in case current owner lowered strength */
-        ) {
-        if (v_messageStateTest(msg, L_UNREGISTER)) {
-            /*
-             * An unregister message should decrease the liveliness.
-             * This is normally done in the v_dataReaderInstanceInsert() function.
-             * But, because this message is not forwarded and will not reach that
-             * function, the liveliness has the be decreased here.
-             *
-             * The register message takes a different route. It will not come here and
-             * will always reach v_dataReaderInstanceInsert() to increase liveliness.
-             */
-            if (_this->liveliness > 0)
-            {
-                _this->liveliness--;
+    result = V_WRITE_SUCCESS;
+    reader = v_dataReaderInstanceReader(_this);
+    entry = v_dataReaderEntry(v_index(_this->index)->entry);
+    if ((msg->qos) && _this->owner.exclusive) {
+        OSPL_LOCK(reader);
+        if ((v_messageQos_getOwnershipStrength(msg->qos) < _this->owner.strength) &&
+            (v_gidIsValid(_this->owner.gid)) &&
+            (!v_gidEqual(_this->owner.gid, msg->writerGID)))
+        {
+            if (v_messageStateTest(msg, L_UNREGISTER)) {
+                /* An unregister message should decrease the liveliness.
+                 * This is normally done in the v_dataReaderInstanceInsert() function.
+                 * But, because this message is not forwarded and will not reach that
+                 * function, the liveliness has the be decreased here.
+                 *
+                 * The register message takes a different route. It will not come here and
+                 * will always reach v_dataReaderInstanceInsert() to increase liveliness.
+                 */
+                if (_this->liveliness > 0)
+                {
+                    _this->liveliness--;
+                }
             }
+            result = V_WRITE_SUCCESS_NOT_STORED;
         }
-        result = V_WRITE_SUCCESS;
-    } else {
-        entry = v_dataReaderEntry(v_index(_this->index)->entry);
+        OSPL_UNLOCK(reader);
+    }
+    if (result == V_WRITE_SUCCESS) {
         thisPtr = &_this;
         result = v_dataReaderEntryWrite(entry, msg, (v_instance *)thisPtr, V_CONTEXT_GROUPWRITE);
+    } else if (result == V_WRITE_SUCCESS_NOT_STORED) {
+        result = V_WRITE_SUCCESS;
     }
-
     return result;
 }
 
@@ -1305,6 +1338,19 @@ v_dataReaderInstanceResetOwner(
             v_gidSetNil(_this->owner.gid);
         }
     }
+}
+
+void
+v_dataReaderInstanceTransferGroupOwnership(
+        v_dataReaderInstance _this,
+        struct v_owner *groupOwnership)
+{
+    /* Simulate that the group transfers its ownership by a normal
+     * sample with an L_WRITE flag, since both messages with the
+     * L_REGISTER and with the L_UNREGISTER will be ignored.
+     */
+    v_state messageState = L_WRITE;
+    (void)v_determineOwnershipByStrength(&_this->owner, groupOwnership, messageState);
 }
 
 v_message
@@ -1380,8 +1426,8 @@ CheckAndProcessReplacePolicyMarker(
          */
         sample = v_dataReaderInstanceNewest(_this);
         while ( (sample != NULL) && (latestDisposedSample == NULL) ) {
-            if (v_readerSampleTestState(sample, L_DISPOSED) &&
-                v_readerSampleTestState(sample, L_REPLACED)) {
+            if (v_dataReaderSampleMessageStateTest(sample, L_DISPOSED) &&
+                v_dataReaderSampleMessageStateTest(sample, L_REPLACED)) {
                 latestDisposedSample = sample;
             } else {
                 sample = sample->older;
@@ -1400,8 +1446,25 @@ CheckAndProcessReplacePolicyMarker(
             while ( (sample != latestDisposedSample->newer) && (sample != NULL) ) {
                 /* Remember the next sample (in case the current one gets purged.) */
                 nextSample = sample->newer;
+                /* Keep the sample as the take will free it. The take can't be moved
+                 * as it updates the lastConsumed which is required for the message
+                 * compare.
+                 */
+                c_keep(sample);
                 /* Take the sample */
                 v_dataReaderSampleTake(sample, NULL, NULL);
+                if (nextSample == NULL) {
+                    c_equality equality = compareMessageToBookmark(v_dataReaderSampleMessage(sample),
+                                                                   &_this->lastConsumed);
+                    if (equality != C_GT) {
+                        /* Only if last consumed is part of the old history before the replace then reset last consumed. */
+                        _this->lastConsumed.sourceTimestamp = OS_TIMEW_ZERO;
+                        v_gidSetNil(_this->lastConsumed.gid);
+                        _this->lastConsumed.sequenceNumber  = 0;
+                        _this->lastConsumed.isImplicit      = FALSE;
+                    }
+                }
+                c_free(sample);
                 /* Iterate to the next sample. */
                 sample = nextSample;
             }
@@ -1417,15 +1480,9 @@ v_dataReaderInstanceInsert(
     v_messageContext context)
 {
     v_state messageState;
-#if 0
-    os_compare equality;
-#endif
     v_index index;
     v_dataReader reader;
     v_dataReaderEntry entry;
-#if 0
-    v_readerQos qos;
-#endif
     v_dataReaderResult result = V_DATAREADER_UNDETERMINED;
     struct v_owner ownership;
     v_ownershipResult ownershipResult = V_OWNERSHIP_OWNER;
@@ -1444,28 +1501,6 @@ v_dataReaderInstanceInsert(
     entry = v_dataReaderEntry(index->entry);
     messageState = v_nodeState(message);
 
-#if 0
-    qos = v_reader(reader)->qos;
-
-    /*
-     * Filter out messages that still belong to a previous lifecycle of this
-     * 'recycled' v_dataReaderInstance object. The epoch time determines when
-     * the previous lifecycle ended, so everything older than that can be
-     * discarded.
-     */
-    if (qos->orderby.v.kind == V_ORDERBY_SOURCETIME) {
-        equality = os_timeWCompare(message->writeTime, _this->epoch);
-        if (equality != OS_MORE) {
-            CHECK_COUNT(_this);
-            /* TODO: in case of a transaction message should we look for
-             * existing transaction and abort it or ignore it and leave it
-             * to garbage collection or maybe this cannot occur?
-             */
-            return V_DATAREADER_OUTDATED;
-        }
-    }
-#endif
-
     /* Replace merge policy code:
      * During a replace action all existing instances are marked with the replace flag
      * This flag will be reset at the end of the replace action or if a replace message
@@ -1479,7 +1514,8 @@ v_dataReaderInstanceInsert(
     /* The first message carrying the L_MARK flag that is
      * added to an existing instance will clear the L_MARK
      * from the instance to indicate that the instance has
-     * been touched by the CATCHUP merge policy */
+     * been touched by the CATCHUP merge policy
+     */
     if ( v_stateTest(messageState, L_MARK) &&
          v_dataReaderInstanceStateTest(_this, L_MARK)) {
         v_dataReaderInstanceStateClear(_this, L_MARK);
@@ -1490,39 +1526,37 @@ v_dataReaderInstanceInsert(
     CHECK_EMPTINESS(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
 
-    if (message->qos) {
-        /*
-         * Test if ownership is exclusive and whether the writer identified
+    if (message->qos && context != V_CONTEXT_GETHISTORY) {
+        /* Test if ownership is exclusive and whether the writer identified
          * in the message should become owner. In case of an invalid GID
          * ownership is always assumed. (For example in case of disposeAll.)
          */
         ownership.exclusive = v_messageQos_isExclusive(message->qos);
         if (ownership.exclusive == TRUE) {
-            c_bool claim = !v_stateTest(messageState, L_REGISTER);
             ownership.strength = v_messageQos_getOwnershipStrength(message->qos);
             ownership.gid = message->writerGID;
-            ownershipResult = v_determineOwnershipByStrength(&_this->owner, &ownership, claim);
+            ownershipResult = v_determineOwnershipByStrength(&_this->owner, &ownership, messageState);
         }
     } else {
         ownership.exclusive = FALSE;
     }
 
+    if (v_stateTest(messageState, L_REGISTER)) {
+        _this->liveliness++;
+    }
     if (context != V_CONTEXT_TRANSACTIONFLUSH) {
         /* All kinds of messages need to update alive writers.
          * The alive writers must always be updated even when the writer is
          * not owner, it remains a writer that is alive.
          */
-        if (v_stateTest(messageState, L_REGISTER)) {
-            _this->liveliness++;
-        }
         if (v_message_isTransaction(message) && entry->transactionAdmin && context != V_CONTEXT_GETHISTORY )
         {
             /* Exclude finished transaction messages (V_CONTEXT_TRANSACTIONFLUSH) and
              * exclude finished historical transaction messages (V_CONTEXT_GETHISTORY).
              * These should not go into the transaction admin but instead go into the
              * readers history, i.e. made available to the reader.
-             */
-            /* If the sample belongs to an unfinished transaction, then insert it into the
+             *
+             * If the sample belongs to an unfinished transaction, then insert it into the
              * transactional administration. Since this is a newly arriving sample, it still
              * needs to make a resource claim.
              */
@@ -1561,36 +1595,18 @@ v_dataReaderInstanceInsert(
             result = V_DATAREADER_INSERTED;
         } else {
             _this->liveliness--;
-            /* It is possible (f.i. by deadline QoS) that a lower strength
-             * writer has already taken over before this unregister message
-             * of a possible higher strength writer is received/triggered.
-             *
-             * If the current unregister write has a higher strength and would
-             * claim this instance, then the lower strength writer (that has
-             * taken over and actually is providing data) will be ignored again,
-             * until the next deadline occurs.
-             * This will cause a 'gap' within sample delivery to the reader.
-             * The duration of this gap is the duration of deadline QoS.
+            /* In case the UNREGISTER did not result in a NOWRITERS state,
+             * because the liveliness counter is still > 0, then prevent
+             * any sample from being inserted by indicating this sample
+             * has already been processed. However, if the message also has
+             * a DISPOSE attached, then process the DISPOSE using the normal
+             * route (i.e. first determine ownership). The UNREGISTER
+             * flag will not have any further negative impact when
+             * processing the DISPOSE using this normal route (since an
+             * UNREGISTER following a DISPOSE does not result in any
+             * further state change).
              */
-            if ((ownership.exclusive == TRUE) && (ownershipResult == V_OWNERSHIP_ALREADY_OWNER)) {
-                /* If the writer indicates will no longer update (own) this
-                 * instance (by sending an unregister message) then the ownership
-                 * is released by resetting the owner gid to nil.
-                 */
-                v_gidSetNil (_this->owner.gid);
-            }
             if (_this->liveliness > 0 && !v_stateTest(messageState, L_DISPOSED)) {
-                /* In case the UNREGISTER did not result in a NOWRITERS state,
-                 * because the liveliness counter is still > 0, then prevent
-                 * any sample from being inserted by indicating this sample
-                 * has already been processed. However, if the message also has
-                 * a DISPOSE attached, then process the DISPOSE using the normal
-                 * route (i.e. first determine ownership). The UNREGISTER
-                 * flag will not have any further negative impact when
-                 * processing the DISPOSE using this normal route (since an
-                 * UNREGISTER following a DISPOSE does not result in any
-                 * further state change).
-                 */
                 result = V_DATAREADER_INSERTED;
             }
         }
@@ -1598,7 +1614,7 @@ v_dataReaderInstanceInsert(
 
     /* When no message has been inserted yet, handle all other types of messages. */
     if (result == V_DATAREADER_UNDETERMINED) {
-        if (v_observerEventMask(reader) & V_EVENT_PREPARE_DELETE) {
+        if (OSPL_GET_EVENT_MASK(reader) & V_EVENT_PREPARE_DELETE) {
             /* No need to insert incomming messages when the reader is in process of being deleted. */
             result = V_DATAREADER_INSERTED;
         } else if (ownership.exclusive == TRUE && (ownershipResult == V_OWNERSHIP_INCOMPATIBLE_QOS ||
@@ -1606,12 +1622,10 @@ v_dataReaderInstanceInsert(
         {
             /* No need to insert incomming messages form lower strength writers. */
             result = V_DATAREADER_NOT_OWNER;
+        } else {
+            /* When message state is not determined then it can be inserted. */
+            result = InsertSample(_this, message, context);
         }
-    }
-    /* When message state is not determined then it can be inserted. */
-    CHECK_COUNT(_this);
-    if (result == V_DATAREADER_UNDETERMINED) {
-        result = InsertSample(_this, message, context);
     }
 
     CHECK_COUNT(_this);
@@ -1723,8 +1737,8 @@ v_dataReaderInstanceTest(
             if (v_sampleMaskPass(sampleMask, sample)) {
                 if (query) {
                     /* The history samples are swapped with the first sample to make
-                       sample-evaluation on instance level work.
-                    */
+                     * sample-evaluation on instance level work.
+                     */
                     if (sample != newestSample) {
                         v_dataReaderInstanceSetNewest(_this,sample);
                     }
@@ -1863,7 +1877,11 @@ v_dataReaderSampleRead(
         v_dataReaderInstanceStateClear(instance, L_NEW);
         v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
         if (!v_readerSampleTestState(sample, L_READ)) {
-            v_dataReaderInstanceReader(instance)->notReadCount--;
+            /* Sample with L_INMINSEPTIME have not incremented the notReadCount,
+             * they should also not decrement it (and should not be possible here)
+             */
+            assert(!v_readerSampleTestState(sample, L_INMINSEPTIME));
+            DECREASE_READER_NOT_READ_COUNT(v_dataReaderInstanceReader(instance));
             v_readerSampleSetState(sample, L_LAZYREAD);
         }
 
@@ -1929,8 +1947,7 @@ v_dataReaderInstanceReadSamples(
                 {
                     sample = sample->newer;
                 }
-                /* If a sample is found matching the criteria, then consume it.
-                 */
+                /* If a sample is found matching the criteria, then consume it. */
                 if (sample)
                 {
                     if (v_sampleMaskPass(sampleMask, sample)) {
@@ -2102,9 +2119,9 @@ v_dataReaderInstanceSampleRemove(
     sample->older = NULL;
     v_dataReaderSampleWipeViews(sample);
     v_dataReaderSampleRemoveFromLifespanAdmin(sample);
-    if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD))
+    if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD | L_INMINSEPTIME))
     {
-        reader->notReadCount--;
+        DECREASE_READER_NOT_READ_COUNT(reader);
     }
 
     /* Unregister messages should not affect the lastConsumed time. */
@@ -2113,8 +2130,8 @@ v_dataReaderInstanceSampleRemove(
          * sample, then update the history bookmark to indicate that
          * all samples prior to the current sample have been consumed.
          */
-        if (v_historyBookmarkMessageCompare(&_this->lastConsumed, msg) != C_GT)
-        {
+        c_equality eq = compareMessageToBookmark(msg, &_this->lastConsumed);
+        if (eq == C_GT) {
             _this->lastConsumed.sourceTimestamp = msg->writeTime;
             _this->lastConsumed.gid = msg->writerGID;
             _this->lastConsumed.sequenceNumber = msg->sequenceNumber;
@@ -2127,8 +2144,7 @@ v_dataReaderInstanceSampleRemove(
     c_free(sample);
 }
 
-/*
- * This function checks whether a sample is still contained in the
+/* This function checks whether a sample is still contained in the
  * dataReaderInstance. It is not enough to check the instance pointer
  * of the dataReaderSample, because the sample under investigation
  * might just have been taken from the dataReaderInstance but still
@@ -2552,7 +2568,8 @@ v_dataReaderInstanceUnregister (
     }
 
     /* If there are no other registrations, or if the Writer had an autodispose
-     * policy set for this instance, then insert an unregister message explicitly. */
+     * policy set for this instance, then insert an unregister message explicitly.
+     */
     if (_this->liveliness == 1 || autoDispose)
     {
         /* Create an invalid sample as holder for the dispose. */
@@ -2620,12 +2637,12 @@ InsertPendingSample(
     qos = v_reader(reader)->qos;
     if (qos->orderby.v.kind == V_ORDERBY_SOURCETIME)
     {
-        equality = v_historyBookmarkMessageCompare(&_this->lastConsumed, message);
+        equality = compareMessageToBookmark(message, &_this->lastConsumed);
         if (equality == C_EQ)
         {
             CHECK_COUNT(_this);
             return V_DATAREADER_DUPLICATE_SAMPLE;
-        } else if (equality == C_GT) {
+        } else if (equality == C_LT) {
             CHECK_COUNT(_this);
             return V_DATAREADER_SAMPLE_LOST;
         }
@@ -2657,9 +2674,9 @@ InsertPendingSample(
                 v_dataReaderSample(s->older)->newer = sample;
             }
             s->older = sample;
-            updateIntermediateInstanceAndSampleState(_this, message, sample);
+            sample = updateIntermediateInstanceAndSampleState(_this, message, sample);
         }
-        if ((v_observerEventMask(reader) & V_EVENT_PREPARE_DELETE) == 0) {
+        if ((OSPL_GET_EVENT_MASK(reader) & V_EVENT_PREPARE_DELETE) == 0) {
             MakeSampleAvailable(_this, sample);
         }
     }
@@ -2700,7 +2717,8 @@ v_dataReaderInstanceMatchesSampleMask (
     v_sampleMask mask)
 {
     /* This function ignores sample state flags and only checks if the instance
-       flags specified match. */
+     * flags specified match.
+     */
     v_sampleMask state = V_MASK_ALIVE_INSTANCE;
 
     assert (_this != NULL && C_TYPECHECK (_this, v_dataReaderInstance));

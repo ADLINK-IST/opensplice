@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -78,25 +79,10 @@ OS_API v_result
 v_publisherEnable (
     v_publisher _this);
 
-OS_API void
-v_publisherPublish (
-    v_publisher _this,
-    const c_char *partitionExpr);
-
-OS_API void
-v_publisherUnPublish (
-    v_publisher _this,
-    const c_char *partitionExpr);
-
 OS_API c_iter
 v_publisherLookupPartitions (
     v_publisher _this,
     const c_char *partitionExpr);
-
-OS_API c_bool
-v_publisherCheckPartitionInterest (
-    v_publisher _this,
-    v_partition partition);
 
 OS_API v_result
 v_publisherAddWriter (

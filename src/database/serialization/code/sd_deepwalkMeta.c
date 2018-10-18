@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -750,7 +751,8 @@ sd_deepwalkMetaClass(
 
     if ((*objectPtr) && *((c_class *)(*objectPtr))) {
         /* For deepwalkMeta, we are interested in the actual class. We might
-         * have a baseclass here so downcast to the real class */
+         * have a baseclass here so downcast to the real class
+         */
         actualClass = c_class(c_getType(*((c_type *)(*objectPtr))));
     } else {
         actualClass = class;
@@ -766,10 +768,12 @@ sd_deepwalkMetaClass(
         }
 
         /* Again re-evaluate the actual class because the Pre-function might
-         * have changed its value. This is the case for virtual classes */
+         * have changed its value. This is the case for virtual classes
+         */
         if ((*objectPtr) && *((c_class *)(*objectPtr))) {
             /* For deepwalkMeta, we are interested in the actual class. We might
-             * have a baseclass here so downcast to the real class */
+             * have a baseclass here so downcast to the real class
+             */
             actualClass = c_class(c_getType(*((c_type *)(*objectPtr))));
         } else {
             actualClass = class;
@@ -1141,7 +1145,7 @@ sd_deepwalkMetaType(
             ok = FALSE;
             break;
     }
-    
+
     assert (ok || context->errorInfo);
     return ok;
 }

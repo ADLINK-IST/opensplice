@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -60,7 +61,8 @@ TopicQosDelegate::TopicQosDelegate(
       resources_(other.resources_),
       priority_(other.priority_),
       lifespan_(other.lifespan_),
-      ownership_(other.ownership_)
+      ownership_(other.ownership_),
+      merge_(other.merge_)
 {
 }
 
@@ -240,6 +242,18 @@ TopicQosDelegate::check() const
 }
 
 bool
+TopicQosDelegate::force_merge(void) const
+{
+    return merge_;
+}
+
+void
+TopicQosDelegate::force_merge(bool force)
+{
+    merge_ = force;
+}
+
+bool
 TopicQosDelegate::operator ==(const TopicQosDelegate& other) const
 {
     return other.topic_data_  == topic_data_  &&
@@ -256,7 +270,8 @@ TopicQosDelegate::operator ==(const TopicQosDelegate& other) const
            other.resources_   == resources_   &&
            other.priority_    == priority_    &&
            other.lifespan_    == lifespan_    &&
-           other.ownership_   == ownership_;
+           other.ownership_   == ownership_   &&
+           other.merge_       == merge_;
 }
 
 TopicQosDelegate&
@@ -277,6 +292,7 @@ TopicQosDelegate::operator =(const TopicQosDelegate& other)
     priority_    = other.priority_;
     lifespan_    = other.lifespan_;
     ownership_   = other.ownership_;
+    merge_       = other.merge_;
     return *this;
 }
 
@@ -292,6 +308,7 @@ TopicQosDelegate::defaults()
     qos->reliability.v.max_blocking_time = OS_DURATION_INIT(0,100000000);
     this->u_qos(qos);
     u_topicQosFree(qos);
+    merge_ = false;
 }
 
 }

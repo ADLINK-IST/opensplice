@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,7 +22,7 @@
  * \file v_serviceManager.h
  * \brief
  *
- * Currently the service manager is passes all requests to the garbage 
+ * Currently the service manager is passes all requests to the garbage
  * collector. For A02 the lease mechanism will remain in the garbage collector,
  * while the service state management is moved to the service manager.
  */
@@ -54,17 +55,18 @@ extern "C" {
 
 /**
  * \brief The <code>v_serviceManager</code> constructor.
- * 
+ *
  * The constructor will create a new <code>v_serviceManager</code> object.
  *
- * \param kernel the kernel 
+ * \param kernel the kernel
  *
- * \return NULL if memory allocation failed, otherwise a reference to a newly
- *         created  <code>v_serviceManager</code> object.
+ * \return a reference to a newly created  <code>v_serviceManager</code> object.
  */
+_Check_return_
+_Ret_notnull_
 OS_API v_serviceManager
 v_serviceManagerNew(
-    v_kernel kernel);
+    _In_ v_kernel kernel);
 
 /**
  * \brief Retrieves the state kind of a given service.

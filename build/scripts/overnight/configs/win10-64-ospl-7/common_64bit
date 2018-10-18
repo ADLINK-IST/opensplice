@@ -1,0 +1,9 @@
+. ./configs/`hostname`/common
+
+export VS_ENV_SCRIPT_ARGS="-arch=x64"
+
+export JAVA6_HOME="c:/Program Files/Java/jdk1.6.0_45"
+export JAVA_HOME="c:/Program Files/Java/jdk1.8.0_171"
+
+export ZLIB_HOME=
+export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_64bit

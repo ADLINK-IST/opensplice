@@ -12,12 +12,12 @@ Introduction
 Overview
 ********
 
-This section provides a brief introduction to the OpenSplice DDS 
+This section provides a brief introduction to the Vortex OpenSplice
 RnR Service and the RnR Manager tool.
 
 |caution|
   Version 6.4 of RnR Manager is compatible with Vortex OpenSplice
-  version 6.4. It is not compatible with earlier versions of OpenSplice.
+  version 6.4. It is not compatible with earlier versions of Vortex OpenSplice.
 
 
 Vortex OpenSplice Record and Replay Service
@@ -83,7 +83,7 @@ for an existing system are:
    b) In the case of a dedicated RnR node, this partition can be 
       configured to be a so-called ‘local partition’, thus bounding all 
       control/status traffic to the RnR node (see Section 2.5.2.6 in the 
-      OpenSplice *Deployment Guide*). 
+      Vortex OpenSplice *Deployment Guide*).
 
 3. Replaying (subsets) of recorded data ‘by definition’ has an 
    impact on an existing system:
@@ -106,7 +106,7 @@ data in a multicast-enabled network is non-intrusive.
   Note: *The few shared topic-definitions (definitions ONLY, not actual 
   samples of these topics when these are ‘confined’ to the RnR node) 
   that would be visible system-wide when inspecting the built-in topics of 
-  the system (for instance with a tool like the OpenSplice Tuner) are 
+  the system (for instance with a tool like the Vortex OpenSplice Tuner) are
   considered not instrusive as they only imply a small amount of static 
   data space occupied by the related built-in topic samples.)*
 
@@ -117,7 +117,7 @@ Please refer to the Vortex OpenSplice *Deployment Guide*
 (``OpenSplice_Deployment.pdf``) for more detailed information 
 on how to configure Vortex OpenSplice.
 
-The OpenSplice configuration editor (``osplconf``) provides facilities to 
+The Vortex OpenSplice configuration editor (``osplconf``) provides facilities to
 create, modify and save configuration files. This tool is described in 
 Section 3.2 in the Vortex OpenSplice *Deployment Guide*. 
 
@@ -152,7 +152,7 @@ inspect and change recorded data.
 RnR Manager uses the internal Control and Monitoring API for access to 
 the Vortex OpenSplice Middleware. Connections to local nodes *via* JNI and remote 
 nodes (*via* SOAP) are supported. The manager tool does not need to have 
-OpenSplice DDS installed locally. A connection can be made remotely to a 
+Vortex OpenSplice installed locally. A connection can be made remotely to a
 node that is running Vortex OpenSplice.
 
 RnR Manager Features
@@ -384,4 +384,4 @@ A range is defined with a start and an end timestamp.
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+

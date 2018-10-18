@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,6 +43,7 @@ import org.opensplice.common.view.entity.tree.EntityTreeNode;
 public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
     private final Color hideRelationsColor = Config.getInactiveColor();
     private final Color showRelationsColor = Config.getActiveColor();
+    private final Color entityDisabledColor = Config.getWarningColor();
     /**
      * Constructs a new EntityTreeCellRenderer.
      *
@@ -90,9 +92,9 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
                 label = ((JLabel)result); 
                 label.setText(str);
                 label.setToolTipText(str);
-                
+
                 if(!(e.isEnabled())){
-                    label.setFont(label.getFont().deriveFont(Font.ITALIC));
+                    label.setForeground(entityDisabledColor);
                 }
             }
             if (tree instanceof EntityTree) {

@@ -45,7 +45,7 @@ of RnR Manager.
 Conventions
 ***********
 
-The icons shown below are used in PrismTech product documentation 
+The icons shown below are used in Vortex product documentation 
 to help readers to quickly identify information relevant to their 
 specific use of Vortex OpenSplice.
 

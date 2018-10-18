@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,8 +22,8 @@ package org.opensplice.dds.core.status;
 
 public enum StatusMask {
     NONE                                ((int)(0x0L)),
-    ANY                                 ((int)(0x7FE7L)),
-    ANY_V1_2                            ((int)(0x7FE7L)),
+    ANY                                 ((int)(0xFFFFFFFFL)),
+    ANY_V1_2                            ((int)(0x7FFFL)),
     INCONSISTENT_TOPIC_STATUS           ((int)(0x0001L << 0L)),
     OFFERED_DEADLINE_MISSED_STATUS      ((int)(0x0001L << 1L)),
     REQUESTED_DEADLINE_MISSED_STATUS    ((int)(0x0001L << 2L)),
@@ -37,13 +38,13 @@ public enum StatusMask {
     PUBLICATION_MATCHED_STATUS          ((int)(0x0001L << 13L)),
     SUBSCRIPTION_MATCHED_STATUS         ((int)(0x0001L << 14L)),
     ALL_DATA_DISPOSED_TOPIC_STATUS      ((int)(0x0001L << 31L));
-    
+
     private final int mask;
-    
+
     StatusMask(int mask){
         this.mask = mask;
     }
-    
+
     public int getMask(){
         return this.mask;
     }

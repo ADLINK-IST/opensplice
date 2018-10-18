@@ -492,6 +492,10 @@ extends DomainEntity<SubscriberListener, SubscriberQos>
      * The calls to {@link #beginAccess()}/{@link #endAccess()} may be
      * nested. In that case, the application must call {@link #endAccess()}
      * as many times as it called beginAccess.
+     * <p>
+     * Note that a coherent subscriber should first be enabled, otherwise this
+     * operation throws a DDSException. See {@link org.omg.dds.core.Entity#enable()}
+     * for more information on coherent access.
      * @throws org.omg.dds.core.DDSException
      *                  An internal error has occurred.
      * @throws org.omg.dds.core.AlreadyClosedException
@@ -513,6 +517,9 @@ extends DomainEntity<SubscriberListener, SubscriberQos>
      * After calling endAccess the application should no longer access any of
      * the Sample (including corresponding data) elements returned from the
      * sample-accessing operations.
+     *
+     * See {@link org.omg.dds.core.Entity#enable()}
+     * for more information on coherent access.
      *
      * @throws org.omg.dds.core.PreconditionNotMetException
      *             if this call does not close a previous call to

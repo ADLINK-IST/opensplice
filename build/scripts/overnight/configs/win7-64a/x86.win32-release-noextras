@@ -26,5 +26,4 @@ unset RLM_HOME
 unset RLM_TARGET
 unset RLM_VERSION
 unset JACORB_HOME
-unset OSPL_BUILDER
 unset M2_HOME

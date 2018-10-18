@@ -1,25 +1,25 @@
-.. _`OpenSplice Enterprise Basics`:
+.. _`Vortex OpenSplice Basics`:
 
 ############################
-OpenSplice Enterprise Basics
+Vortex OpenSplice Basics
 ############################
 
 
-OpenSplice Enterprise is configured using an XML configuration file. 
+Vortex OpenSplice is configured using an XML configuration file. 
 In this file, the user specifies the architectural model and the
-OpenSplice Enterprise services that are to run when the DDS 
+Vortex OpenSplice services that are to run when the DDS 
 infrastructure is started. 
 
 The ``OSPL_URI`` environment variable refers to the specific XML 
 configuration file that is used for the current deployment. The 
 default value refers to the ``ospl.xml`` file located in the ``etc/config`` 
-directory of the OpenSplice Enterprise installation. The installation 
+directory of the Vortex OpenSplice installation. The installation 
 directory itself can be referred to by the ``OSPL_HOME`` environment 
-variable. Please see :ref:`The OpenSplice Enterprise Environment` for 
-details of how to set up the OpenSplice Enterprise environment. 
+variable. Please see :ref:`The Vortex OpenSplice Environment` for 
+details of how to set up the Vortex OpenSplice environment. 
 
 A number of other sample configuration files that can be used when 
-benchmarking OpenSplice Enterprise are also provided in 
+benchmarking Vortex OpenSplice are also provided in 
 the ``etc/config`` directory. 
 
 The ``OSPL_URI`` variable is of the form: 
@@ -35,7 +35,7 @@ of the ``OSPL_URI`` variable; for now, let us see what aspects of the
 OpenSplice deployment are controlled by this file. 
 
 |info|
-  The OpenSplice Enterprise Launcher tool assists with the 
+  The Vortex OpenSplice Launcher tool assists with the 
   selection of the ``OSPL_URI`` variable. There is a *Configurations* menu 
   that lists the sample configuration files that are available. 
 
@@ -48,7 +48,7 @@ OpenSplice deployment are controlled by this file.
    **The Launcher tool**
 
 
-The OpenSplice Enterprise Launcher tool is also able to run the 
+The Vortex OpenSplice Launcher tool is also able to run the 
 examples and performance tests that are described later in this 
 document. 
 

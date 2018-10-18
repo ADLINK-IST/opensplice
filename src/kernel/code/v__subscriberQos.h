@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,12 +29,17 @@ extern "C" {
 #include "v_qos.h"
 #include "v_subscriberQos.h"
 
+_Success_(return == V_RESULT_OK)
 v_result
 v_subscriberQosCompare(
-    v_subscriberQos _this,
-    v_subscriberQos tmpl,
-    c_bool enable,
-    v_qosChangeMask *changeMask);
+    _In_ v_subscriberQos _this,
+    _In_ v_subscriberQos tmpl,
+    _In_ c_bool enable,
+    _Out_ v_qosChangeMask *changeMask);
+
+c_bool
+v_subscriberQosIsGroupCoherent (
+    _In_ _Const_ v_subscriberQos _this);
 
 #if defined (__cplusplus)
 }

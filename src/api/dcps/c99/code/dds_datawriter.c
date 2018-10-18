@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -159,8 +160,6 @@ dds_datawriter_listener_init(
     listener->on_publication_matched = on_publication_match;
 }
 
-
-
 int
 dds_writer_create (
   dds_entity_t pp_or_pub,
@@ -174,34 +173,43 @@ dds_writer_create (
     struct DataWriterInfo *info;
     struct DDS_DataWriterListener dpl;
     struct DDS_DataWriterListener *lp = NULL;
-    DDS_StatusMask mask = DDS_STATUS_MASK_ANY | DDS_PUBLICATION_MATCHED_STATUS;
+    DDS_StatusMask mask = (listener) ? DDS_STATUS_MASK_ANY : DDS_STATUS_MASK_NONE;
     DDS_DataWriterQos *wQos;
     bool ownPublisher = false;
 
     DDS_REPORT_STACK();
 
-    if (!pp_or_pub) {
-        result = DDS_RETCODE_BAD_PARAMETER;
-        DDS_REPORT(result, "Participant or publisher parameter is NULL.");
-    } else if (!writer) {
+    if (!writer) {
         result = DDS_RETCODE_BAD_PARAMETER;
         DDS_REPORT(result, "Writer parameter is NULL.");
-    } else if (!topic) {
+    }
+    if (!topic) {
         result = DDS_RETCODE_BAD_PARAMETER;
         DDS_REPORT(result, "Topic parameter is NULL.");
-    } else {
-        if (DDS_Entity_get_kind(pp_or_pub) == DDS_ENTITY_KIND_DOMAINPARTICIPANT) {
-            result = dds_publisher_create(pp_or_pub, &publisher, qos, NULL);
+    }
+    if (result == DDS_RETCODE_OK) {
+        if (!pp_or_pub) {
+            result = dds_publisher_create(NULL, &publisher, qos, NULL);
             ownPublisher = true;
         } else {
-            publisher = pp_or_pub;
+            if (DDS_Entity_get_kind(pp_or_pub) == DDS_ENTITY_KIND_DOMAINPARTICIPANT) {
+                result = dds_publisher_create(pp_or_pub, &publisher, qos, NULL);
+                ownPublisher = true;
+            } else {
+                publisher = pp_or_pub;
+            }
         }
     }
-
     if (result == DDS_RETCODE_OK) {
-        *writer = NULL;
-
         info = dds_datawriter_info_new();
+        if (!info) {
+            result = DDS_RETCODE_ERROR;
+            DDS_REPORT(result, "Failed to create writer info.");
+        }
+    }
+    if (result == DDS_RETCODE_OK) {
+
+        *writer = NULL;
         info->ownPublisher = ownPublisher;
 
         if (listener) {
@@ -216,21 +224,16 @@ dds_writer_create (
             result = DDS_Publisher_get_default_datawriter_qos(publisher, wQos);
             if (result == DDS_RETCODE_OK) {
                 dds_qos_to_writer_qos(wQos, qos);
-                *writer = DDS_Publisher_create_datawriter(publisher, topic, wQos, lp, lp ? mask : 0);
+                *writer = DDS_Publisher_create_datawriter(publisher, topic, wQos, lp, mask);
             }
             DDS_free(wQos);
         } else {
-            *writer = DDS_Publisher_create_datawriter(publisher, topic, DDS_DATAWRITER_QOS_DEFAULT, lp,  lp ? mask : 0);
+            *writer = DDS_Publisher_create_datawriter(publisher, topic, DDS_DATAWRITER_QOS_USE_TOPIC_QOS, lp, mask);
         }
         if (*writer) {
             result = DDS_Entity_set_user_data(*writer, (DDS_EntityUserData)info);
         } else {
             result = dds_report_get_error_code();
-        }
-        if (result == DDS_RETCODE_OK) {
-            /* Because of OSPL-9383, we have to set the mask with
-             * DDS_PUBLICATION_MATCHED_STATUS enabled. */
-            dds_status_set_enabled(*writer, mask);
         }
         DDS_Entity_release_user_data((DDS_EntityUserData)info);
     }
@@ -434,7 +437,7 @@ dds_datawriter_set_listener(
 {
     DDS_ReturnCode_t result           = DDS_RETCODE_ERROR;
     struct DataWriterInfo *info       = NULL;
-    struct DDS_DataWriterListener dpl = {0};
+    struct DDS_DataWriterListener dpl = {NULL, NULL, NULL, NULL, NULL};
     dds_writerlistener_t *newListener = NULL;
     dds_writerlistener_t *oldListener = NULL;
     DDS_StatusMask mask               = 0;

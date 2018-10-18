@@ -18,10 +18,6 @@
 #define DS_MAX_INSTANCES 4196
 #define DS_MAX_SAMPLES_X_INSTANCE 8192
 
-/*
- painter.drawPixmap(15, 300, logo_);
-    painter.drawPixmap(200, 10, simd_);
- */
 #if  (ISHAPES_WIDE_FORMAT == 1)
 #  define IS_WIDTH 501
 #  define IS_HEIGHT 361

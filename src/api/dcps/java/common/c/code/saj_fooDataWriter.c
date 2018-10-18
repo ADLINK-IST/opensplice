@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -338,21 +339,20 @@ SAJ_FUNCTION(jniGetKeyValue) (
     sajReaderCopyCache *rc = saj_copyCacheReaderCache ((saj_copyCache)(PA_ADDRCAST)copyCache);
 
     OS_UNUSED_ARG(object);
+    assert(key_holder != NULL);
 
-    if (key_holder != NULL) {
-        element = (*env)->GetObjectField(env, key_holder, rc->dataHolder_value_fid);
-        CHECK_EXCEPTION(env);
-        dstInfo.javaEnv = env;
-        dstInfo.javaObject = element;
-        dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        dst = (void *)&dstInfo;
-    }
+    element = (*env)->GetObjectField(env, key_holder, rc->dataHolder_value_fid);
+    CHECK_EXCEPTION(env);
+    dstInfo.javaEnv = env;
+    dstInfo.javaObject = element;
+    dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
+    dst = (void *)&dstInfo;
 
     uResult = u_writerCopyKeysFromInstanceHandle(SAJ_VOIDP(uWriter),
                                                 (u_instanceHandle)handle,
                                                 (u_writerCopyKeyAction)copyKeyAction, dst);
     retcode = saj_retcode_from_user_result(uResult);
-    if ((key_holder != NULL) && (dstInfo.javaObject != element)) {
+    if (dstInfo.javaObject != element) {
         (*env)->SetObjectField(env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
         CHECK_EXCEPTION(env);
     }

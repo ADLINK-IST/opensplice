@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -640,6 +641,27 @@ os_sockaddrAddressPortToString(
   return buffer;
 }
 
+OSPL_DIAG_OFF(sign-conversion)
+void
+os_sock_set(
+    os_socket s,
+    fd_set *fdsetp)
+{
+    /* FD_SET gives a sign-conversion warning, suppressing it */
+    FD_SET(s,fdsetp);
+}
+OSPL_DIAG_ON(sign-conversion)
+
+OSPL_DIAG_OFF(sign-conversion)
+int
+os_sock_isset(
+    os_socket s,
+    fd_set *fdsetp)
+{
+    /* FD_ISSET gives a sign-conversion warning, suppressing it */
+    return FD_ISSET(s,fdsetp);
+}
+OSPL_DIAG_ON(sign-conversion)
 
 /* include OS specific socket management implementation         */
 #include "code/os_socket.c"

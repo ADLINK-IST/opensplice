@@ -32,6 +32,7 @@ void DDSEntityManager::createTopic(char *topicName)
   checkStatus(status, "DDS::DomainParticipant::get_default_topic_qos");
   reliable_topic_qos.reliability.kind = RELIABLE_RELIABILITY_QOS;
   reliable_topic_qos.durability.kind = TRANSIENT_DURABILITY_QOS;
+  reliable_topic_qos.destination_order.kind = BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
 
   /* Make the tailored QoS the new default. */
   status = participant->set_default_topic_qos(reliable_topic_qos);
@@ -117,18 +118,18 @@ void DDSEntityManager::deleteSubscriber()
 
 void DDSEntityManager::createReader(bool filtered)
 {
-  if (!filtered)
-  {
-    reader = subscriber->create_datareader(topic.in(),
-      DATAREADER_QOS_USE_TOPIC_QOS, NULL, STATUS_MASK_NONE);
-    checkHandle(reader, "DDS::Subscriber::create_datareader ()");
-  }
-  else
-  {
-    reader = subscriber->create_datareader(filteredTopic.in(),
-      DATAREADER_QOS_USE_TOPIC_QOS, NULL, STATUS_MASK_NONE);
-    checkHandle(reader, "DDS::Subscriber::create_datareader ()");
-  }
+    if (!filtered)
+    {
+        reader = subscriber->create_datareader(topic.in(),
+          DATAREADER_QOS_USE_TOPIC_QOS, NULL, STATUS_MASK_NONE);
+        checkHandle(reader, "DDS::Subscriber::create_datareader ()");
+    }
+    else
+    {
+        reader = subscriber->create_datareader(filteredTopic.in(),
+          DATAREADER_QOS_USE_TOPIC_QOS, NULL, STATUS_MASK_NONE);
+        checkHandle(reader, "DDS::Subscriber::create_datareader ()");
+    }
 }
 
 void DDSEntityManager::deleteReader(DDS::DataReader_ptr dataReader)

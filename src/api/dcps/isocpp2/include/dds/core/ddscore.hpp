@@ -23,6 +23,7 @@
 #include <dds/core/Time.hpp>
 #include <dds/core/Duration.hpp>
 #include <dds/core/InstanceHandle.hpp>
+#include <dds/core/array.hpp>
 
 #include <dds/core/Entity.hpp>
 #include <dds/core/cond/GuardCondition.hpp>

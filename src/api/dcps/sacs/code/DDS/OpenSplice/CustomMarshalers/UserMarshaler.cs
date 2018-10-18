@@ -1,21 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
- */
 using System;
 using DDS.OpenSplice;
 using DDS.OpenSplice.OS;
@@ -23,10 +5,10 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice.CustomMarshalers
 {
-    /** 
+    /**
      * Common base class for all Marshalers that marshal to
      * and from gapi datatypes.
-     */ 
+     */
     internal abstract class UserMarshaler<TUserType, TSacsType> : BaseMarshaler, IDisposable
             where TUserType : class, new()
             where TSacsType : class, new()
@@ -68,7 +50,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired) 
+            if (cleanupRequired)
             {
                 if (nativeImg != null)
                 {
@@ -81,7 +63,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal DDS.ReturnCode CopyIn(TSacsType from)
         {
             DDS.ReturnCode result;
-            
+
             nativeImg = new TUserType();
             result = CopyIn(from, ref nativeImg);
             if (result == DDS.ReturnCode.Ok)
@@ -90,7 +72,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
             return result;
         }
-        
+
         internal void CopyOut(ref TSacsType to)
         {
             nativeImg = (TUserType) Marshal.PtrToStructure(userPtr, type);

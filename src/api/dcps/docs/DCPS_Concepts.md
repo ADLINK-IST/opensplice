@@ -12,3 +12,4 @@ much about DDS or DCPS yet.
 - \subpage DCPS_Modules_ReturnCodes "Return Codes"
 - \subpage DCPS_Queries_and_Filters "Queries and Filters"
 - \subpage DCPS_Builtin_Topics "Builtin Topics"
+- \subpage DCPS_Eventual_Consistency "Eventual Consistency"

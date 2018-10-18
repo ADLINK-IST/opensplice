@@ -1,5 +1,5 @@
 #ifndef _TOPIC_TRAITS_HPP
-#define	_TOPIC_TRAITS_HPP
+#define _TOPIC_TRAITS_HPP
 
 /** @file */
 /**

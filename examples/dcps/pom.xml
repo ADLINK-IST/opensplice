@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.opensplice.dds.examples.dcps.java</groupId>
+    <artifactId>org.opensplice.dds.examples.dcps</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>org.opensplice.dds.examples.dcps</name>
+    <url>http://maven.apache.org</url>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <parent>
+        <groupId>org.opensplice.dds.examples.java</groupId>
+        <artifactId>org.opensplice.dds.examples</artifactId>
+        <version>1.0</version>
+    </parent>
+    <modules>
+        <module>BuiltInTopics</module>
+        <module>ContentFilteredTopic</module>
+        <module>Durability</module>
+        <module>HelloWorld</module>
+        <module>Lifecycle</module>
+        <module>Listener</module>
+        <module>Ownership</module>
+        <module>PingPong</module>
+        <module>QueryCondition</module>
+        <module>RoundTrip</module>
+        <module>Throughput</module>
+        <module>Tutorial</module>
+        <module>WaitSet</module>
+    </modules>
+    <build>
+        <defaultGoal>package</defaultGoal>
+    </build>
+</project>

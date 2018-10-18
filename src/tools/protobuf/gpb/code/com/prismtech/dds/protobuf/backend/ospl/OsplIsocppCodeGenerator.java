@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -230,41 +231,50 @@ public class OsplIsocppCodeGenerator extends CodeGenerator {
         return buffer.toString();
     }
 
+    private String byteArrToString(byte[] meta) {
+        String tab = CodeGenerator.IDL_TAB + CodeGenerator.IDL_TAB;
+        String tab2 = tab + CodeGenerator.IDL_TAB;
+
+        StringBuffer buffer = new StringBuffer();
+        int size = meta.length;
+        int len = 0;
+        int ub;
+
+        buffer.append("static const os_uchar metaArr[" + size + "] = {\n");
+        buffer.append(tab2);
+        for (int i=0; i<size; i++) {
+            if (len >= 120) {
+                buffer.append("\n");
+                buffer.append(tab2);
+                len = 0;
+            }
+            ub = meta[i] & 0xff;
+            buffer.append(String.format("%d", ub));
+            len += (ub < 10) ? 1 : (ub < 100) ? 2 : 3;
+            if (i != (size-1)) {
+                buffer.append(",");
+                len++;
+            }
+        }
+        buffer.append("\n");
+        buffer.append(tab);
+        buffer.append("};\n");
+        buffer.append(tab);
+        buffer.append("::std::vector<os_uchar> val(&metaArr[0], &metaArr[" + size + "]);\n\n");
+        buffer.append(tab);
+        buffer.append("return val;");
+
+        return buffer.toString();
+    }
+
     private String getProtobufMetaHash(MetaFile file, MetaMessage message)
             throws ProtoParseException {
-        String tab = CodeGenerator.IDL_TAB + CodeGenerator.IDL_TAB;
-        String tabPlusOne = tab + CodeGenerator.IDL_TAB;
-
         try {
             byte[] metaDescriptor = message.getProtobufMetaDescriptor();
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] md5hash = md.digest(metaDescriptor);
-            StringBuffer buffer = new StringBuffer();
-            int size = md5hash.length;
-            buffer.append("unsigned int tmp;\n");
-            buffer.append(tab);
-            buffer.append("const char *hexMetaHash = \"");
 
-            for (final byte b : md5hash) {
-                buffer.append(String.format("%02x", b & 0xff));
-            }
-            buffer.append("\", *pos = hexMetaHash;\n");
-            buffer.append(tab);
-            buffer.append("::std::vector<os_uchar> val(" + size + ");\n\n");
-            buffer.append(tab);
-            buffer.append("for(size_t count = 0; count < val.size(); count++) {\n");
-            buffer.append(tabPlusOne);
-            buffer.append("sscanf(pos, \"%2x\", &tmp);\n");
-            buffer.append(tabPlusOne);
-            buffer.append("val[count] = (os_uchar)tmp;\n");
-            buffer.append(tabPlusOne);
-            buffer.append("pos += 2;\n");
-            buffer.append(tab);
-            buffer.append("}\n");
-            buffer.append(tab);
-            buffer.append("return val;");
-
-            return buffer.toString();
+            return byteArrToString(md5hash);
         } catch (NoSuchAlgorithmException e) {
             throw new ProtoParseException(
                     "Unable to generate MD5 hash for message '"
@@ -370,68 +380,7 @@ public class OsplIsocppCodeGenerator extends CodeGenerator {
     }
 
     private String getProtobufMetaDescriptor(MetaFile file) {
-        String metaDescriptor = file.getMetaDescriptorAsString();
-        StringBuffer buffer = new StringBuffer();
-        int length = metaDescriptor.length();
-        String tab = CodeGenerator.IDL_TAB + CodeGenerator.IDL_TAB;
-        String tabPlusOne = tab + CodeGenerator.IDL_TAB;
-        String tabPlusTwo = tabPlusOne + CodeGenerator.IDL_TAB;
-        int index = 0;
-        int charsPerLine = 500;
-
-        buffer.append("unsigned int tmp;\n");
-        buffer.append(tab);
-        buffer.append("const char *hexMetaDescriptor[] = {");
-
-        while (index + charsPerLine < length) {
-            if (index != 0) {
-                buffer.append(",");
-            }
-            buffer.append("\n" + tabPlusOne + "\""
-                    + metaDescriptor.substring(index, index + charsPerLine)
-                    + "\"");
-            index += charsPerLine;
-        }
-        if (length > (index - 1)) {
-            buffer.append(",\n" + tabPlusOne + "\""
-                    + metaDescriptor.substring(index)
-                    + "\"}, *pos = hexMetaDescriptor[0];\n");
-        } else {
-            buffer.append("\"}, *pos;\n");
-        }
-        buffer.append(tab);
-        buffer.append("::std::vector<os_uchar> val(" + length / 2 + ");\n");
-        buffer.append(tab);
-        buffer.append("int element = 0;\n");
-        buffer.append(tab);
-        buffer.append("size_t strIndex = " + charsPerLine
-                + " - 2, index = strIndex;\n\n");
-        buffer.append(tab);
-        buffer.append("for(size_t count = 0; count < val.size(); count++) {\n");
-        buffer.append(tabPlusOne);
-        buffer.append("if(index == strIndex) {\n");
-        buffer.append(tabPlusTwo);
-        buffer.append("pos = hexMetaDescriptor[element++];\n");
-        buffer.append(tabPlusTwo);
-        buffer.append("index = 0;\n");
-        buffer.append(tabPlusOne);
-        buffer.append("} else {\n");
-        buffer.append(tabPlusTwo);
-        buffer.append("pos += 2;\n");
-        buffer.append(tabPlusTwo);
-        buffer.append("index += 2;\n");
-        buffer.append(tabPlusOne);
-        buffer.append("}\n");
-        buffer.append(tabPlusOne);
-        buffer.append("sscanf(pos, \"%2x\", &tmp);\n");
-        buffer.append(tabPlusOne);
-        buffer.append("val[count] = (os_uchar)tmp;\n");
-        buffer.append(tab);
-        buffer.append("}\n");
-        buffer.append(tab);
-        buffer.append("return val;");
-
-        return buffer.toString();
+        return byteArrToString(file.getMetaDescriptor());
     }
 
     private String getProtobufExtensions(MetaFile file, MetaMessage message) {

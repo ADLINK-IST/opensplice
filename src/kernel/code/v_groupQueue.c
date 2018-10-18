@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,7 +26,8 @@
 #include "v_groupQueueStatistics.h"
 #include "v_reader.h"
 #include "v_readerQos.h"
-#include "v_observer.h"
+#include "v__observer.h"
+#include "v__observable.h"
 #include "v_status.h"
 #include "v_state.h"
 #include "v_event.h"
@@ -168,12 +170,12 @@ v_groupQueueSetMarker(
 {
     assert(C_TYPECHECK(queue,v_groupQueue));
 
-    v_observerLock(v_observer(queue));
+    OSPL_LOCK(queue);
 
     queue->marker = queue->tail;
     queue->markerReached = FALSE;
 
-    v_observerUnlock(v_observer(queue));
+    OSPL_UNLOCK(queue);
 }
 
 void
@@ -182,12 +184,12 @@ v_groupQueueResetMarker(
 {
     assert(C_TYPECHECK(queue,v_groupQueue));
 
-    v_observerLock(v_observer(queue));
+    OSPL_LOCK(queue);
 
     queue->marker = NULL;
     queue->markerReached = FALSE;
 
-    v_observerUnlock(v_observer(queue));
+    OSPL_UNLOCK(queue);
 }
 
 v_groupAction
@@ -198,7 +200,7 @@ v_groupQueueRead(
 
     assert(C_TYPECHECK(_this,v_groupQueue));
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
 
     if (_this->head) {
         action = c_keep(_this->head->action);
@@ -208,7 +210,7 @@ v_groupQueueRead(
     } else {
         action = NULL;
     }
-    v_observerUnlock(v_observer(_this));
+    OSPL_UNLOCK(_this);
 
     return action;
 }
@@ -224,7 +226,7 @@ v_groupQueueTake(
 
     action = NULL;
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
 
     if(_this->head){
         if (!_this->markerReached) {
@@ -251,7 +253,7 @@ v_groupQueueTake(
         }
     }
 
-    v_observerUnlock(v_observer(_this));
+    OSPL_UNLOCK(_this);
 
     return action;
 }
@@ -268,7 +270,7 @@ v_groupQueueWrite(
     assert(C_TYPECHECK(_this,v_groupQueue));
     assert(C_TYPECHECK(action,v_groupAction));
 
-    v_observerLock(v_observer(_this));
+    OSPL_LOCK(_this);
 
     result = V_WRITE_SUCCESS;
 
@@ -324,7 +326,7 @@ v_groupQueueWrite(
                     action->kind);
     break;
     }
-    v_observerUnlock(v_observer(_this));
+    OSPL_UNLOCK(_this);
 
     return result;
 }
@@ -338,11 +340,18 @@ v_groupQueueSize(
     assert(C_TYPECHECK(_this,v_groupQueue));
 
     if(_this){
-        v_observerLock(v_observer(_this));
+        OSPL_LOCK(_this);
         size = _this->size;
-        v_observerUnlock(v_observer(_this));
+        OSPL_UNLOCK(_this);
     } else {
         size = 0;
     }
     return size;
+}
+
+v_result
+v_groupQueueEnable(
+    _Inout_ v_groupQueue _this)
+{
+    return v_groupStreamEnable(v_groupStream(_this));
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@
 #include "os_socket.h"
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "os_inline.h"
 
 #ifndef OS_NO_GETIFADDRS
 #if defined (VXWORKS_RTP)
@@ -99,7 +101,9 @@ os_sockSendto(
     size_t tolen,
     size_t *bytesSent)
 {
-    ssize_t res = sendto(s, msg, len, 0, to, tolen);
+    ssize_t res;
+    assert (tolen <= 0x7fffffff);
+    res = sendto(s, msg, len, 0, to, (socklen_t) tolen);
     if (res >= 0)
     {
         *bytesSent = (size_t) res;
@@ -128,7 +132,9 @@ os_sockRecvfrom(
     size_t *bytesRead)
 {
    ssize_t res;
-   socklen_t fl = *fromlen;
+   socklen_t fl;
+   assert (*fromlen <= 0x7fffffff);
+   fl = (socklen_t) *fromlen;
    res = recvfrom(s, buf, len, 0, from, &fl);
    if (res < 0)
    {
@@ -850,17 +856,15 @@ os_sockQueryInterfaceStatusInit(
 
         if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
             if(close(sock) == -1){
-                os_report(OS_WARNING, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                        "Failed to close socket; close(%d) failed with error: %s",
-                        sock, os_strError(os_getErrno()));
+                OS_REPORT(OS_WARNING, "os_sockQueryInterfaceStatusInit", 0,
+                          "Failed to close socket; close(%d) failed with error: %s",
+                          sock, os_strError(os_getErrno()));
             }
             sock = -1;
-            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                      "Failed to bind to NETLINK socket");
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0, "Failed to bind to NETLINK socket");
         }
     } else {
-        os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                  "Failed to create NETLINK socket");
+        OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0, "Failed to create NETLINK socket");
     }
 
     if (sock >= 0) {
@@ -872,14 +876,14 @@ os_sockQueryInterfaceStatusInit(
             if (!info->ifName) {
                 os_sockQueryInterfaceStatusDeinit(info);
                 info = NULL;
-                os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
                           "Out of resources. Failed to allocate %"PA_PRIuSIZE" bytes for string '%s'",
                           strlen(ifName), ifName);
             } else {
                 if (pipe(info->pipe) == -1) {
                     os_sockQueryInterfaceStatusDeinit(info);
                     info = NULL;
-                    os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                    OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
                               "Failed to create pipe; failed with error: %s",
                               os_strError(os_getErrno()));
                 } else {
@@ -890,17 +894,35 @@ os_sockQueryInterfaceStatusInit(
             }
         } else {
             if(close(sock) == -1){
-                os_report(OS_WARNING, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                        "Failed to close socket; close(%d) failed with error: %s",
-                        sock, os_strError(os_getErrno()));
+                OS_REPORT(OS_WARNING, "os_sockQueryInterfaceStatusInit", 0,
+                          "Failed to close socket; close(%d) failed with error: %s",
+                          sock, os_strError(os_getErrno()));
             }
-            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                    "Out of resources. Failed to allocate %"PA_PRIuSIZE" bytes for os_sockQueryInterfaceStatusInfo",
-                    sizeof(*info));
+            OS_REPORT(OS_ERROR, "os_sockQueryInterfaceStatusInit", 0,
+                      "Out of resources. Failed to allocate %"PA_PRIuSIZE" bytes for os_sockQueryInterfaceStatusInfo",
+                      sizeof(*info));
         }
     }
     return info;
 }
+
+OSPL_DIAG_OFF(conversion)
+static unsigned int
+os_ifa_payload(struct nlmsghdr *n)
+{
+    /* IFA_PAYLOAD gives a conversion warning, suppressing it */
+    return (unsigned int)IFA_PAYLOAD(n);
+}
+OSPL_DIAG_ON(conversion)
+
+OSPL_DIAG_OFF(sign-conversion)
+static struct rtattr *
+os_rta_next(struct rtattr *rta, unsigned int attrlen)
+{
+    /* RTA_NEXT gives a sign-conversion warning, suppressing it */
+    return RTA_NEXT(rta, attrlen);
+}
+OSPL_DIAG_ON(sign-conversion)
 
 os_result
 os_sockQueryInterfaceStatus(
@@ -910,7 +932,8 @@ os_sockQueryInterfaceStatus(
 {
     os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
     os_result result = os_resultBusy;
-    unsigned int len;
+    ssize_t len;
+    unsigned int tmp_len;
     char buffer[1024];
     struct nlmsghdr *nlh;
     fd_set fdset;
@@ -923,8 +946,8 @@ os_sockQueryInterfaceStatus(
     if (info && info->sock >= 0) {
 
         FD_ZERO(&fdset);
-        FD_SET(info->sock, &fdset);
-        FD_SET(info->pipe[0], &fdset);
+        os_sock_set((os_socket)info->sock, &fdset);
+        os_sock_set((os_socket)info->pipe[0], &fdset);
 
         endTime = os_timeWAdd(os_timeWGet(), timeout);
         do {
@@ -934,41 +957,47 @@ os_sockQueryInterfaceStatus(
 
             r = select(info->fdmax, &fdset, NULL, NULL, &t);
             if (r > 0) {
-                if (FD_ISSET(info->sock, &fdset)) {
+                if (os_sock_isset((os_socket)info->sock, &fdset)) {
                     nlh = (struct nlmsghdr *)buffer;
                     if ((len = recv(info->sock, nlh, sizeof(buffer), 0)) > 0) {
                         while ((result == os_resultBusy) && (NLMSG_OK(nlh, len)) && (nlh->nlmsg_type != NLMSG_DONE)) {
-                            char name[IFNAMSIZ];
+                            char name[IFNAMSIZ+1];
                             struct ifaddrmsg *ifa;
                             struct rtattr *rth;
-                            int rtl;
+                            unsigned int rtl;
+                            name[0] = '\0';
 
                             if ((nlh->nlmsg_type == RTM_NEWADDR) || (nlh->nlmsg_type == RTM_DELADDR)) {
                                 ifa = (struct ifaddrmsg *) NLMSG_DATA(nlh);
                                 rth = IFA_RTA(ifa);
-                                rtl = IFA_PAYLOAD(nlh);
+                                rtl = os_ifa_payload(nlh);
 
                                 while ((result == os_resultBusy) && rtl && RTA_OK(rth, rtl)) {
-                                    if (rth->rta_type == IFA_LOCAL) {
-                                        if (if_indextoname(ifa->ifa_index, name) != NULL) {
-                                            if (strncmp(info->ifName, name, IFNAMSIZ) == 0) {
-                                                if (nlh->nlmsg_type == RTM_NEWADDR) {
-                                                    *status = 1;
-                                                }
-                                                result = os_resultSuccess;
+                                    if (rth->rta_type == IFA_LABEL) {
+                                        strncpy(name, RTA_DATA((os_address)rth), sizeof(name)-1);
+                                        name[sizeof(name)-1] = '\0';
+                                        if (strncmp(info->ifName, name, IFNAMSIZ) == 0) {
+                                            if (nlh->nlmsg_type == RTM_NEWADDR) {
+                                                *status = 1;
                                             }
+                                            result = os_resultSuccess;
                                         }
                                     }
-                                    rth = RTA_NEXT(rth, rtl);
+                                    rth = os_rta_next(rth, rtl);
                                 }
                             }
-                            nlh = NLMSG_NEXT(nlh, len);
+                            /* sizeof buffer is 1024 so len can never be larger */
+                            tmp_len = (unsigned int)len;
+                            nlh = NLMSG_NEXT(nlh, tmp_len);
+                            len = (ssize_t)tmp_len;
                         }
                     }
                 }
-                if (FD_ISSET(info->pipe[0], &fdset)) {
+                if (os_sock_isset((os_socket)info->pipe[0], &fdset)) {
                     char buf;
-                    (void) read (info->pipe[0], &buf, 1);
+                    if (read (info->pipe[0], &buf, 1) == -1) {
+                        /* ignore result, only used during interruption */
+                    }
                     /* (Mis)using os_resultTimeout to indicate that woken from
                      * select and no status update is available */
                     if (result != os_resultSuccess) {
@@ -989,7 +1018,7 @@ os_sockQueryInterfaceStatus(
     } else {
         result = os_resultFail;
     }
-
+    //printf("result %d and status %d\n",result,*status);
     return result;
 }
 
@@ -998,14 +1027,12 @@ os_sockQueryInterfaceStatusSignal(void *handle)
 {
     os_result result = os_resultFail;
     char buf = 0;
-    int r;
     os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
     if (info && info->pipe[1] >= 0) {
-        r = write(info->pipe[1], &buf, 1);
-        if (r == -1) {
-            os_report(OS_WARNING, "os_sockQueryInterfaceStatusSignal", __FILE__, __LINE__, 0,
-                    "Failed to write to pipe; failed with error: %s",
-                    os_strError(os_getErrno()));
+        if (write(info->pipe[1], &buf, 1) == -1) {
+            OS_REPORT(OS_WARNING, "os_sockQueryInterfaceStatusSignal", 0,
+                      "Failed to write to pipe; failed with error: %s",
+                      os_strError(os_getErrno()));
         } else {
             result = os_resultSuccess;
         }
@@ -1050,4 +1077,63 @@ os_sockQueryInterfaceStatusSignal(void *handle)
     return os_resultFail;
 }
 
+#endif
+
+#if defined(OS_DONTFRAG_SUPPORT)
+#if defined(OS_DONTFRAG_USE_MTU_DISC)
+/* use setsockopt with IP_MTU_DISCOVER option*/
+os_result
+os_sockSetDontFrag(
+    os_socket s,
+    os_boolean dontFrag)
+{
+    os_result r;
+    int st;
+    os_uint32 len = sizeof(st);
+    int val = (dontFrag) ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+
+    if ((r = os_sockGetsockopt(s, SOL_SOCKET, SO_TYPE, (void *)&st, &len)) == os_resultSuccess) {
+        if (st == SOCK_DGRAM) {
+            r = os_sockSetsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, (void *)&val, sizeof(val));
+        } else {
+            r = os_resultUnavailable;
+        }
+    }
+
+    return r;
+}
+#else
+/* use setsockopt with IP_DONTFRAG option*/
+os_result
+os_sockSetDontFrag(
+    os_socket s,
+    os_boolean dontFrag)
+{
+    os_result r;
+    int st;
+    os_uint32 len = sizeof(st);
+    int val = (dontFrag) ? 1 : 0;
+
+    if ((r = os_sockGetsockopt(s, SOL_SOCKET, SO_TYPE, (void *)&st, &len)) == os_resultSuccess) {
+        if (st == SOCK_DGRAM) {
+            r = os_sockSetsockopt(s, IPPROTO_IP, IP_DONTFRAG, (void *)&val, sizeof(val));
+        } else {
+            r = os_resultUnavailable;
+        }
+    }
+
+    return r;
+}
+#endif
+#else
+os_result
+os_sockSetDontFrag(
+    os_socket s,
+    os_boolean dontFrag)
+{
+    OS_UNUSED_ARG(s);
+    OS_UNUSED_ARG(dontFrag);
+
+    return os_resultSuccess;
+}
 #endif

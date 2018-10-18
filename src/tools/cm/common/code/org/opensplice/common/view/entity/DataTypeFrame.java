@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -69,7 +70,7 @@ public class DataTypeFrame extends JFrame {
                 setStatus("Error: " + e.getMessage(), false, false);
             }
         }
-        setStatus(/*"Evolution: " + */typeEvolutionViewHolder.toString() + " (" + typeEvo.getTypeHash() + ")", true, false);
+        setStatus(typeEvolutionViewHolder.toString() + " (" + typeEvo.getTypeHash() + ")", true, false);
         dataTypePane.setCaretPosition(0);
     }
 

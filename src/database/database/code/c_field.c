@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -218,13 +219,13 @@ c_fieldNew (
                       "failed to allocate field->path array");
             c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
         }
-        c_iterFree(nameList);
     } else {
         OS_REPORT(OS_ERROR,
                     "c_fieldNew failed",0,
                     "failed to process field name <%s>",
                     fieldName);
     }
+    c_iterFree(nameList);
     return field;
 }
 
@@ -450,27 +451,6 @@ c_fieldValue(
         return v;
     }
 
-#if 0
-    v.kind = field->kind;
-    switch(v.kind) {
-    case V_STRING:
-    case V_WSTRING:
-    case V_OBJECT:
-        v.is.Object = *(c_object *)p;
-/*        memcpy(&v.is,p,field->type->size);*/
-        c_keep(v.is.Object);
-    break;
-    case V_FIXED:
-    case V_UNDEFINED:
-    case V_COUNT:
-    break;
-    default:
-        v.is.LongLong = *(c_longlong *)p;
-/*        memcpy(&v.is,p,field->type->size);*/
-    break;
-    }
-    return v;
-#else
 #define _VAL_(f,t) v.is.f = *(t *)p
 
     v.kind = field->kind;
@@ -505,7 +485,6 @@ c_fieldValue(
     return v;
 
 #undef _VAL_
-#endif
 }
 
 void

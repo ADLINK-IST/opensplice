@@ -48,9 +48,8 @@ master_doc = u'index'
 # General information about the project.
 project = u'OpenSplice Getting Started Guide'
 
-#copyright = u'2015, PrismTech'
 this_year = time.strftime( '%Y' )
-copyright = u'{y}, PrismTech'.format( y = this_year )
+copyright = u'{y}, ADLINK Technology Limited'.format( y = this_year )
 print 'Copyright string is:', copyright
 
 # The version info for the project you're documenting, acts as replacement for
@@ -221,7 +220,7 @@ latex_documents = [('index', 'OpenSplice_GettingStartedGuide.tex', u'Getting Sta
 # Added 'True' to end of generated line to suppress 'Index & Tables'
 
 
-# A dictionary that contains LaTeX snippets that override those Sphinx usually 
+# A dictionary that contains LaTeX snippets that override those Sphinx usually
 # puts into the generated .tex files.
 latex_elements = { 'babel': '\\usepackage[english]{babel}' }
 
@@ -268,7 +267,7 @@ latex_elements = {
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'OpenSplice_Getting_Started_Guide', u'OpenSplice_Getting_Started_Guide Documentation', [u'PrismTech'], 1)]
+man_pages = [('index', 'OpenSplice_Getting_Started_Guide', u'OpenSplice_Getting_Started_Guide Documentation', [u'ADLINK Technology Limited'], 1)]
 # * NOT TESTED
 
 

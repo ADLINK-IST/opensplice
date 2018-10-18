@@ -21,8 +21,8 @@ import org.omg.dds.core.ServiceEnvironment;
 
 
 public abstract class DynamicDataFactory implements org.omg.dds.core.DDSObject {
-	
-	/**
+
+    /**
      * @param env       Identifies the Service instance to which the
      *                  object will belong.
      */
@@ -30,6 +30,6 @@ public abstract class DynamicDataFactory implements org.omg.dds.core.DDSObject {
     {
         return env.getSPI().getDynamicDataFactory();
     }
-    
-    public abstract DynamicData newDynamicData(DynamicType type); 
+
+    public abstract DynamicData newDynamicData(DynamicType type);
 }

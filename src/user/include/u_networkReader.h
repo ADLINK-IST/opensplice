@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -43,8 +44,8 @@ u_networkReaderNew(
     const os_char *name,
     const u_readerQos qos,
     u_bool ignoreReliabilityQoS);
-    
-OS_API u_result        
+
+OS_API u_result
 u_networkReaderCreateQueue(
     const u_networkReader _this,
     os_uint32 queueSize,
@@ -55,17 +56,17 @@ u_networkReaderCreateQueue(
     u_bool useAsDefault,
     os_uint32 *queueId, /* out */
     const os_char *name);
-    
-OS_API u_result        
+
+OS_API u_result
 u_networkReaderTrigger(
     const u_networkReader _this,
     os_uint32 queueId);
-    
-OS_API u_result        
+
+OS_API u_result
 u_networkReaderRemoteActivityDetected(
     const u_networkReader _this);
-    
-OS_API u_result        
+
+OS_API u_result
 u_networkReaderRemoteActivityLost(
     const u_networkReader _this);
 

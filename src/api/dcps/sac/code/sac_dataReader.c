@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -247,16 +248,16 @@ DDS_DataReaderNew (
     u_subscriber uSubscriber;
     u_dataReader uReader;
     u_readerQos rQos = NULL;
-    os_char *expr;
-    c_value *params;
+    os_char *expr = NULL;
+    c_value *params = NULL;
+    os_uint32 nrOfParams = 0;
 
     result = DDS_TopicDescription_get_typeSupport(tdesc, &typeSupport);
     if (typeSupport == NULL) {
         result = DDS_RETCODE_PRECONDITION_NOT_MET;
         SAC_REPORT(result, "No TypeSupport registered for TopicDescription");
     }
-    /*
-     * Translate parameters to kernel representation. QoS is guaranteed to be
+    /* Translate parameters to kernel representation. QoS is guaranteed to be
      * consistent at this point.
      */
     if (result == DDS_RETCODE_OK) {
@@ -268,15 +269,13 @@ DDS_DataReaderNew (
     }
     if (result == DDS_RETCODE_OK) {
         if (DDS_Object_get_kind(tdesc) == DDS_CONTENTFILTEREDTOPIC) {
-            result = DDS_ContentFilteredTopic_get_parameters(tdesc, &params);
-        } else {
-            params = NULL;
+            result = DDS_ContentFilteredTopic_get_parameters(tdesc, &params, &nrOfParams);
         }
         if (result == DDS_RETCODE_OK) {
             uSubscriber = u_subscriber(_Entity_get_user_entity(subscriber));
             if (uSubscriber != NULL) {
                 expr = DDS_TopicDescription_get_expr(tdesc);
-                uReader = u_dataReaderNew(uSubscriber, name, expr, params, rQos, FALSE);
+                uReader = u_dataReaderNew(uSubscriber, name, expr, params, nrOfParams, rQos);
                 os_free(expr);
                 if (uReader!= NULL) {
                     result = DDS_Object_new(DDS_DATAREADER, _DataReader_deinit, (_Object *)&_this);
@@ -342,11 +341,11 @@ DDS_DataReaderFree (
     return result;
 }
 
-/*     ReadCondition
- *     create_readcondition(
- *         in SampleStateMask sample_states,
- *         in ViewStateMask view_states,
- *         in InstanceStateMask instance_states);
+/* ReadCondition
+ * create_readcondition(
+ *      in SampleStateMask sample_states,
+ *      in ViewStateMask view_states,
+ *      in InstanceStateMask instance_states);
  */
 DDS_ReadCondition
 DDS_DataReader_create_readcondition (
@@ -373,13 +372,13 @@ DDS_DataReader_create_readcondition (
     return rc;
 }
 
-/*     QueryCondition
- *     create_querycondition(
- *         in SampleStateMask sample_states,
- *         in ViewStateMask view_states,
- *         in InstanceStateMask instance_states,
- *         in string query_expression,
- *         in StringSeq query_parameters);
+/* QueryCondition
+ * create_querycondition(
+ *      in SampleStateMask sample_states,
+ *      in ViewStateMask view_states,
+ *      in InstanceStateMask instance_states,
+ *      in string query_expression,
+ *      in StringSeq query_parameters);
  */
 DDS_QueryCondition
 DDS_DataReader_create_querycondition (
@@ -409,9 +408,9 @@ DDS_DataReader_create_querycondition (
     return qc;
 }
 
-/*     ReturnCode_t
- *     delete_readcondition(
- *         in ReadCondition a_condition);
+/* ReturnCode_t
+ * delete_readcondition(
+ *      in ReadCondition a_condition);
  */
 DDS_ReturnCode_t
 DDS_DataReader_delete_readcondition (
@@ -499,8 +498,8 @@ DDS_DataReader_contains_entity (
     return arg.result;
 }
 
-/*     ReturnCode_t
- *     delete_contained_entities();
+/* ReturnCode_t
+ * delete_contained_entities();
  */
 DDS_ReturnCode_t
 DDS_DataReader_delete_contained_entities (
@@ -520,9 +519,9 @@ DDS_DataReader_delete_contained_entities (
     return result;
 }
 
-/*     DataReaderView
- *     create_view (
- *     in DataReaderViewQos * qos);
+/* DataReaderView
+ * create_view (
+ *      in DataReaderViewQos * qos);
  */
 DDS_DataReaderView
 DDS_DataReader_create_view (
@@ -565,9 +564,9 @@ DDS_DataReader_create_view (
     return DDS_DataReaderView(view);
 }
 
-/*     ReturnCode_t
- *     delete_view(
- *        in DataReaderView a_view);
+/* ReturnCode_t
+ * delete_view(
+ *      in DataReaderView a_view);
  */
 DDS_ReturnCode_t
 DDS_DataReader_delete_view (
@@ -613,9 +612,9 @@ DDS_DataReader_delete_view (
 }
 
 
-/*     ReturnCode_t
- *     set_qos(
- *         in DataReaderQos qos);
+/* ReturnCode_t
+ * set_qos(
+ *      in DataReaderQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReader_set_qos (
@@ -675,9 +674,9 @@ DDS_DataReader_set_qos (
     return result;
 }
 
-/*     ReturnCode_t
- *     get_qos(
- *         inout DataReaderQos qos);
+/* ReturnCode_t
+ * get_qos(
+ *      inout DataReaderQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReader_get_qos (
@@ -717,10 +716,10 @@ DDS_DataReader_get_qos (
     return result;
 }
 
-/*     ReturnCode_t
- *     set_listener(
- *         in DataReaderListener a_listener,
- *         in StatusKindMask mask);
+/* ReturnCode_t
+ * set_listener(
+ *      in DataReaderListener a_listener,
+ *      in StatusKindMask mask);
  */
 DDS_ReturnCode_t
 DDS_DataReader_set_listener (
@@ -748,8 +747,8 @@ DDS_DataReader_set_listener (
     return result;
 }
 
-/*     DataReaderListener
- *     get_listener();
+/* DataReaderListener
+ * get_listener();
  */
 struct DDS_DataReaderListener
 DDS_DataReader_get_listener (
@@ -771,10 +770,10 @@ DDS_DataReader_get_listener (
     return listener;
 }
 
-/*     ReturnCode_t
- *     set_listener_mask(
- *         in DataReaderListener a_listener,
- *         in StatusKindMask mask);
+/* ReturnCode_t
+ * set_listener_mask(
+ *      in DataReaderListener a_listener,
+ *      in StatusKindMask mask);
  */
 DDS_ReturnCode_t
 DDS_DataReader_set_listener_mask (
@@ -790,8 +789,8 @@ DDS_DataReader_set_listener_mask (
     return result;
 }
 
-/*     TopicDescription
- *     get_topicdescription();
+/* TopicDescription
+ * get_topicdescription();
  */
 DDS_TopicDescription
 DDS_DataReader_get_topicdescription (
@@ -811,8 +810,8 @@ DDS_DataReader_get_topicdescription (
     return td;
 }
 
-/*     Subscriber
- *     get_subscriber();
+/* Subscriber
+ * get_subscriber();
  */
 DDS_Subscriber
 DDS_DataReader_get_subscriber (
@@ -866,8 +865,8 @@ copy_sample_rejected_status(
 }
 
 /* ReturnCode_t
- *get_sample_rejected_status(
- *inout SampleRejectedStatus status);
+ * get_sample_rejected_status(
+ *      inout SampleRejectedStatus status);
  */
 DDS_ReturnCode_t
 DDS_DataReader_get_sample_rejected_status (
@@ -920,8 +919,8 @@ copy_liveliness_changed_status(
 }
 
 /* ReturnCode_t
- *get_liveliness_changed_status(
- *inout LivelinessChangedStatus status);
+ * get_liveliness_changed_status(
+ *      inout LivelinessChangedStatus status);
 */
 DDS_ReturnCode_t
 DDS_DataReader_get_liveliness_changed_status (
@@ -983,8 +982,8 @@ copy_deadline_missed_status(
 }
 
 /* ReturnCode_t
- *get_requested_deadline_missed_status(
- *inout RequestedDeadlineMissedStatus status);
+ * get_requested_deadline_missed_status(
+ *      inout RequestedDeadlineMissedStatus status);
 */
 DDS_ReturnCode_t
 DDS_DataReader_get_requested_deadline_missed_status (
@@ -1067,8 +1066,8 @@ copy_incompatible_qos_status(
 }
 
 /* ReturnCode_t
- *get_requested_incompatible_qos_status(
- *inout RequestedIncompatibleQosStatus status);
+ * get_requested_incompatible_qos_status(
+ *      inout RequestedIncompatibleQosStatus status);
 */
 DDS_ReturnCode_t
 DDS_DataReader_get_requested_incompatible_qos_status (
@@ -1117,8 +1116,8 @@ copy_sample_lost_status(
 }
 
 /* ReturnCode_t
- *get_sample_lost_status(
- *inout SampleLostStatus status);
+ * get_sample_lost_status(
+ *      inout SampleLostStatus status);
 */
 DDS_ReturnCode_t
 DDS_DataReader_get_sample_lost_status (
@@ -1201,9 +1200,9 @@ DDS_DataReader_get_subscription_matched_status (
     return result;
 }
 
-/*     ReturnCode_t
- *     wait_for_historical_data(
- *         in Duration_t max_wait);
+/* ReturnCode_t
+ * wait_for_historical_data(
+ *      in Duration_t max_wait);
  */
 DDS_ReturnCode_t
 DDS_DataReader_wait_for_historical_data (
@@ -1350,8 +1349,9 @@ copy_matched_publication(
     return V_RESULT_OK;
 }
 
-/*     ReturnCode_t get_matched_publications(
- *     inout InstanceHandleSeq publication_handles);
+/* ReturnCode_t
+ * get_matched_publications(
+ *      inout InstanceHandleSeq publication_handles);
  */
 DDS_ReturnCode_t
 DDS_DataReader_get_matched_publications (
@@ -1395,10 +1395,10 @@ ___DDS_PublicationBuiltinTopicData__copyOut(
     return V_RESULT_OK;
 }
 
-/*     ReturnCode_t
- *     get_matched_publication_data(
- *         inout PublicationBuiltinTopicData publication_data,
- *         in InstanceHandle_t publication_handle);
+/* ReturnCode_t
+ * get_matched_publication_data(
+ *      inout PublicationBuiltinTopicData publication_data,
+ *      in InstanceHandle_t publication_handle);
  */
 DDS_ReturnCode_t
 DDS_DataReader_get_matched_publication_data (
@@ -1430,9 +1430,9 @@ DDS_DataReader_get_matched_publication_data (
     return result;
 }
 
-/*     ReturnCode_t
- *     set_default_datareaderview_qos(
- *         in DataReaderViewQos qos);
+/* ReturnCode_t
+ * set_default_datareaderview_qos(
+ *      in DataReaderViewQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReader_set_default_datareaderview_qos (
@@ -1474,9 +1474,9 @@ DDS_DataReader_set_default_datareaderview_qos (
     return result;
 }
 
-/*     ReturnCode_t
- *     get_default_datareaderview_qos(
- *         inout DataReaderViewQos qos);
+/* ReturnCode_t
+ * get_default_datareaderview_qos(
+ *      inout DataReaderViewQos qos);
  */
 DDS_ReturnCode_t
 DDS_DataReader_get_default_datareaderview_qos (

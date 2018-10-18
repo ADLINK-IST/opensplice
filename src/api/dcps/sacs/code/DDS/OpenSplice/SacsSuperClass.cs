@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,10 +27,10 @@ using DDS.OpenSplice.Kernel;
 namespace DDS.OpenSplice
 {
     /**
-     * This interface is implemented by all DDS defined classes and holds the 
-     * adress of the equivalent <code>gapi</code> object. The adress is stored as 
-     * a (platform-dependent) <code>int</code> because the <code>gapi</code> can 
-     * be compiled for any platform using up to 64 bit adressing. 
+     * This interface is implemented by all DDS defined classes and holds the
+     * adress of the equivalent <code>gapi</code> object. The adress is stored as
+     * a (platform-dependent) <code>int</code> because the <code>gapi</code> can
+     * be compiled for any platform using up to 64 bit adressing.
      */
     public class SacsSuperClass : IDisposable
     {
@@ -37,20 +38,20 @@ namespace DDS.OpenSplice
         private bool deinitialized = false;
 
         /**
-         * The adress of the equivalent object in the <code>gapi</code> 
+         * The adress of the equivalent object in the <code>gapi</code>
          */
         private IntPtr userPeer = IntPtr.Zero;
-        internal IntPtr rlReq_UserPeer { get { return userPeer; } }
+        public IntPtr rlReq_UserPeer { get { return userPeer; } }
 
         private IntPtr handleSelf = IntPtr.Zero;
         internal IntPtr rlReq_HandleSelf { get { return handleSelf; } }
 
 
-        /* This constructor is only used by all DDS classes that have a 
+        /* This constructor is only used by all DDS classes that have a
          * default constructor (i.e. TypeSupport, WaitSet, GuardCondition).
          * It is due to the fact that the Gapi.<Entity>.alloc() needs to
          * be called in order to get a gapi handle, but this cannot be done
-         * in the constructor in this stage. 
+         * in the constructor in this stage.
          * The caller must call SetPeer and pass the gapi handle as soon as
          * he has obtained it.
          */
@@ -58,7 +59,7 @@ namespace DDS.OpenSplice
         {
         }
 
-        /* 
+        /*
          * Use C# destructor syntax for finalization code.
          * Note that this finalizer is only invoked when not yet suppressed by
          * an invocation of GC.SuppressFinalize().
@@ -78,10 +79,10 @@ namespace DDS.OpenSplice
         }
 
         /* This operation assumes it is invoked by the init() operations
-         * of each of its children. Since an object is not yet accessable 
+         * of each of its children. Since an object is not yet accessable
          * before finalization of its init(), no lock is required to set
          * the address of the UserLayer object which it represents.
-         * Weak Objects are objects that do not leave a pinned backref to 
+         * Weak Objects are objects that do not leave a pinned backref to
          * their C# wrappers in the UserLayer administration, since that
          * would prevent an object from becoming garbage collected when
          * there is no explicit API call to do so. Examples of objects
@@ -103,7 +104,7 @@ namespace DDS.OpenSplice
             {
                 backRefType = GCHandleType.Normal;
             }
-            
+
             // Get the GCHandle for the current C# object and cache the IntPtr of the GCHandle
             // in the UserData field of its gapi pointer.
             GCHandle tmpGCHandle = GCHandle.Alloc(this, backRefType);
@@ -111,10 +112,10 @@ namespace DDS.OpenSplice
 
             // Store the handle in the object itself.
             userPeer = userPtr;
-            
+
             return DDS.ReturnCode.Ok;
         }
-        
+
         /**
          * deinit() takes care of all deinitilization by invoking a virtual wlReq_deinit() call
          * that will be overridden by each child and that will be recursively traversed upward.
@@ -122,22 +123,22 @@ namespace DDS.OpenSplice
         internal ReturnCode deinit()
         {
             ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
-            
-            lock(this) 
+
+            lock(this)
             {
                 if (this.rlReq_isAlive) {
                     result = wlReq_deinit();
                 }
             }
-            
+
             return result;
         }
 
         internal virtual ReturnCode wlReq_deinit()
         {
             ReturnCode result = DDS.ReturnCode.Ok;
-            
-            // Weak references are slaved to their wrappers lifecycle. 
+
+            // Weak references are slaved to their wrappers lifecycle.
             // So if the wrapper is disposed, so should the corresponding
             // UserLayer handle.
             deinitialized = true;
@@ -153,18 +154,18 @@ namespace DDS.OpenSplice
 
             // Make sure that Dispose() is not invoked a 2nd time by the destructor/finalizer.
             GC.SuppressFinalize(this);
-                
+
             return result;
         }
-        
-        /* Using the Dispose/Finalize pattern from: 
+
+        /* Using the Dispose/Finalize pattern from:
          * http://msdn.microsoft.com/en-us/library/b1yfkh5e(vs.71).aspx
          */
         public void Dispose()
         {
             deinit();
         }
-        
+
         private int _MyDomainId = -1;
 	public int MyDomainId
         {
@@ -178,17 +179,17 @@ namespace DDS.OpenSplice
             get
             {
                 bool result = true;
-                
+
                 if (deinitialized) {
                     result = false;
                     ReportStack.Report(
-                            DDS.ReturnCode.AlreadyDeleted, 
+                            DDS.ReturnCode.AlreadyDeleted,
                             "Trying to invoke an operation on an already deleted OpenSplice object.");
                 }
                 return result;
             }
         }
-        
+
         internal static SacsSuperClass fromUserData(IntPtr userPtr)
         {
             SacsSuperClass entity = null;
@@ -210,7 +211,7 @@ namespace DDS.OpenSplice
 
             return entity;
         }
-        
+
         internal static DDS.ReturnCode uResultToReturnCode(V_RESULT uResult)
         {
             DDS.ReturnCode result;

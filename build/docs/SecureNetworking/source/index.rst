@@ -9,7 +9,7 @@ Secure Networking Configuration Guide
 .. toctree::
    :maxdepth: 8
    :numbered:
-      
+
    preface
    overview
    securenetconfig
@@ -17,9 +17,9 @@ Secure Networking Configuration Guide
    accesscontrol
    accessctrlconfig
    troubleshoot
-   
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,17 +64,6 @@ static const struct { int shift; const char *name; } vpolicymapping[] = {
     { V_SCHEDULINGPOLICY_ID,          V_SCHEDULINGPOLICY_NAME }
 };
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-
-/**************************************************************
- * Protected functions
- **************************************************************/
 v_partitionPolicyI
 v_partitionPolicyAdd(
     v_partitionPolicyI p,
@@ -186,8 +176,7 @@ v_partitionPolicySplit(
             nibble[length-1]=0;
             iter = c_iterAppend(iter, nibble);
         } else {
-            /* head points to one of the delimiters, so we
-               add an empty string */
+            /* head points to one of the delimiters, so we add an empty string */
             length = 1;
             nibble = (c_string)os_malloc(length);
             nibble[length - 1 ] = 0;
@@ -209,19 +198,34 @@ v_partitionPolicySplit(
     return iter;
 }
 
-/* FIXME:
- * "claim" parameter serves as a workaround for dds1784. We need to make sure
- * that the owner is not set for DataReader instances when there are no more
- * live DataWriters. Otherwise a new DataWriter with a lower strength would
- * never be able to take over again!
- *
- * THIS IS A WORKAROUND AND NEEDS A REAL FIX.
- */
+static v_ownershipResult claimOwnership(
+    struct v_owner *owner,
+    const struct v_owner *candidate,
+    v_state messageState)
+{
+    v_ownershipResult result;
+
+    if (v_stateTest(messageState, L_REGISTER)) {
+        /* Don't modify anything: a register does not change state (yet). */
+        result = V_OWNERSHIP_NOT_OWNER;
+    } else if (v_stateTest(messageState, L_UNREGISTER)) {
+        /* If the current owner unregisters, the ownership is reset. */
+        v_gidSetNil (owner->gid);
+        owner->strength = 0;
+        result = V_OWNERSHIP_OWNER_RESET;
+    } else {
+        owner->gid = candidate->gid;
+        owner->strength = candidate->strength;
+        result = V_OWNERSHIP_OWNER;
+    }
+    return result;
+}
+
 v_ownershipResult
 v_determineOwnershipByStrength (
     struct v_owner *owner,
     const struct v_owner *candidate,
-    c_bool claim)
+    v_state messageState)
 {
     c_equality equality;
     v_ownershipResult result;
@@ -240,11 +244,7 @@ v_determineOwnershipByStrength (
                             result = V_OWNERSHIP_ALREADY_OWNER;
                             owner->strength = candidate->strength;
                         } else {
-                            if (claim == TRUE) {
-                                owner->gid = candidate->gid;
-                                owner->strength = candidate->strength;
-                            }
-                            result = V_OWNERSHIP_OWNER;
+                            result = claimOwnership(owner, candidate, messageState);
                         }
                     } else if (candidate->strength < owner->strength) {
                         if (equality == C_EQ) {
@@ -259,42 +259,24 @@ v_determineOwnershipByStrength (
                             result = V_OWNERSHIP_NOT_OWNER;
                         }
                     } else {
-                        if (equality == C_EQ) {
-                            result = V_OWNERSHIP_ALREADY_OWNER;
-                        } else if (equality == C_GT) {
-                            if (claim == TRUE) {
-                                /* The current message comes from a writer, which
-                                 * is not owner AND has a strength that is equal to
-                                 * the strength of the current owner. So we must
-                                 * determine which writer should be the owner.
-                                 * Every reader must determine the ownership
-                                 * identically, so we determine it by comparing the
-                                 * identification of the writer. The writer with
-                                 * the highest gid will be the owner.
-                                 */
-                                owner->gid = candidate->gid;
-                            }
-                            result = V_OWNERSHIP_OWNER;
-                        } else {
+                        if (equality == C_LT) {
                             result = V_OWNERSHIP_NOT_OWNER;
+                        } else {
+                            result = claimOwnership(owner, candidate, messageState);
                         }
                     }
-                } else if (claim == TRUE) {
-                    owner->gid = candidate->gid;
-                    owner->strength = candidate->strength;
-                    result = V_OWNERSHIP_OWNER;
                 } else {
-                    /* Instance has no owner and no registrations either.
-                     * This may happen during deletion of a DataReader or
-                     * when inserting historical data
+                    /* When the owner is not valid, nobody can claim ownership naturally because
+                     * the smallest GID always wins. So enforce ownership transfer explicitly.
                      */
-                    result = V_OWNERSHIP_OWNER;
+                    result = claimOwnership(owner, candidate, messageState);
                 }
             } else {
                 result = V_OWNERSHIP_INCOMPATIBLE_QOS;
             }
         } else {
             v_gidSetNil (owner->gid);
+            owner->strength = 0;
             result = V_OWNERSHIP_OWNER_RESET;
         }
     } else {
@@ -303,10 +285,6 @@ v_determineOwnershipByStrength (
 
     return result;
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/
 
 void
 v_policyReportInvalid(

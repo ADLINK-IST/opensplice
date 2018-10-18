@@ -47,11 +47,10 @@ DDSShapeDynamics::simulate()
 
     QPoint tmp;
 
-    //samples::iterator sample;
     samples = shapeReader_.read();
     plist_.erase(plist_.begin(), plist_.end());
 
-    //Create a dummy when the subscribe button is clicked until the first sample arrives
+    // Create a dummy when the subscribe button is clicked until the first sample arrives
     if(dummy_ == true)
     {
         SharedShape shape;

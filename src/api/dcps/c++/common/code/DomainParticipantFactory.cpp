@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,6 +29,57 @@
 #include "QosUtils.h"
 #include "MiscUtils.h"
 #include "ReportUtils.h"
+#include "os_atomics.h"
+
+namespace DDS
+{
+    namespace OpenSplice
+    {
+        class DomainParticipantFactoryHolder {
+            public:
+                DomainParticipantFactoryHolder() {
+                    pa_stvoidp(&_factory, NULL);
+                }
+                ~DomainParticipantFactoryHolder();
+
+                DomainParticipantFactory *
+                get_instance();
+
+            private:
+                pa_voidp_t _factory;
+        };
+    }
+}
+
+
+DDS::OpenSplice::DomainParticipantFactoryHolder::~DomainParticipantFactoryHolder()
+{
+    DDS::DomainParticipantFactory *theFactory = static_cast<DDS::DomainParticipantFactory *>(pa_ldvoidp(&this->_factory));
+    DDS::release(theFactory);
+}
+
+DDS::DomainParticipantFactory *
+DDS::OpenSplice::DomainParticipantFactoryHolder::get_instance()
+{
+    DDS::DomainParticipantFactory *theFactory = static_cast<DDS::DomainParticipantFactory *>(pa_ldvoidp(&this->_factory));
+    if (!theFactory) {
+        theFactory = new DDS::DomainParticipantFactory();
+        if (pa_casvoidp(&this->_factory, NULL, theFactory)) {
+            os_procAtExit(DDS::DomainParticipantFactory::cleanup);
+        } else {
+            DDS::release(theFactory);
+            theFactory = static_cast<DDS::DomainParticipantFactory *>(pa_ldvoidp(&this->_factory));
+        }
+    }
+    return theFactory;
+}
+
+
+
+/* Stores the DomainParticipantFactory instance and will release the DomainParticipantFactory
+ * instance when the application terminates.
+ */
+static DDS::OpenSplice::DomainParticipantFactoryHolder domainParticipantFactoryHolder;
 
 
 /*
@@ -98,7 +150,6 @@ DDS::DomainParticipantFactory::DomainParticipantFactory() :
                 "Could not create DomainParticipantFactory.");
             exit(-1);
         }
-        os_procAtExit(DDS::DomainParticipantFactory::cleanup);
     } else {
         CPP_REPORT(DDS::RETCODE_ERROR,
             "Could not create DomainParticipantFactory, "
@@ -143,6 +194,9 @@ DDS::DomainParticipantFactory::nlReq_init()
 
 DDS::DomainParticipantFactory::~DomainParticipantFactory()
 {
+    if (this->participantList) delete this->participantList;
+    if (this->domainList) delete this->domainList;
+    os_osExit();
 }
 
 DDS::DomainParticipantFactory_ptr
@@ -190,10 +244,7 @@ DDS::DomainParticipantFactory_ptr
 DDS::DomainParticipantFactory::get_instance(
 )
 {
-    // Static initializer uses the 'Construct on first use' idiom, which is guranteed by C++ to be executed only once.
-    // It is not guarnteed to be thread-safe though, although on most compilers it is.
-    static DomainParticipantFactory *theFactory = new DDS::DomainParticipantFactory();
-    return DDS::DomainParticipantFactory::_duplicate(theFactory);
+    return DDS::DomainParticipantFactory::_duplicate(domainParticipantFactoryHolder.get_instance());
 }
 
 DDS::DomainParticipant_ptr

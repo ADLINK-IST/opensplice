@@ -1,0 +1,11 @@
+
+module DurabilityData
+{
+   struct Msg
+   {
+      long id; 
+      string content;
+   };
+   #pragma keylist Msg id
+
+};

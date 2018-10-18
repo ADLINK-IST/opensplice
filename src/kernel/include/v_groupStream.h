@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,19 +55,19 @@ extern "C" {
  */
 #define v_groupStream(s) (C_CAST(s,v_groupStream))
 
-OS_API void            
+OS_API void
 v_groupStreamInit(
     v_groupStream stream,
     const c_char *name,
     v_subscriber subscriber,
     v_readerQos qos,
     c_iter expr);
-                                         
-OS_API void            
+
+OS_API void
 v_groupStreamDeinit(
     v_groupStream stream);
 
-OS_API void            
+OS_API void
 v_groupStreamFree(
     v_groupStream stream);
 

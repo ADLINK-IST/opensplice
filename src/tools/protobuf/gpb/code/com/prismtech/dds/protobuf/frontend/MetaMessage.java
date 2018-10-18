@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -66,10 +67,10 @@ public class MetaMessage {
                  * Type names need to start with a dot to indicate absolute
                  * scope. The scope is assumed relative to the scope of the
                  * message otherwise.
-                 * 
+                 *
                  * Names have to start with a through z or A through Z, followed
                  * by a word character [a-zA-Z_0-9].
-                 * 
+                 *
                  * Examples: are "MyType", ".MyType", ".some.scope2.MyType",
                  * "scope.MyType4"
                  */
@@ -83,7 +84,7 @@ public class MetaMessage {
 
             this.setupDDSFields(this.file.getProtoFile(), message,
                     new ArrayList<MetaField.Scope>(),
-                    new HashMap<String, MetaField>());
+                    new HashMap<String, MetaField>(),null);
         } else {
             this.ddsMessageOptions = null;
         }
@@ -91,14 +92,15 @@ public class MetaMessage {
 
     private void setupDDSFields(FileDescriptorProto protoFile,
             DescriptorProto message, List<MetaField.Scope> scope,
-            HashMap<String, MetaField> fieldNames)
+            HashMap<String, MetaField> fieldNames, FieldDescriptorProto dfproto)
             throws InvalidProtocolBufferException, ProtoParseException {
 
-        Logger.getInstance().log(
-                "Message '" + message.getName() + "' already in cache.\n",
-                Level.FINEST);
-
-        if (this.descriptorCache.contains(message)) {
+        if (this.descriptorCache.contains(message) && dfproto != null && dfproto.getLabel() !=
+                com.google.protobuf.DescriptorProtos.FieldDescriptorProto.Label.LABEL_REQUIRED) {
+            /* only add required messages for a second time as they might contain key fields*/
+            Logger.getInstance().log(
+                    "Message '" + message.getName() + "' already in cache.\n",
+                    Level.FINEST);
             return;
         }
         Logger.getInstance().log(
@@ -114,6 +116,9 @@ public class MetaMessage {
         for (FieldDescriptorProto field : fieldList) {
             Field ddsFieldOption = field.getOptions().getUnknownFields()
                     .getField(DescriptorProtos.MEMBER_FIELD_NUMBER);
+            Logger.getInstance().log(
+                    "Adding field '" + message.getName() + " " + field.getLabel() +"' to cache.\n",
+                    Level.FINEST);
 
             if (ddsFieldOption.getLengthDelimitedList().size() != 0) {
                 MetaField mf = new MetaField(scope, protoFile, message, field,
@@ -121,7 +126,6 @@ public class MetaMessage {
                 this.ddsFields.add(mf);
 
                 MetaField existing = fieldNames.put(mf.getDDSName(), mf);
-
                 Logger.getInstance().log(
                         "- DDS name: '" + mf.getDDSName() + "': ", Level.FINER);
 
@@ -154,7 +158,7 @@ public class MetaMessage {
                                     + field.getName() + "'.");
                 }
                 this.setupDDSFields(messageType.getFile(),
-                        messageType.getMessage(), scope, fieldNames);
+                        messageType.getMessage(), scope, fieldNames,field);
                 scope.remove(s);
             }
         }

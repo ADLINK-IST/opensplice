@@ -57,44 +57,30 @@
 <p>Vortex OpenSplice Tuner has been implemented in the Java language. It is
 possible to use it on every platform where a Java Virtual Machine
 (JVM) implementation is available. That means that Vortex OpenSplice Tuner
-does not require OpenSplice to be available on the local system (see
-Vortex OpenSplice Tuner Z at Node C).</p>
-<p>The diagram below shows a high-level view of a typical environment with
-both Vortex OpenSplice and Vortex OpenSplice Tuner.</p>
-<p>Vortex OpenSplice is available at Node A and Node B. Vortex OpenSplice
-Tuner is available at Node A and Node C. At both Node A and Node B
-there are some Vortex OpenSplice applications running (Applications 1 -
-5).</p>
-<p class="centered" id="typical-opensplice-tuner-environment">
-<strong><strong>Typical OpenSplice Tuner Environment</strong></strong></p><a class="reference internal image-reference" href="_images/001_TunerEnvironment.png"><img alt="Typical OpenSplice Tuner Environment" class="align-center" src="_images/001_TunerEnvironment.png" style="width: 160mm;" /></a>
+does not require OpenSplice to be available on the local system.</p>
 <p>Vortex OpenSplice Tuner is able to connect to one specific OpenSplice
-DDS domain at one specific node, both locally and remotely. A local
-connection is achieved by directly accessing OpenSplice at the local
-node. The diagram shows two local connections. Both OpenSplice Tuner X
-and Y are connected to Domain II. This implies it is possible to
-simultaneous connect two Vortex OpenSplice Tuners to one specific domain
-and node.</p>
-<p>A remote connection can be achieved by means of an agent within
-Vortex OpenSplice. This agent allows Vortex OpenSplice Tuner to communicate
-with a remote node. In the diagram, the red dashed line indicates the
-possible remote connections of SPLICE-Tuner Z at Node C to the
-Vortex OpenSplice domains at the other two nodes.</p>
-<p>Possible connections of Vortex OpenSplice Tuners to a domain and node
-shown are:</p>
+DDS domain at one specific node, both locally and remotely.  It is possible
+to simultaneously connect one or more Vortex OpenSplice Tuners to a specific
+domainand node.</p>
+<p>The diagram below shows an overview of a Vortex OpenSplice Tuner process
+connecting locally to a Vortex OpenSplicefederation (shared memory
+deployment) on one computing node.
+(Typically, there are many nodes within a system.)</p>
 <blockquote>
-<div><p>OpenSplice Tuner X &#8212;&gt; Domain I at Node A</p>
-<p>OpenSplice Tuner X &#8212;&gt; Domain II at Node A</p>
-<p>OpenSplice Tuner X &#8212;&gt; Domain I at Node B</p>
-<p>OpenSplice Tuner X &#8212;&gt; Domain II at Node B</p>
-<p>OpenSplice Tuner Y &#8212;&gt; Domain I at Node A</p>
-<p>OpenSplice Tuner Y &#8212;&gt; Domain II at Node A</p>
-<p>OpenSplice Tuner Y &#8212;&gt; Domain I at Node B</p>
-<p>OpenSplice Tuner Y &#8212;&gt; Domain II at Node B</p>
-<p>OpenSplice Tuner Z &#8212;&gt; Domain I at Node A</p>
-<p>OpenSplice Tuner Z &#8212;&gt; Domain II at Node A</p>
-<p>OpenSplice Tuner Z &#8212;&gt; Domain I at Node B</p>
-<p>OpenSplice Tuner Z &#8212;&gt; Domain II at Node B</p>
-</div></blockquote>
+<div><span class="target" id="vortex-opensplice-tuner-local-connection">Vortex OpenSplice Tuner Local Connection</span>:</div></blockquote>
+<p class="centered">
+<strong><strong>Vortex OpenSplice Tuner Local Connection</strong></strong></p><a class="reference internal image-reference" href="_images/001a_LocalConnection.png"><img alt="Vortex OpenSplice Tuner Local Connection" class="align-center" src="_images/001a_LocalConnection.png" style="width: 175mm;" /></a>
+<p>The diagram below shows an overview of a Vortex OpenSplice Tuner
+process connecting remotely to a Vortex OpenSplice application
+(single process deployment). The Tuner service (aka the SOAP service)
+must be enabled in the Vortex OpenSplice configuration file to allow
+remote connection for tools.</p>
+<p><span class="target" id="vortex-opensplice-tuner-remote-connection">Vortex OpenSplice Tuner Remote Connection</span>:</p>
+<p class="centered">
+<strong><strong>Vortex OpenSplice Tuner Remote Connection</strong></strong></p><a class="reference internal image-reference" href="_images/001b_RemoteConnection.png"><img alt="Vortex OpenSplice Tuner Remote Connection" class="align-center" src="_images/001b_RemoteConnection.png" style="width: 175mm;" /></a>
+<p>While the figure details a remote connection to a single process
+deployment, one can also use the remote connection capability to
+connect to a shared memory deployment in the exact same way.</p>
 </div>
 </div>
 
@@ -159,7 +145,7 @@ shown are:</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

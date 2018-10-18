@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -75,7 +76,7 @@ DDS::OpenSplice::Subscriber::nlReq_init (
 
     if (result == DDS::RETCODE_OK) {
         uParticipant = u_participant (participant->rlReq_get_user_entity ());
-        uSubscriber = u_subscriberNew (uParticipant, name, uSubscriberQos, FALSE);
+        uSubscriber = u_subscriberNew (uParticipant, name, uSubscriberQos);
         if (uSubscriber) {
             result = DDS::OpenSplice::Entity::nlReq_init (u_entity (uSubscriber));
             if (result == DDS::RETCODE_OK) {
@@ -238,7 +239,9 @@ DDS::OpenSplice::Subscriber::create_datareader (
             if (result == DDS::RETCODE_OK) {
                 reader = tsMetaHolder->create_datareader();
                 if (reader) {
-                    result = reader->init (this, *readerQosPtr, topic, name, tsMetaHolder->get_copy_in(), tsMetaHolder->get_copy_out());
+                    result = reader->init (
+                            this, *readerQosPtr, topic, name, tsMetaHolder->get_copy_in(),
+                            tsMetaHolder->get_copy_out(), tsMetaHolder->get_readerCopy(), tsMetaHolder->get_cdrMarshaler());
                     if (result == DDS::RETCODE_OK) {
                         /* Duplicate and store the created DataWriter object. */
                         if (!this->wlReq_insertReader (reader)) {
@@ -246,7 +249,7 @@ DDS::OpenSplice::Subscriber::create_datareader (
                         } else {
                             reader->wlReq_set_listenerDispatcher(this->rlReq_get_listenerDispatcher());
                             result = reader->set_listener(a_listener, mask);
-                            if (result == DDS::RETCODE_OK && this->factoryAutoEnable) {
+                            if (result == DDS::RETCODE_OK && this->factoryAutoEnable && this->rlReq_is_enabled()) {
                                 result = reader->enable();
                             }
                             /* Remove DataReader from list if an error occurred */
@@ -695,7 +698,7 @@ DDS::OpenSplice::Subscriber::end_access (
         uResult = u_subscriberEndAccess(uSubscriber);
         result = uResultToReturnCode (uResult);
         if (result != DDS::RETCODE_OK) {
-            CPP_REPORT(result, "Could not Begin coherent access.");
+            CPP_REPORT(result, "Could not End coherent access.");
         }
     }
     CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);

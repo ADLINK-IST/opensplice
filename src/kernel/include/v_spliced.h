@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -85,36 +86,6 @@ v_splicedCAndMCommandDispatcherQuit(
 OS_API void
 v_splicedBuiltinCAndMCommandDispatcher(
    v_spliced spliced);
-
-OS_API v_result
-v_splicedGetMatchedSubscriptions(
-    v_spliced spliced,
-    v_writer w,
-    v_subscriptionInfo_action action,
-    c_voidp arg);
-
-OS_API v_result
-v_splicedGetMatchedSubscriptionData(
-    v_spliced spliced,
-    v_writer w,
-    v_gid subscription,
-    v_subscriptionInfo_action action,
-    c_voidp arg);
-
-OS_API v_result
-v_splicedGetMatchedPublications(
-    v_spliced spliced,
-    v_dataReader r,
-    v_publicationInfo_action action,
-    c_voidp arg);
-
-OS_API v_result
-v_splicedGetMatchedPublicationData(
-    v_spliced spliced,
-    v_dataReader r,
-    v_gid publication,
-    v_publicationInfo_action action,
-    c_voidp arg);
 
 /**
  * \brief Setup the durability client within spliced.

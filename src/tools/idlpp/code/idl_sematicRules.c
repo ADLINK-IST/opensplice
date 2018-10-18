@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,175 +19,174 @@
  *
  */
 /*
-//  * 1 Introduction
-//  *
-//  *      This document analyses the semantic checks required for the OpenSpliceDDS IDL pre-processor on the IDL input.
-//  *      The analysis is based upon OMG Spec "The Common Object Request Broker: Archtecture and Specification", V2.3.1.
-//  *      Semantic rules are identified by a [] enclosed number.
-//  *
-//  * 2 Generic
-//  *
-//  *      [1]  OMG IDL file must have "idl" extension. (3-3 3.1)
-//  *               function: Will not be checked
-//  *
-//  *      [2]  OMG IDL uses ASCII charset. (3-3 3.1)
-//  *               function: Will not be checked
-//  *
-//  *      [3]  OMG IDL identifiers consist of an arbitrary long sequence of ASCII alphabetic, digit and underscore
-//  *           characters. (3-6 3.2.3)
-//  *               function: Is checked by the scanner
-//  *
-//  *      [4]  OMG IDL identifiers must start with an ASCII alphabetic character. (3-6 3.2.3)
-//  *               function: Is checked by the scanner
-//  *
-//  *      [5]  Uppercase and lowercase characters are treated as the same letter, but OMG IDL identifiers that only
-//  *           differ in case collide. Identifiers for a given definition must be spelled identically with respect
-//  *           to the case. (3-6 3.2.3)
-//  *               funtion: idl_checkReferencedIdentifier
-//  *
-//  *      [6]  An identifier may be used only once within a namespace. There is only one namespace for each
-//  *           identifier in each scope. (3-6 3.2.3)
-//  *           A type name may be redefined in a nested scope. (3-50 3.15.3)
-//  *               function: idl_checkModuleDefinition
-//  *               function: idl_checkConstantDefinition
-//  *               function: idl_checkTypeDefinition
-//  *               function: idl_checkinterfaceDefinition
-//  *               function: idl_checkEnumerationElementDefinition
-//  *               function: idl_checkExceptionDefinition
-//  *               function: idl_checkOperationDefinition
-//  *
-//  * 3 Constant Declaration
-//  *
-//  *      [7]  The <scoped_name> in the <const_type> production must be a previously defined name of an <integer_type>,
-//  *           <char_type>, <wide_char_type>, <boolean_type>, <floating_pt_type>, <string_type>, <wide_string_type>,
-//  *           <octet_type>, or <enum_type> constant. (3-29 3.9.2)
-//  *               function: checked by the parser
-//  *
-//  *      [8]  An infix operator can combine two integers, floats or fixeds, but not mixtures of these. (3-29 3.9.2)
-//  *               function: idl_checkBinaryExpression
-//  *
-//  *      [9]  Infix operators are applicable only to integer, float and fixed types. (3-29 3.9.2)
-//  *               function: idl_checkBinaryExpression
-//  *
-//  *      [10] It is an error if a sub-expression of an integer or float constant declaration exceeds the precision
-//  *           of the target type. (3-29 3.9.2)
-//  *               function: idl_checkBinaryExpression
-//  *
-//  *      [11] Unary '+' and '-' and binary '*', '/', '+' and '-' are applicable in floating-point and fixed-point
-//  *           expressions. (3-30 3.9.2)
-//  *               function: idl_checkUnaryExpression
-//  *
-//  *      [12] Unary '+', '-' and '~' and binary '*', '/', '%', '+', '-', '<<', '>>', '&', '|' and '^' operations
-//  *           are applicable in integer expressions. (3-30 3.9.2)
-//  *               function: idl_checkUnaryExpression
-//  *               function: idl_checkBinaryExpression
-//  *
-//  *      [13] The right hand operand value of the ">>" and "<<" binary operator must be in the range 0..63. (3-31 3.9.2)
-//  *               function: idl_checkBinaryExpression
-//  *
-//  *      [14] <positive_int_const> must evaluate to a positive integer constant.  (3-31 3.9.2)
-//  *               function: idl_checkConstantDeclaration
-//  *
-//  *      [15] Values for an octet constant outside the range 0..255 shall cause a compile-time error. (3-31 3.9.2)
-//  *               function: idl_checkConstantDeclaration
-//  *
-//  *      [16] The constant name for the right hand side of an enumerated constant definition must denote one of the
-//  *           enumerators defined for the enumerated type of the constant. (3-31 3.9.2)
-//  *               function: idl_checkConstantDeclaration
-//  *
-//  *      [17] The char data type can take an 8 bit quantity (0-255). (3-34 3.10.1.3)
-//  *               function: idl_checkConstantDeclaration
-//  *
-//  *      [18] The boolean data type can take one of the values "TRUE" and "FALSE". (3-34 3.10.1.5)
-//  *               function: idl_checkConstantDeclaration
-//  *
-//  * 4 Type Declaration
-//  *
-//  *      [19] The <scoped_name> in <simple_type_spec> must be a previously defined type. (3-31 3.10)
-//  *               funtion: Checked by the parser
-//  *
-//  * 4.1 Constructed Type
-//  *
-//  *      [20] The only recursion allowed is via the use of the sequence template type. (3-35 3.10.2)
-//  *
-//  * 4.2 Structures
-//  *
-//  *      [21] Structure member declarators in a particular structure must be unique. (3-35 3.10.2.1)
-//  *               function: idl_checkStructDeclaratorDefinition
-//  *
-//  * 4.3 Discriminated Unions
-//  *
-//  *      [22] The <const_exp> in a <case_label> must be consistent with the <switch_type_spec>. (3-36 3.10.2.2)
-//  *               function: idl_checkConstantOperand
-//  *
-//  *      [23] A default case can appear at most once. (3-36 3.10.2.2)
-//  *               function: idl_checkUnionCaseDefinition
-//  *
-//  *      [24] The <scoped_name> in the <switch_type_spec> must be a previously defined integer, char, boolean
-//  *           or enum type. (3-36 3.10.2.2)
-//  *               function: idl_checkUnionCaseDefinition
-//  *
-//  *      [25] Case labels must match or be automatically castable to the defined type of the discriminator
-//  *           (see table 3-12). (3-36 3.10.2.2)
-//  *               function: idl_checkConstantOperand
-//  *
-//  *      [26] Element declarators in a particular union must be unique. (3-37 3.10.2.2)
-//  *               function: idl_checkUnionDeclaratorDefinition
-//  *
-//  *      [27] If the <switch_type_spec> is an <enum_type>, the identifier for the enumeration is in the scope of
-//  *           the union; as a result, it must be distinct from the element declarators (3-37 3.10.2.2).
-//  *               function: idl_checkUnionDeclaratorDefinition
-//  *
-//  *      [28] It is illegal to specify a union with the default case label if the set of case labels completely
-//  *           covers the possible values for the discriminant. (IDL to Java Language Mapping Specification 1-21 1.9)
-//  *               function: idl_checkUnionDeclaratorDefinition
-//  *
-//  * 4.4 Enumerations
-//  *
-//  *      [29] A maximum of 2^32 identifiers may be specified. (3-37 3.10.2.3)
-//  *               function: idl_checkEnumerationElementCount
-//  *
-//  * 4.5 Template Types
-//  *
-//  *      [30] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.1)
-//  *               function: idl_checkIntegerPositive
-//  *
-//  *      [31] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.2)
-//  *               function: idl_checkIntegerPositive
-//  *
-//  *      [32] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.3.3)
-//  *               function: idl_checkIntegerPositive
-//  *
-//  * 4.6 Complex Declarator
-//  *
-//  *      [33] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.4.1)
-//  *               function: idl_checkIntegerPositive
-//  *
-//  * 5 Keylist
-//  *
-//  *      The following syntax is assumed: #pragma keylist <scoped_name> <member_declarator>*
-//  *
-//  *      [34] The <scoped_name> must be the name a previously defined type of which the actual type is a
-//  *           structure type or an union type.
-//  *               function: idl_checkKeyListTypeName
-//  *
-//  *      [35] The <member_declarator> is the name of a member of the structure that is specified with <scoped_name>.
-//  *               function: idl_checkKeyListFieldName
-//  *
-//  *      [36] The syntax should also allow ',' as seperator for the <member_declarator>
-//  *
-//  *      [37] The member specified by the <member_declarator> should be one of the following types:
-//  *           - primitive types: boolean, char, long, octet,
-//  *           - enumeration
-//  *
-//  * 6 Unsupported types
-//  *
-//  *      [38] The preprocessor shall not generate code for the following primitive types or
-//  *           constructed types using these primitive types:
-//  *           - valuetype, long double, wchar, any, Object, wstring, fixed, ValueBase
-//  *        function: checkUnsupportedTypeUsage (called from idl_checkKeyListTypeName)
-//
-*/
+ * 1 Introduction
+ *
+ *      This document analyses the semantic checks required for the OpenSpliceDDS IDL pre-processor on the IDL input.
+ *      The analysis is based upon OMG Spec "The Common Object Request Broker: Archtecture and Specification", V2.3.1.
+ *      Semantic rules are identified by a [] enclosed number.
+ *
+ * 2 Generic
+ *
+ *      [1]  OMG IDL file must have "idl" extension. (3-3 3.1)
+ *               function: Will not be checked
+ *
+ *      [2]  OMG IDL uses ASCII charset. (3-3 3.1)
+ *               function: Will not be checked
+ *
+ *      [3]  OMG IDL identifiers consist of an arbitrary long sequence of ASCII alphabetic, digit and underscore
+ *           characters. (3-6 3.2.3)
+ *               function: Is checked by the scanner
+ *
+ *      [4]  OMG IDL identifiers must start with an ASCII alphabetic character. (3-6 3.2.3)
+ *               function: Is checked by the scanner
+ *
+ *      [5]  Uppercase and lowercase characters are treated as the same letter, but OMG IDL identifiers that only
+ *           differ in case collide. Identifiers for a given definition must be spelled identically with respect
+ *           to the case. (3-6 3.2.3)
+ *               funtion: idl_checkReferencedIdentifier
+ *
+ *      [6]  An identifier may be used only once within a namespace. There is only one namespace for each
+ *           identifier in each scope. (3-6 3.2.3)
+ *           A type name may be redefined in a nested scope. (3-50 3.15.3)
+ *               function: idl_checkModuleDefinition
+ *               function: idl_checkConstantDefinition
+ *               function: idl_checkTypeDefinition
+ *               function: idl_checkinterfaceDefinition
+ *               function: idl_checkEnumerationElementDefinition
+ *               function: idl_checkExceptionDefinition
+ *               function: idl_checkOperationDefinition
+ *
+ * 3 Constant Declaration
+ *
+ *      [7]  The <scoped_name> in the <const_type> production must be a previously defined name of an <integer_type>,
+ *           <char_type>, <wide_char_type>, <boolean_type>, <floating_pt_type>, <string_type>, <wide_string_type>,
+ *           <octet_type>, or <enum_type> constant. (3-29 3.9.2)
+ *               function: checked by the parser
+ *
+ *      [8]  An infix operator can combine two integers, floats or fixeds, but not mixtures of these. (3-29 3.9.2)
+ *               function: idl_checkBinaryExpression
+ *
+ *      [9]  Infix operators are applicable only to integer, float and fixed types. (3-29 3.9.2)
+ *               function: idl_checkBinaryExpression
+ *
+ *      [10] It is an error if a sub-expression of an integer or float constant declaration exceeds the precision
+ *           of the target type. (3-29 3.9.2)
+ *               function: idl_checkBinaryExpression
+ *
+ *      [11] Unary '+' and '-' and binary '*', '/', '+' and '-' are applicable in floating-point and fixed-point
+ *           expressions. (3-30 3.9.2)
+ *               function: idl_checkUnaryExpression
+ *
+ *      [12] Unary '+', '-' and '~' and binary '*', '/', '%', '+', '-', '<<', '>>', '&', '|' and '^' operations
+ *           are applicable in integer expressions. (3-30 3.9.2)
+ *               function: idl_checkUnaryExpression
+ *               function: idl_checkBinaryExpression
+ *
+ *      [13] The right hand operand value of the ">>" and "<<" binary operator must be in the range 0..63. (3-31 3.9.2)
+ *               function: idl_checkBinaryExpression
+ *
+ *      [14] <positive_int_const> must evaluate to a positive integer constant.  (3-31 3.9.2)
+ *               function: idl_checkConstantDeclaration
+ *
+ *      [15] Values for an octet constant outside the range 0..255 shall cause a compile-time error. (3-31 3.9.2)
+ *               function: idl_checkConstantDeclaration
+ *
+ *      [16] The constant name for the right hand side of an enumerated constant definition must denote one of the
+ *           enumerators defined for the enumerated type of the constant. (3-31 3.9.2)
+ *               function: idl_checkConstantDeclaration
+ *
+ *      [17] The char data type can take an 8 bit quantity (0-255). (3-34 3.10.1.3)
+ *               function: idl_checkConstantDeclaration
+ *
+ *      [18] The boolean data type can take one of the values "TRUE" and "FALSE". (3-34 3.10.1.5)
+ *               function: idl_checkConstantDeclaration
+ *
+ * 4 Type Declaration
+ *
+ *      [19] The <scoped_name> in <simple_type_spec> must be a previously defined type. (3-31 3.10)
+ *               funtion: Checked by the parser
+ *
+ * 4.1 Constructed Type
+ *
+ *      [20] The only recursion allowed is via the use of the sequence template type. (3-35 3.10.2)
+ *
+ * 4.2 Structures
+ *
+ *      [21] Structure member declarators in a particular structure must be unique. (3-35 3.10.2.1)
+ *               function: idl_checkStructDeclaratorDefinition
+ *
+ * 4.3 Discriminated Unions
+ *
+ *      [22] The <const_exp> in a <case_label> must be consistent with the <switch_type_spec>. (3-36 3.10.2.2)
+ *               function: idl_checkConstantOperand
+ *
+ *      [23] A default case can appear at most once. (3-36 3.10.2.2)
+ *               function: idl_checkUnionCaseDefinition
+ *
+ *      [24] The <scoped_name> in the <switch_type_spec> must be a previously defined integer, char, boolean
+ *           or enum type. (3-36 3.10.2.2)
+ *               function: idl_checkUnionCaseDefinition
+ *
+ *      [25] Case labels must match or be automatically castable to the defined type of the discriminator
+ *           (see table 3-12). (3-36 3.10.2.2)
+ *               function: idl_checkConstantOperand
+ *
+ *      [26] Element declarators in a particular union must be unique. (3-37 3.10.2.2)
+ *               function: idl_checkUnionDeclaratorDefinition
+ *
+ *      [27] If the <switch_type_spec> is an <enum_type>, the identifier for the enumeration is in the scope of
+ *           the union; as a result, it must be distinct from the element declarators (3-37 3.10.2.2).
+ *               function: idl_checkUnionDeclaratorDefinition
+ *
+ *      [28] It is illegal to specify a union with the default case label if the set of case labels completely
+ *           covers the possible values for the discriminant. (IDL to Java Language Mapping Specification 1-21 1.9)
+ *               function: idl_checkUnionDeclaratorDefinition
+ *
+ * 4.4 Enumerations
+ *
+ *      [29] A maximum of 2^32 identifiers may be specified. (3-37 3.10.2.3)
+ *               function: idl_checkEnumerationElementCount
+ *
+ * 4.5 Template Types
+ *
+ *      [30] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.1)
+ *               function: idl_checkIntegerPositive
+ *
+ *      [31] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.2)
+ *               function: idl_checkIntegerPositive
+ *
+ *      [32] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.3.3)
+ *               function: idl_checkIntegerPositive
+ *
+ * 4.6 Complex Declarator
+ *
+ *      [33] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.4.1)
+ *               function: idl_checkIntegerPositive
+ *
+ * 5 Keylist
+ *
+ *      The following syntax is assumed: #pragma keylist <scoped_name> <member_declarator>*
+ *
+ *      [34] The <scoped_name> must be the name a previously defined type of which the actual type is a
+ *           structure type or an union type.
+ *               function: idl_checkKeyListTypeName
+ *
+ *      [35] The <member_declarator> is the name of a member of the structure that is specified with <scoped_name>.
+ *               function: idl_checkKeyListFieldName
+ *
+ *      [36] The syntax should also allow ',' as seperator for the <member_declarator>
+ *
+ *      [37] The member specified by the <member_declarator> should be one of the following types:
+ *           - primitive types: boolean, char, long, octet,
+ *           - enumeration
+ *
+ * 6 Unsupported types
+ *
+ *      [38] The preprocessor shall not generate code for the following primitive types or
+ *           constructed types using these primitive types:
+ *           - valuetype, long double, wchar, any, Object, wstring, fixed, ValueBase
+ *        function: checkUnsupportedTypeUsage (called from idl_checkKeyListTypeName)
+ */
 #include "c_iterator.h"
 #include "c_metabase.h"
 #include "c_misc.h"
@@ -1161,83 +1161,6 @@ objectName(
     return "";
 }
 
-#if 0
-static void
-checkUnsupportedTypeUsage(
-   c_metaObject metaObject,
-   c_metaWalkActionArg arg)
-{
-    struct unsupportedArg *a = (struct unsupportedArg *)arg;
-    int i;
-    c_metaObject mo;
-
-    if ((metaObject->name != NULL) &&
-        (strncmp(IDL_UNSUP_PREFIX, metaObject->name, strlen(IDL_UNSUP_PREFIX)) == 0)) {
-        a->unsupported = TRUE;
-        a->typeName = idl_unsupportedTypeActualName(metaObject->name);
-        return;
-    }
-    switch (c_baseObject(metaObject)->kind) {
-    case M_COLLECTION:
-        checkUnsupportedTypeUsage(c_metaObject(c_collectionType(metaObject)->subType), arg);
-    break;
-    case M_CONSTANT:
-        checkUnsupportedTypeUsage(c_metaObject(c_constant(metaObject)->type), arg);
-    break;
-    case M_MEMBER:
-        checkUnsupportedTypeUsage(c_metaObject(c_specifier(metaObject)->type), arg);
-    break;
-    case M_TYPEDEF:
-        mo = c_metaObject(c_typeActualType(c_type(metaObject)));
-        checkUnsupportedTypeUsage(mo, arg);
-    break;
-    case M_UNION:
-        i = 0;
-        while ((i < c_arraySize(c_union(metaObject)->cases)) &&
-               (a->unsupported == FALSE)) {
-            checkUnsupportedTypeUsage(c_metaObject(c_union(metaObject)->cases[i]), arg);
-            i++;
-        }
-    break;
-    case M_STRUCTURE:
-        i = 0;
-        while ((i < c_arraySize(c_structure(metaObject)->members)) &&
-               (a->unsupported == FALSE)) {
-            checkUnsupportedTypeUsage(c_metaObject(c_structure(metaObject)->members[i]), arg);
-            i++;
-        }
-    break;
-    case M_UNIONCASE:
-        checkUnsupportedTypeUsage(c_metaObject(c_specifier(metaObject)->type), arg);
-    break;
-    /* supported by default */
-    case M_ENUMERATION:
-    case M_LITERAL:
-    case M_PRIMITIVE:
-        /* do nothing */
-    break;
-    /* unsupported by default */
-    case M_UNDEFINED:
-    case M_ATTRIBUTE:
-    case M_CLASS:
-    case M_CONSTOPERAND:
-    case M_EXCEPTION:
-    case M_EXPRESSION:
-    case M_INTERFACE:
-    case M_MODULE:
-    case M_OPERATION:
-    case M_PARAMETER:
-    case M_RELATION:
-    case M_BASE:
-    case M_COUNT:
-    default:
-        a->unsupported = TRUE;
-        a->typeName = metaObject->name;
-    break;
-    }
-}
-#else
-
 static ut_result
 checkRecursion(
     void *o,
@@ -1335,7 +1258,6 @@ checkUnsupportedTypeUsage(
         }
     } /* else recursion detected, so skip this metaobject */
 }
-#endif
 /*************************************************************************************************
  * Global Functions
  *************************************************************************************************/

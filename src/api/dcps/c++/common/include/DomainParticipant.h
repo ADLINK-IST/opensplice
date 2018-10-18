@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -314,6 +315,9 @@ namespace DDS
             static DDS::Boolean
             rlReq_fnFindTopicDescription(DDS::Object_ptr td, findObjectArg *arg);
 
+            static void
+            rlReq_getuTopicType(v_public uTopic, void *arg);
+
             static DDS::Boolean
             rlReq_fnFindMetaHolderByInternalTypeName(const char *key, DDS::Object_ptr mh, struct findObjectArg *arg);
 
@@ -362,6 +366,10 @@ namespace DDS
                                     TYPE &data,
                                     DDS::InstanceHandle_t handle);
 
+            DDS::OpenSplice::TopicDescription *
+            rlReq_isCDRProxyForExistingTopic(const char * topic_name,
+                                                   const char * type_name);
+
             DDS::Topic_ptr
             nlReq_createTopic(const char * topic_name,
                               const char * type_name,
@@ -380,6 +388,16 @@ namespace DDS
 
             os_char*
             rlReq_getChildName(const char* prefix);
+
+            DDS::ReturnCode_t
+            set_property (
+                const ::DDS::Property & a_property
+            );
+
+            DDS::ReturnCode_t
+            get_property (
+                ::DDS::Property & a_property
+            );
 
         }; /* class DomainParticipant */
     } /* namespace OpenSplice */

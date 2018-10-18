@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -244,6 +245,9 @@ os_timeGet(void); /* Depricated */
 
 OS_API os_timeW
 os_timeWGet(void);
+
+OS_API os_timeW
+os_timeWGetDefault (void);
 
 /** \brief Get high resolution, monotonic time.
  *
@@ -543,7 +547,7 @@ os_nanoSleep(
     os_time delay); /* Depricated */
 
 OS_API os_result
-os_sleep(
+ospl_os_sleep(
     os_duration delay);
 
 /** \brief Translate calendar time into a readable string representation

@@ -16,12 +16,12 @@ echo "==== Calling startOSPL ===="
 call %FUNCTIONS% :startOSPL
 
 echo "==== Starting java subscriber ====="
-java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes BuildInTopicsDataSubscriber > subResult.txt
+java -jar java5_BuiltInTopics.jar > subResult.txt
 %SLEEP5% > NUL
 
 echo "===== Calling builtintopicsCheckResult ===="
 call %FUNCTIONS% :builtintopicsCheckResult >> run.log
- 
+
 echo "===== calling stopOSPL ===="
 rem Don't kill it too soon.
 call %FUNCTIONS% :stopOSPL

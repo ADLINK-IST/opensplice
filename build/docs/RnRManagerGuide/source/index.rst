@@ -7,14 +7,14 @@ The Vortex Record and Replay Manager User Guide
 .. toctree::
    :maxdepth: 6
    :numbered:
-      
+
    preface
    introduction
    installation
    using01
-   
-   contacts   
-   
+
+   contacts
+
 
 Indices and tables
 ==================

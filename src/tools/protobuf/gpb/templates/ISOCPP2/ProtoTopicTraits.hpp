@@ -1,7 +1,7 @@
 
 namespace org { namespace opensplice { namespace topic {
 
-typedef v_copyin_result (*copyInFunction)(c_base base, const void *, void *);
+typedef v_copyin_result (*copyInFunction)(c_type dbType, const void *, void *);
 typedef void (*copyOutFunction)(const void *, void *);
 
 template<>
@@ -81,7 +81,7 @@ public:
         return;
     }
 
-    static v_copyin_result protoCopyIn(c_base base, const void *from, void *to)
+    static v_copyin_result protoCopyIn(c_type dbType, const void *from, void *to)
     {
         ${dds-type-name} dds;
         v_copyin_result result = V_COPYIN_RESULT_INVALID;
@@ -89,7 +89,7 @@ public:
         copyInFunction copyIn = ::org::opensplice::topic::TopicTraits< ${dds-type-name} >::getCopyIn();
 
         if(protobufToDds((const ${proto-type-name}*)from, &dds)){
-            result = copyIn(base, &dds , to);
+            result = copyIn(dbType, &dds , to);
         }
         return result;
     }

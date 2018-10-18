@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -110,7 +111,7 @@ u_listenerNotify(
     r = u_observableReadClaim(u_observable(_this), (v_public *)(&kl), C_MM_RESERVATION_ZERO);
     if (r == U_RESULT_OK) {
         assert(kl);
-        v_listenerTrigger(kl);
+        v_listenerNotify(kl, NULL, NULL);
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     }
     return r;
@@ -122,21 +123,15 @@ u_listenerTrigger(
 {
     u_result result = U_RESULT_OK;
     v_listener vListener;
-    C_STRUCT(v_event) vEvent;
 
     assert (_this != NULL);
 
-    result = u_observableTriggerClaim(
-        u_observable(_this), (v_public *)&vListener, C_MM_RESERVATION_ZERO);
+    result = u_observableTriggerClaim(u_observable(_this), (v_public *)&vListener, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
         assert (vListener != NULL);
-        vEvent.kind = V_EVENT_TRIGGER;
-        vEvent.source = NULL;
-        vEvent.data = NULL;
-        v_listenerNotify(vListener, &vEvent, NULL);
+        v_listenerNotify(vListener, NULL, NULL);
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     }
-
     return result;
 }
 

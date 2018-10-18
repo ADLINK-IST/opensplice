@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -128,7 +129,7 @@ v_processInfoGetThreadInfo (
 
     c_mutexLock(&_this->lock);
     assert(c_tableNofKeys(_this->threads) == 1);
-    tinfo = c_tableFind(_this->threads, &tidval);
+    tinfo = c_tableFind(_this->threads, &tidval, 1);
 
     if(tinfo == NULL) {
         tinfo = v_threadInfoNew(c_getBase(c_object(_this)), _this->serial, tid);

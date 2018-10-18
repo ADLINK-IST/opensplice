@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,7 +26,7 @@
 #include "os_report.h"
 
 #define DDS_REPORT_STACK()          \
-    os_report_stack ()
+    os_report_stack_open (NULL,0,NULL,NULL)
 
 #define DDS_PANIC(...)              \
     do {                            \
@@ -146,7 +147,8 @@ dds_report_get_error_code();
 
 /* When OK: just return OK
  *   When e < 0: expect the status to have been already constructed.
- *     Otherwise: construct */
+ *     Otherwise: construct
+ */
 #define DDS_ERRNO(e,m,n) (int)((e == DDS_RETCODE_OK) ?        \
                                      DDS_RETCODE_OK  :        \
                                      ((e < 0)           ?     \

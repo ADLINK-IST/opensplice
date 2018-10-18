@@ -1,0 +1,665 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Node.js API for Vortex DDS &mdash; Node.js DCPS API Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Beta 6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Node.js DCPS API Guide" href="index.html" />
+    <link rel="next" title="6. Quality of Service (QoS)" href="qos_provider.html" />
+    <link rel="prev" title="4. Examples" href="examples.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="node-js-api-for-vortex-dds">
+<span id="id1"></span><h1>5. Node.js API for Vortex DDS<a class="headerlink" href="#node-js-api-for-vortex-dds" title="Permalink to this headline">¶</a></h1>
+<p>The Node.js DCPS API provides users with Node.js classes to model DDS communication using JavaScript and pure
+DDS applications.</p>
+<p>The Node.js DCPS API consists of one module.</p>
+<ul class="simple">
+<li>vortexdds</li>
+</ul>
+<p>This section provides an overview of the main DDS concepts and Node.js API examples for these DDS concepts.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last">
+<li><p class="first">The Node.js DCPS API documentation can be found in the following directory:</p>
+<blockquote>
+<div><p><em>$OSPL_HOME/docs/nodejs/html</em></p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="api-usage-patterns">
+<h2>5.1. API Usage Patterns<a class="headerlink" href="#api-usage-patterns" title="Permalink to this headline">¶</a></h2>
+<p>The typical usage pattern for the Node.js DCPS API for Vortex DDS is the following:</p>
+<ul class="simple">
+<li>Model your DDS topics using IDL and generate Node.js topic classes from IDL.</li>
+<li>AND/OR generate Node.js topic classes for topics that already exist in the DDS system.</li>
+<li>Start writing your Node.js program using the Node.js API for Vortex DDS.</li>
+</ul>
+<p>The core classes are <tt class="docutils literal"><span class="pre">Participant</span></tt>, <tt class="docutils literal"><span class="pre">Topic</span></tt>, <tt class="docutils literal"><span class="pre">Reader</span></tt> and <tt class="docutils literal"><span class="pre">Writer</span></tt>.
+<tt class="docutils literal"><span class="pre">Publisher</span></tt> and <tt class="docutils literal"><span class="pre">Subscriber</span></tt> classes can be used to adjust the Quality of Service (QoS) defaults.</p>
+<p>For details on setting QoS values with the API, see <a class="reference internal" href="qos_provider.html#qos-provider"><em>Quality of Service (QoS)</em></a>.</p>
+<p>The following list shows the sequence in which you would use the Vortex classes:</p>
+<ul class="simple">
+<li>Create a <tt class="docutils literal"><span class="pre">Participant</span></tt> instance.</li>
+<li>Create one or more <tt class="docutils literal"><span class="pre">Topic</span></tt> instances.</li>
+<li>If you require publisher or subscriber level non-default QoS settings, create <tt class="docutils literal"><span class="pre">Publisher</span></tt> and/or <tt class="docutils literal"><span class="pre">Subscriber</span></tt> instances. (The most common reason for changing publisher/subscriber QoS is to define non-default partitions.)</li>
+<li>Create <tt class="docutils literal"><span class="pre">Reader</span></tt> and/or <tt class="docutils literal"><span class="pre">Writer</span></tt> classes using the <tt class="docutils literal"><span class="pre">Topic</span></tt> instances that you created.</li>
+<li>If you required data filtering, create <tt class="docutils literal"><span class="pre">QueryCondition</span></tt> objects.</li>
+<li>Create the core of program, writing and/or reading data and processing it.</li>
+</ul>
+</div>
+<div class="section" id="participant">
+<h2>5.2. Participant<a class="headerlink" href="#participant" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Participant</span></tt> class represents a DDS domain participant entity.</p>
+<p>In DDS - “A domain participant represents the local membership of the application in a domain.  A domain is a distributed concept that links all the applications able to communicate with each other.  It represents a communication plane: only the publishers and subscribers attached to the same domain may interact.”</p>
+<p>Parameters:</p>
+<ul class="simple">
+<li>{number} domainId 0 &lt;= domainId &lt;= 230 (Default: DDSConstants.DDS_DOMAIN_DEFAULT)</li>
+<li>{QoS} qos (Default: undefined)</li>
+<li>{object} listener (Default: undefined)</li>
+</ul>
+<p>The optional parameters have defaults if not specified.  If the qos is undefined, the OSPL default QoS is used.</p>
+<p><strong>Examples</strong></p>
+<p>Create a Vortex DDS domain participant. Returns participant or throws a <tt class="docutils literal"><span class="pre">DDSError</span></tt> if the participant cannot be created.</p>
+<p>Create a domain participant in the default DDS domain (the one specified by the OSPL_URI environment variable).</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+
+<span class="c1">// create domain participant</span>
+<span class="kr">const</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a participant on the default domain with a QoS profile.  Consider the code snippet below taken from example: GetSetQoSExample/GetSetQoSExample.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">QOS_PATH</span> <span class="o">=</span> <span class="s1">&#39;DDS_Get_Set_QoS.xml&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">QOS_PROFILE</span> <span class="o">=</span> <span class="s1">&#39;DDS GetSetQosProfile&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">DOMAIN_ID</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DDS_DOMAIN_DEFAULT</span><span class="p">;</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+  <span class="c1">// create a qos provider using qos xml file</span>
+  <span class="kd">let</span> <span class="nx">qp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoSProvider</span><span class="p">(</span><span class="nx">QOS_PATH</span><span class="p">,</span> <span class="nx">QOS_PROFILE</span><span class="p">);</span>
+
+  <span class="c1">// get participant qos from qos provider</span>
+  <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getParticipantQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">(</span><span class="nx">DOMAIN_ID</span><span class="p">,</span> <span class="nx">pqos</span><span class="p">);</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="topic">
+<span id="id2"></span><h2>5.3. Topic<a class="headerlink" href="#topic" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Topic</span></tt> class represents a DDS topic type.  The DDS topic corresponds to a single data type.  In DDS, data is distributed by publishing and subscribing topic data samples.</p>
+<p>Javascript <tt class="docutils literal"><span class="pre">Topic</span></tt> instances can be created using an IDL file.</p>
+<p><strong>Step 1 - Generate TypeSupport objects from IDL file</strong></p>
+<p>The function <tt class="docutils literal"><span class="pre">getTopicTypeSupportsForIDL(idlPath)</span></tt> is provided to generate a <tt class="docutils literal"><span class="pre">TypeSupport</span></tt> instance for every topic defined in an IDL file.  This function returns a promise, therefore should be called from an async function.</p>
+<p><strong>Step 2 - Create Topic instance using TypeSupport</strong></p>
+<p>The <tt class="docutils literal"><span class="pre">createTopicFor</span></tt> method in the <tt class="docutils literal"><span class="pre">Participant</span></tt> class can then be used to create a topic instance.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="cm">/**</span>
+<span class="cm">* Create a Topic on this participant given a TypeSupport object.</span>
+<span class="cm">* @param {string} topicName</span>
+<span class="cm">* @param {TypeSupport} typeSupport</span>
+<span class="cm">* @param {QoS} QoS (default undefined)</span>
+<span class="cm">* @param {object} listener (default undefined)</span>
+<span class="cm">* @returns {Topic} topic instance</span>
+<span class="cm">*/</span>
+<span class="nx">createTopicFor</span><span class="p">(</span>
+        <span class="nx">topicName</span><span class="p">,</span>
+        <span class="nx">typeSupport</span><span class="p">,</span>
+        <span class="nx">qos</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">listener</span> <span class="o">=</span> <span class="kc">null</span>
+<span class="p">)</span> <span class="p">{</span>
+</pre></div>
+</div>
+<p><strong>Example</strong></p>
+<p>Create a Vortex DDS topic named &#8216;HelloWorldData_Msg&#8217; based on the DDS Topic type <tt class="docutils literal"><span class="pre">Msg</span></tt> from the <tt class="docutils literal"><span class="pre">HelloWorldData.idl</span></tt> file.  This topic is created using the getTopicTypeSupportsForIDL function, and the <tt class="docutils literal"><span class="pre">Participant</span></tt> createTopicFor method.</p>
+<p>Consider the code snippet below taken from example: HelloWorld/HelloWorldTopic.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">);</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">create</span> <span class="o">=</span> <span class="nx">async</span> <span class="kd">function</span><span class="p">(</span><span class="nx">participant</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kr">const</span> <span class="nx">topicName</span> <span class="o">=</span> <span class="s1">&#39;HelloWorldData_Msg&#39;</span><span class="p">;</span>
+  <span class="kr">const</span> <span class="nx">idlName</span> <span class="o">=</span> <span class="s1">&#39;HelloWorldData.idl&#39;</span><span class="p">;</span>
+  <span class="kr">const</span> <span class="nx">idlPath</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">idlName</span><span class="p">);</span>
+
+  <span class="c1">//wait for dds.getTopicTypeSupportsForIDL to return a Map of typeSupports</span>
+  <span class="kd">let</span> <span class="nx">typeSupports</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">getTopicTypeSupportsForIDL</span><span class="p">(</span><span class="nx">idlPath</span><span class="p">);</span>
+
+  <span class="c1">//HelloWorldData.idl contains 1 topic</span>
+  <span class="kd">let</span> <span class="nx">typeSupport</span> <span class="o">=</span> <span class="nx">typeSupports</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;HelloWorldData::Msg&#39;</span><span class="p">);</span>
+
+  <span class="c1">//create topic qos</span>
+  <span class="kd">let</span> <span class="nx">tqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">topicDefault</span><span class="p">();</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">durability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DurabilityKind</span><span class="p">.</span><span class="nx">Transient</span><span class="p">;</span>
+  <span class="nx">tqos</span><span class="p">.</span><span class="nx">reliability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReliabilityKind</span><span class="p">.</span><span class="nx">Reliable</span><span class="p">;</span>
+
+  <span class="c1">//create topic</span>
+  <span class="k">return</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createTopicFor</span><span class="p">(</span><span class="nx">topicName</span><span class="p">,</span> <span class="nx">typeSupport</span><span class="p">,</span> <span class="nx">tqos</span><span class="p">);</span>
+
+<span class="p">};</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="publisher">
+<h2>5.4. Publisher<a class="headerlink" href="#publisher" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Publisher</span></tt> class represents a DDS publisher entity.</p>
+<p>In DDS, a publisher is “an object responsible for data distribution.  It may publish data of different data types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">Publisher</span></tt> class is optional.
+In its place, you can use a <tt class="docutils literal"><span class="pre">Participant</span></tt> instance.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">Publisher</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of publisher creation and deletion.</li>
+</ul>
+<p><strong>Examples</strong></p>
+<p>Create a DDS Publisher entity. Returns publisher or throws a <tt class="docutils literal"><span class="pre">DDSError</span></tt> if the publisher cannot be created.</p>
+<p>Create a publisher with participant.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+
+<span class="c1">//create participant</span>
+<span class="kr">const</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+<span class="c1">//create publisher</span>
+<span class="kr">const</span> <span class="nx">pub</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createPublisher</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a publisher with a participant and QoS profile. Consider the code snippet below taken from example: GetSetQoSExample/GetSetQoSExample.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">QOS_PATH</span> <span class="o">=</span> <span class="s1">&#39;DDS_Get_Set_QoS.xml&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">QOS_PROFILE</span> <span class="o">=</span> <span class="s1">&#39;DDS GetSetQosProfile&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">DOMAIN_ID</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DDS_DOMAIN_DEFAULT</span><span class="p">;</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+  <span class="c1">// create a qos provider using qos xml file</span>
+  <span class="kd">let</span> <span class="nx">qp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoSProvider</span><span class="p">(</span><span class="nx">QOS_PATH</span><span class="p">,</span> <span class="nx">QOS_PROFILE</span><span class="p">);</span>
+
+  <span class="c1">// get participant qos from qos provider</span>
+  <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getParticipantQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">(</span><span class="nx">DOMAIN_ID</span><span class="p">,</span> <span class="nx">pqos</span><span class="p">);</span>
+
+  <span class="c1">// get publisher qos from qos provider and create a publisher</span>
+  <span class="kd">let</span> <span class="nx">pubqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getPublisherQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">publisher</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Publisher</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">pubqos</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="writer">
+<h2>5.5. Writer<a class="headerlink" href="#writer" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Writer</span></tt> class represents a DDS data writer entity.</p>
+<p>In DDS - “The writer is the object the application must use to communicate to a publisher the existence and value of data-objects of a given type.”</p>
+<p>A <tt class="docutils literal"><span class="pre">Writer</span></tt> class is required in order to write data to a DDS domain.
+It is attached to a DDS publisher or a DDS domain participant.</p>
+<p>A <tt class="docutils literal"><span class="pre">Writer</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Topic</span></tt> instance.</p>
+<p><strong>Examples</strong></p>
+<p>Create a Vortex DDS domain writer and write data. Returns writer or throws a <tt class="docutils literal"><span class="pre">DDSError</span></tt> if the writer cannot be created. The example below uses the &#8216;HelloWorldData_Msg&#8217; topic from the &#8216;HelloWorldTopic.js&#8217; file as shown in <a class="reference internal" href="#topic"><em>Topic</em></a> example.  Consider the code snippet below taken from example: HelloWorld/HelloWorldPublisher.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">HelloWorldTopic</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./HelloWorldTopic&#39;</span><span class="p">);</span>
+
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+    <span class="c1">//create domain participant</span>
+    <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+    <span class="c1">//wait for topic to be created</span>
+    <span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">HelloWorldTopic</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">);</span>
+
+    <span class="c1">//create a publisher with publisher QoS</span>
+    <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">publisherDefault</span><span class="p">();</span>
+    <span class="nx">pqos</span><span class="p">.</span><span class="nx">partition</span> <span class="o">=</span> <span class="s1">&#39;HelloWorld example&#39;</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">pub</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createPublisher</span><span class="p">(</span><span class="nx">pqos</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+
+    <span class="c1">//create a writer with writer QoS</span>
+    <span class="kd">let</span> <span class="nx">wqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">writerDefault</span><span class="p">();</span>
+    <span class="nx">wqos</span><span class="p">.</span><span class="nx">durability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DurabilityKind</span><span class="p">.</span><span class="nx">Transient</span><span class="p">;</span>
+    <span class="nx">wqos</span><span class="p">.</span><span class="nx">reliability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReliabilityKind</span><span class="p">.</span><span class="nx">Reliable</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">writer</span> <span class="o">=</span> <span class="nx">pub</span><span class="p">.</span><span class="nx">createWriter</span><span class="p">(</span><span class="nx">topic</span><span class="p">,</span> <span class="nx">wqos</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+
+    <span class="c1">//write one sample</span>
+    <span class="kd">let</span> <span class="nx">msg</span> <span class="o">=</span> <span class="p">{</span><span class="nx">userID</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">message</span><span class="o">:</span> <span class="s1">&#39;Hello World&#39;</span><span class="p">};</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;=== HelloWorldPublisher&#39;</span><span class="p">);</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;=== [Publisher] writing a message containing :&#39;</span><span class="p">);</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;    userID  : &#39;</span> <span class="o">+</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">userID</span><span class="p">);</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;    Message : &#39;</span> <span class="o">+</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+
+    <span class="nx">writer</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">msg</span><span class="p">);</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="subscriber">
+<h2>5.6. Subscriber<a class="headerlink" href="#subscriber" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Subscriber</span></tt> class represents a DDS subscriber entity.</p>
+<p>In DDS, a subscriber is “an object responsible for receiving published data and making it available to the receiving application.  It may receive and dispatch data of different specified types.”</p>
+<p>Use of the <tt class="docutils literal"><span class="pre">Subscriber</span></tt> class is optional.
+In its place, you can use a <tt class="docutils literal"><span class="pre">Participant</span></tt> instance.
+Reasons for explicitly creating a <tt class="docutils literal"><span class="pre">Subscriber</span></tt> instance are:</p>
+<ul class="simple">
+<li>to specify non-default QoS settings, including specifying the DDS <em>partition</em> upon which samples are written.</li>
+<li>to control the timing of subscriber creation and deletion.</li>
+</ul>
+<p><strong>Examples</strong></p>
+<p>Create a Vortex DDS domain subscriber. Returns subscriber or throw a <tt class="docutils literal"><span class="pre">DDSError</span></tt> if the subscriber cannot be created.</p>
+<p>Create a subscriber with participant.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+
+<span class="c1">//create participant</span>
+<span class="nx">consr</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+<span class="c1">//create Subscriber</span>
+<span class="kr">const</span> <span class="nx">sub</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createSubscriber</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Create a subscriber with participant and QoS profile, where the DDS_DefaultQoS_All.xml file is located in the project directory.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">QOS_PATH</span> <span class="o">=</span> <span class="s1">&#39;DDS_Get_Set_QoS.xml&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">QOS_PROFILE</span> <span class="o">=</span> <span class="s1">&#39;DDS GetSetQosProfile&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">DOMAIN_ID</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DDS_DOMAIN_DEFAULT</span><span class="p">;</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+  <span class="c1">// create a qos provider using qos xml file</span>
+  <span class="kd">let</span> <span class="nx">qp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoSProvider</span><span class="p">(</span><span class="nx">QOS_PATH</span><span class="p">,</span> <span class="nx">QOS_PROFILE</span><span class="p">);</span>
+
+  <span class="c1">// get participant qos from qos provider</span>
+  <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getParticipantQos</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">(</span><span class="nx">DOMAIN_ID</span><span class="p">,</span> <span class="nx">pqos</span><span class="p">);</span>
+
+  <span class="cm">/*</span>
+<span class="cm">     Get subscriber qos from qos provider and create a subscriber</span>
+<span class="cm">     In the qos xml file provided with this example, there are</span>
+<span class="cm">     two subscriber qos. The subscriber qos with</span>
+<span class="cm">     id &#39;subscriber1&#39; is chosen below</span>
+
+<span class="cm">     NOTE: If there are more than one qos entries in the xml file</span>
+<span class="cm">     for a dds entity, then the entity qos id must be specified.</span>
+<span class="cm">     Otherwise an error will be thrown while trying to get the</span>
+<span class="cm">     respective entity qos from the qos provider</span>
+<span class="cm">   */</span>
+  <span class="kd">let</span> <span class="nx">subqos</span> <span class="o">=</span> <span class="nx">qp</span><span class="p">.</span><span class="nx">getSubscriberQos</span><span class="p">(</span><span class="s1">&#39;subscriber1&#39;</span><span class="p">);</span>
+  <span class="kd">let</span> <span class="nx">subscriber</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Subscriber</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">subqos</span><span class="p">);</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="reader">
+<h2>5.7. Reader<a class="headerlink" href="#reader" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">Reader</span></tt> class represents a DDS data reader entity.</p>
+<p>In DDS - “To access the received data, the application must use a typed reader attached to the subscriber.”</p>
+<p>A <tt class="docutils literal"><span class="pre">Reader</span></tt> class is required in order to write data to a DDS domain.
+It is attached to a DDS subscriber or a DDS participant.</p>
+<p>A <tt class="docutils literal"><span class="pre">Reader</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Topic</span></tt> instance.</p>
+<p><strong>Examples</strong></p>
+<p>Create a Vortex DDS domain reader with a subscriber and read/take data. Returns reader or throw a <tt class="docutils literal"><span class="pre">DDSError</span></tt> instance if the reader cannot be created. Consider the code snippet below taken from example: HelloWorld/HelloWorldSubscriber.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">HelloWorldTopic</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./HelloWorldTopic&#39;</span><span class="p">);</span>
+
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">(){</span>
+
+    <span class="c1">//create domain participant</span>
+    <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+    <span class="c1">//wait for topic to be created</span>
+    <span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">HelloWorldTopic</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">);</span>
+
+    <span class="c1">//create subscriber with subscriber QoS</span>
+    <span class="kd">let</span> <span class="nx">sqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">subscriberDefault</span><span class="p">();</span>
+    <span class="nx">sqos</span><span class="p">.</span><span class="nx">partition</span> <span class="o">=</span> <span class="s1">&#39;HelloWorld example&#39;</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">sub</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createSubscriber</span><span class="p">(</span><span class="nx">sqos</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+
+    <span class="c1">//create reader with reader QoS</span>
+    <span class="kd">let</span> <span class="nx">rqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">readerDefault</span><span class="p">();</span>
+    <span class="nx">rqos</span><span class="p">.</span><span class="nx">durability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">DurabilityKind</span><span class="p">.</span><span class="nx">Transient</span><span class="p">;</span>
+    <span class="nx">rqos</span><span class="p">.</span><span class="nx">reliability</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReliabilityKind</span><span class="p">.</span><span class="nx">Reliable</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">reader</span> <span class="o">=</span> <span class="nx">sub</span><span class="p">.</span><span class="nx">createReader</span><span class="p">(</span><span class="nx">topic</span><span class="p">,</span> <span class="nx">rqos</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;=== [Subscriber] Ready ...&#39;</span><span class="p">);</span>
+
+    <span class="nx">attemptTake</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+    <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Attempt to take from the reader every 200 ms.</span>
+<span class="cm">    * If a successful take occurs, we are done.</span>
+<span class="cm">    * If a successful take does not occur after 100 attempts,</span>
+<span class="cm">    * return.</span>
+<span class="cm">    */</span>
+   <span class="kd">function</span> <span class="nx">attemptTake</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="nx">numberAttempts</span><span class="p">){</span>
+
+    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">let</span> <span class="nx">takeArray</span> <span class="o">=</span> <span class="nx">reader</span><span class="p">.</span><span class="nx">take</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">takeArray</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">takeArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">info</span><span class="p">.</span><span class="nx">valid_data</span> <span class="o">===</span> <span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;=== [Subscriber] message received :&#39;</span><span class="p">);</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;    userID  : &#39;</span> <span class="o">+</span> <span class="nx">takeArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">sample</span><span class="p">.</span><span class="nx">userID</span><span class="p">);</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;    Message : &#39;</span> <span class="o">+</span> <span class="nx">takeArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">sample</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">numberAttempts</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">){</span>
+            <span class="k">return</span> <span class="nx">attemptTake</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="nx">numberAttempts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+            <span class="k">return</span><span class="p">;</span>
+    <span class="p">},</span> <span class="mi">200</span><span class="p">);</span>
+   <span class="p">}</span>
+</pre></div>
+</div>
+<p>Take data with read condition from a data reader.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">numberOfSamples</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">cond</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReadCondition</span><span class="p">(</span><span class="nx">reader</span><span class="p">,</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">StateMask</span><span class="p">.</span><span class="nx">any</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">readArray</span> <span class="o">=</span> <span class="nx">reader</span><span class="p">.</span><span class="nx">takeCond</span><span class="p">(</span><span class="nx">numberOfSamples</span><span class="p">,</span> <span class="nx">cond</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Read data with read condition from a data reader.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">numberOfSamples</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">cond</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReadCondition</span><span class="p">(</span><span class="nx">reader</span><span class="p">,</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">StateMask</span><span class="p">.</span><span class="nx">any</span><span class="p">);</span>
+<span class="kd">let</span> <span class="nx">readArray</span> <span class="o">=</span> <span class="nx">reader</span><span class="p">.</span><span class="nx">readCond</span><span class="p">(</span><span class="nx">numberOfSamples</span><span class="p">,</span> <span class="nx">cond</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="waitset">
+<h2>5.8. WaitSet<a class="headerlink" href="#waitset" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">WaitSet</span></tt> class represents a DDS wait set.</p>
+<p>A WaitSet object allows an application to wait until one or more of the attached Condition objects evaluates to true or until the timeout expires.</p>
+<p><strong>Example</strong></p>
+<p>Create a <tt class="docutils literal"><span class="pre">WaitSet</span></tt> with a read condition to wait until publication is matched.  Consider the code snippet below taken from example: PingPong/ping.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">PingPongTopic</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./PingPongTopic&#39;</span><span class="p">);</span>
+
+<span class="c1">// we iterate for 20 samples</span>
+<span class="kr">const</span> <span class="nx">numSamples</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// create our entities</span>
+  <span class="kd">let</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">topic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">PingPongTopic</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">);</span>
+
+  <span class="c1">// create publisher on partition &#39;Ping&#39; and writer on the publisher</span>
+  <span class="c1">// on pong, we have a subscriber on the same partition and topic</span>
+  <span class="kd">let</span> <span class="nx">pqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">publisherDefault</span><span class="p">();</span>
+  <span class="nx">pqos</span><span class="p">.</span><span class="nx">partition</span> <span class="o">=</span> <span class="s1">&#39;Ping&#39;</span><span class="p">;</span>
+  <span class="kd">let</span> <span class="nx">publisher</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createPublisher</span><span class="p">(</span><span class="nx">pqos</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+  <span class="kd">let</span> <span class="nx">writer</span> <span class="o">=</span> <span class="nx">publisher</span><span class="p">.</span><span class="nx">createWriter</span><span class="p">(</span><span class="nx">topic</span><span class="p">);</span>
+
+  <span class="c1">// create a subscriber on partition &#39;Pong&#39; and a reader on the subscriber</span>
+  <span class="kd">let</span> <span class="nx">sqos</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoS</span><span class="p">.</span><span class="nx">subscriberDefault</span><span class="p">();</span>
+  <span class="nx">sqos</span><span class="p">.</span><span class="nx">partition</span> <span class="o">=</span> <span class="s1">&#39;Pong&#39;</span><span class="p">;</span>
+  <span class="kd">let</span> <span class="nx">subscriber</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createSubscriber</span><span class="p">(</span><span class="nx">sqos</span><span class="p">);</span>
+  <span class="kd">let</span> <span class="nx">reader</span> <span class="o">=</span> <span class="nx">subscriber</span><span class="p">.</span><span class="nx">createReader</span><span class="p">(</span><span class="nx">topic</span><span class="p">);</span>
+
+  <span class="c1">// create waitset which waits until pong subscriber on partition</span>
+  <span class="c1">// &#39;Ping&#39; is found</span>
+  <span class="kd">let</span> <span class="nx">pubMatchedWaitset</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Waitset</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">statCond</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">StatusCondition</span><span class="p">(</span><span class="nx">writer</span><span class="p">);</span>
+  <span class="nx">statCond</span><span class="p">.</span><span class="nx">enable</span><span class="p">(</span><span class="nx">dds</span><span class="p">.</span><span class="nx">StatusMask</span><span class="p">.</span><span class="nx">publication_matched</span><span class="p">);</span>
+  <span class="nx">pubMatchedWaitset</span><span class="p">.</span><span class="nx">attach</span><span class="p">(</span><span class="nx">statCond</span><span class="p">,</span> <span class="nx">writer</span><span class="p">);</span>
+
+  <span class="c1">// waitset for new data</span>
+  <span class="kd">let</span> <span class="nx">newDataWaitset</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Waitset</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">newDataCond</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">ReadCondition</span><span class="p">(</span><span class="nx">reader</span><span class="p">,</span>
+    <span class="nx">dds</span><span class="p">.</span><span class="nx">StateMask</span><span class="p">.</span><span class="nx">sample</span><span class="p">.</span><span class="nx">not_read</span><span class="p">);</span>
+  <span class="nx">newDataWaitset</span><span class="p">.</span><span class="nx">attach</span><span class="p">(</span><span class="nx">newDataCond</span><span class="p">,</span> <span class="nx">reader</span><span class="p">);</span>
+
+  <span class="c1">// block until pong has been found</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Waiting for pong subscriber to be found...&#39;</span><span class="p">);</span>
+  <span class="nx">pubMatchedWaitset</span><span class="p">.</span><span class="nx">wait</span><span class="p">(</span><span class="nx">dds</span><span class="p">.</span><span class="nx">DDSConstants</span><span class="p">.</span><span class="nx">DDS_INFINITY</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">err</span><span class="p">;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Found pong subscriber.&#39;</span><span class="p">);</span>
+    <span class="c1">// Ping writes the first message</span>
+    <span class="kd">let</span> <span class="nx">msg</span> <span class="o">=</span> <span class="p">{</span><span class="nx">userID</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">message</span><span class="o">:</span> <span class="s1">&#39;from ping&#39;</span><span class="p">};</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;sending &#39;</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">msg</span><span class="p">));</span>
+    <span class="nx">writer</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">msg</span><span class="p">);</span>
+    <span class="nx">onDataAvailable</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">newDataWaitset</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="nx">writer</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">}</span>
+
+<span class="cm">/* onDataAvailable waits for new data. When we have new data, it</span>
+<span class="cm"> * reads it, prints it, and sends back a message with the userID</span>
+<span class="cm"> * field incremented by one and &#39;from ping&#39; in the message field.</span>
+<span class="cm"> * It then calls onDataAvailable again.</span>
+<span class="cm"> * We quit when iterLower === numSamples (20 iterations in this example).</span>
+<span class="cm"> */</span>
+<span class="kd">function</span> <span class="nx">onDataAvailable</span><span class="p">(</span>
+  <span class="nx">participant</span><span class="p">,</span>
+  <span class="nx">ws</span><span class="p">,</span>
+  <span class="nx">reader</span><span class="p">,</span>
+  <span class="nx">writer</span><span class="p">,</span>
+  <span class="nx">iterLower</span>
+<span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">iterLower</span> <span class="o">===</span> <span class="nx">numSamples</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">);</span>
+    <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+    <span class="k">return</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="c1">// when we get a message from pong, read it, then send it back</span>
+  <span class="c1">// with userID+1 and message &#39;from ping&#39;</span>
+  <span class="nx">ws</span><span class="p">.</span><span class="nx">wait</span><span class="p">(</span><span class="nx">dds</span><span class="p">.</span><span class="nx">DDSConstants</span><span class="p">.</span><span class="nx">DDS_INFINITY</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">err</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">takeArray</span> <span class="o">=</span> <span class="nx">reader</span><span class="p">.</span><span class="nx">take</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">takeArray</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">takeArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">info</span><span class="p">.</span><span class="nx">valid_data</span> <span class="o">===</span> <span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+      <span class="kd">let</span> <span class="nx">sample</span> <span class="o">=</span> <span class="nx">takeArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">sample</span><span class="p">;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;received: &#39;</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">sample</span><span class="p">));</span>
+      <span class="kd">let</span> <span class="nx">msg</span> <span class="o">=</span> <span class="p">{</span><span class="nx">userID</span><span class="o">:</span> <span class="nx">sample</span><span class="p">.</span><span class="nx">userID</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">message</span><span class="o">:</span> <span class="s1">&#39;from ping&#39;</span><span class="p">};</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;sending &#39;</span> <span class="o">+</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">msg</span><span class="p">));</span>
+      <span class="nx">writer</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">msg</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nx">onDataAvailable</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">ws</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="nx">writer</span><span class="p">,</span> <span class="nx">iterLower</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="querycondition">
+<h2>5.9. QueryCondition<a class="headerlink" href="#querycondition" title="Permalink to this headline">¶</a></h2>
+<p>The Node.js <tt class="docutils literal"><span class="pre">QueryCondition</span></tt> class represents a DDS query entity.</p>
+<p>A query is a data reader, restricted to accessing data that matches specific status conditions and/or a filter expression.</p>
+<p>A <tt class="docutils literal"><span class="pre">QueryCondition</span></tt> class instance references an existing <tt class="docutils literal"><span class="pre">Reader</span></tt> instance.</p>
+<p><strong>Example</strong></p>
+<p>Create a <tt class="docutils literal"><span class="pre">QueryCondition</span></tt> with a state mask and a filter expression for a reader and take data.  Consider the code snippet below taken from example: jsshapes/read.js file.</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dds</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;vortexdds&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">ShapeTopicHelper</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./ShapeTopicHelper&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+
+<span class="c1">// we are reading 100 samples of a blue circle</span>
+<span class="kr">const</span> <span class="nx">shapeName</span> <span class="o">=</span> <span class="s1">&#39;Circle&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">numSamples</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">mask</span> <span class="o">=</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">StateMask</span><span class="p">.</span><span class="nx">sample</span><span class="p">.</span><span class="nx">not_read</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">sqlExpression</span> <span class="o">=</span> <span class="s1">&#39;color=%0&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BLUE&#39;</span><span class="p">];</span>
+
+<span class="nx">main</span><span class="p">();</span>
+
+<span class="nx">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">participant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Participant</span><span class="p">();</span>
+
+  <span class="c1">// set up our topic</span>
+  <span class="kr">const</span> <span class="nx">circleTopic</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">ShapeTopicHelper</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="s1">&#39;Circle&#39;</span><span class="p">);</span>
+
+  <span class="c1">// our reader has volatile qos</span>
+  <span class="kd">let</span> <span class="nx">readerqosprovider</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QoSProvider</span><span class="p">(</span>
+    <span class="s1">&#39;./DDS_VolatileQoS_All.xml&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DDS VolatileQosProfile&#39;</span>
+  <span class="p">);</span>
+
+  <span class="c1">// set up circle reader</span>
+  <span class="kr">const</span> <span class="nx">circleReader</span> <span class="o">=</span> <span class="nx">participant</span><span class="p">.</span><span class="nx">createReader</span><span class="p">(</span><span class="nx">circleTopic</span><span class="p">,</span>
+    <span class="nx">readerqosprovider</span><span class="p">.</span><span class="nx">getReaderQos</span><span class="p">());</span>
+
+  <span class="c1">// set up waitset</span>
+  <span class="kr">const</span> <span class="nx">newDataWs</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">Waitset</span><span class="p">();</span>
+  <span class="kr">const</span> <span class="nx">queryCond</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">dds</span><span class="p">.</span><span class="nx">QueryCondition</span><span class="p">(</span>
+    <span class="nx">circleReader</span><span class="p">,</span>
+    <span class="nx">mask</span><span class="p">,</span>
+    <span class="nx">sqlExpression</span><span class="p">,</span>
+    <span class="nx">params</span><span class="p">,</span>
+    <span class="mi">1</span>
+  <span class="p">);</span>
+  <span class="c1">// attach the query condition</span>
+  <span class="nx">newDataWs</span><span class="p">.</span><span class="nx">attach</span><span class="p">(</span><span class="nx">queryCond</span><span class="p">,</span> <span class="nx">circleReader</span><span class="p">);</span>
+
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Waiting for demo_ishapes to publish a blue circle...&#39;</span><span class="p">);</span>
+  <span class="nx">onDataAvailable</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">newDataWs</span><span class="p">,</span> <span class="nx">circleReader</span><span class="p">,</span> <span class="nx">queryCond</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="cm">/* onDataAvailable waits until we have new data (with the query condition).</span>
+<span class="cm"> * when we do, we read it, print the data (shape data), and then call</span>
+<span class="cm"> * onDataAvailable with iterLower incremented by one, to wait for more data.</span>
+<span class="cm"> * This repeats until iterLower === numSamples (100 samples in this case).</span>
+<span class="cm"> * When iterLower === numSamples, we delete the participant and quit.</span>
+<span class="cm"> */</span>
+<span class="kd">function</span> <span class="nx">onDataAvailable</span><span class="p">(</span>
+  <span class="nx">participant</span><span class="p">,</span>
+  <span class="nx">ws</span><span class="p">,</span>
+  <span class="nx">reader</span><span class="p">,</span>
+  <span class="nx">queryCond</span><span class="p">,</span>
+  <span class="nx">iterLower</span>
+<span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">iterLower</span> <span class="o">===</span> <span class="nx">numSamples</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">);</span>
+    <span class="nx">participant</span><span class="p">.</span><span class="k">delete</span><span class="p">();</span>
+    <span class="k">return</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nx">ws</span><span class="p">.</span><span class="nx">wait</span><span class="p">(</span><span class="nx">dds</span><span class="p">.</span><span class="nx">DDSConstants</span><span class="p">.</span><span class="nx">DDS_INFINITY</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">err</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">sampleArray</span> <span class="o">=</span> <span class="nx">reader</span><span class="p">.</span><span class="nx">takeCond</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nx">queryCond</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">sampleArray</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">sampleArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">info</span><span class="p">.</span><span class="nx">valid_data</span> <span class="o">===</span> <span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+      <span class="kd">let</span> <span class="nx">sample</span> <span class="o">=</span> <span class="nx">sampleArray</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">sample</span><span class="p">;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span>
+        <span class="nx">util</span><span class="p">.</span><span class="nx">format</span><span class="p">(</span>
+          <span class="s1">&#39;%s %s of size %d at (%d,%d)&#39;</span><span class="p">,</span>
+          <span class="nx">sample</span><span class="p">.</span><span class="nx">color</span><span class="p">,</span>
+          <span class="nx">shapeName</span><span class="p">,</span>
+          <span class="nx">sample</span><span class="p">.</span><span class="nx">shapesize</span><span class="p">,</span>
+          <span class="nx">sample</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span>
+          <span class="nx">sample</span><span class="p">.</span><span class="nx">y</span>
+        <span class="p">)</span>
+      <span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nx">onDataAvailable</span><span class="p">(</span><span class="nx">participant</span><span class="p">,</span> <span class="nx">ws</span><span class="p">,</span> <span class="nx">reader</span><span class="p">,</span> <span class="nx">queryCond</span><span class="p">,</span> <span class="nx">iterLower</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Node.js API for Vortex DDS</a><ul>
+<li><a class="reference internal" href="#api-usage-patterns">5.1. API Usage Patterns</a></li>
+<li><a class="reference internal" href="#participant">5.2. Participant</a></li>
+<li><a class="reference internal" href="#topic">5.3. Topic</a></li>
+<li><a class="reference internal" href="#publisher">5.4. Publisher</a></li>
+<li><a class="reference internal" href="#writer">5.5. Writer</a></li>
+<li><a class="reference internal" href="#subscriber">5.6. Subscriber</a></li>
+<li><a class="reference internal" href="#reader">5.7. Reader</a></li>
+<li><a class="reference internal" href="#waitset">5.8. WaitSet</a></li>
+<li><a class="reference internal" href="#querycondition">5.9. QueryCondition</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="previous chapter">4. Examples</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos_provider.html"
+                        title="next chapter">6. Quality of Service (QoS)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dds_entities.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos_provider.html" title="6. Quality of Service (QoS)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="4. Examples"
+             >previous</a> |</li>
+        <li><a href="index.html">Node.js DCPS API Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, ADLINK Technology Limited.
+    </div>
+  </body>
+</html>

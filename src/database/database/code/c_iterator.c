@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -253,7 +254,10 @@ c_bool c_iterContains(c_iter iter, void *object)
 c_iterIter c_iterIterGet(c_iter i)
 {
     c_iterIter result;
-    result.current = c__iterImplIterFirst(&i->x, &result.it);
+    memset(&result, 0, sizeof(result));
+    if (i != NULL) {
+        result.current = c__iterImplIterFirst(&i->x, &result.it);
+    }
     return result;
 }
 

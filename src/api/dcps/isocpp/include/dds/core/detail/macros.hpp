@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -132,7 +133,8 @@
 // Logging Macros
 #include <dds/core/detail/maplog.hpp>
 #define OMG_DDS_LOG_DETAIL(kind, msg) \
-    if (dds::core::detail::maplog(kind) >= os_reportVerbosity) os_report(dds::core::detail::maplog(kind),"isocpp-OMG_DDS_LOG",__FILE__,__LINE__,0,"%s",msg)
+    if (dds::core::detail::maplog(kind) >= os_reportVerbosity) \
+        os_report(dds::core::detail::maplog(kind),"isocpp-OMG_DDS_LOG",__FILE__,__LINE__,0,-1,OS_TRUE,"%s",msg)
 //  std::cout << "[" << kind << "]: " << msg << std::endl;
 // ==========================================================================
 

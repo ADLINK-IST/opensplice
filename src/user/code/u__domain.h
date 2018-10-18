@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -25,6 +26,9 @@
 #include "u_domain.h"
 #include "u_entity.h"
 #include "vortex_os.h"
+
+void
+u__domainMutexInit();
 
 u_result
 u_domainOpenForService(
@@ -113,9 +117,12 @@ u_bool
 u_domainProtectAllowed(
     _In_ u_domain _this);
 
+typedef void (*u_domainPreDeadlockAction)(void *actionArg);
+
 u_bool
-u_domainProtectAllowedClaimed(
-    _In_ u_domain _this);
+u_domainProtectAllowedAction(
+    _In_ u_domain _this,
+    _In_ const u_domainPreDeadlockAction action);
 
 u_result
 u_domainDetach (
@@ -130,10 +137,6 @@ os_address
 u_domainHandleServer(
     _In_ u_domain _this);
 
-os_address
-u_domainAddress(
-    const u_domain _this);
-
 u_result
 u_domainFederationSpecificPartitionName (
     u_domain _this,
@@ -142,6 +145,10 @@ u_domainFederationSpecificPartitionName (
 
 void
 u_domainIdSetThreadSpecific(
+    _In_ u_domain domain);
+
+u_bool
+u_domainIsSingleProcess(
     _In_ u_domain domain);
 
 #endif

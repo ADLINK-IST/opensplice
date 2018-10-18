@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -1597,6 +1598,9 @@ os_sharedMemoryCreateFile(
     HANDLE md;
     SECURITY_ATTRIBUTES security_attributes;
     BOOL sec_descriptor_ok;
+    LARGE_INTEGER li_size;
+
+    li_size.QuadPart = size;
 
     shm_file_name = os_getShmFile(sharedHandle, size, 1);
     _splitpath(shm_file_name, NULL, NULL, key_name, NULL);
@@ -1618,8 +1622,7 @@ os_sharedMemoryCreateFile(
         return os_resultFail;
     }
     os_free(shm_file_name);
-
-    if (SetFilePointer(dd, (LONG)size, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
+    if (SetFilePointer(dd, li_size.LowPart, &li_size.HighPart, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
         OS_REPORT(OS_ERROR, "OS Abstraction", 0,
                   "SetFilePointer to end of database failed: %s", os_strError(os_getErrno()));
         CloseHandle((HANDLE)dd);
@@ -1759,7 +1762,7 @@ os_sharedMemoryAttachFile(
     request_address = os_getShmMapAddress(sharedHandle->name);
     if (request_address == NULL) {
         OS_REPORT_WID(OS_ERROR, "OS Abstraction", 0, sharedHandle->id,
-                  "Failed to get map_address from key file");
+                  "Failed to get the shared memory map_address from key file");
         return os_resultFail;
     }
     address = MapViewOfFileEx(sharedHandle->mapObject,
@@ -1768,8 +1771,11 @@ os_sharedMemoryAttachFile(
 
     if (address == NULL) {
         OS_REPORT_WID(OS_ERROR, "OS Abstraction", 0, sharedHandle->id,
-                  "Can not Map View Of file: %s",
-                  os_strError(os_getErrno()));
+                      "Failed to map the shared memory segment. Errno = %s. "
+                      "The common cause is that the configured address is already in use. "
+                      "Try to configure another address to solve this issue. "
+                      "(see configuration option: Domain/Database/Address)",
+                      os_strError(os_getErrno()));
         return os_resultFail;
     }
 
@@ -2028,7 +2034,7 @@ os_sharedAttrInit(
     sharedAttr->userCred.uid = 0;
     sharedAttr->userCred.gid = 0;
 #if _WIN64
-    sharedAttr->map_address = (void *)0x100000000;
+    sharedAttr->map_address = (void *)0x140000000;
 #else
     sharedAttr->map_address = (void *)0x40000000;
 #endif
@@ -3081,17 +3087,23 @@ os_sharedMemoryRegisterServerDiedCallback(
 
     if (clientShmDomain && clientShmDomain->serverId != OS_INVALID_PID) {
         procHandle = os_procIdToHandle(clientShmDomain->serverId);
-        clientShmDomain->onServerDied = onServerDied;
-        clientShmDomain->args = args;
-
-        if (RegisterWaitForSingleObject(&hWaitHandle, procHandle, serverDiedHandler, sharedHandle, INFINITE, WT_EXECUTEONLYONCE)) {
-            clientShmDomain->hWaitHandle = hWaitHandle;
-            result = os_resultSuccess;
-        } else {
+        if (procHandle == NULL) {
             result = os_resultFail;
             OS_REPORT(OS_API_INFO, "os_sharedMemoryRegisterServerDiedCallback", 0,
-                    "Failed to allocate a wait handler on process handle, "
+                    "Failed to get process handle, "
                     "System Error Code:  %d", (int)os_getErrno());
+        } else {
+            clientShmDomain->onServerDied = onServerDied;
+            clientShmDomain->args = args;
+            if (RegisterWaitForSingleObject(&hWaitHandle, procHandle, serverDiedHandler, sharedHandle, INFINITE, WT_EXECUTEONLYONCE)) {
+                clientShmDomain->hWaitHandle = hWaitHandle;
+                result = os_resultSuccess;
+            } else {
+                result = os_resultFail;
+                OS_REPORT(OS_API_INFO, "os_sharedMemoryRegisterServerDiedCallback", 0,
+                        "Failed to allocate a wait handler on process handle, "
+                        "System Error Code:  %d", (int)os_getErrno());
+            }
         }
     } else {
         OS_REPORT(OS_API_INFO, "os_sharedMemoryRegisterServerDiedCallback", 0, "os_sharedMemoryRegisterServerDiedCallback server unknown");
@@ -3295,5 +3307,19 @@ os_result os_sharedMemoryLock(os_sharedHandle sharedHandle) {
 void os_sharedMemoryUnlock(os_sharedHandle sharedHandle) {
     OS_UNUSED_ARG(sharedHandle);
     return;
+}
+
+void
+os_sharedMemoryImplDataCreate(
+    os_sharedHandle sharedHandle)
+{
+    OS_UNUSED_ARG(sharedHandle);
+}
+
+void
+os_sharedMemoryImplDataDestroy(
+    os_sharedHandle sharedHandle)
+{
+    OS_UNUSED_ARG(sharedHandle);
 }
 

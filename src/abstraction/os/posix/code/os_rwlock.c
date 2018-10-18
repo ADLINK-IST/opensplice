@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -98,7 +99,7 @@ os_rwlockDestroy (
                     "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
                     (os_address)rwlock,
                     result);
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -121,7 +122,7 @@ os_rwlockRead (
                     "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
                     (os_address)rwlock,
                     result);
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -144,7 +145,7 @@ os_rwlockWrite (
                     "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
                     (os_address)rwlock,
                     result);
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }
@@ -173,7 +174,7 @@ os_rwlockTryRead (
                     (os_address)rwlock,
                     result);
         rv = os_resultFail;
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
     return rv;
@@ -203,7 +204,7 @@ os_rwlockTryWrite (
                     (os_address)rwlock,
                     result);
         rv = os_resultFail;
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
     return rv;
@@ -227,7 +228,7 @@ os_rwlockUnlock (
                     "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
                     (os_address)rwlock,
                     result);
-        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        OS_REPORT_DUMP();
         abort ();
     }
 }

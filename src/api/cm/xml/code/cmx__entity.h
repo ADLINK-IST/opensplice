@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -78,6 +79,12 @@ C_STRUCT(cmx_entityKindArg){
 #define CMX_RESULT_INCONSISTENT_QOS "<result>INCONSISTENT QOS</result>"
 #define CMX_RESULT_TIMEOUT "<result>TIMEOUT</result>"
 #define CMX_RESULT_PRECONDITION_NOT_MET "<result>PRECONDITION NOT MET</result>"
+
+
+_Ret_z_
+const c_char *
+cmx__uresult (
+        _In_ u_result ures);
 
 /**
  * Constructs an XML representation of the supplied entity. Whether or not

@@ -27,11 +27,11 @@ class lifecycle (Example):
 
         self.pub2_params = data["dcps"]["Lifecycle"]["params"]["pub2_params"]
 
-        self.pub3_params = data["dcps"]["Lifecycle"]["params"]["pub3_params"]    
+        self.pub3_params = data["dcps"]["Lifecycle"]["params"]["pub3_params"]
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print("C# not supported on " + self.host.name)
+            print "C# not supported on " + self.host.name
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -40,7 +40,7 @@ class lifecycle (Example):
                     self.runExampleAllExtra(lang, extra, types)
                 else:
                     currPath = os.getcwd()
-                    print("In runExample for " + self.expath + ": " + self.name + ": " + lang)
+                    print "In runExample for " + self.expath + ": " + self.name + ": " + lang
 
                     try:
                         super(lifecycle, self).setExampleResultDir(lang, extra)
@@ -58,7 +58,7 @@ class lifecycle (Example):
                         pub_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'yaml', pub_conds_file)
 
                         exSfx = ""
-  
+
                         if self.host.isWindows() and not "java" in lang:
                             exSfx = ".exe"
 
@@ -74,7 +74,7 @@ class lifecycle (Example):
                             sub2Log = os.path.join(self.pPath, 'subscriber2.log')
                             sub3Log = os.path.join(self.pPath, 'subscriber3.log')
 
-                            os.chdir(self.pPath)   
+                            os.chdir(self.pPath)
 
                             pubexe = os.path.join(self.pPath, pubName) + exSfx
 
@@ -86,19 +86,19 @@ class lifecycle (Example):
                             subexe = os.path.join(self.pPath, subName) + exSfx
 
                             if os.path.isfile (subexe):
-                                sub1Thread = ExeThread(self.classpath, sub1Log, lang, subexe, self.sub_params, self.example_timeout) 
+                                sub1Thread = ExeThread(self.classpath, sub1Log, lang, subexe, self.sub_params, self.example_timeout)
                             else:
                                 msg = "MissingExecutable: " + subexe
 
                             if msg == "NONE":
                                 self.startOSPL()
-                                print("Starting sub1Thread for ", subexe)
+                                print "Starting sub1Thread for ", subexe
                                 sub1Thread.start()
-                                print("Starting pub1Thread for ", pubexe)
+                                print "Starting pub1Thread for ", pubexe
                                 pub1Thread.start()
-                                            
+
                                 pub1Thread.join(self.example_timeout)
-                                sub1Thread.join(self.example_timeout)                        
+                                sub1Thread.join(self.example_timeout)
 
                         except Exception as ex:
                             msg = "Exception running " + str(ex)
@@ -107,32 +107,32 @@ class lifecycle (Example):
 
                         if msg == "NONE":
                             pub2Thread = ExeThread(self.classpath, pub2Log, lang, pubexe, self.pub2_params, self.example_timeout * 2)
-                
-                            sub2Thread = ExeThread(self.classpath, sub2Log, lang, subexe, self.sub_params, self.example_timeout) 
+
+                            sub2Thread = ExeThread(self.classpath, sub2Log, lang, subexe, self.sub_params, self.example_timeout)
 
                             self.startOSPL()
-                            print("Starting sub2Thread for ", subexe)
+                            print "Starting sub2Thread for ", subexe
                             sub2Thread.start()
-                            print("Starting pub2Thread for ", pubexe)
+                            print "Starting pub2Thread for ", pubexe
                             pub2Thread.start()
-                                            
+
                             pub2Thread.join(self.example_timeout)
-                            sub2Thread.join(self.example_timeout)                        
+                            sub2Thread.join(self.example_timeout)
 
                             self.stopOSPL()
 
                             pub3Thread = ExeThread(self.classpath, pub3Log, lang, pubexe, self.pub3_params, self.example_timeout * 2)
-                
-                            sub3Thread = ExeThread(self.classpath, sub3Log, lang, subexe, self.sub_params, self.example_timeout) 
- 
+
+                            sub3Thread = ExeThread(self.classpath, sub3Log, lang, subexe, self.sub_params, self.example_timeout)
+
                             self.startOSPL()
-                            print("Starting sub3Thread for ", subexe)
+                            print "Starting sub3Thread for ", subexe
                             sub3Thread.start()
-                            print("Starting pub3Thread for ", pubexe)
+                            print "Starting pub3Thread for ", pubexe
                             pub3Thread.start()
-                                            
+
                             pub3Thread.join(self.example_timeout)
-                            sub3Thread.join(self.example_timeout)                        
+                            sub3Thread.join(self.example_timeout)
 
                             self.stopOSPL()
 
@@ -142,7 +142,7 @@ class lifecycle (Example):
 
                                 if os.path.isfile (self.ospl_error_log):
                                     msg = "ospl-error.log found"
-                             
+
                                 self.checkResults(sub1Log, sub_conds)
                                 self.checkResults(sub2Log, sub_conds)
                                 self.checkResults(sub3Log, sub_conds)
@@ -157,7 +157,7 @@ class lifecycle (Example):
                                 if "OpenSpliceDDS Warnings" in reason:
                                     msg = "LogCheckFail: OpenSpliceDDS Warnings in ospl-info.log"
                                 else:
-                                    msg = "LogCheckFail: " + str(lf)                       
+                                    msg = "LogCheckFail: " + str(lf)
                             except Exception as ex:
                                 msg = "Exception checking logs " + str(ex)
 
@@ -167,7 +167,7 @@ class lifecycle (Example):
                         try:
                             self.writeResult (result,  self.expath +  self.name, lang, msg)
                         except Exception as ex:
-                            print("Exception checking logs ", str(ex))
+                            print "Exception checking logs ", str(ex)
 
                         if self.host.isWindows():
                             time.sleep(5)
@@ -175,10 +175,10 @@ class lifecycle (Example):
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print("Exception cleaning up ", str(ex))
+                            print "Exception cleaning up ", str(ex)
 
                     except Exception as ex:
-                        print("Unexpected exception ", str(ex))
+                        print "Unexpected exception ", str(ex)
 
                     finally:
                         os.chdir(currPath)

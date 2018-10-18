@@ -7,14 +7,14 @@ startOSPL
 echo "=== Launching QueryCondition "
 
 ./sacpp_querycondition_sub MSFT > subResult.txt &
+cmd_pid=$!
 
 sleep 2
 
 ./sacpp_querycondition_pub > pubResult.txt
 
 echo === Waiting for processes to terminate
-waitForProcessTermination sacpp_querycondition_pub 30
-waitForProcessTermination sacpp_querycondition_sub 30
+waitForProcessTermination $cmd_pid 30
 
 queryconditionCheckResult
 

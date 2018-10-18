@@ -39,7 +39,7 @@ ECHO Set Microsoft Visual Studio Environment using VS supplied batch file
 
 IF "%VS_ENV_SCRIPT%"=="" EXIT 1
 
-IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%"
+IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%" %VS_ENV_SCRIPT_ARGS%
 
 cd "%OSPL_HOME%"
 

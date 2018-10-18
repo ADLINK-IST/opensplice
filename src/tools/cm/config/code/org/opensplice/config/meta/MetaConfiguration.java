@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -110,7 +111,7 @@ public class MetaConfiguration {
 
     public static MetaConfiguration getInstance(){
         if (instance == null) {
-            String fileName = "metaconfig.xml";
+            String fileName = "ospl_metaconfig.xml";
             instance = MetaConfiguration.load(fileName);
         }
         return instance;
@@ -332,17 +333,13 @@ public class MetaConfiguration {
             version           = element.getAttribute("version");
             hidden           = Boolean.parseBoolean(element.getAttribute("hidden"));
 
-            //if(!isRootElement){
-                minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
-                maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
+            minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
+            maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
 
-                if(maxOccurrences == 0){
-                    maxOccurrences = Integer.MAX_VALUE;
-                }
-            //} else {
-            //    minOccurrences = 0;
-            //    maxOccurrences = Integer.MAX_VALUE;
-            //}
+            if(maxOccurrences == 0){
+                maxOccurrences = Integer.MAX_VALUE;
+            }
+
             metaChildren   = new ArrayList<MetaNode>();
             children       = element.getChildNodes();
 

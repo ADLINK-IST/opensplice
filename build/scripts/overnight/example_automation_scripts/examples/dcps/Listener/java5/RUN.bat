@@ -6,9 +6,9 @@ call %FUNCTIONS% :stopOSPL
 call %FUNCTIONS% :startOSPL
 
 echo "== Launching Listener "
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes ListenerDataSubscriber > subResult.txt
+start "" /B java -jar sub/java5_Listener_sub.jar > subResult.txt
 %SLEEP2% >NUL
 
-java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes ListenerDataPublisher > pubResult.txt
+java -jar pub/java5_Listener_pub.jar > pubResult.txt
 
 call %FUNCTIONS% :listenerCheckResults >> run.log

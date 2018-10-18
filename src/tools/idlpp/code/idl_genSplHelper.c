@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -80,8 +81,7 @@ idl_boundsCheckFail(
     os_free(scopeName);
 }
 
-/* Print a BOUNDSCHECK NULL error message to the default output file
-*/
+/* Print a BOUNDSCHECK NULL error message to the default output file */
 void
 idl_boundsCheckFailNull(
         enum idl_boundsCheckFailKind kind,
@@ -163,8 +163,8 @@ idl_memoryAllocFailed(
 
 
 /* Print the specified indentation the the default output file,
-   the indent is specified in units of 4 space characters
-*/
+ * the indent is specified in units of 4 space characters
+ */
 void
 idl_printIndent (
     c_long indent)
@@ -185,8 +185,8 @@ idl_typeFromTypeSpec (
 }
 
 /* Return the scoped type name where for the user types,
-   scopes are separated by "_" chracters.
-*/
+ * scopes are separated by "_" chracters.
+ */
 c_char *
 idl_scopedTypeName (
     const idl_typeSpec typeSpec)
@@ -220,8 +220,8 @@ idl_scopedTypeName (
 }
 
 /* Return the scoped type name where for the user types,
-   scopes are separated by "_" chracters.
-*/
+ * scopes are separated by "_" chracters.
+ */
 c_char *
 idl_scopedSplTypeName (
     const idl_typeSpec typeSpec)
@@ -268,22 +268,22 @@ idl_scopedSplTypeName (
 }
 
 /* Return the scoped type specification where for the user types,
-   scopes are separated by "_" chracters. 
-   IDL strings (bounded and unbounded) are mapped on: c_string, other
-       basic types are mapped on corresponding splice types
-   IDL structures are identified by: struct <scoped-struct-name>
-   IDL unions are identified by: struct <scoped-union-name> becuase
-   the union mapping is:
-       struct <union-name> {
-           <tag-type> _d;
-	   union {
-		<union-case-specifications>
-	   } _u;
-	}
-    IDL enumerations are identified by: enum <scoped-enum-name>
-    IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_sequence
-*/
+ * scopes are separated by "_" chracters.
+ * IDL strings (bounded and unbounded) are mapped on: c_string, other
+ *      basic types are mapped on corresponding splice types
+ * IDL structures are identified by: struct <scoped-struct-name>
+ * IDL unions are identified by: struct <scoped-union-name> becuase
+ * the union mapping is:
+ *      struct <union-name> {
+ *              <tag-type> _d;
+ *              union {
+ *                      <union-case-specifications>
+ *              } _u;
+ *      }
+ * IDL enumerations are identified by: enum <scoped-enum-name>
+ * IDL typedefs are formed by the scoped type name
+ * IDL sequences are mapped on: c_sequence
+ */
 c_char *
 idl_scopedTypeIdent (
     const idl_typeSpec typeSpec)
@@ -338,22 +338,22 @@ idl_scopedTypeIdent (
 }
 
 /* Return the scoped type specification where for the user types,
-   scopes are separated by "_" chracters. 
-   IDL strings (bounded and unbounded) are mapped on: c_string, other
-       basic types are mapped on corresponding splice types
-   IDL structures are identified by: struct <scoped-struct-name>
-   IDL unions are identified by: struct <scoped-union-name> becuase
-   the union mapping is:
-       struct <union-name> {
-           <tag-type> _d;
-	   union {
-		<union-case-specifications>
-	   } _u;
-	}
-    IDL enumerations are identified by: enum <scoped-enum-name>
-    IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_sequence
-*/
+ * scopes are separated by "_" chracters.
+ * IDL strings (bounded and unbounded) are mapped on: c_string, other
+ *      basic types are mapped on corresponding splice types
+ * IDL structures are identified by: struct <scoped-struct-name>
+ * IDL unions are identified by: struct <scoped-union-name> becuase
+ * the union mapping is:
+ *      struct <union-name> {
+ *              <tag-type> _d;
+ *              union {
+ *                      <union-case-specifications>
+ *              } _u;
+ *      }
+ * IDL enumerations are identified by: enum <scoped-enum-name>
+ * IDL typedefs are formed by the scoped type name
+ * IDL sequences are mapped on: c_sequence
+ */
 
 c_char *
 idl_scopedSplTypeIdent (

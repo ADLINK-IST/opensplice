@@ -8,7 +8,7 @@ Introduction
 *The* Vortex OpenSplice Modeler *is an integrated Eclipse-based 
 tool chain based on Data Distribution Service (DDS) 
 domain-specific model driven techniques. It provides the 
-essential productivity tools of PrismTech’s third generation 
+essential productivity tools of ADLINK's third generation 
 OMG-DDS suite.*
 
 Vortex OpenSplice is a suite of software products comprised of a 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -33,6 +34,7 @@ typedef int (*stopClock)(void);
 typedef os_time (*getClock)(void);
 
 static stopClock _stopFunction = NULL;
+static os_library moduleHandle = NULL;
 
 os_result
 os_userClockStart (
@@ -43,7 +45,6 @@ os_userClockStart (
     os_boolean y2038_ready)
 {
     os_result result = os_resultFail;
-    os_library moduleHandle;
     os_libraryAttr attr;
     startClock startFunction = NULL;
     getClock getFunction = NULL;
@@ -125,6 +126,7 @@ os_userClockStart (
             "User clock module %s could not be opened",
             (userClockModule == NULL) ? "NULL" : userClockModule);
     }
+
     return result;
 }
 
@@ -140,6 +142,7 @@ os_userClockStop (
     os_timeSetUserClock64(NULL);
     os_timeSetUserClock(NULL);
     if (_stopFunction) {
+        assert(moduleHandle != NULL);
         stopResult = _stopFunction();
         if (stopResult != 0) {
             OS_REPORT (OS_ERROR, "os_userClockStart", 0,
@@ -151,5 +154,7 @@ os_userClockStop (
     } else {
         result = os_resultSuccess;
     }
+    (void)os_libraryClose(moduleHandle);
+    moduleHandle = NULL;
     return result;
 }

@@ -8,13 +8,13 @@ CPP_DIRS    := $(sort $(dir $(CPP_FILES)))
 # Specify the SACPP Objects that need to be linked in.
 EXTRAOBJECTS = $(wildcard ../../../c++/sacpp/bld/$(SPLICE_TARGET)/*$(OBJ_POSTFIX))
 
+# Include the actual building rules.
+include	     $(OSPL_HOME)/setup/makefiles/target.mak
+
 # LTO must be disabled for now (OSPL-6421)
 ifneq ($(CFLAGS_LTO),)
 CFLAGS_LTO =
 endif
-
-# Include the actual building rules.
-include	     $(OSPL_HOME)/setup/makefiles/target.mak
 
 # Fine tune the compiler flags. Enable both the ISOCPP as the SACPP build flags,
 # as SACPP will be linked into the ISOCPP library.

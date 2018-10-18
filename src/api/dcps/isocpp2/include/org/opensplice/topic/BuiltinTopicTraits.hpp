@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,11 +22,14 @@
 #define ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_TRAITS_HPP
 
 #include <dds/topic/BuiltinTopic.hpp>
+#include <dds/core/BuiltinTopicTypes.hpp>
 #include <org/opensplice/topic/BuiltinTopic.hpp>
 #include <org/opensplice/topic/TopicTraits.hpp>
 #include <org/opensplice/topic/BuiltinTopicCopy.hpp>
 
 
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -84,6 +88,10 @@ struct topic_type_name<dds::topic::ParticipantBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(dds::topic::ParticipantBuiltinTopicData);
+
+
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -181,6 +189,9 @@ struct topic_type_name<dds::topic::TopicBuiltinTopicData>
 REGISTER_TOPIC_TYPE(dds::topic::TopicBuiltinTopicData);
 
 
+
+/*****************************************************************************/
+
 namespace org { namespace opensplice { namespace topic {
 template <>
 class TopicTraits<dds::topic::PublicationBuiltinTopicData>
@@ -276,6 +287,10 @@ struct topic_type_name<dds::topic::PublicationBuiltinTopicData>
 
 REGISTER_TOPIC_TYPE(dds::topic::PublicationBuiltinTopicData);
 
+
+
+/*****************************************************************************/
+
 namespace org { namespace opensplice { namespace topic {
 template <>
 class TopicTraits<dds::topic::SubscriptionBuiltinTopicData>
@@ -370,6 +385,10 @@ struct topic_type_name<dds::topic::SubscriptionBuiltinTopicData>
 
 REGISTER_TOPIC_TYPE(dds::topic::SubscriptionBuiltinTopicData);
 
+
+
+/*****************************************************************************/
+
 namespace org { namespace opensplice { namespace topic {
 template <>
 class TopicTraits<org::opensplice::topic::CMParticipantBuiltinTopicData>
@@ -426,6 +445,10 @@ struct topic_type_name<org::opensplice::topic::CMParticipantBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::CMParticipantBuiltinTopicData);
+
+
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -488,6 +511,10 @@ struct topic_type_name<org::opensplice::topic::CMPublisherBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::CMPublisherBuiltinTopicData);
+
+
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -552,6 +579,10 @@ struct topic_type_name<org::opensplice::topic::CMSubscriberBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::CMSubscriberBuiltinTopicData);
+
+
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -620,6 +651,10 @@ struct topic_type_name<org::opensplice::topic::CMDataWriterBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::CMDataWriterBuiltinTopicData);
+
+
+
+/*****************************************************************************/
 
 namespace org { namespace opensplice { namespace topic {
 template <>
@@ -699,6 +734,10 @@ struct topic_type_name<org::opensplice::topic::CMDataReaderBuiltinTopicData>
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::CMDataReaderBuiltinTopicData);
 
+
+
+/*****************************************************************************/
+
 namespace org { namespace opensplice { namespace topic {
 template <>
 class TopicTraits<org::opensplice::topic::TypeBuiltinTopicData>
@@ -757,5 +796,323 @@ struct topic_type_name<org::opensplice::topic::TypeBuiltinTopicData>
 }}
 
 REGISTER_TOPIC_TYPE(org::opensplice::topic::TypeBuiltinTopicData);
+
+
+
+/*****************************************************************************/
+
+namespace org { namespace opensplice { namespace topic {
+template <>
+class TopicTraits<dds::core::BytesTopicType>
+{
+public:
+    static ::org::opensplice::topic::DataRepresentationId_t getDataRepresentationId()
+    {
+        return ::org::opensplice::topic::OSPL_REPRESENTATION;
+    }
+
+    static ::std::vector<os_uchar> getMetaData()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getTypeHash()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getExtentions()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static const char *getKeyList()
+    {
+        return "";
+    }
+
+    static const char *getTypeName()
+    {
+        return "DDS::Bytes";
+    }
+
+    static std::string getDescriptor()
+    {
+        const char *elements[] = {
+            "<MetaData version=\"1.0.0\"><Module name=\"DDS\"><TypeDef name=\"ByteSeq\"><Sequence><Octet/></Sequence>",
+"</TypeDef><Struct name=\"Bytes\"><Member name=\"value\"><Type name=\"ByteSeq\"/></Member></Struct></Module>",
+"</MetaData>"
+        };
+        std::string descriptor;
+        descriptor.reserve(222);
+        for (int i = 0; i < 3; i++) {
+            descriptor.append(elements[i]);
+        }
+
+        return descriptor;
+    }
+
+    static copyInFunction getCopyIn()
+    {
+        return (copyInFunction) __Bytes__copyIn;
+    }
+
+    static copyOutFunction getCopyOut()
+    {
+        return (copyOutFunction) __Bytes__copyOut;
+    }
+};
+}}}
+
+namespace dds { namespace topic {
+template <>
+struct topic_type_name<dds::core::BytesTopicType>
+{
+    static std::string value()
+    {
+        return org::opensplice::topic::TopicTraits<dds::core::BytesTopicType>::getTypeName();
+    }
+};
+}}
+
+REGISTER_TOPIC_TYPE(dds::core::BytesTopicType)
+
+
+
+/*****************************************************************************/
+
+namespace org { namespace opensplice { namespace topic {
+template <>
+class TopicTraits<dds::core::StringTopicType>
+{
+public:
+    static ::org::opensplice::topic::DataRepresentationId_t getDataRepresentationId()
+    {
+        return ::org::opensplice::topic::OSPL_REPRESENTATION;
+    }
+
+    static ::std::vector<os_uchar> getMetaData()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getTypeHash()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getExtentions()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static const char *getKeyList()
+    {
+        return "";
+    }
+
+    static const char *getTypeName()
+    {
+        return "DDS::String";
+    }
+
+    static std::string getDescriptor()
+    {
+        const char *elements[] = {
+            "<MetaData version=\"1.0.0\"><Module name=\"DDS\"><Struct name=\"String\"><Member name=\"value\"><String/>",
+"</Member></Struct></Module></MetaData>"
+        };
+        std::string descriptor;
+        descriptor.reserve(143);
+        for (int i = 0; i < 2; i++) {
+            descriptor.append(elements[i]);
+        }
+
+        return descriptor;
+    }
+
+    static copyInFunction getCopyIn()
+    {
+        return (copyInFunction) __String__copyIn;
+    }
+
+    static copyOutFunction getCopyOut()
+    {
+        return (copyOutFunction) __String__copyOut;
+    }
+};
+}}}
+
+namespace dds { namespace topic {
+template <>
+struct topic_type_name<dds::core::StringTopicType>
+{
+    static std::string value()
+    {
+        return org::opensplice::topic::TopicTraits<dds::core::StringTopicType>::getTypeName();
+    }
+};
+}}
+
+REGISTER_TOPIC_TYPE(dds::core::StringTopicType)
+
+
+
+/*****************************************************************************/
+
+namespace org { namespace opensplice { namespace topic {
+template <>
+class TopicTraits<dds::core::KeyedBytesTopicType>
+{
+public:
+    static ::org::opensplice::topic::DataRepresentationId_t getDataRepresentationId()
+    {
+        return ::org::opensplice::topic::OSPL_REPRESENTATION;
+    }
+
+    static ::std::vector<os_uchar> getMetaData()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getTypeHash()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getExtentions()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static const char *getKeyList()
+    {
+        return "key";
+    }
+
+    static const char *getTypeName()
+    {
+        return "DDS::KeyedBytes";
+    }
+
+    static std::string getDescriptor()
+    {
+        const char *elements[] = {
+            "<MetaData version=\"1.0.0\"><Module name=\"DDS\"><TypeDef name=\"ByteSeq\"><Sequence><Octet/></Sequence>",
+"</TypeDef><Struct name=\"KeyedBytes\"><Member name=\"key\"><String/></Member><Member name=\"value\"><Type name=\"ByteSeq\"/>",
+"</Member></Struct></Module></MetaData>"
+        };
+        std::string descriptor;
+        descriptor.reserve(266);
+        for (int i = 0; i < 3; i++) {
+            descriptor.append(elements[i]);
+        }
+
+        return descriptor;
+    }
+
+    static copyInFunction getCopyIn()
+    {
+        return (copyInFunction) __KeyedBytes__copyIn;
+    }
+
+    static copyOutFunction getCopyOut()
+    {
+        return (copyOutFunction) __KeyedBytes__copyOut;
+    }
+};
+}}}
+
+namespace dds { namespace topic {
+template <>
+struct topic_type_name<dds::core::KeyedBytesTopicType>
+{
+    static std::string value()
+    {
+        return org::opensplice::topic::TopicTraits<dds::core::KeyedBytesTopicType>::getTypeName();
+    }
+};
+}}
+
+REGISTER_TOPIC_TYPE(dds::core::KeyedBytesTopicType)
+
+
+
+/*****************************************************************************/
+
+namespace org { namespace opensplice { namespace topic {
+template <>
+class TopicTraits<dds::core::KeyedStringTopicType>
+{
+public:
+    static ::org::opensplice::topic::DataRepresentationId_t getDataRepresentationId()
+    {
+        return ::org::opensplice::topic::OSPL_REPRESENTATION;
+    }
+
+    static ::std::vector<os_uchar> getMetaData()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getTypeHash()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static ::std::vector<os_uchar> getExtentions()
+    {
+        return ::std::vector<os_uchar>();
+    }
+
+    static const char *getKeyList()
+    {
+        return "key";
+    }
+
+    static const char *getTypeName()
+    {
+        return "DDS::KeyedString";
+    }
+
+    static std::string getDescriptor()
+    {
+        const char *elements[] = {
+            "<MetaData version=\"1.0.0\"><Module name=\"DDS\"><Struct name=\"KeyedString\"><Member name=\"key\"><String/>",
+"</Member><Member name=\"value\"><String/></Member></Struct></Module></MetaData>"
+        };
+        std::string descriptor;
+        descriptor.reserve(187);
+        for (int i = 0; i < 2; i++) {
+            descriptor.append(elements[i]);
+        }
+
+        return descriptor;
+    }
+
+    static copyInFunction getCopyIn()
+    {
+        return (copyInFunction) __KeyedString__copyIn;
+    }
+
+    static copyOutFunction getCopyOut()
+    {
+        return (copyOutFunction) __KeyedString__copyOut;
+    }
+};
+}}}
+
+namespace dds { namespace topic {
+template <>
+struct topic_type_name<dds::core::KeyedStringTopicType>
+{
+    static std::string value()
+    {
+        return org::opensplice::topic::TopicTraits<dds::core::KeyedStringTopicType>::getTypeName();
+    }
+};
+}}
+
+REGISTER_TOPIC_TYPE(dds::core::KeyedStringTopicType)
 
 #endif /* ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_TRAITS_HPP */

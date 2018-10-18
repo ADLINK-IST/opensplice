@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,10 +22,10 @@ package org.opensplice.dds.domain;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -90,9 +91,9 @@ public class DomainParticipantImpl
         EntityImpl<DDS.DomainParticipant, DDS.DomainParticipantFactory, DomainParticipantQos, DomainParticipantListener, DomainParticipantListenerImpl>
         implements DomainParticipant, org.opensplice.dds.domain.DomainParticipant {
     private final DomainParticipantFactoryImpl factory;
-    private final ConcurrentHashMap<DDS.TopicDescription, TopicDescriptionExt<?>> topics;
-    private final ConcurrentHashMap<DDS.Publisher, PublisherImpl> publishers;
-    private final ConcurrentHashMap<DDS.Subscriber, SubscriberImpl> subscribers;
+    private final HashMap<DDS.TopicDescription, TopicDescriptionExt<?>> topics;
+    private final HashMap<DDS.Publisher, PublisherImpl> publishers;
+    private final HashMap<DDS.Subscriber, SubscriberImpl> subscribers;
 
     public DomainParticipantImpl(OsplServiceEnvironment environment,
             DomainParticipantFactoryImpl factory, int domainId,
@@ -100,9 +101,9 @@ public class DomainParticipantImpl
             Collection<Class<? extends Status>> statuses) {
         super(environment, DDS.DomainParticipantFactory.get_instance());
         this.factory = factory;
-        this.topics = new ConcurrentHashMap<DDS.TopicDescription, TopicDescriptionExt<?>>();
-        this.publishers = new ConcurrentHashMap<DDS.Publisher, PublisherImpl>();
-        this.subscribers = new ConcurrentHashMap<DDS.Subscriber, SubscriberImpl>();
+        this.topics = new HashMap<DDS.TopicDescription, TopicDescriptionExt<?>>();
+        this.publishers = new HashMap<DDS.Publisher, PublisherImpl>();
+        this.subscribers = new HashMap<DDS.Subscriber, SubscriberImpl>();
 
         if (qos == null) {
             throw new IllegalArgumentExceptionImpl(environment,
@@ -141,7 +142,9 @@ public class DomainParticipantImpl
 
     @SuppressWarnings("unchecked")
     public <TYPE> Topic<TYPE> getTopic(DDS.Topic oldTopic) {
-        return (Topic<TYPE>) this.topics.get(oldTopic);
+        synchronized (this.topics) {
+            return (Topic<TYPE>) this.topics.get(oldTopic);
+        }
     }
 
     private void setListener(
@@ -526,19 +529,24 @@ public class DomainParticipantImpl
 
     @Override
     public void closeContainedEntities() {
-        for (PublisherImpl publisher : this.publishers.values()) {
-            try{
-                publisher.close();
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
+        synchronized (this.publishers) {
+            HashMap<DDS.Publisher, PublisherImpl> copyPub = new HashMap<DDS.Publisher, PublisherImpl>(this.publishers);
+            for (PublisherImpl publisher : copyPub.values()) {
+                try{
+                    publisher.close();
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
+                }
             }
         }
-
-        for (SubscriberImpl subscriber : this.subscribers.values()) {
-            try {
-                subscriber.close();
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
+        synchronized (this.subscribers) {
+            HashMap<DDS.Subscriber, SubscriberImpl> copySub = new HashMap<DDS.Subscriber, SubscriberImpl>(this.subscribers);
+            for (SubscriberImpl subscriber : copySub.values()) {
+                try {
+                    subscriber.close();
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
+                }
             }
         }
 
@@ -546,22 +554,26 @@ public class DomainParticipantImpl
          * Topics cannot be deleted in case ContentFilteredTopic or MultiTopic
          * entities still refer to them, so close the latter two first.
          */
-        for (TopicDescriptionExt<?> topic : this.topics.values()) {
-            try {
-                if (topic instanceof ContentFilteredTopicImpl) {
-                    topic.close();
-                } else if (topic instanceof MultiTopicImpl) {
-                    topic.close();
+        synchronized (this.topics) {
+            HashMap<DDS.TopicDescription, TopicDescriptionExt<?>> copyTop = new HashMap<DDS.TopicDescription, TopicDescriptionExt<?>>(this.topics);
+            for (TopicDescriptionExt<?> topic : copyTop.values()) {
+                try {
+                    if (topic instanceof ContentFilteredTopicImpl) {
+                        topic.close();
+                    } else if (topic instanceof MultiTopicImpl) {
+                        topic.close();
+                    }
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
                 }
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
             }
-        }
-        for (TopicDescriptionExt<?> topic : this.topics.values()) {
-            try {
-                topic.close();
-            } catch (AlreadyClosedException a) {
-                /* Entity may be closed concurrently by application */
+            copyTop = new HashMap<DDS.TopicDescription, TopicDescriptionExt<?>>(this.topics);
+            for (TopicDescriptionExt<?> topic : copyTop.values()) {
+                try {
+                    topic.close();
+                } catch (AlreadyClosedException a) {
+                    /* Entity may be closed concurrently by application */
+                }
             }
         }
     }
@@ -922,7 +934,9 @@ public class DomainParticipantImpl
         DDS.Publisher old = child.getOld();
         old.delete_contained_entities();
         int rc = this.getOld().delete_publisher(old);
-        this.publishers.remove(old);
+        synchronized (this.publishers) {
+            this.publishers.remove(old);
+        }
         Utilities.checkReturnCode(rc, this.environment,
                 "Publisher.close() failed.");
     }
@@ -931,7 +945,9 @@ public class DomainParticipantImpl
         DDS.Subscriber old = child.getOld();
         old.delete_contained_entities();
         int rc = this.getOld().delete_subscriber(old);
-        this.subscribers.remove(old);
+        synchronized (this.subscribers) {
+            this.subscribers.remove(old);
+        }
         Utilities.checkReturnCode(rc, this.environment,
                 "Subscriber.close() failed.");
     }
@@ -939,7 +955,9 @@ public class DomainParticipantImpl
     public <TYPE> void destroyTopic(TopicDescriptionExt<TYPE> child) {
         DDS.TopicDescription old = child.getOld();
         int rc = this.getOld().delete_topic((DDS.Topic) old);
-        this.topics.remove(old);
+        synchronized (this.topics) {
+            this.topics.remove(old);
+        }
         Utilities
                 .checkReturnCode(rc, this.environment, "Topic.close() failed.");
     }
@@ -947,11 +965,12 @@ public class DomainParticipantImpl
     public <TYPE> void destroyContentFilteredTopic(
             ContentFilteredTopicImpl<TYPE> child) {
         DDS.TopicDescription old = child.getOld();
-        TopicDescriptionExt<?> removed = this.topics.remove(old);
-
-        if (removed == null) {
-            throw new AlreadyClosedExceptionImpl(this.environment,
-                    "ContentFilteredTopic already closed.");
+        synchronized (this.topics) {
+            TopicDescriptionExt<?> removed = this.topics.remove(old);
+            if (removed == null) {
+                throw new AlreadyClosedExceptionImpl(this.environment,
+                        "ContentFilteredTopic already closed.");
+            }
         }
         int rc = this.getOld().delete_contentfilteredtopic(
                 (DDS.ContentFilteredTopic) old);
@@ -977,5 +996,22 @@ public class DomainParticipantImpl
             throw new IllegalArgumentExceptionImpl(this.environment,
                     "Invalid domain used.");
         }
+    }
+
+    @Override
+    public void setProperty(String key, String value) {
+        int rc = this.getOld().set_property(new DDS.Property(key, value));
+        Utilities.checkReturnCode(rc, this.environment,
+                "Properties.setProperty() failed.");
+    }
+
+    @Override
+    public String getProperty(String key) {
+        DDS.PropertyHolder holder = new DDS.PropertyHolder();
+        holder.value = new DDS.Property(key, null);
+        int rc = this.getOld().get_property(holder);
+        Utilities.checkReturnCode(rc, this.environment,
+                "Properties.getProperty() failed.");
+        return holder.value.value;
     }
 }

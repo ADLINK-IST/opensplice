@@ -4,47 +4,47 @@
 Overview
 ########
 
-*This chapter explains the Vortex OpenSplice middleware from 
-a configuration perspective. It shows the different components 
-running on a single node and briefly explains the role of each 
-entity. Furthermore, it defines a reference system that will 
+*This chapter explains the Vortex OpenSplice middleware from
+a configuration perspective. It shows the different components
+running on a single node and briefly explains the role of each
+entity. Furthermore, it defines a reference system that will
 be used throughout the rest of the document as an example.*
 
 
-.. _`Vortex OpenSplice DDS architecture`:
+.. _`Vortex OpenSplice architecture`:
 
 
 Vortex OpenSplice Architecture
 ******************************
 
-Vortex OpenSplice is highly configurable, even allowing the architectural 
+Vortex OpenSplice is highly configurable, even allowing the architectural
 structure of the DDS middleware to be chosen by the user at deployment time.
 
-Vortex OpenSplice can be configured to run using a so-called ‘federated’ 
-*shared memory* architecture, where both the DDS related administration 
-(including the optional pluggable services) and DDS applications interface 
+Vortex OpenSplice can be configured to run using a so-called ‘federated’
+*shared memory* architecture, where both the DDS related administration
+(including the optional pluggable services) and DDS applications interface
 directly with shared memory.
 
-Alternatively, Vortex OpenSplice also supports a so-called ‘standalone’ 
-*single process* architecture, where one or more DDS applications, 
-together with the OpenSplice administration and services, can all be 
-grouped into a single  operating system process. 
+Alternatively, Vortex OpenSplice also supports a so-called ‘standalone’
+*single process* architecture, where one or more DDS applications,
+together with the OpenSplice administration and services, can all be
+grouped into a single  operating system process.
 
-Both deployment modes support a configurable and extensible set 
+Both deployment modes support a configurable and extensible set
 of services, providing functionality such as:
 
 + *networking* - providing QoS-driven real-time networking based on multiple
   reliable multicast ‘channels’
-+ *durability* - providing fault-tolerant storage for both real-time state 
++ *durability* - providing fault-tolerant storage for both real-time state
   data as well as persistent settings
 + *remote control and monitoring SOAP service* - providing remote web-based
   access using the SOAP protocol from various Vortex OpenSplice tools
-+ *dbms service* - providing a connection between the real-time and the 
++ *dbms service* - providing a connection between the real-time and the
   enterprise domain by bridging data from DDS to DBMS and *vice versa*
 
-The Vortex OpenSplice middleware can be easily configured, on the fly, using 
-its pluggable service architecture: the services that are needed can be 
-specified together with their configuration for the particular application 
+The Vortex OpenSplice middleware can be easily configured, on the fly, using
+its pluggable service architecture: the services that are needed can be
+specified together with their configuration for the particular application
 domain, including networking parameters, and durability levels for example).
 
 There are advantages to both the single process and shared memory deployment
@@ -121,7 +121,7 @@ The diagram `The Vortex OpenSplice Shared Memory Architecture`_
 shows an overview of the shared memory architecture of Vortex OpenSplice on
 *one* computing node. Typically, there are *many* nodes within a system.
 
-.. _`The Vortex OpenSplice Shared Memory Architecture`: 
+.. _`The Vortex OpenSplice Shared Memory Architecture`:
 
 .. centered:: **The Vortex OpenSplice Shared Memory Architecture**
 
@@ -129,7 +129,7 @@ shows an overview of the shared memory architecture of Vortex OpenSplice on
    :height: 70mm
    :align: center
    :alt: The Vortex OpenSplice Shared Memory Architecture
-   
+
 
 
 .. _`Comparison of Deployment Architectures`:
@@ -157,14 +157,14 @@ basically about going for out-of-the-box simplicity or for maximum performance:
    :height: 35mm
    :align: center
    :alt: Federated Application Cluster
-  
+
 
 **Non-federated, `single process’ Applications**
 
-  - Each application links the required DDS services as libraries 
+  - Each application links the required DDS services as libraries
     into a standalone ‘single process’
   - Resources are managed by each individual application
-  - Added value: Ease-of-use (‘zero-configuration’, middleware 
+  - Added value: Ease-of-use (‘zero-configuration’, middleware
     lifecycle is simply coupled to that of the application process)
 
 
@@ -222,7 +222,7 @@ single-process architecture start with ``ospl_sp_`` whereas federated-deployment
 configurations start with ``ospl_shmem_``.
 
 
-.. _`Vortex OpenSplice DDS Usage`:
+.. _`Vortex OpenSplice Usage`:
 
 
 Vortex OpenSplice Usage
@@ -233,14 +233,14 @@ and libraries can be found in order to be able to start the Domain Service.
 
 |unix| |linux|
 
-  On UNIX-like platforms this can be realized by starting a shell and 
-  sourcing the ``release.com`` file located in the root directory of 
+  On UNIX-like platforms this can be realized by starting a shell and
+  sourcing the ``release.com`` file located in the root directory of
   the Vortex OpenSplice installation:
 
-:: 
+::
 
    % . ./release.com
-  
+
 
 |windows|
 
@@ -249,7 +249,7 @@ and libraries can be found in order to be able to start the Domain Service.
 
 
 
-.. _`Starting Vortex OpenSplice DDS for a Single Process Deployment`:
+.. _`Starting Vortex OpenSplice for a Single Process Deployment`:
 
 Starting Vortex OpenSplice for a Single Process Deployment
 ==========================================================
@@ -261,7 +261,7 @@ associated services at the point when the DDS ``create_participant`` operation i
 invoked by the standalone application process.
 
 
-.. _`Starting Vortex OpenSplice DDS for a Shared Memory Deployment`:
+.. _`Starting Vortex OpenSplice for a Shared Memory Deployment`:
 
 Starting Vortex OpenSplice for a Shared Memory Deployment
 =========================================================
@@ -271,10 +271,10 @@ Domain Service prior to running a DDS application. The ``ospl`` command-tool is
 provided to manage Vortex OpenSplice for shared memory deployments. To start
 Vortex OpenSplice in this way, enter:
 
-:: 
+::
 
    % . ./release.com
-  
+
 This will start the Domain Service using the default configuration.
 
 |caution|
@@ -287,7 +287,7 @@ This will start the Domain Service using the default configuration.
 |caution|
 
   **NOTE**: The **VxWorks** version of Vortex OpenSplice does not include the ``ospl``
-  program. Please refer to the *Getting Started Guide* for details of how to use 
+  program. Please refer to the *Getting Started Guide* for details of how to use
   VxWorks projects and Real Time Processes to deploy Vortex OpenSplice applications.
 
 
@@ -319,7 +319,7 @@ specifying ``<stderr>``). The names of these log files can also be changed by se
 
 Vortex OpenSplice also accepts the environment properties ``OSPL_VERBOSITY`` and
 ``OSPL_LOGAPPEND``. These provide an alternate method of specifying values for
-Attribute ``append`` and Attribute ``verbosity`` of the ``Domain/Report`` 
+Attribute ``append`` and Attribute ``verbosity`` of the ``Domain/Report``
 configuration element (see the  :ref:`Configuration <Configuration>`
 section for details).
 
@@ -363,12 +363,12 @@ for detailed information about ``mmstat``.
 
 |caution|
 
-  Please note that ``mmstat`` is only suitable for diagnostic purposes, 
+  Please note that ``mmstat`` is only suitable for diagnostic purposes,
   and its use is only applicable in shared memory mode.
 
 
 
-.. _`Stopping Vortex OpenSplice DDS`:
+.. _`Stopping Vortex OpenSplice`:
 
 Stopping Vortex OpenSplice
 ==========================
@@ -381,8 +381,8 @@ Stopping a Single Process deployment
 
 When deployed as a single process, the application can either be terminated
 naturally when the end of the main function is reached, or stopped prematurely by
-means of a signal interrupt, for example ``Ctrl-C``. In either case, the 
-Vortex OpenSplice middleware running within the process will be stopped and the 
+means of a signal interrupt, for example ``Ctrl-C``. In either case, the
+Vortex OpenSplice middleware running within the process will be stopped and the
 process will terminate.
 
 
@@ -394,7 +394,7 @@ Stopping a Shared Memory deployment
 In shared memory deployment mode, the Vortex OpenSplice Domain Service can be
 stopped by issuing the following command on the command-line.
 
-:: 
+::
 
    % ospl stop
 
@@ -410,7 +410,7 @@ Stopping OSPL by using signals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Alternatively the Vortex OpenSplice domain service can also be stopped by sending a
-signal to the ``ospl`` process, assuming the process was started using the ``-f`` 
+signal to the ``ospl`` process, assuming the process was started using the ``-f``
 option.
 
 |unix|
@@ -418,7 +418,7 @@ option.
   For example, on Unix you could use the following command to send a termination
   signal to the ``ospl`` tool, where ``<pid>`` identifies the ``ospl`` tool pid:
 
-:: 
+::
 
    % kill –SIGTERM <pid>
 
@@ -510,7 +510,7 @@ application is terminated by other means (*e.g.* by terminating with ``Ctrl+C``)
 or even if the application crashes in the user code.
 
 |caution|
-  
+
   The cleanup mechanisms are *not* executed when an application is terminated with a
   ``KILL`` signal. For this reason a user must not terminate an application with a
   ``kill -9`` command (or, on Windows, must not use TaskManager’s *End Process*
@@ -521,7 +521,7 @@ or even if the application crashes in the user code.
   node.
 
 
-.. _`Deploying Vortex OpenSplice DDS on VxWorks 6.x`:
+.. _`Deploying Vortex OpenSplice on VxWorks 6.x`:
 
 Deploying Vortex OpenSplice on VxWorks 6.x
 ==========================================
@@ -532,7 +532,7 @@ VxWorks projects and Real Time Processes to deploy Vortex OpenSplice
 applications.
 
 
-.. _`Deploying Vortex OpenSplice DDS on Integrity`:
+.. _`Deploying Vortex OpenSplice on Integrity`:
 
 Deploying Vortex OpenSplice on Integrity
 ========================================
@@ -545,7 +545,7 @@ Vortex OpenSplice deployment on Integrity.
 
 
 
-.. _`Installing/Uninstalling the Vortex OpenSplice DDS C# Assembly to the Global Assembly Cache`:
+.. _`Installing/Uninstalling the Vortex OpenSplice C# Assembly to the Global Assembly Cache`:
 
 Installing/Uninstalling the Vortex OpenSplice C# Assembly to the Global Assembly Cache
 ======================================================================================
@@ -576,7 +576,7 @@ to the following:
 ::
 
    % C:\Program Files\Microsoft Visual Studio 9.0\VC>gacutil.exe /i
-   "C:\Program Files \PrismTech\VortexOpenSplice\V6.6.0\HDE\x86.win32\
+   "C:\Program Files \ADLINK\VortexOpenSplice\V6.6.0\HDE\x86.win32\
    bin\dcpssacsAssembly.dll"
    %
    % Microsoft (R) .NET Global Assembly Cache Utility. Version
@@ -628,7 +628,7 @@ If you are successful you will see a message similar to the following:
 |caution|
 
   +---------------------------------------------------------------------------+
-  | If you do not specify a version to the uninstall option, then all         | 
+  | If you do not specify a version to the uninstall option, then all         |
   | installed Vortex OpenSplice C# Assemblies in the GAC called               |
   | ``dcpssacsAssembly`` will be removed from the GAC, so take care with      |
   | this option as it can adversely affect any deployed applications that     |
@@ -640,7 +640,7 @@ If you are successful you will see a message similar to the following:
 
 
 
-.. _`Vortex OpenSplice DDS Configuration`:
+.. _`Vortex OpenSplice Configuration`:
 
 Vortex OpenSplice Configuration
 *******************************
@@ -688,7 +688,7 @@ environment variables.
 
 When specifying configuration parameter values in a configuration file,
 environment variables can be referenced using the notation ``${VARIABLE}``.
-When parsing the XML configuration, the Domain Service will replace the symbol 
+When parsing the XML configuration, the Domain Service will replace the symbol
 with the variable value found in the environment.
 
 
@@ -704,7 +704,7 @@ be overridden to refer to a customer configuration.
 
 For single process mode operation this variable is required; see also
 `Single Process architecture`_ in this *Guide*, and
-the detailed description of the Element ``//OpenSplice/Domain/SingleProcess`` 
+the detailed description of the Element ``//OpenSplice/Domain/SingleProcess``
 in the  :ref:`Configuration <Configuration>` section.
 
 
@@ -727,9 +727,9 @@ Configuration of Single Process deployment
 
 A single process deployment is enabled when the ``OSPL_URI`` environment variable
 refers to an XML configuration containing the ``<SingleProcess>`` attribute within
-the Domain section (``//OpenSplice/Domain/SingleProcess``). 
+the Domain section (``//OpenSplice/Domain/SingleProcess``).
 See the  :ref:`Configuration <Configuration>` section for full details.
-In such a deployment, each Vortex OpenSplice service including the Domain Service 
+In such a deployment, each Vortex OpenSplice service including the Domain Service
 will be started as threads within the existing application process.
 
 In this case there is no need to start the Vortex OpenSplice administration manually
@@ -750,7 +750,7 @@ In order to have Vortex OpenSplice start with a custom configuration file, use:
 
    % ospl start <URI>
 
-where ``<URI>`` denotes the URI of the Domain Service configuration file. 
+where ``<URI>`` denotes the URI of the Domain Service configuration file.
 
 In order to stop a specific Vortex OpenSplice instance, the same mechanism holds. Use:
 
@@ -778,7 +778,7 @@ To stop all active Vortex OpenSplice Domains, use:
 
 
 Note that the ``<URI>`` parameter to the above commands is not required if the
-``OSPL_URI`` environment variable refers to the configuration that is intended 
+``OSPL_URI`` environment variable refers to the configuration that is intended
 to be started or stopped.
 
 
@@ -800,7 +800,7 @@ need to manipulate these files directly.
   if ``TEMP`` is not set) environment variable. These locations can be
   over-ridden, if required, by setting the ``OSPL_TEMP`` variable to a
   location on disk by specifying a path.
-  Please note, however, that this **must** be consistent for **all** 
+  Please note, however, that this **must** be consistent for **all**
   environments on a particular node.
 
 
@@ -833,7 +833,7 @@ Vortex OpenSplice daemon (and any services) for that domain and the application 
 This requires some thought when configuring multiple Vortex OpenSplice domains on a
 single node. Care must be taken to ensure that the XML configuration files contain
 unique and non-overlapping addresses for the shared memory mapping (please also
-see the description of the XML element ``//OpenSplice/Domain/Database/Address`` in 
+see the description of the XML element ``//OpenSplice/Domain/Database/Address`` in
 the  :ref:`Configuration <Configuration>` section).
 
 When designing and coding applications, care must also be taken with regard to
@@ -879,7 +879,7 @@ history of an instance based on either the source  time stamp or the reception
  time stamp. This is controlled by means of the ``DestinationOrderQosPolicy``.
 
 The ``HistoryQosPolicy`` controls how many historic samples are stored in a
-reader. By default, a DataReader has a ``KEEP_LAST`` history with a depth 
+reader. By default, a DataReader has a ``KEEP_LAST`` history with a depth
 of ``1``. This means that only the ‘last’ (based on the ordering defined by the
 ``DestinationOrderQosPolicy``) sample for each instance is maintained by the
 middleware. When a sample is received by the subscriber, it determines whether and
@@ -888,10 +888,10 @@ where to insert the sample in the history of an instance based on either the sou
 the instance.
 
 ``BY_SOURCE_ time stamp``
-  If samples are ordered by source  time stamp 
-  and time is set back 1 hour on the subscriber node, nothing changes. If it 
-  is set back one hour on the publisher node, samples written after the time 
-  has changed have ‘older’ source  time stamps and will therefore not overwrite 
+  If samples are ordered by source  time stamp
+  and time is set back 1 hour on the subscriber node, nothing changes. If it
+  is set back one hour on the publisher node, samples written after the time
+  has changed have ‘older’ source  time stamps and will therefore not overwrite
   the samples in the history from before the time changed.
 
 ``BY_RECEPTION_ time stamp``
@@ -945,16 +945,16 @@ if supported by the OS.
 
 *Real-time clock*
   This is the main clock used for  time stamps on data and
-  data-related actions. This time is typically kept close to the actual 
+  data-related actions. This time is typically kept close to the actual
   time by the OS by means of NTP or the like. This clock can also be provided
-  by the customer through the *`UserClock’* functionality 
-  (``//OpenSplice/Domain/UserClockService`` is fully described in 
+  by the customer through the *`UserClock’* functionality
+  (``//OpenSplice/Domain/UserClockService`` is fully described in
   the :ref:`Configuration <Configuration>` section).
 
-*Monotonic clock* 
+*Monotonic clock*
   This is a clock that never jumps back and which provides a
   measure for the time a machine has been running since boot. When the time
-  is adjusted, this clock will not jump forward or backward. This clock 
+  is adjusted, this clock will not jump forward or backward. This clock
   doesn’t include the time spent when a machine was suspended.
 
 *Elapsed time clock*
@@ -976,11 +976,11 @@ For now this change is only done for CORBA C++ and CORBA Java and all internal D
 All other language bindings still use the 32-bit representation.
 Version 6.7 is fully compatible with older versions and will communicate by default in the 32-bit time representation
 with other nodes. If the domain/y2038Ready option is set, the node will use the new 64-bit second representation which
-makes it incompatible with older nodes prior to version 6.7. (``//OpenSplice/Domain/y2038Ready`` is fully described 
+makes it incompatible with older nodes prior to version 6.7. (``//OpenSplice/Domain/y2038Ready`` is fully described
 in the :ref:`Configuration <Configuration>` section)
 
 
-.. _`CORBA C++`: 
+.. _`CORBA C++`:
 
 CORBA C++
 =========
@@ -990,14 +990,14 @@ To rebuild this library to get support for the new 64-bit DDS_Time_t representat
 document which explains how to do this.
 
 
-.. _`CORBA Java`: 
+.. _`CORBA Java`:
 
 CORBA Java
 ==========
 
 By default the CORBA Java library (dcpscj.jar) that comes with OpenSplice is built with support for the 32-bit DDS_Time_t representation.
 A new library dcpscj_y2038_ready.jar is added which supports the new 64-bit DDS_Time_t representation. This library can be used when
-time stamps beyond year 2038 are needed. 
+time stamps beyond year 2038 are needed.
 
 
 .. _`Migration`:
@@ -1006,19 +1006,19 @@ Migration
 =========
 
 *client-durability*
- Users that use client-durability cannot use times beyond 2038. This is because the client 
+ Users that use client-durability cannot use times beyond 2038. This is because the client
  durability protocol uses DDS_Time_t in 32-bit. Also, Lite and Cafe do not support 64-bit yet.
 *DDS_Time_t in user data model*
  Users that currently use DDS_Time_t in their user-defined data structures cannot migrate a running system.
  If they want to migrate, the complete system must be shut down and delete all storages containing the old
- 32-bit dds_time topics stored by the durability service. Rebuild the data models with the new 64-bit 
- dds_time topics and restart the system. Running a mixed environment with old and new dds_time structures 
+ 32-bit dds_time topics stored by the durability service. Rebuild the data models with the new 64-bit
+ dds_time topics and restart the system. Running a mixed environment with old and new dds_time structures
  will result in topic mismatches.
 *Record and Replay (RnR) service*
  Users that use the Record and Replay service cannot use time beyond 2038. This is because the
  RnR service uses 32-bit times in the provided api.
 *No client durability and no DDS_Time_t usage*
- Customers that do not use DDS_Time_t in their user-defined data structures AND do not use 
+ Customers that do not use DDS_Time_t in their user-defined data structures AND do not use
  client durability can migrate in two steps:
     * First update all nodes to minimal version 6.7 to be compatible with the 64-bit time stamps,
       but don't set the domain/y2038Ready option
@@ -1032,16 +1032,16 @@ Platform support
 ================
 
 * Linux 64-bit: On 64-bit platforms linux already supports 64-bit time. No action required.
-* Linux 32-bit: On 32-bit platforms linux support for 64-bit time stamps is still in development. 
-  To provide y2038 safe time in GLIBC it is proposed 
-  that the user code defines _TIME_BITS=64 to get 64bit time support. When GLIBC sees _TIME_BITS=64 or when 
-  the system is 64bit it will set __USE_TIME_BITS64 to indicate that it will use 64bit time. 
+* Linux 32-bit: On 32-bit platforms linux support for 64-bit time stamps is still in development.
+  To provide y2038 safe time in GLIBC it is proposed
+  that the user code defines _TIME_BITS=64 to get 64bit time support. When GLIBC sees _TIME_BITS=64 or when
+  the system is 64bit it will set __USE_TIME_BITS64 to indicate that it will use 64bit time.
   Note that this is not yet supported. See: https://sourceware.org/glibc/wiki/Y2038ProofnessDesign?rev=83
-* Windows: 64-bit time stamps are supported 
+* Windows: 64-bit time stamps are supported
 
-**NOTE**: Network Time Protocol: (This is outside the scope of OpenSplice) When NTP is used then there may be a problem 
-that the time stamp will rollover in 2036. This may not be an issue when version 4 of the NTP protocol is 
-used which provides specification of an era number and era offset. 
+**NOTE**: Network Time Protocol: (This is outside the scope of OpenSplice) When NTP is used then there may be a problem
+that the time stamp will rollover in 2036. This may not be an issue when version 4 of the NTP protocol is
+used which provides specification of an era number and era offset.
 
 .. _`DDS_Time structure change`:
 
@@ -1087,7 +1087,7 @@ The original DDS_Time representation with a 32-bit second field:
 .. |java| image:: ./images/icon-java.*
             :height: 6mm
 
-         
+
 
 .. EoF
 

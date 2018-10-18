@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -46,6 +47,17 @@ namespace DDS.OpenSplice
 
         internal Entity()
         {
+        }
+
+        internal ReturnCode checkProperty(ref Property prop)
+        {
+            ReturnCode result = DDS.ReturnCode.Ok;
+            if (prop.Name == null) {
+                result = DDS.ReturnCode.BadParameter;
+            } else if (prop.Value == null) {
+                result = DDS.ReturnCode.BadParameter;
+            }
+            return result;
         }
 
         internal ReturnCode init(IntPtr userPtr)
@@ -185,6 +197,16 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        public bool IsEnabled()
+        {
+           byte state = User.Entity.Enabled(rlReq_UserPeer);
+           if (state != 0) {
+              return true;
+           } else {
+              return false;
+           }
+        }
+
         public IStatusCondition StatusCondition
         {
             get
@@ -269,7 +291,7 @@ namespace DDS.OpenSplice
             {
                 while (wait && wakeCount < 4)
                 {
-                    /* OSPL-6164 Made wait use a timeout in order to be able to detect
+                    /* Made wait use a timeout in order to be able to detect
                      * a race where sometimes the wait() doesn't return (missed event?). */
                     Monitor.Wait(this, 250);
                     if (wait)

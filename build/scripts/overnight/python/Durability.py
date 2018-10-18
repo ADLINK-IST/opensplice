@@ -35,23 +35,23 @@ class durability (Example):
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print("C# not supported on " + self.host.name)
+            print "C# not supported on " + self.host.name
         else:
             if lang == "all":
                 self.runExampleAll(extra)
-            else: 
+            else:
                 if extra == "all":
                     self.runExampleAllExtra(lang, extra, types)
                 else:
 
-                    print("In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra)
+                    print "In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra
 
                     currPath = os.getcwd()
                     try:
                         super(durability, self).setExampleResultDir(lang, extra)
 
                         exSfx = ""
-  
+
                         if self.host.isWindows() and not "java" in lang:
                             exSfx = ".exe"
 
@@ -79,8 +79,8 @@ class durability (Example):
                                 if os.path.isdir(tmpDir):
                                     shutil.rmtree (tmpDir)
                             except:
-                                print("Failed to remove", tmpDir)
-                            
+                                print "Failed to remove", tmpDir
+
                             with open ('examples.json') as data_file:
                                 data = json.load(data_file)
 
@@ -109,7 +109,7 @@ class durability (Example):
                                 else:
                                     pubExe = subName
 
-                            if msg == "NONE":  
+                            if msg == "NONE":
                                 transSub1_Thread = ExeThread(self.classpath,  transSub1Log, lang, subExe, self.transSub_params, self.example_timeout * 2)
                                 transSub2_Thread = ExeThread(self.classpath,  transSub2Log, lang, subExe, self.transSub_params, self.example_timeout * 2)
                                 transSub3_Thread = ExeThread(self.classpath,  transSub3Log, lang, subExe, self.transSub_params, self.example_timeout * 2)
@@ -120,14 +120,15 @@ class durability (Example):
                                 pub1Thread = ExeThread(self.classpath, pub1Log, lang, pubExe, self.pub1_params, self.example_timeout * 2)
                                 pub2Thread = ExeThread(self.classpath, pub2Log, lang, pubExe, self.pub2_params, self.example_timeout * 2)
                                 pub3Thread = ExeThread(self.classpath, pub3Log, lang, pubExe, self.pub3_params, self.example_timeout * 2)
-                                os.chdir(self.pPath)   
+                                os.chdir(self.pPath)
 
                                 self.startOSPL()
 
                                 transSub1_Thread.start()
                                 pub1Thread.start()
-                                            
+
                                 pub1Thread.join(self.example_timeout)
+                                transSub1_Thread.join(self.example_timeout)
 
                                 self.stopOSPL()
 
@@ -136,9 +137,11 @@ class durability (Example):
                                 pub2Thread.start()
 
                                 time.sleep(2)
-                                transSub3_Thread.start()  
-                
+                                transSub3_Thread.start()
+
                                 pub2Thread.join(self.example_timeout)
+                                transSub2_Thread.join(self.example_timeout)
+                                transSub3_Thread.join(self.example_timeout)
 
                                 self.stopOSPL()
 
@@ -147,6 +150,7 @@ class durability (Example):
                                 persSub1_Thread.start()
                                 pub3Thread.start()
                                 pub3Thread.join(self.example_timeout)
+                                persSub1_Thread.join(self.example_timeout)
 
                                 self.stopOSPL()
 
@@ -161,7 +165,7 @@ class durability (Example):
                         try:
                             self.stopOSPL()
                         except Exception as ex:
-                            print("Exception stopping OpenSplice ", str(ex))
+                            print "Exception stopping OpenSplice ", str(ex)
 
                         if msg == "NONE":
                             try:
@@ -174,7 +178,7 @@ class durability (Example):
                                 # the java versions of the Durability example do not write anything
                                 # to the publisher output log - so only check the publisher log if
                                 # the language is not a java language
-                                if not "java" in lang:                            
+                                if not "java" in lang:
                                     self.checkResults(pub1Log, pub_conds)
                                     self.checkResults(pub2Log, pub_conds)
                                     self.checkResults(pub3Log, pub_conds)
@@ -196,21 +200,21 @@ class durability (Example):
                             except Exception:
                                 msg = "Exception checking logs " + str(sys.exc_info()[0])
 
-   
+
                         if msg != "NONE":
                             result = "FAIL"
 
                         try:
                             self.writeResult (result,  self.expath + self.name, lang, msg)
                         except Exception as ex:
-                            print("Exception writing result ", str(ex))
+                            print "Exception writing result ", str(ex)
 
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print("Exception cleaning up ", str(ex))
+                            print "Exception cleaning up ", str(ex)
 
                     except Exception as ex:
-                        print("Unexpected exception", str(ex))
+                        print "Unexpected exception", str(ex)
                     finally:
-                        os.chdir(currPath)   
+                        os.chdir(currPath)

@@ -25,25 +25,21 @@ import org.omg.dds.core.ServiceEnvironment;
 
 public abstract class KeyedBytes implements Cloneable, Serializable, DDSObject
 {
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 2666227708313407807L;
+    private static final long serialVersionUID = 2666227708313407807L;
 
     public static KeyedBytes newKeyedBytes(ServiceEnvironment env)
     {
         return env.getSPI().newKeyedBytes();
     }
 
-	
-	/**
+    /**
      * @return the key
      */
     public abstract String getKey();
 
     /**
      * @param key the key to set
-     * 
+     *
      * @return  this
      */
     public abstract KeyedBytes setKey(CharSequence key);
@@ -55,14 +51,14 @@ public abstract class KeyedBytes implements Cloneable, Serializable, DDSObject
 
     /**
      * @param value the value to set
-     * 
+     *
      * @return  this
      */
     public abstract KeyedBytes setValue(byte value[]);
 
     /**
      * @param value the value to set
-     * 
+     *
      * @return  this
      */
     public abstract KeyedBytes setValue(byte value[], int offset, int length);

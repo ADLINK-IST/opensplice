@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -90,6 +91,7 @@ DDS_Topic createTopic(const char *topicName, const char *typeName)
    checkStatus(g_status, "DDS_DomainParticipant_get_default_topic_qos");
    topicQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
    topicQos->durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
+   topicQos->destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
 
    /* Use the changed policy when defining the Ownership topic */
    topic = DDS_DomainParticipant_create_topic(g_domainParticipant, topicName, typeName, topicQos, NULL, DDS_STATUS_MASK_NONE);
@@ -225,13 +227,11 @@ void deleteSubscriber(DDS_Subscriber subscriber)
 
 DDS_DataReader createDataReader(DDS_Subscriber subscriber, DDS_Topic topic)
 {
-   DDS_DataReader dataReader;
-
-   // Create a DataWriter for this Topic (using Topic's QoS).
-   dataReader = DDS_Subscriber_create_datareader(subscriber, topic, DDS_DATAREADER_QOS_USE_TOPIC_QOS, NULL, DDS_STATUS_MASK_NONE);
-   checkHandle(dataReader, "DDS_Subscriber_create_datareader");
-
-   return dataReader;
+    DDS_DataReader dataReader;
+    // Create a DataWriter for this Topic (using Topic's QoS).
+    dataReader = DDS_Subscriber_create_datareader(subscriber, topic, DDS_DATAREADER_QOS_USE_TOPIC_QOS, NULL, DDS_STATUS_MASK_NONE);
+    checkHandle(dataReader, "DDS_Subscriber_create_datareader");
+    return dataReader;
 }
 
 DDS_DataReader createContentFilteredDataReader(DDS_Subscriber subscriber, DDS_ContentFilteredTopic contentFilteredTopic)

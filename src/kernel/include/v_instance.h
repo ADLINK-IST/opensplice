@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,6 +25,13 @@
 
 #include "v_kernel.h"
 
+#ifdef OSPL_BUILD_CORE
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
 #define v_instance(o) (C_CAST(o,v_instance))
 
 #define v_instanceState(_this) (v_instance(_this)->state)
@@ -39,5 +47,16 @@ v_instanceInit (
 void
 v_instanceDeinit (
     v_instance _this);
+
+OS_API c_voidp
+v_instanceSetUserData(
+    v_instance _this,
+    c_voidp userData);
+
+OS_API c_voidp
+v_instanceGetUserData(
+    v_instance _this);
+
+#undef OS_API
 
 #endif

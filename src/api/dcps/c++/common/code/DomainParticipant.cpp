@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@
 #include <string.h>
 #include "u_user.h"
 #include "u_observable.h"
+#include "v_topic.h"
 #include "Entity.h"
 #include "DomainParticipant.h"
 #include "Constants.h"
@@ -82,7 +84,7 @@ DDS::OpenSplice::DomainParticipant::nlReq_init(
     DDS::ReturnCode_t result;
     u_participantQos pQos = NULL;
     u_participant uParticipant;
-    c_long timeout = 1;
+    c_long timeout = 30;
     char *participantName;
 
     /* Check and copy the QoS to a user layer QoS. */
@@ -627,7 +629,9 @@ DDS::OpenSplice::DomainParticipant::create_subscriber (
 
         if (result == DDS::RETCODE_OK) {
             /* Now check factory enable policy and enable the subscriber */
-            if (this->factoryAutoEnable) {
+            if (this->factoryAutoEnable &&
+                !(tmpQos->presentation.access_scope == DDS::GROUP_PRESENTATION_QOS &&
+                  tmpQos->presentation.coherent_access == TRUE)) {
                 result = sub->enable();
             }
             if (result != DDS::RETCODE_OK) {
@@ -1721,12 +1725,23 @@ DDS::OpenSplice::DomainParticipant::ignore_participant (
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
-    OS_UNUSED_ARG(handle);
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
     result = this->write_lock();
     if (result == DDS::RETCODE_OK) {
-        result = DDS::RETCODE_UNSUPPORTED;
+        uParticipant = u_participant(this->rlReq_get_user_entity());
+        uResult = u_participantIgnoreParticipant(uParticipant, (u_instanceHandle)handle);
+        result = uResultToReturnCode(uResult);
+        if (result != DDS::RETCODE_OK) {
+            CPP_REPORT(result, "Failed to ignore Participant.");
+        }
         this->unlock();
     }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
     return result;
 }
 
@@ -1736,12 +1751,23 @@ DDS::OpenSplice::DomainParticipant::ignore_topic (
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
-    OS_UNUSED_ARG(handle);
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
     result = this->write_lock();
     if (result == DDS::RETCODE_OK) {
-        result = DDS::RETCODE_UNSUPPORTED;
+        uParticipant = u_participant(this->rlReq_get_user_entity());
+        uResult = u_participantIgnoreTopic(uParticipant, (u_instanceHandle)handle);
+        result = uResultToReturnCode(uResult);
+        if (result != DDS::RETCODE_OK) {
+            CPP_REPORT(result, "Failed to ignore Topic.");
+        }
         this->unlock();
     }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
     return result;
 }
 
@@ -1751,12 +1777,23 @@ DDS::OpenSplice::DomainParticipant::ignore_publication (
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
-    OS_UNUSED_ARG(handle);
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
     result = this->write_lock();
     if (result == DDS::RETCODE_OK) {
-        result = DDS::RETCODE_UNSUPPORTED;
+        uParticipant = u_participant(this->rlReq_get_user_entity());
+        uResult = u_participantIgnorePublication(uParticipant, (u_instanceHandle)handle);
+        result = uResultToReturnCode(uResult);
+        if (result != DDS::RETCODE_OK) {
+            CPP_REPORT(result, "Failed to ignore Publication.");
+        }
         this->unlock();
     }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
     return result;
 }
 
@@ -1766,12 +1803,23 @@ DDS::OpenSplice::DomainParticipant::ignore_subscription (
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
-    OS_UNUSED_ARG(handle);
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
     result = this->write_lock();
     if (result == DDS::RETCODE_OK) {
-        result = DDS::RETCODE_UNSUPPORTED;
+        uParticipant = u_participant(this->rlReq_get_user_entity());
+        uResult = u_participantIgnoreSubscription(uParticipant, (u_instanceHandle)handle);
+        result = uResultToReturnCode(uResult);
+        if (result != DDS::RETCODE_OK) {
+            CPP_REPORT(result, "Failed to ignore Subscription.");
+        }
         this->unlock();
     }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
     return result;
 }
 
@@ -2149,6 +2197,74 @@ DDS::OpenSplice::DomainParticipant::delete_historical_data (
 }
 
 DDS::ReturnCode_t
+DDS::OpenSplice::DomainParticipant::set_property (
+    const ::DDS::Property & a_property
+) THROW_ORB_EXCEPTIONS
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_OK;
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
+    if ((result == DDS::RETCODE_OK) && (a_property.value.in() == NULL)) {
+        result = DDS::RETCODE_BAD_PARAMETER;
+        CPP_REPORT(result, "Supplied Property.value is NULL.");
+    }
+    if ((result == DDS::RETCODE_OK) && (a_property.name.in() == NULL)) {
+        result = DDS::RETCODE_BAD_PARAMETER;
+        CPP_REPORT(result, "Supplied Property.name is NULL.");
+    }
+    if (result == DDS::RETCODE_OK) {
+        result = this->write_lock();
+        if (result == DDS::RETCODE_OK) {
+            uParticipant = u_participant(this->rlReq_get_user_entity());
+            assert (uParticipant);
+            uResult = u_entitySetProperty(u_entity(uParticipant), a_property.name, a_property.value);
+            result = uResultToReturnCode(uResult);
+            this->unlock();
+        }
+    }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
+    return result;
+}
+
+DDS::ReturnCode_t
+DDS::OpenSplice::DomainParticipant::get_property (
+    ::DDS::Property & a_property
+) THROW_ORB_EXCEPTIONS
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_OK;;
+    u_participant uParticipant;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+    
+    if ((result == DDS::RETCODE_OK) && (a_property.name.in() == NULL)) {
+        result = DDS::RETCODE_BAD_PARAMETER;
+        CPP_REPORT(result, "Supplied Property.name is NULL.");
+    }
+    if (result == DDS::RETCODE_OK) {
+        result = this->write_lock();
+        if (result == DDS::RETCODE_OK) {
+            os_char *value;
+            uParticipant = u_participant(this->rlReq_get_user_entity());
+            assert (uParticipant);
+            uResult = u_entityGetProperty(u_entity(uParticipant), a_property.name, &value);
+            a_property.value = DDS::string_dup(value);
+            os_free(value);
+            result = uResultToReturnCode(uResult);
+            this->unlock();
+        }
+    }
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
+    return result;
+}
+
+
+DDS::ReturnCode_t
 DDS::OpenSplice::DomainParticipant::wlReq_load_type_support_meta_holder (
     DDS::OpenSplice::TypeSupportMetaHolder *metaHolder,
     const DDS::Char *type_name
@@ -2197,6 +2313,10 @@ DDS::OpenSplice::DomainParticipant::wlReq_load_type_support_meta_holder (
                     type_name);
         }
         DDS::string_free(srcDescr);
+    }
+
+    if (inMap) {
+        DDS::release(inMap);
     }
 
     if (result == DDS::RETCODE_OK) {
@@ -2614,6 +2734,33 @@ DDS::OpenSplice::DomainParticipant::nlReq_getDiscoveredData(
     return result;
 }
 
+DDS::OpenSplice::TopicDescription *
+DDS::OpenSplice::DomainParticipant::rlReq_isCDRProxyForExistingTopic(
+    const char * topic_name,
+    const char * type_name)
+{
+	DDS::OpenSplice::TopicDescription *existingTopic;
+
+	if (strcmp(type_name, "DDS::CDRSample") == 0) {
+		existingTopic = rlReq_findTopicDescription(topic_name);
+	    (void) DDS::TopicDescription::_duplicate(existingTopic);
+	} else {
+		existingTopic = NULL;
+	}
+	return existingTopic;
+}
+
+void
+DDS::OpenSplice::DomainParticipant::rlReq_getuTopicType(
+    v_public uTopic,
+    void *arg)
+{
+    void **topicType = (void **)arg;
+
+    *topicType = c_keep(v_topicDataType(uTopic));
+}
+
+
 DDS::Topic_ptr
 DDS::OpenSplice::DomainParticipant::nlReq_createTopic (
     const char * topic_name,
@@ -2626,10 +2773,7 @@ DDS::OpenSplice::DomainParticipant::nlReq_createTopic (
     DDS::ReturnCode_t result;
     u_topicQos uQos = NULL;
     const DDS::TopicQos *tmpQos;
-    const char *typeName;
-    const char *key_list;
     u_topic uTopic;
-    u_participant uParticipant;
     DDS::OpenSplice::Topic *topic = NULL;
     DDS::OpenSplice::TypeSupportMetaHolder *typeMetaHolder;
 
@@ -2679,20 +2823,51 @@ DDS::OpenSplice::DomainParticipant::nlReq_createTopic (
         }
 
         if (result == DDS::RETCODE_OK) {
-            /* Create and initialize user layer topic. */
-            typeName = typeMetaHolder->get_internal_type_name();
-            key_list = typeMetaHolder->get_key_list();
-            uParticipant = u_participant(this->rlReq_get_user_entity());
+            DDS::OpenSplice::TopicDescription *originalTopic;
+            u_participant uParticipant = u_participant(this->rlReq_get_user_entity());
             assert (uParticipant != NULL);
 
-            uTopic = u_topicNew(uParticipant,
-                                topic_name,
-                                typeName,
-                                key_list,
-                                uQos);
-            if (uTopic == NULL) {
-                result = DDS::RETCODE_ERROR;
-                CPP_REPORT(result, "Could not create Topic '%s'.", topic_name);
+            if ((originalTopic = rlReq_isCDRProxyForExistingTopic(topic_name, type_name)) != NULL) {
+                DDS::OpenSplice::TypeSupportMetaHolder* mergedMetaHolder;
+            	DDS::OpenSplice::TypeSupportMetaHolder* topicMetaHolder = originalTopic->get_typesupport_meta_holder();
+                const char *typeName = topicMetaHolder->get_internal_type_name();
+                const char *key_list = topicMetaHolder->get_key_list();
+                c_type topicType;
+
+                uTopic = u_topicNew(uParticipant,
+                                    topic_name,
+                                    typeName,
+                                    key_list,
+                                    uQos);
+                if (uTopic) {
+                    u_result uResult = u_observableAction(u_observable(uTopic), rlReq_getuTopicType, &topicType);
+                    if (uResult == U_RESULT_OK) {
+                        mergedMetaHolder = typeMetaHolder->createProxyCDRMetaHolder(topicMetaHolder, topicType);
+                        c_free(topicType);
+                        DDS::release(typeMetaHolder);
+                        typeMetaHolder = mergedMetaHolder; /* Transfer ref */
+                    } else {
+                        result = uResultToReturnCode(uResult);
+                        CPP_REPORT(result, "Could not establish datatype for Topic '%s'.", topic_name);
+                    }
+                } else {
+                    result = DDS::RETCODE_ERROR;
+                    CPP_REPORT(result, "Could not create Topic '%s'.", topic_name);
+                }
+                DDS::release(topicMetaHolder);
+                DDS::release(originalTopic);
+            } else {
+                const char *typeName = typeMetaHolder->get_internal_type_name();
+                const char *key_list = typeMetaHolder->get_key_list();
+                uTopic = u_topicNew(uParticipant,
+                                    topic_name,
+                                    typeName,
+                                    key_list,
+                                    uQos);
+                if (uTopic == NULL) {
+                    result = DDS::RETCODE_ERROR;
+                    CPP_REPORT(result, "Could not create Topic '%s'.", topic_name);
+                }
             }
         }
 

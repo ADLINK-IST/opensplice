@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -24,6 +25,12 @@
 
 #include "os_if.h"
 
+#if 0
+#define TRACE_IGNORE printf("## TRACE(Ignore) : "); printf
+#else
+#define TRACE_IGNORE(...)
+#endif
+
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
@@ -43,7 +50,7 @@ v_kernelGroupTransactionFlush(
     v_transactionAdmin admin);
 
 c_bool
-v_kernelGroupTransactionLockAccess(
+v_kernelGroupTransactionTryLockAccess(
     v_kernel _this);
 
 void
@@ -51,32 +58,19 @@ v_kernelGroupTransactionUnlockAccess(
     v_kernel _this);
 
 void
-v_kernelNotifyGroupCoherentPublication(
+v_kernelNotifyCoherentPublication(
     v_kernel _this,
     v_message msg);
 
-void
-v_lockShares (
-    v_kernel _this);
-
-void
-v_unlockShares (
-    v_kernel _this);
-
-v_entity
-v_addShareUnsafe (
+v_subscriber
+v_kernelAddSharedSubscriber (
     v_kernel _this,
-    v_entity e);
+    v_subscriber subscriber);
 
-v_entity
-v_removeShareUnsafe (
+c_ulong
+v_kernelRemoveSharedSubscriber (
     v_kernel _this,
-    v_entity e);
-
-c_iter
-v_resolveShare (
-    v_kernel _this,
-    const c_char *name);
+    v_subscriber subscriber);
 
 void
 v_checkMaxSamplesPerInstanceWarningLevel(
@@ -169,5 +163,37 @@ c_bool
 v_rxoDataCompatible(
     v_rxoData offered,
     v_rxoData requested);
+
+/* connect group to all matching readers */
+void
+v_kernelConnectGroup(
+    v_kernel _this,
+    v_group g);
+
+/* This operation will update the kernel according to a newly discovered publication and
+ * notify matching local subscriptions (synchronously).
+ * The given message holds the builtin publication data describing the discovered writer.
+ */
+void
+v_kernelNotifyPublication(
+    v_kernel _this,
+    v_message msg);
+
+/* This operation will update the kernel according to a newly discovered subscription and
+ * notify matching local publications (synchronously).
+ * The given message holds the builtin subscription data describing the discovered reader.
+ */
+void
+v_kernelNotifySubscription(
+    v_kernel _this,
+    v_message msg);
+
+/* This operation will lookup the publication message identified by the given gid.
+ * If found the message will be returned and must be freed after use.
+ */
+v_message
+v_kernelLookupPublication(
+    v_kernel _this,
+    v_gid gid);
 
 #endif /* V__KERNEL_H */

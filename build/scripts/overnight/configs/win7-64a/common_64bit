@@ -1,7 +1,8 @@
 . ./configs/`hostname`/common
 
 export VS_ENV_SCRIPT="C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
-export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_24"
+export JAVA6_HOME="c:/Program Files/Java/jdk1.6.0_24"
+export JAVA_HOME="c:/Program Files/Java/jdk1.7.0_80"
 export OPENSSL_HOST_HOME=/home/dds/INSTALLED\ FOR\ DDS/openssl-v1.0.1g_X64
 export OPENSSL_TARGET_HOME=$OPENSSL_HOST_HOME
 export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc10-inline-64bit_110704

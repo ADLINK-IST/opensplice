@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,11 +28,23 @@ extern "C" {
 
 #include "v_observer.h"
 
-#define v__observerClearEventFlags(_this) \
-        (v_observer(_this)->eventFlags = 0)
+#define OSPL_TRIGGER_EVENT(_this,e, userdata) \
+        v_observerNotify(v_observer(_this), e, userdata);
+#define OSPL_CATCH_EVENT(_this, timeout) \
+        v_observerTimedWait(v_observer(_this), timeout)
+#define OSPL_CATCH_EVENT_ACTION(_this, timeout, action, arg) \
+        v_observerTimedWaitAction(v_observer(_this), timeout, action, arg)
+#define OSPL_CLEAR_EVENT_FLAGS(_this) \
+        v_observerClearEventFlags(v_observer(_this))
 
-#define v_observerEventMask(_this) \
-        (v_observer(_this)->eventMask)
+#define OSPL_SET_EVENT_MASK(_this,mask) \
+        v_observerSetEventMask(v_observer(_this),mask)
+#define OSPL_ADD_EVENT_MASK(_this,mask) \
+        v_observerSetEvent(v_observer(_this),mask)
+#define OSPL_CLEAR_EVENT_MASK(_this,mask) \
+        v_observerClearEvent(v_observer(_this),mask)
+#define OSPL_GET_EVENT_MASK(_this) \
+        v_observerGetEventMask(v_observer(_this))
 
 /**
  * The initialisation of an observer object.
@@ -43,7 +56,7 @@ extern "C" {
  */
 void
 v_observerInit (
-    v_observer _this);
+    _Inout_ v_observer _this);
 
 /**
  * The de-initialisation of an observer object.
@@ -60,28 +73,8 @@ void
 v_observerFree (
     v_observer _this);
 
-/**
- * Retrieves and stores event data in the observer in one transaction.
- *
- * Retrieves and stores event data in the observer in a thread-safe manner.
- * It must be thread-safe, since the data can be used to determine whether
- * the observer must be triggered or not.
- *
- * \param _this     the reference to an observer object.
- * \param eventData the event data to store in the observer.
- * \return          the overwritten event data in the observer.
- */
-c_voidp
-v_observerSetEventData(
-    v_observer _this,
-    c_voidp eventData);
-
 c_ulong
-v__observerWait(
-    v_observer _this);
-
-c_ulong
-v__observerTimedWait(
+v_observerTimedWait(
     v_observer _this,
     const os_duration time);
 
@@ -90,7 +83,7 @@ v_observerGetEventFlags(
     v_observer _this);
 
 c_ulong
-v__observerSetEvent(
+v_observerSetEvent(
     v_observer _this,
     c_ulong event);
 

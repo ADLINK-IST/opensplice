@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -93,26 +94,26 @@ cma_trace(
 #define CMA_INFO(context, ...) \
     do { \
         cma_log(LOG_INFO, __VA_ARGS__); \
-        os_report(OS_INFO, context, __FILE__, __LINE__, 0, __VA_ARGS__); \
+        OS_REPORT(OS_INFO, context, 0, __VA_ARGS__); \
     } while (0)
 
 /* CMA_WARNING: log to trace log as LL_WARNING and to OpenSplice log as OS_WARNING */
 #define CMA_WARNING(context, ...) \
     do { \
         cma_log(LOG_WARNING, __VA_ARGS__); \
-        os_report(OS_WARNING, context, __FILE__, __LINE__, 0, __VA_ARGS__); \
+        OS_REPORT(OS_WARNING, context, 0, __VA_ARGS__); \
     } while (0)
 
 #define CMA_ERROR(context, ...) \
     do { \
         cma_log(LOG_ERROR, __VA_ARGS__); \
-        os_report(OS_ERROR, context, __FILE__, __LINE__, 0, __VA_ARGS__); \
+        OS_REPORT(OS_ERROR, context, 0, __VA_ARGS__); \
     } while (0)
 
 #define CMA_FATAL(context, ...) \
     do { \
         cma_log(LOG_FATAL, __VA_ARGS__); \
-        os_report(OS_FATAL, context, __FILE__, __LINE__, 0, __VA_ARGS__); \
+        OS_REPORT(OS_FATAL, context, 0, __VA_ARGS__); \
     } while (0)
 
 #endif /* CMA__LOG_H_ */

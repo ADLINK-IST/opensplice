@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -39,7 +40,7 @@ extern "C" {
  * @param thread The thread to initialize.
  * @param name The name for the thread.
  */
-void cms_threadInit (cms_thread thread, const c_char* name, os_threadAttr * attr);
+c_bool cms_threadInit (cms_thread thread, const c_char* name, os_threadAttr * attr);
 
 /**
  * Deinitializes the supplied thread.

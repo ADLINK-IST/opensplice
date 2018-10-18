@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,30 +19,33 @@
  *
  */
 #include "v__kernel.h"
+#include "v__builtin.h"
 #include "v__reader.h"
 #include "v__readerQos.h"
+#include "v__subscriberQos.h"
 #include "v__observer.h"
 #include "v_subscriber.h"
 #include "v__entry.h"
 #include "v_query.h"
 #include "v__dataReader.h"
 #include "v__deliveryService.h"
+#include "v_deliveryServiceEntry.h"
 #include "v__groupStream.h"
 #include "v__networkReader.h"
-#include "v_entity.h"
+#include "v__entity.h"
 #include "v_status.h"
 #include "v_public.h"
 #include "v__collection.h"
 #include "v_event.h"
-#include "v_group.h"
+#include "v__group.h"
+#include "v_time.h"
 #include "v_proxy.h"
 #include "v_policy.h"
 #include "v_spliced.h"
 #include "v_durabilityClient.h"
 #include "v__partition.h"
-#include "v_observable.h"
+#include "v__observable.h"
 #include "v_historicalDataRequest.h"
-
 
 #include "os_report.h"
 #include "vortex_os.h"
@@ -52,31 +56,7 @@
 #define _TRACE_EVENTS_(...)
 #endif
 
-#define V_READER_LOCK(_this)   v_observerLock(v_observer(_this))
-#define V_READER_UNLOCK(_this) v_observerUnlock(v_observer(_this))
-#define V_READER_GET_LOCK(_this) (v_observer(_this)->mutex)
-
-/**************************************************************
- * Private functions
- **************************************************************/
-
-static c_bool
-entryFree(
-    c_object o,
-    c_voidp arg)
-{
-    v_entry entry;
-
-    OS_UNUSED_ARG(arg);
-    assert(o != NULL);
-    assert(arg == NULL);
-
-    entry = v_entry(o);
-    assert(entry != NULL);
-
-    v_entryFree(entry);
-    return TRUE;
-}
+#define V_READER_GET_LOCK(_this) (v_observable(_this)->mutex)
 
 /* This getHistoricalDataCommon function takes two optional parameters:
  * - the v_group parameter indicates the group from which to get the
@@ -122,16 +102,12 @@ getHistoricalDataCommon(
     return result;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 void
 v_readerInit(
-    v_reader r,
-    const c_char *name,
-    v_subscriber s,
-    v_readerQos qos,
-    c_bool enable)
+    _Inout_ v_reader r,
+    _In_z_ const c_char *name,
+    _In_ v_subscriber s,
+    _In_ v_readerQos qos)
 {
     v_kernel kernel;
 
@@ -145,25 +121,15 @@ v_readerInit(
      */
 
     kernel = v_objectKernel(r);
-    v_collectionInit(v_collection(r), name, enable);
+    v_collectionInit(v_collection(r), name);
 
     r->subscriber = s;
     r->qos = c_keep(qos);
     r->subQos = c_keep(s->qos); /* reference is readonly */
-    r->entrySet.entries = c_setNew(v_kernelType(kernel,K_ENTRY));
-    if (c_mutexInit(c_getBase(r), &r->entrySet.mutex) != SYNC_RESULT_SUCCESS) {
-            OS_REPORT(OS_ERROR, "v_readerInit", 0,
-                        "Failed to initialize mutex for reader '%s'", name);
-           goto err_mutexInit;
-    }
+    r->entries = c_setNew(v_kernelType(kernel,K_ENTRY));
     r->historicalDataRequest  = NULL;
     r->historicalDataComplete = FALSE;
-    c_condInit(c_getBase(r), &r->historicalDataCondition, &(v_observer(r)->mutex));
-    return;
-
-err_mutexInit:
-    c_free(r->entrySet.entries);
-    return;
+    c_condInit(c_getBase(r), &r->historicalDataCondition, &v_observable(r)->mutex);
 }
 
 void
@@ -171,30 +137,36 @@ v_readerFree(
     v_reader r)
 {
     v_subscriber subscriber;
+    c_collection entries;
+    v_entry entry;
 
     assert(C_TYPECHECK(r,v_reader));
     assert(r->subscriber != NULL);
 
-    V_READER_LOCK(r);
+    OSPL_LOCK(r);
     subscriber = r->subscriber;
     r->subscriber = NULL;
-    V_READER_UNLOCK(r);
+    OSPL_UNLOCK(r);
 
-    /*
-     * For each readerInstance in each entry, v_subscriberRemoveReader will
+    /* For each readerInstance in each entry, v_subscriberRemoveReader will
      * eventually deliver an UNREGISTER message to the Reader using
      * v_dataReaderEntryWrite, which on its turn locks the reader itself.
      *
      * For that reason, we don't do any locking here so that the entryFree
      * function is called without the readerLock being locked.
-     *
-     * Also see OSPL-3348
      */
     v_subscriberRemoveReader(subscriber,r);
 
     /* Free all entries */
-    v_readerWalkEntries(r, entryFree, NULL);
-
+    OSPL_LOCK(r);
+    entries = r->entries;
+    r->entries = NULL;
+    OSPL_UNLOCK(r);
+    while ((entry = v_entry(c_take(entries))) != NULL) {
+        v_entryFree(entry);
+        c_free(entry);
+    }
+    c_free(entries);
     /* Call inherited free */
     v_collectionFree(v_collection(r));
 }
@@ -209,82 +181,6 @@ v_readerDeinit(
     v_collectionDeinit(v_collection(r));
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-c_bool
-v_readerSubscribeGroup(
-    v_reader _this,
-    v_group group)
-{
-    c_bool result;
-
-    assert(C_TYPECHECK(_this, v_reader));
-    switch(v_objectKind(_this)) {
-    case K_DATAREADER:
-        /* ES, dds1576: For the K_DATAREADER object we need to verify if
-         * the access rights are correct. No subscriptions may be made onto
-         * groups which have a v_accessMode of write only.
-         */
-        if(v_groupPartitionAccessMode(group) == V_ACCESS_MODE_READ_WRITE ||
-           v_groupPartitionAccessMode(group) == V_ACCESS_MODE_READ)
-        {
-            result = v_dataReaderSubscribeGroup(v_dataReader(_this), group);
-        } else
-        {
-            result = FALSE;
-        }
-    break;
-    case K_GROUPQUEUE:
-        result = v_groupStreamSubscribeGroup(v_groupStream(_this), group);
-    break;
-    case K_NETWORKREADER:
-        result = FALSE;
-        (void)result;
-        assert(FALSE);
-    break;
-    default:
-        OS_REPORT(OS_CRITICAL,"v_readerSubscribeGroup failed",V_RESULT_ILL_PARAM,
-                    "illegal reader kind (%d) specified",
-                    v_objectKind(_this));
-        result = FALSE;
-        (void)result;
-        assert(FALSE);
-    }
-    return result;
-}
-
-
-c_bool
-v_readerUnSubscribeGroup(
-    v_reader reader,
-    v_group group)
-{
-    c_bool result;
-
-    assert(C_TYPECHECK(reader, v_reader));
-
-    switch(v_objectKind(reader)) {
-    case K_DATAREADER:
-        result = v_dataReaderUnSubscribeGroup(v_dataReader(reader), group);
-    break;
-    case K_GROUPQUEUE:
-        result = v_groupStreamUnSubscribeGroup(v_groupStream(reader), group);
-    break;
-    case K_NETWORKREADER:
-        result = v_networkReaderUnSubscribeGroup(v_networkReader(reader), group);
-    break;
-    default:
-        OS_REPORT(OS_CRITICAL,"v_readerUnSubscribeGroup failed",V_RESULT_ILL_PARAM,
-                    "illegal reader kind (%d) specified",
-                    v_objectKind(reader));
-        assert(FALSE);
-        result = FALSE;
-    }
-
-    return result;
-}
-
 v_readerQos
 v_readerGetQos(
     v_reader _this)
@@ -293,11 +189,64 @@ v_readerGetQos(
 
     assert(C_TYPECHECK(_this,v_reader));
 
-    V_READER_LOCK(_this);
+    OSPL_LOCK(_this);
     qos = c_keep(_this->qos);
-    V_READER_UNLOCK(_this);
+    OSPL_UNLOCK(_this);
 
     return qos;
+}
+
+static c_bool
+groupGetOpenTransactions(
+    c_object o,
+    c_voidp arg)
+{
+    v_group g = v_group(o);
+    v_entry e = v_entry(arg);
+    /* Do not get the open transactions from the groupAdmin as the reader
+     * missed those completely. Only get the open transactions form the
+     * transactionAdmin as those could still be received and completed.
+     */
+    v_groupGetOpenTransactions(g,e,FALSE);
+    return TRUE;
+}
+
+static c_bool
+entryGetOpenTransactions(
+    c_object o,
+    c_voidp arg)
+{
+    v_entry e = v_entry(o);
+    OS_UNUSED_ARG(arg);
+    if (v_objectKind(e) != K_NETWORKREADERENTRY) {
+        v_entryWalkGroups(e, groupGetOpenTransactions, e);
+    }
+    return TRUE;
+}
+
+void
+v_readerPublishBuiltinInfo(
+    v_reader _this)
+{
+    v_kernel kernel;
+    v_message builtinMsg, builtinCMMsg;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_reader));
+
+    if (v_entityEnabled(v_entity(_this))) {
+        kernel = v_objectKernel(_this);
+        builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, _this);
+        if (builtinMsg) {
+            v_writeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
+            c_free(builtinMsg);
+        }
+        builtinCMMsg = v_builtinCreateCMDataReaderInfo(kernel->builtin, _this);
+        if (builtinCMMsg) {
+            v_writeBuiltinTopic(kernel, V_CMDATAREADERINFO_ID, builtinCMMsg);
+            c_free(builtinCMMsg);
+        }
+    }
 }
 
 v_result
@@ -317,17 +266,21 @@ v_readerSetQos(
     if (result == V_RESULT_OK) {
         qos = v_readerQosNew(kernel, tmpl);
         if (qos != NULL) {
-            V_READER_LOCK(_this);
-            result = v_readerQosCompare(_this->qos, qos, v_entityEnabled(v_entity(_this)), &cm);
+            OSPL_LOCK(_this);
+            result = v_readerQosCompare(_this->qos, qos, v__entityEnabled_nl(v_entity(_this)),
+                                        v_subscriberQosIsGroupCoherent(_this->subQos), &cm);
             if ((result == V_RESULT_OK) && (cm != 0)) {
                 c_free(_this->qos);
                 _this->qos = c_keep(qos);
-                V_READER_UNLOCK(_this);
-                if (v_objectKind(_this) == K_DATAREADER) {
-                    v_dataReaderNotifyChangedQos(v_dataReader(_this));
-                }
+                OSPL_UNLOCK(_this);
+                v_readerPublishBuiltinInfo(_this);
+                /* On change of qos try to get all open transactions from the
+                 * group, so that the group is able to determine completeness
+                 * of the transaction.
+                 */
+                (void)c_setWalk(_this->entries, entryGetOpenTransactions, NULL);
             } else {
-                V_READER_UNLOCK(_this);
+                OSPL_UNLOCK(_this);
             }
             c_free(qos);
         } else {
@@ -338,19 +291,30 @@ v_readerSetQos(
 }
 
 c_bool
+v_readerWalkEntries_nl(
+    v_reader r,
+    c_action action,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+
+    assert(C_TYPECHECK(r,v_reader));
+    result = c_setWalk(r->entries, action, arg);
+    return result;
+}
+
+c_bool
 v_readerWalkEntries(
     v_reader r,
     c_action action,
     c_voidp arg)
 {
-    c_bool result;
+    c_bool result = TRUE;
 
     assert(C_TYPECHECK(r,v_reader));
-
-    v_readerEntrySetLock(r);
-    result = c_setWalk(r->entrySet.entries, action, arg);
-    v_readerEntrySetUnlock(r);
-
+    OSPL_LOCK(r);
+    result = c_setWalk(r->entries, action, arg);
+    OSPL_UNLOCK(r);
     return result;
 }
 
@@ -358,158 +322,55 @@ c_iter
 v_readerCollectEntries(
     v_reader r)
 {
-    c_iter result;
+    c_iter result = NULL;
 
     assert(C_TYPECHECK(r,v_reader));
 
     if(r){
-        v_readerEntrySetLock(r);
-        result = ospl_c_select(r->entrySet.entries, 0);
-        v_readerEntrySetUnlock(r);
-    } else {
-        result = NULL;
+        OSPL_LOCK(r);
+        result = ospl_c_select(r->entries, 0);
+        OSPL_UNLOCK(r);
     }
     return result;
 }
 
-v_entry
+void
 v_readerAddEntry(
-    v_reader r,
-    v_entry e)
+    _Inout_ v_reader r,
+    _In_ v_entry e)
 {
-    v_entry found;
-
     assert(C_TYPECHECK(r,v_reader));
     assert(C_TYPECHECK(e,v_entry));
 
-    v_readerEntrySetLock(r);
-    found = c_setInsert(r->entrySet.entries, e);
-    v_readerEntrySetUnlock(r);
-
-    return c_keep(found);
-}
-
-v_entry
-v_readerRemoveEntry(
-    v_reader r,
-    v_entry e)
-{
-    v_entry found;
-
-    assert(C_TYPECHECK(r,v_reader));
-
-    v_readerEntrySetLock(r);
-    found = c_keep(c_remove(r->entrySet.entries, e, NULL, NULL));
-    v_readerEntrySetUnlock(r);
-
-    return found;
-}
-
-/**************************************************************
- * Public functions
- **************************************************************/
-v_result
-v_readerSubscribe(
-    v_reader r,
-    v_partition d)
-{
-    v_result result = V_RESULT_INTERNAL_ERROR;
-
-    assert(C_TYPECHECK(r,v_reader));
-
-    switch(v_objectKind(r)) {
-    case K_DATAREADER:
-        if (v_dataReaderSubscribe(v_dataReader(r),d)) {
-            result = V_RESULT_OK;
-        }
-    break;
-    case K_DELIVERYSERVICE:
-        if (v_deliveryServiceSubscribe(v_deliveryService(r),d)) {
-            result = V_RESULT_OK;
-        }
-    break;
-    case K_GROUPQUEUE:
-        if (v_groupStreamSubscribe(v_groupStream(r),d)) {
-            result = V_RESULT_OK;
-        }
-    break;
-    case K_NETWORKREADER:
-        (void)result;
-        assert(FALSE);
-    break;
-    default:
-        OS_REPORT(OS_CRITICAL,"v_readerSubscribe failed",V_RESULT_ILL_PARAM,
-                    "illegal reader kind (%d) specified",
-                    v_objectKind(r));
-        result = V_RESULT_ILL_PARAM;
-        (void)result;
-        assert(FALSE);
-    break;
-    }
-
-    return result;
-}
-
-c_bool
-v_readerUnSubscribe(
-    v_reader r,
-    v_partition d)
-{
-    assert(C_TYPECHECK(r,v_reader));
-
-    switch(v_objectKind(r)) {
-    case K_DATAREADER:
-        return v_dataReaderUnSubscribe(v_dataReader(r),d);
-    case K_DELIVERYSERVICE:
-        return v_deliveryServiceUnSubscribe(v_deliveryService(r),d);
-    case K_GROUPQUEUE:
-        return v_groupStreamUnSubscribe(v_groupStream(r),d);
-    case K_NETWORKREADER:
-        return v_networkReaderUnSubscribe(v_networkReader(r),d);
-    default:
-        OS_REPORT(OS_CRITICAL,"v_readerUnSubscribe failed",V_RESULT_ILL_PARAM,
-                    "illegal reader kind (%d) specified",
-                    v_objectKind(r));
-        assert(FALSE);
-    }
-
-    return TRUE;
+    OSPL_LOCK(r);
+    (void)c_setInsert(r->entries, e);
+    /* c_setInsert will ALWAYS return e. If it was already in and if it wasn't.
+     * In both cases it is in the set afterwards */
+    OSPL_UNLOCK(r);
 }
 
 static c_bool
-collectEntries(
-    c_object o,
-    c_voidp arg)
+readerEntryAddTransactionAdmin(
+    _Inout_ c_object o,
+    _Inout_opt_ c_voidp arg)
 {
-    c_iter *list = (c_iter *)arg;
-    *list = c_iterAppend(*list, c_keep(o));
+    assert(C_TYPECHECK(o, v_dataReaderEntry));
+
+    v_dataReaderEntrySetTransactionAdmin(v_dataReaderEntry(o), arg);
+
     return TRUE;
 }
 
-v_result
-v_readerGetHistoricalData(
-    v_reader _this)
+void
+v_readerAddTransactionAdmin(
+    _Inout_ v_reader r,
+    _In_opt_ v_transactionGroupAdmin a)
 {
-    c_iter list = NULL;
-    c_object o;
-    v_result result;
+    assert(a == NULL || v__readerIsGroupCoherent(r));
 
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this,v_reader));
-
-    result = V_RESULT_PRECONDITION_NOT_MET;
-    if (_this != NULL) {
-        result = V_RESULT_OK;
-        if (_this->qos->durability.v.kind != V_DURABILITY_VOLATILE) {
-            (void)v_readerWalkEntries(_this, collectEntries, &list);
-            while (((o = c_iterTakeFirst(list)) != NULL) && (result == V_RESULT_OK)) {
-                result = getHistoricalDataCommon(o, NULL, FALSE);
-                c_free(o);
-            }
-            c_iterFree(list);
-        }
-    }
-    return result;
+    OSPL_LOCK(r);
+    (void)c_setWalk(r->entries, &readerEntryAddTransactionAdmin, a);
+    OSPL_UNLOCK(r);
 }
 
 v_result
@@ -527,7 +388,7 @@ v_readerGetDeadlineMissedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->deadlineMissed, arg);
         if (reset) {
@@ -536,7 +397,7 @@ _TRACE_EVENTS_("v_readerGetDeadlineMissedStatus::v_statusReset(0x%x, 0x%x) reade
                status, V_EVENT_REQUESTED_DEADLINE_MISSED, _this);
         }
         v_readerStatus(status)->deadlineMissed.totalChanged = 0;
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -557,7 +418,7 @@ v_readerGetIncompatibleQosStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->incompatibleQos, arg);
         if (reset) {
@@ -569,7 +430,7 @@ _TRACE_EVENTS_("v_readerGetDeadlineMissedStatus::v_statusReset(0x%x, 0x%x) reade
         for (i=0; i<V_POLICY_ID_COUNT; i++) {
             v_readerStatus(status)->incompatibleQos.policyCount[i] = 0;
         }
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -589,7 +450,7 @@ v_readerGetSampleRejectedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->sampleRejected, arg);
         if (reset) {
@@ -598,7 +459,7 @@ _TRACE_EVENTS_("v_readerGetDeadlineMissedStatus::v_statusReset(0x%x, 0x%x) reade
                status, V_EVENT_SAMPLE_REJECTED, _this);
         }
         v_readerStatus(status)->sampleRejected.totalChanged = 0;
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -618,7 +479,7 @@ v_readerGetSampleLostStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->sampleLost, arg);
         if (reset) {
@@ -627,7 +488,7 @@ _TRACE_EVENTS_("v_readerGetDeadlineMissedStatus::v_statusReset(0x%x, 0x%x) reade
                status, V_EVENT_SAMPLE_LOST, _this);
         }
         v_readerStatus(status)->sampleLost.totalChanged = 0;
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -647,7 +508,7 @@ v_readerGetLivelinessChangedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->livelinessChanged, arg);
         if (reset) {
@@ -657,7 +518,7 @@ _TRACE_EVENTS_("v_readerGetDeadlineMissedStatus::v_statusReset(0x%x, 0x%x) reade
         }
         v_readerStatus(status)->livelinessChanged.activeChanged = 0;
         v_readerStatus(status)->livelinessChanged.inactiveChanged = 0;
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -677,7 +538,7 @@ v_readerGetSubscriptionMatchedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_LOCK(_this);
+        OSPL_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->subscriptionMatch, arg);
         if (reset) {
@@ -685,7 +546,7 @@ v_readerGetSubscriptionMatchedStatus(
         }
         v_readerStatus(status)->subscriptionMatch.totalChanged = 0;
         v_readerStatus(status)->subscriptionMatch.currentChanged = 0;
-        V_READER_UNLOCK(_this);
+        OSPL_UNLOCK(_this);
     }
     return result;
 }
@@ -697,7 +558,8 @@ waitForHistoricalData(
 {
     v_result result = V_RESULT_OK;
     os_timeM starttime = os_timeMGet();
-    V_READER_LOCK(_this);
+    OSPL_LOCK(_this);
+
     while (!_this->historicalDataComplete && result == V_RESULT_OK && timeout > OS_DURATION_ZERO)
     {
         if (v_condWait(&_this->historicalDataCondition, &V_READER_GET_LOCK(_this), timeout) != V_RESULT_OK) {
@@ -705,7 +567,7 @@ waitForHistoricalData(
         }
         timeout -= os_timeMDiff(os_timeMGet(), starttime);
     }
-    V_READER_UNLOCK(_this);
+    OSPL_UNLOCK(_this);
     return result;
 }
 
@@ -726,8 +588,6 @@ v_readerDurableDataRequest(
     v_service durability_service = NULL;
     c_bool conditional;
 
-    kernel = v_objectKernel(_this);
-
     /* Determine if a subset of durable data is requested. */
     conditional = (filter || params ||
                    !OS_TIMEW_ISINVALID(minSourceTime) || !OS_TIMEW_ISINVALID(maxSourceTime) ||
@@ -739,9 +599,11 @@ v_readerDurableDataRequest(
      * non-volatile readers will automatically be aligned, so therefore
      * return precondition not met when requesting conditional alignment on non-volatile readers.
      */
-    if (conditional && _this->qos->durability.v.kind > V_DURABILITY_TRANSIENT_LOCAL) {
+    if (conditional && _this->qos->durability.v.kind > V_DURABILITY_VOLATILE) {
         return V_RESULT_PRECONDITION_NOT_MET;
     }
+
+    kernel = v_objectKernel(_this);
     /* Lookup the Durability Service */
     services = v_resolveServiceByServiceType(kernel, V_SERVICETYPE_DURABILITY);
     assert(c_iterLength(services) <= 1);
@@ -753,7 +615,9 @@ v_readerDurableDataRequest(
     durability_client = c_iterTakeFirst(services);
     c_iterFree(services);
 
-    /* Send a Request for durable data if a durable data source exists. */
+    /* Send a Request for durable data if a durable data source exists, or if no networking services configured,
+     * in which case the explicit request of historical data for a volatile reader can still be done.
+     */
     if (durability_service || durability_client) {
         v_historicalDataRequest request;
         V_DC_TRACE("%s - request historical data for reader %s\n", OS_FUNCTION, v_entityName(_this));
@@ -762,6 +626,7 @@ v_readerDurableDataRequest(
                                              minSourceTime, maxSourceTime,
                                              limits, OS_DURATION_ZERO);
         if (request != NULL) {
+            OSPL_LOCK(_this);
             if (_this->historicalDataRequest) {
                 /* Historical data request already in progress or complete, check
                  * whether request is equal to the original one.
@@ -770,20 +635,23 @@ v_readerDurableDataRequest(
                     /* Request is NOT equal to original request*/
                     result = V_RESULT_PRECONDITION_NOT_MET;
                 }
+                OSPL_UNLOCK(_this);
             } else {
                 C_STRUCT(v_event) event;
+                c_bool notDurable = (_this->qos->durability.v.kind == V_DURABILITY_VOLATILE);
                 _this->historicalDataRequest = c_keep(request);
+                OSPL_UNLOCK(_this);
                 /* Volatile readers don't automatically receive non-volatile data,
                  * therefore for each entry copy the data from the associated groups into
                  * the reader.
                  */
-                if (_this->qos->durability.v.kind == V_DURABILITY_VOLATILE) {
+                if (notDurable) {
                     c_iter entries;
                     v_entry e;
 
-                    v_readerEntrySetLock(_this);
-                    entries = ospl_c_select(_this->entrySet.entries, 0);
-                    v_readerEntrySetUnlock(_this);
+                    OSPL_LOCK(_this);
+                    entries = ospl_c_select(_this->entries, 0);
+                    OSPL_UNLOCK(_this);
                     while ((e = (v_entry)c_iterTakeFirst(entries)) != NULL) {
                         if (result == V_RESULT_OK) {
                             if (conditional) {
@@ -802,13 +670,14 @@ v_readerDurableDataRequest(
                 event.kind = V_EVENT_HISTORY_REQUEST;
                 event.source = v_observable (_this);
                 event.data = request;
+                event.handled = TRUE;
                 if (durability_service) {
                     /* Trigger and request the durability service to provide historical data */
-                    v_observableNotify(v_observable(durability_service),&event);
+                    OSPL_THROW_EVENT(durability_service, &event);
                 }
                 if (durability_client) {
                     /* Trigger the durability client to send a historical data request */
-                    v_observableNotify(v_observable(durability_client),&event);
+                    OSPL_THROW_EVENT(durability_client, &event);
                 }
             }
             c_free(request);
@@ -867,41 +736,44 @@ checkParameters(
 
 static v_result
 v_readerCheckDurableDataSupport(
-    v_reader _this)
+    _In_ _Const_ v_reader _this)
 {
+    v_kernel kernel = v_objectKernel(_this);
     v_result result = V_RESULT_OK;
-    if (!v_kernelGetDurabilitySupport(v_objectKernel(_this))) {
+    if (!v_kernelGetDurabilitySupport(kernel)) {
         result = V_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
+}
+
+static c_bool DurableGroupCount(c_object o, c_voidp arg)
+{
+    v_entry e = v_entry(o);
+    c_long *count = (c_long *)arg;
+    *count += v_entryDurableGroupCount(e);
+    return TRUE;
 }
 
 static c_long
 v_readerDurableGroupCount(
     v_reader _this)
 {
-    c_iter entries;
-    v_entry e;
     c_long count = 0;
-
-    v_readerEntrySetLock(_this);
-    entries = ospl_c_select(_this->entrySet.entries, 0);
-    v_readerEntrySetUnlock(_this);
-    while ((e = (v_entry)c_iterTakeFirst(entries)) != NULL) {
-        count += v_entryDurableGroupCount(e);
-        c_free(e);
-    }
+    OSPL_LOCK(_this);
+    (void)c_setWalk(_this->entries, DurableGroupCount, &count);
+    OSPL_UNLOCK(_this);
     return count;
 }
 
 v_result
 v_readerWaitForHistoricalData(
     v_reader r,
-    os_duration timeout)
+    os_duration timeout,
+    c_bool enabling)
 {
     return v_readerWaitForHistoricalDataWithCondition(r, NULL, NULL, 0,
                                                       OS_TIMEW_INVALID, OS_TIMEW_INVALID,
-                                                      -1, -1, -1, timeout);
+                                                      -1, -1, -1, timeout, enabling);
 }
 
 v_result
@@ -915,10 +787,18 @@ v_readerWaitForHistoricalDataWithCondition(
     c_long max_samples,
     c_long max_instances,
     c_long max_samples_per_instance,
-    os_duration timeout)
+    os_duration timeout,
+    c_bool enabling)
 {
     v_result result = V_RESULT_OK;
     v_resourcePolicyI limits;
+
+    /* Check enabled status only if not currently being enabled via v_dataReaderEnable() */
+    if (!enabling) {
+        if(!v_entityEnabled(v_entity(_this))) {
+            return V_RESULT_NOT_ENABLED;
+        }
+    }
 
     limits.v.max_samples = max_samples;
     limits.v.max_instances = max_instances;
@@ -953,6 +833,18 @@ v_readerWaitForHistoricalDataWithCondition(
     return result;
 }
 
+/* Precondition: reader is locked */
+void
+v__readerNotifyStateChange_nl(
+    v_reader _this,
+    c_bool complete)
+{
+    if (_this->historicalDataComplete != complete) {
+        _this->historicalDataComplete = complete;
+        c_condBroadcast(&_this->historicalDataCondition);
+    }
+}
+
 void
 v_readerNotifyStateChange(
     v_reader _this,
@@ -961,25 +853,10 @@ v_readerNotifyStateChange(
     assert(C_TYPECHECK(_this, v_reader));
 
     if(_this){
-        V_READER_LOCK(_this);
-        if (_this->historicalDataComplete != complete) {
-            _this->historicalDataComplete = complete;
-            c_condBroadcast(&_this->historicalDataCondition);
-        }
-        V_READER_UNLOCK(_this);
+        OSPL_LOCK(_this);
+        v__readerNotifyStateChange_nl(_this, complete);
+        OSPL_UNLOCK(_this);
     }
-    return;
-}
-
-c_bool
-v_readerIsAligned(
-    v_reader _this)
-{
-    c_bool isAligned = FALSE;
-    if (_this) {
-        isAligned = _this->historicalDataComplete;
-    }
-    return isAligned;
 }
 
 c_iter
@@ -987,14 +864,92 @@ v_readerGetPartitions(
     v_reader _this)
 {
     c_iter partitions = NULL;
+    v_subscriber s;
 
     if (_this) {
-        V_READER_LOCK(_this);
-        if (_this->subscriber) {
-            partitions = v_subscriberLookupPartitions(_this->subscriber, "*");
+        OSPL_LOCK(_this);
+        s = c_keep(_this->subscriber);
+        OSPL_UNLOCK(_this);
+        if (s) {
+            partitions = v_subscriberLookupPartitions(s, "*");
         }
-        V_READER_UNLOCK(_this);
+        c_free(s);
     }
 
     return partitions;
+}
+
+static c_bool
+getTopic (
+    c_object o,
+    c_voidp arg)
+{
+    v_topic *topic = (v_topic *)arg;
+    c_bool result = TRUE;
+
+    switch (v_objectKind(o)) {
+    case K_DATAREADERENTRY:
+    {
+        v_dataReaderEntry entry = v_dataReaderEntry(o);
+        if (*topic == NULL) {
+            *topic = c_keep(entry->topic);
+        } else {
+            /* Already a topic was found so this must be a Multi Topic reader.
+             * In that case abort and clear the topic.
+             */
+            c_free(*topic);
+            *topic = NULL;
+            result = FALSE;
+        }
+    }
+    break;
+    case K_DELIVERYSERVICEENTRY:
+    {
+        v_deliveryServiceEntry entry = v_deliveryServiceEntry(o);
+        *topic = c_keep(entry->topic);
+    }
+    break;
+    default:
+    break;
+    }
+    return result;
+}
+
+v_topic
+v_readerGetTopic_nl(
+    v_reader _this)
+{
+    v_topic topic = NULL;
+
+    switch (v_objectKind(_this)) {
+    case K_DATAREADER:
+    case K_DELIVERYSERVICE:
+        (void)v_readerWalkEntries_nl(_this, getTopic, &topic);
+    break;
+    default:
+    break;
+    }
+    return topic;
+}
+
+v_topic
+v_readerGetTopic(
+    v_reader _this)
+{
+    v_topic topic = NULL;
+    OSPL_LOCK(_this);
+    topic = v_readerGetTopic_nl(_this);
+    OSPL_UNLOCK(_this);
+    return topic;
+}
+
+v_subscriber
+v_readerGetSubscriber(
+    v_reader _this)
+{
+    v_subscriber s;
+    OSPL_LOCK(_this);
+    s = c_keep(_this->subscriber);
+    OSPL_UNLOCK(_this);
+    return s;
 }

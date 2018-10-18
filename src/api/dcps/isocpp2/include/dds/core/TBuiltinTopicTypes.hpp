@@ -39,70 +39,165 @@ class TKeyedStringTopicType;
 }
 }
 
-template <typename DELEGATE>
-class dds::core::TBytesTopicType
-{
-public:
-    TBytesTopicType();
-    TBytesTopicType(const std::vector<uint32_t>& data);
-public:
-    operator std::vector<uint32_t>& ();
-public:
-    const std::vector<uint8_t>& data();
-    void data(const std::vector<uint8_t>& bytes);
-};
 
+/**
+ * @brief
+ * Class that is a built-in topic type that can be used to readily create Topics,
+ * DataReaders and DataWriters for this type without the need for code generation.
+ *
+ * This built-in type allows for easy transfer of vectors of bytes.
+ */
 template <typename DELEGATE>
-class dds::core::TStringTopicType
+class dds::core::TBytesTopicType : public ::dds::core::Value<DELEGATE>
 {
 public:
-    TStringTopicType();
-    TStringTopicType(const std::string& data);
-public:
-    operator std::string& ();
-public:
-    const std::string& data();
-    void data(const std::string& bytes);
+    /**
+     * Creates topic type with an empty byte vector.
+     */
+    TBytesTopicType();
+
+    /**
+     * Creates topic type with the given byte vector.
+     */
+    TBytesTopicType(const std::vector<uint8_t>& data);
+
+    /**
+     * Conversion operator to a vector of bytes.
+     */
+    operator std::vector<uint8_t>& () const;
+
+    /**
+     * Getter function for the internal vector of bytes.
+     */
+    const std::vector<uint8_t>& data() const;
+
+    /**
+     * Setter function for the internal vector of bytes.
+     */
+    void data(const std::vector<uint8_t>& data);
 };
 
 
 /**
- * This class represents a built-in topic type that can be used
- * to readily create Topics, DataReaders and DataWriters for this type.
- * No code generation is required when using this type.
+ * @brief
+ * Class that is a built-in topic type that can be used to readily create Topics,
+ * DataReaders and DataWriters for this type without the need for code generation.
+ *
+ * This built-in type allows for easy transfer of strings.
  */
 template <typename DELEGATE>
-class dds::core::TKeyedStringTopicType<DELEGATE>
+class dds::core::TStringTopicType : public ::dds::core::Value<DELEGATE>
 {
 public:
+    /**
+     * Creates topic type with an empty data string.
+     */
+    TStringTopicType();
+
+    /**
+     * Creates topic type with the given string.
+     */
+    TStringTopicType(const std::string& data);
+
+    /**
+     * Conversion operator to a string.
+     */
+    operator std::string& () const;
+
+    /**
+     * Getter function for the internal data string.
+     */
+    const std::string& data() const;
+
+    /**
+     * Setter function for the internal data string.
+     */
+    void data(const std::string& data);
+};
+
+
+/**
+ * @brief
+ * Class that is a built-in topic type that can be used to readily create Topics,
+ * DataReaders and DataWriters for this type without the need for code generation.
+ *
+ * This built-in type allows for easy transfer of keyed strings.
+ */
+template <typename DELEGATE>
+class dds::core::TKeyedStringTopicType : public ::dds::core::Value<DELEGATE>
+{
+public:
+    /**
+     * Creates topic type with an empty key and data strings.
+     */
     TKeyedStringTopicType();
+
+    /**
+     * Creates topic type with the given key and data strings.
+     */
     TKeyedStringTopicType(const std::string& key, const std::string& value);
 
-public:
+    /**
+     * Getter function for the key string.
+     */
     const std::string& key() const;
-    void key(const std::string& value);
 
+    /**
+     * Setter function for the key string.
+     */
+    void key(const std::string& key);
+
+    /**
+     * Getter function for the internal data string.
+     */
     const std::string& value() const;
+
+    /**
+     * Setter function for the internal data string.
+     */
     void value(const std::string& value);
 };
 
+
 /**
- * This class represents a built-in topic type that can be used
- * to readily create Topics, DataReaders and DataWriters for this type.
- * No code generation is required when using this type.
+ * @brief
+ * Class that is a built-in topic type that can be used to readily create Topics,
+ * DataReaders and DataWriters for this type without the need for code generation.
+ *
+ * This built-in type allows for easy transfer of keyed vectors of bytes.
  */
 template <typename DELEGATE>
-class dds::core::TKeyedBytesTopicType<DELEGATE>
+class dds::core::TKeyedBytesTopicType : public ::dds::core::Value<DELEGATE>
 {
 public:
+    /**
+     * Creates topic type with an empty key string and data vector.
+     */
     TKeyedBytesTopicType();
-    TKeyedBytesTopicType(const std::string& key, const std::vector<uint8_t>& bytes);
 
-public:
+    /**
+     * Creates topic type with given key string and data vector.
+     */
+    TKeyedBytesTopicType(const std::string& key, const std::vector<uint8_t>& value);
+
+    /**
+     * Getter function for the key string.
+     */
     const std::string& key() const;
-    void key(const std::string& value);
 
+    /**
+     * Setter function for the key string.
+     */
+    void key(const std::string& key);
+
+    /**
+     * Getter function for the internal vector of bytes.
+     */
     const std::vector<uint8_t>& value() const;
+
+    /**
+     * Setter function for the internal vector of bytes.
+     */
     void value(const std::vector<uint8_t>& value);
 };
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,9 +28,6 @@
 
 static const v_qosChangeMask immutableMask = V_POLICY_BIT_PRESENTATION;
 
-/**************************************************************
- * private functions
- **************************************************************/
 static c_bool
 v_publisherQosValidValues(
     v_publisherQos qos)
@@ -52,9 +50,6 @@ v_publisherQosValidValues(
     return (valuesNok) ? FALSE : TRUE;
 }
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_publisherQos
 v_publisherQosNew(
     v_kernel kernel,
@@ -108,9 +103,6 @@ v_publisherQosFree(
     c_free(q);
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
 v_result
 v_publisherQosCompare (
     v_publisherQos _this,
@@ -153,9 +145,6 @@ v_publisherQosCompare (
     return result;
 }
 
-/**************************************************************
- * Public functions
- **************************************************************/
 v_result
 v_publisherQosCheck(
     v_publisherQos _this)

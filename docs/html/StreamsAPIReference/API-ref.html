@@ -53,10 +53,10 @@
 <span id="id1"></span><h1>3. API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>3.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p><em>As described in :ref:`Getting Started &lt;Getting Started&gt;`, the OpenSplice
+<p><em>As described in :ref:`Getting Started &lt;Getting Started&gt;`, the Vortex OpenSplice
 IDL preprocessor generates typed Streams API classes for each type that
 is annotated with a streams pragma.</em></p>
-<p>As in the OpenSplice DDS <em>C++ Reference Guide</em>, the fictional type <tt class="docutils literal"><span class="pre">Foo</span></tt>,
+<p>As in the Vortex OpenSplice <em>C++ Reference Guide</em>, the fictional type <tt class="docutils literal"><span class="pre">Foo</span></tt>,
 defined in module Space, is used as an example. When the <tt class="docutils literal"><span class="pre">Foo</span></tt> type is
 annotated with a pragma streams, <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> and
 <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> classes will be generated.</p>
@@ -223,7 +223,7 @@ the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></t
 <blockquote>
 <div><p>Constructors cannot return a value, therefore they throw exceptions when
 the object cannot be constructed. Besides exceptions, the regular
-OpenSplice error logging framework is used to report additional
+Vortex OpenSplice error logging framework is used to report additional
 information when a constructor fails.</p>
 <p>The constructors throw a <tt class="docutils literal"><span class="pre">StreamsException</span></tt> if an error occurs. The
 application may catch these exceptions to detect when creation of a
@@ -356,7 +356,7 @@ back to the application.</p>
 <dt><tt class="docutils literal"><span class="pre">RETCODE_PRECONDITION_NOT_MET</span></tt></dt>
 <dd>A precondition failed; most likely the stream doesn’t exist.</dd>
 </dl>
-<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for
+<p>See the Vortex OpenSplice <em>C++ Reference Guide</em> for
 possible result codes returned by a DDS <tt class="docutils literal"><span class="pre">write</span></tt> operation.</p>
 </div></blockquote>
 </div>
@@ -521,7 +521,7 @@ the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></t
 <blockquote>
 <div><p>Constructors cannot return a value, therefore they throw exceptions when
 the object cannot be constructed. Besides exceptions, the regular
-OpenSplice error logging framework is used to report additional
+Vortex OpenSplice error logging framework is used to report additional
 information when a constructor fails.</p>
 <p>The constructors throw a <tt class="docutils literal"><span class="pre">StreamsException</span></tt> if an error occurs. The
 application may catch these exceptions to detect when creation of a
@@ -633,7 +633,7 @@ met; most likely the <tt class="docutils literal"><span class="pre">data_values<
 used internally by the Streams API. There is one exception: if the
 <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> returns a <tt class="docutils literal"><span class="pre">DDS::RETCODE_TIMEOUT</span></tt>, this return
 code is translated to a <tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt> return code.</p>
-<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for possible result
+<p>See the Vortex OpenSplice <em>C++ Reference Guide</em> for possible result
 codes returned by a DDS <tt class="docutils literal"><span class="pre">take_instance</span></tt> operation and
 for <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt>.</p>
 </div></blockquote>
@@ -712,7 +712,7 @@ met; most likely the <tt class="docutils literal"><span class="pre">data_values<
 used internally by the Streams API. There&#8217;s one exception: If the
 <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> returns a <tt class="docutils literal"><span class="pre">DDS::RETCODE_TIMEOUT</span></tt>, this return code
 is translated to a <tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt> return code.</p>
-<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for possible result codes
+<p>See the Vortex OpenSplice <em>C++ Reference Guide</em> for possible result codes
 returned by a DDS <tt class="docutils literal"><span class="pre">take_instance</span></tt> operation and <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt>.</p>
 </div></blockquote>
 </div>
@@ -1027,7 +1027,7 @@ filter is discarded.</div></blockquote>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

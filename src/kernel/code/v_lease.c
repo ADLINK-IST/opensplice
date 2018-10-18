@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -28,10 +29,6 @@
 
 /* For design information, see v_leaseManager.c */
 
-/**************************************************************
- * Private function/struct declarations
- **************************************************************/
-
 static void
 v_leaseInit(
     v_lease _this,
@@ -44,9 +41,6 @@ v_leaseCollectObservers(
     c_object o,
     c_voidp arg);
 
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 v_lease
 v_leaseNew(
     v_kernel k,
@@ -88,7 +82,7 @@ v_leaseInit(
     if (_this != NULL) {
         assert(C_TYPECHECK(_this, v_lease));
 
-        c_mutexInit(c_getBase(_this), &_this->mutex);
+        (void)c_mutexInit(c_getBase(_this), &_this->mutex);
         v_leaseTimeInit(&_this->expiryTime, kind, leaseDuration);
         _this->duration = leaseDuration;
         _this->observers = c_setNew(v_kernelType(k, K_LEASEMANAGER));
@@ -114,10 +108,6 @@ v_leaseDeinit(
         lease->observers = NULL;
     }
 }
-
-/**************************************************************
- * Local functions
- **************************************************************/
 
 void
 v_leaseLock(
@@ -294,7 +284,3 @@ v_leaseRemoveObserverNoLock(
     }
     return removed;
 }
-
-/**************************************************************
- * Public functions
- **************************************************************/

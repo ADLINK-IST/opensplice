@@ -5,6 +5,8 @@ $sp($(spaces))    $(typename)TypeSupportMetaHolder ();
 $sp($(spaces))    virtual ~$(typename)TypeSupportMetaHolder ();
 $sp($(spaces))
 $sp($(spaces))private:
+$sp($(spaces))    ::DDS::OpenSplice::TypeSupportMetaHolder * clone();
+$sp($(spaces))
 $sp($(spaces))    ::DDS::OpenSplice::DataWriter * create_datawriter ();
 $sp($(spaces))
 $sp($(spaces))    ::DDS::OpenSplice::DataReader * create_datareader ();
@@ -23,7 +25,7 @@ $sp($(spaces))
 $sp($(spaces))private:
 $sp($(spaces))    $(typename)TypeSupport (const $(typename)TypeSupport &);
 $sp($(spaces))
-$sp($(spaces))    void operator= (const $(typename)TypeSupport &);
+$sp($(spaces))    $(typename)TypeSupport & operator= (const $(typename)TypeSupport &);
 $sp($(spaces))};
 $sp($(spaces))
 $sp($(spaces))typedef $(typename)TypeSupportInterface_var $(typename)TypeSupport_var;
@@ -98,12 +100,14 @@ $sp($(spaces))                    const DDS::DataWriterQos &qos,
 $sp($(spaces))                    DDS::OpenSplice::Topic *a_topic,
 $sp($(spaces))                    const char *name,
 $sp($(spaces))                    DDS::OpenSplice::cxxCopyIn copyIn,
-$sp($(spaces))                    DDS::OpenSplice::cxxCopyOut copyOut);
+$sp($(spaces))                    DDS::OpenSplice::cxxCopyOut copyOut,
+$sp($(spaces))                    u_writerCopy writerCopy,
+$sp($(spaces))                    void *cdrMarshaler);
 $sp($(spaces))
 $sp($(spaces))private:
 $sp($(spaces))    $(typename)DataWriter_impl (const $(typename)DataWriter_impl &);
 $sp($(spaces))
-$sp($(spaces))    void operator= (const $(typename)DataWriter &);
+$sp($(spaces))    $(typename)DataWriter_impl & operator= (const $(typename)DataWriter_impl &);
 $sp($(spaces))};
 $sp($(spaces))
 $sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataReader_impl : public virtual $(typename)DataReader,
@@ -222,7 +226,9 @@ $sp($(spaces))            const DDS::DataReaderQos &qos,
 $sp($(spaces))            DDS::OpenSplice::TopicDescription *a_topic,
 $sp($(spaces))            const char *name,
 $sp($(spaces))            DDS::OpenSplice::cxxCopyIn copyIn,
-$sp($(spaces))            DDS::OpenSplice::cxxCopyOut copyOut);
+$sp($(spaces))            DDS::OpenSplice::cxxCopyOut copyOut,
+$sp($(spaces))            DDS::OpenSplice::cxxReaderCopy readerCopy,
+$sp($(spaces))            void *cdrMarshaler);
 $sp($(spaces))
 $sp($(spaces))    static void* dataSeqAlloc (
 $sp($(spaces))        void * data_values,
@@ -242,8 +248,8 @@ $sp($(spaces))        void * received_data);
 $sp($(spaces))    static void copyDataOut(const void *from, void *to);
 $sp($(spaces))
 $sp($(spaces))private:
-$sp($(spaces))    $(typename)DataReader_impl (const $(typename)DataReader &);
-$sp($(spaces))    void operator= (const $(typename)DataReader &);
+$sp($(spaces))    $(typename)DataReader_impl (const $(typename)DataReader_impl &);
+$sp($(spaces))    $(typename)DataReader_impl & operator= (const $(typename)DataReader_impl &);
 $sp($(spaces))
 $sp($(spaces))    static ::DDS::ReturnCode_t check_preconditions (
 $sp($(spaces))        $(typename)Seq & received_data,
@@ -368,8 +374,8 @@ $sp($(spaces))        DDS::OpenSplice::cxxCopyIn copyIn,
 $sp($(spaces))        DDS::OpenSplice::cxxCopyOut copyOut);
 $sp($(spaces))
 $sp($(spaces))private:
-$sp($(spaces))    $(typename)DataReaderView_impl (const $(typename)DataReaderView &);
+$sp($(spaces))    $(typename)DataReaderView_impl (const $(typename)DataReaderView_impl &);
 $sp($(spaces))
-$sp($(spaces))    void operator= (const $(typename)DataReaderView &);
+$sp($(spaces))    $(typename)DataReaderView_impl & operator= (const $(typename)DataReaderView_impl &);
 $sp($(spaces))};
 $sp($(spaces))

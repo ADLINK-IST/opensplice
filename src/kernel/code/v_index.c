@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -354,8 +355,6 @@ v_indexInit(
     index->objectType = c_keep(instanceType);
 }
 
-/*#define prefix "sample.message.userData."*/
-
 v_index
 v__indexNew(
     v_dataReader reader,
@@ -423,10 +422,15 @@ v__indexNew(
             c_free(instanceType);
 
             if (index != NULL) {
-                if (action != NULL) {
-                    action(index, topic, arg);
+                if (action != NULL && !action(index, topic, arg)) {
+                    OS_REPORT(OS_ERROR,
+                        "v_indexNew", V_RESULT_INTERNAL_ERROR,
+                        "v_indexNewAction failed!");
+                    c_free(index);
+                    index = NULL;
+                } else {
+                    (void)c_iterAppend(indexList, index);
                 }
-                (void)c_iterAppend(indexList, index);
             }
         }
     } else {

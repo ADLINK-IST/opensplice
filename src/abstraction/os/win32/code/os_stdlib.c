@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -319,7 +320,7 @@ os_strncasecmp(
 os_result
 os_stat(
     const char *path,
-    struct os_stat *buf)
+    struct os_stat_s *buf)
 {
     os_result result;
     struct _stat _buf;
@@ -501,7 +502,7 @@ os_ensurePathExists(
     char* tmp;
     char* ptr;
     char ptrTmp;
-    struct os_stat statBuf;
+    struct os_stat_s statBuf;
     os_result status;
     os_int32 result = 0;
     os_int32 cont = 1;
@@ -588,7 +589,7 @@ os_vsnprintf(
 
     /* Truncation occurred, so we need to guarantee that the string is NULL-
      * terminated. */
-    if((size_t) result >= size){
+    if((size) && ((size_t) result >= size)){
         str[size - 1] = '\0';
     }
     return result;

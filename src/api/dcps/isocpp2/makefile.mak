@@ -1,8 +1,23 @@
 TARGET_DLIB	:= $(DDS_DCPSISOCPP)2
 
+# Input IDL files.
+IDL_DIR     := $(OSPL_HOME)/etc/idl
+vpath %.idl $(IDL_DIR)
+TOPIC_IDL   := dds_IoTData.idl
+
+# idlpp compiler settings.
+IDLPP       = $(WINCMD) idlpp
+IDL_INC_FLAGS= -I$(IDL_DIR)
+IDLPPFLAGS  := $(IDL_INC_FLAGS) -l isocpp2
+
+# Compile IoTData generated code
+IDL_C   = dds_IoTData.cpp dds_IoTDataSplDcps.cpp
+IDL_H   = $(TOPIC_IDL:%.idl=%.h) $(TOPIC_IDL:%.idl=%_DCPS.hpp) $(TOPIC_IDL:%.idl=%SplDcps.h)
+IDL_O   = $(IDL_C:%.cpp=%$(OBJ_POSTFIX))
+
 # Explicitly point to an alternative location for all required source files.
 CODE_DIR    := $(OSPL_HOME)/src/api/dcps/isocpp2/code
-CPP_FILES   := $(subst $(CODE_DIR)/,,$(shell find $(CODE_DIR) -name *.cpp))
+CPP_FILES   := $(subst $(CODE_DIR)/,,$(shell find $(CODE_DIR) -name '*.cpp'))
 CPP_DIRS    := $(sort $(dir $(CPP_FILES)))
 
 # Include the actual building rules.
@@ -35,6 +50,9 @@ CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += -l$(DDS_CORE) $(SHLDLIBS)
 LDLIBS  += $(LDLIBS_CXX)
+
+%.cpp %.h %Dcps.h %_DCPS.hpp %SplDcps.h: %.idl
+	$(IDLPP) $(IDLPPFLAGS) $<
 
 .make_bld_dirs:
 	mkdir -p $(CPP_DIRS)

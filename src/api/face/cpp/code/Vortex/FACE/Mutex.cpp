@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,13 +18,8 @@
  *   limitations under the License.
 *
 */
-
-
-/**
- * @file
- */
-
 #include "Vortex/FACE/Mutex.hpp"
+#include "Vortex/FACE/ReportSupport.hpp"
 
 
 Vortex::FACE::Mutex::Mutex()
@@ -31,8 +27,8 @@ Vortex::FACE::Mutex::Mutex()
     os_result osr;
     osr = os_mutexInit(&this->mtx, NULL);
     if (osr != os_resultSuccess) {
+        FACE_REPORT_ERROR(::FACE::NOT_AVAILABLE, "Failed to initialize mutex");
         assert(false);
-        /* TODO: (OSPL-8901) Add trace. */
     }
 
 }
@@ -76,6 +72,7 @@ Vortex::FACE::MutexScoped::~MutexScoped()
         mtx.unlock();
     } catch (...) {
         /* Don't know what to do anymore (it should have never failed)... */
+        FACE_REPORT_ERROR(::FACE::NOT_AVAILABLE, "Unexpected error in ~MutexScoped()");
         assert(false);
     }
 }

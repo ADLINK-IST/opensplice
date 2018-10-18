@@ -1,5 +1,5 @@
 #ifndef _SQUARE_HPP
-#define	_SQUARE_HPP
+#define _SQUARE_HPP
 
 /** @file */
 /**

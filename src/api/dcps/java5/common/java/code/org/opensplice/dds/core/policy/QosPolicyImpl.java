@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -26,7 +27,7 @@ import org.opensplice.dds.core.OsplServiceEnvironment;
 public abstract class QosPolicyImpl implements QosPolicy {
 	private static final long serialVersionUID = -1576883735576551398L;
 	protected OsplServiceEnvironment environment;
-	
+
 	public QosPolicyImpl(OsplServiceEnvironment environment){
 		this.environment = environment;
 
@@ -34,12 +35,12 @@ public abstract class QosPolicyImpl implements QosPolicy {
             throw new DDSExceptionImpl(null, "Supplied Environment is invalid.");
         }
 	}
-	
+
 	@Override
 	public ServiceEnvironment getEnvironment() {
 		return this.environment;
 	}
-	
+
     public abstract Class<? extends org.omg.dds.core.policy.QosPolicy> getPolicyClass();
 
     @Override
@@ -47,6 +48,5 @@ public abstract class QosPolicyImpl implements QosPolicy {
 
     @Override
     public abstract int hashCode();
-	
-	
+
 }

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -222,7 +223,11 @@ idl_structureOpen (
     idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
     idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
             idl_scopeStack (scope, "_", name));
-    idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+    if (idl_getIsISOCpp2()) {
+        idl_fileOutPrintf (idl_fileCur(), "    c_type dbType,\n");
+    } else {
+        idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+    }
     if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
     {
       idl_fileOutPrintf (idl_fileCur(), "    const class %s *from,\n",
@@ -237,6 +242,9 @@ idl_structureOpen (
     idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "{\n");
     idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
+    if (idl_getIsISOCpp2()) {
+        idl_fileOutPrintf (idl_fileCur(), "    c_base base = c_getBase(dbType);\n");
+    }
     idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
 
     return idl_explore;
@@ -688,12 +696,14 @@ idl_structureMemberOpenClose (
                 (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tseq)) {
 
                 idl_fileOutPrintf (idl_fileCur(), "    if(V_COPYIN_RESULT_IS_OK(result)){\n");
-                idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
                     idl_scopedTypeName (typeSpec),
+                    idl_getIsISOCpp2() ? "c_type" : "c_base",
                     idl_corbaCxxTypeFromTypeSpec(typeSpec),
                     idl_scopedTypeName (typeSpec));
-                idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &from->%s%s, &to->%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(%s, &from->%s%s, &to->%s);\n",
                     idl_scopedTypeName (typeSpec),
+                    idl_getIsISOCpp2() ? "dbType" : "base",
                     cid,
                     idl_isocppCxxStructMemberSuffix(),
                     cid);
@@ -741,12 +751,14 @@ idl_structureMemberOpenClose (
     } else if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
                (idl_typeSpecType(typeSpec) == idl_tunion)) {
         idl_fileOutPrintf (idl_fileCur(), "    if(V_COPYIN_RESULT_IS_OK(result)){\n");
-        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "c_type" : "c_base",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
-        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &from->%s%s, &to->%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(%s, &from->%s%s, &to->%s);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             cid,
             idl_isocppCxxStructMemberSuffix(),
             cid);
@@ -1143,8 +1155,9 @@ idl_arrayLoopCopyBody(
     case idl_tunion:
         idl_printIndent(loopIndent + indent);
         varIndex = 0;
-        idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(c_base base,\n",
-            idl_scopedTypeName(typeSpec));
+        idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(%s,\n",
+            idl_scopedTypeName(typeSpec),
+            idl_getIsISOCpp2() ? "c_type" : "c_base");
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "const %s *From,\n",
             idl_scopeStack(idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
@@ -1154,8 +1167,9 @@ idl_arrayLoopCopyBody(
         idl_fileOutPrintf(idl_fileCur(), "if(V_COPYIN_RESULT_IS_OK(result)){\n");
         indent++;
         idl_printIndent (loopIndent + indent);
-        idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(base, (%s *)&(%s)",
+        idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(%s, (%s *)&(%s)",
             idl_scopedTypeName(typeSpec),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             from);
         idl_arrayLoopCopyIndex(typeArray);
@@ -1207,8 +1221,9 @@ idl_arrayLoopCopyBody(
             case idl_tarray:
             case idl_tseq:
                 idl_printIndent (loopIndent + indent);
-                idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(c_base base,",
-                    idl_scopedTypeName(typeSpec));
+                idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(%s,",
+                    idl_scopedTypeName(typeSpec),
+                    idl_getIsISOCpp2() ? "c_type" : "c_base");
                 idl_fileOutPrintf(idl_fileCur(), "const %s *From,",
                     idl_scopeStack(idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
                 idl_fileOutPrintf(idl_fileCur(), "%s *To);\n\n",
@@ -1217,8 +1232,9 @@ idl_arrayLoopCopyBody(
                 idl_fileOutPrintf(idl_fileCur(), "if(V_COPYIN_RESULT_IS_OK(result)){\n");
                 indent++;
                 idl_printIndent (loopIndent + indent);
-                idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(base, (%s *)&(%s)",
+                idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(%s, (%s *)&(%s)",
                     idl_scopedTypeName(typeSpec),
+                    idl_getIsISOCpp2() ? "dbType" : "base",
                     idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 from);
                 idl_arrayLoopCopyIndex(typeArray);
@@ -2221,8 +2237,9 @@ idl_seqLoopCopy (
     case idl_tunion:
         varIndex = 0;
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base base,\n",
-            idl_scopedTypeName(typeSpec));
+        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(%s,\n",
+            idl_scopedTypeName(typeSpec),
+            idl_getIsISOCpp2() ? "c_type" : "c_base");
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "            const %s *From,\n",
         idl_scopeStack (idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
@@ -2230,8 +2247,9 @@ idl_seqLoopCopy (
         idl_fileOutPrintf (idl_fileCur(), "            %s *To);\n\n",
         idl_scopedSplTypeIdent(typeSpec));
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &(%s)%s, (%s *)&%s[i%d]);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(%s, &(%s)%s, (%s *)&%s[i%d]);\n",
             idl_scopedTypeName(typeSpec),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             from,
             idl_seqIndex(loop_index),
             idl_scopedSplTypeIdent(typeSpec),
@@ -2246,13 +2264,15 @@ idl_seqLoopCopy (
         case idl_tarray:
             idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
                 idl_scopedTypeName (typeSpec),
+                idl_getIsISOCpp2() ? "c_type" : "c_base",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_scopedTypeName (typeSpec));
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &(%s)%s, (%s *)&%s[i%d]);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, &(%s)%s, (%s *)&%s[i%d]);\n",
                 idl_scopedTypeName(typeSpec),
+                idl_getIsISOCpp2() ? "dbType" : "base",
                 from,
                 idl_seqIndex(loop_index),
                 idl_scopedSplTypeName(typeSpec),
@@ -2510,6 +2530,13 @@ idl_seqLoopCopy (
                 idl_printIndent (indent);
                 idl_fileOutPrintf (idl_fileCur(), "        c_free(type%d);\n", loop_index);
             }
+            if (idl_typeSpecType(nextType) == idl_tbasic) {
+                if (idl_typeBasicMaxlen(idl_typeBasic(nextType)) > 0) {
+                    os_free(typeName);
+                }
+            } else {
+                os_free(typeName);
+            }
             os_free(scopedName);
             break;
         default:
@@ -2588,6 +2615,7 @@ idl_seqLoopCopy (
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        c_free(type%d);\n", loop_index);
         }
+        os_free(scopedName);
         break;
     default:
         assert (0);
@@ -2745,19 +2773,25 @@ idl_typedefOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
         idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
                 idl_scopeStack (scope, "_", name));
-        idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        if (idl_getIsISOCpp2()) {
+            idl_fileOutPrintf (idl_fileCur(), "    c_type dbType,\n");
+        } else {
+            idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        }
         idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
         idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
         idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
         idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n\n");
-        idl_fileOutPrintf (idl_fileCur(), "    extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "    extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
             idl_scopedTypeName (idl_typeDefActual(defSpec)),
+            idl_getIsISOCpp2() ? "c_type" : "c_base",
             idl_corbaCxxTypeFromTypeSpec(idl_typeDefActual(defSpec)),
             idl_scopedTypeName (idl_typeDefActual(defSpec)));
-        idl_fileOutPrintf (idl_fileCur(), "    result = __%s__copyIn(base, (%s *)from, (%s *)to);\n",
+        idl_fileOutPrintf (idl_fileCur(), "    result = __%s__copyIn(%s, (%s *)from, (%s *)to);\n",
             idl_scopedTypeName(idl_typeDefActual(defSpec)),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             idl_corbaCxxTypeFromTypeSpec(idl_typeDefActual(defSpec)),
             idl_scopedSplTypeName(idl_typeDefActual(defSpec)));
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2768,13 +2802,20 @@ idl_typedefOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
         idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
                 idl_scopeStack (scope, "_", name));
-        idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        if (idl_getIsISOCpp2()) {
+            idl_fileOutPrintf (idl_fileCur(), "    c_type dbType,\n");
+        } else {
+            idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        }
         idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
-        idl_scopeStackCxx (scope, "::", name));
+                idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
-        idl_scopeStack(scope, "_", name));
+                idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
         idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
+        if (idl_getIsISOCpp2()) {
+            idl_fileOutPrintf (idl_fileCur(), "    c_base base = c_getBase(dbType);\n\n");
+        }
         idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
         idl_arrayElements (scope, idl_typeArray(idl_typeDefActual(defSpec)), "*from", "to", 0, OS_FALSE, OS_FALSE, userData);
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2785,13 +2826,20 @@ idl_typedefOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
         idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
                 idl_scopeStack (scope, "_", name));
-        idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        if (idl_getIsISOCpp2()) {
+            idl_fileOutPrintf (idl_fileCur(), "    c_type dbType,\n");
+        } else {
+            idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+        }
         idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
-        idl_scopeStackCxx (scope, "::", name));
+                idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
-        idl_scopeStack(scope, "_", name));
+                idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
         idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
+        if (idl_getIsISOCpp2()) {
+            idl_fileOutPrintf (idl_fileCur(), "    c_base base = c_getBase(dbType);\n\n");
+        }
         idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
         idl_seqElements (scope, name, idl_typeSeq(idl_typeDefActual(defSpec)), 0, userData);
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2870,13 +2918,20 @@ idl_unionOpen (
     idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
     idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
             idl_scopeStack (scope, "_", name));
-    idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+    if (idl_getIsISOCpp2()) {
+        idl_fileOutPrintf (idl_fileCur(), "    c_type dbType,\n");
+    } else {
+        idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
+    }
     idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
     idl_scopeStackCxx (scope, "::", name));
     idl_fileOutPrintf (idl_fileCur(), "    struct _%s *to)\n",
     idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "{\n");
     idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
+    if (idl_getIsISOCpp2()) {
+        idl_fileOutPrintf (idl_fileCur(), "    c_base base = c_getBase(dbType);\n\n");
+    }
     idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
@@ -3075,47 +3130,53 @@ idl_unionCaseOpenClose (
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray && idl_getIsISOCpp() && idl_getIsISOCppTypes()) {
                 idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
-                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
-                idl_scopedTypeName (typeSpec),
-                idl_corbaCxxTypeFromTypeSpec(typeSpec),
-                idl_scopedTypeName (typeSpec));
+                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
+                        idl_scopedTypeName (typeSpec),
+                        idl_getIsISOCpp2() ? "c_type" : "c_base",
+                        idl_corbaCxxTypeFromTypeSpec(typeSpec),
+                        idl_scopedTypeName (typeSpec));
                 idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
-                idl_corbaCxxTypeFromTypeSpec(typeSpec),
-                cid);
-                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
-                idl_scopedTypeName (typeSpec),
-                cid);
+                        idl_corbaCxxTypeFromTypeSpec(typeSpec),
+                        cid);
+                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, &x, &to->_u.%s);\n",
+                        idl_scopedTypeName (typeSpec),
+                        idl_getIsISOCpp2() ? "dbType" : "base",
+                        cid);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         }
         /* QAC EXPECT 3416; No side effect here */
         else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) {
                 idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
-            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
                 idl_scopedTypeName (typeSpec),
+                idl_getIsISOCpp2() ? "c_type" : "c_base",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_scopedTypeName (typeSpec));
                 idl_fileOutPrintf (idl_fileCur(), "            const %s *x = (const %s *)from->%s();\n",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 cid);
-            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, x, &to->_u.%s);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, x, &to->_u.%s);\n",
                 idl_scopedTypeName (typeSpec),
+                idl_getIsISOCpp2() ? "dbType" : "base",
                 cid);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(), "        break;\n");
                 /* QAC EXPECT 3416; No side effect here */
         } else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq) {
                 idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
-                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
                     idl_scopedTypeName (typeSpec),
+                    idl_getIsISOCpp2() ? "c_type" : "c_base",
                     idl_corbaCxxTypeFromTypeSpec(typeSpec),
                     idl_scopedTypeName (typeSpec));
                 idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 cid);
-                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, &x, &to->_u.%s);\n",
                     idl_scopedTypeName (typeSpec),
+                    idl_getIsISOCpp2() ? "dbType" : "base",
                     cid);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(), "        break;\n");
@@ -3156,30 +3217,34 @@ idl_unionCaseOpenClose (
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
         idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
-        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "c_type" : "c_base",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
         idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
         idl_corbaCxxTypeFromTypeSpec(typeSpec),
         cid);
-        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, &x, &to->_u.%s);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             cid);
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
         idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
-        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(%s, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "c_type" : "c_base",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
         idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
         idl_corbaCxxTypeFromTypeSpec(typeSpec),
         cid);
-        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(%s, &x, &to->_u.%s);\n",
             idl_scopedTypeName (typeSpec),
+            idl_getIsISOCpp2() ? "dbType" : "base",
             cid);
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");

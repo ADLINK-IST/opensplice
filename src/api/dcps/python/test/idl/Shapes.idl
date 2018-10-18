@@ -1,0 +1,21 @@
+struct Inner {
+	long foo;
+};
+
+struct ShapeType {
+	string color;
+	long x;
+	long y;
+	long z;
+	Inner t;
+};
+#pragma keylist ShapeType color
+
+struct ShapeType2 {
+    string color;
+    long x;
+    long y;
+    long z;
+    Inner t;
+};
+#pragma keylist ShapeType2 color

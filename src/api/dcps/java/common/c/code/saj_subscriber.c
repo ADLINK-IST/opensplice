@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,7 +55,7 @@ SAJ_FUNCTION(jniSubscriberNew) (
         if (uQos != NULL) {
             result = saj_subscriberQosCopyIn(env, qos, uQos);
             if (result == SAJ_RETCODE_OK){
-                uSubscriber = u_subscriberNew(SAJ_VOIDP(uParticipant), name, uQos, FALSE);
+                uSubscriber = u_subscriberNew(SAJ_VOIDP(uParticipant), name, uQos);
                 if (uSubscriber != NULL) {
                     userData = NEW_GLOBAL_REF(env, this);
                     u_observableSetUserData(u_observable(uSubscriber), userData);

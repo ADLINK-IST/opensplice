@@ -36,9 +36,11 @@ my $java_only = 0;
 my $left_over_args;
 my $ret;
 my $ospl_home_hack;
+my $ospl_libmod;
 ($ret, $left_over_args) = GetOptions('src-co' => \$src_checkout,
                                      'java-only' => \$java_only,
-                                     'ospl-home=s' => \$ospl_home_hack);
+                                     'ospl-home=s' => \$ospl_home_hack,
+									 'ospl-libmod' => \$ospl_libmod);
 
 my($basePath) = (defined $FindBin::RealBin ? $FindBin::RealBin :
                                              File::Spec->rel2abs(dirname($0)));
@@ -162,7 +164,10 @@ if ($os_arch eq 'x86_64')
     $build_bit_64 = 1;
 }
 
-unshift(@ARGV, '--value_template', 'lib_modifier=');
+# When ospl_libmod is set then do not disable the lib_modifier
+if (!defined $ospl_libmod) {
+	unshift(@ARGV, '--value_template', 'lib_modifier=');
+}
 unshift(@ARGV, '--features', 'ospl_64_bit=' . $build_bit_64);
 
 if (defined $just_os) {

@@ -23,7 +23,7 @@ about the DDS specification and usage, which is a good starting point if you don
 much about DDS yet.
 
 If you are new to C# we would recommend that you start by looking at the example
-code provided in your OpenSplice installation directory as well as the documentation
+code provided in your Vortex OpenSplice installation directory as well as the documentation
 in the sections below.
 
 A summary of each example, along with build instructions can be found on the
@@ -37,7 +37,7 @@ The API is currently compiled on the Windows platform using Microsoft's C# compi
 the Mono framework has also been used by the opensource community, but that is not yet part of the commercially
 supported releases. However, it should be possible to run the Windows DLL on Mono, since Mono is binary compatible with Windows.
 The resulting deliverable is a library file called dcpssacsAssembly.dll, which you can find in the
-%OSPL_HOME%/bin directory alongside all the other OpenSplice DDS product libraries.
+%OSPL_HOME%/bin directory alongside all the other Vortex OpenSplice product libraries.
 
 Since the DLL is a managed assembly, it is not found by Windows using the normal PATH environment variable.
 In order for the .NET framework to find a library, this library must either be copied to the same directory

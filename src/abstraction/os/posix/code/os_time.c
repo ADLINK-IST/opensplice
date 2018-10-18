@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -100,8 +101,10 @@ os_timeEGet(void)
 
     /* The CLOCK_BOOTTIME includes time spent during suspend, but is
      * Linux specific. */
-    (void) clock_gettime (CLOCK_BOOTTIME, &tv);
-
+    if ( 0 != clock_gettime (CLOCK_BOOTTIME, &tv)) { 
+        /* Clock_boottime not supported, try monotonic */ 
+        (void) clock_gettime (CLOCK_MONOTONIC, &tv); 
+    }
     t = OS_TIMEE_INIT(tv.tv_sec, tv.tv_nsec);
 #else
     os_timeM m = os_timeMGet();
@@ -120,7 +123,7 @@ os_timeEGet(void)
  * the remaining time.
  */
 os_result
-os_sleep(
+ospl_os_sleep(
     os_duration delay)
 {
     struct timespec t;

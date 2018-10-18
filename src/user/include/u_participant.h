@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -46,6 +47,7 @@
 
 #include "u_cfElement.h"
 #include "u_types.h"
+#include "u_instanceHandle.h"
 #include "u_object.h"
 #include "u_topic.h"
 #include "u_publisher.h"
@@ -233,6 +235,26 @@ u_domainParticipant_create_copy_cache(
     void* (action)(void* arg),
     void* arg
     );
+
+OS_API u_result
+u_participantIgnoreParticipant(
+    const u_participant _this,
+    const u_instanceHandle handle);
+
+OS_API u_result
+u_participantIgnoreTopic(
+    const u_participant _this,
+    const u_instanceHandle handle);
+
+OS_API u_result
+u_participantIgnoreSubscription(
+    const u_participant _this,
+    const u_instanceHandle handle);
+
+OS_API u_result
+u_participantIgnorePublication(
+    const u_participant _this,
+    const u_instanceHandle handle);
 
 #undef OS_API
 

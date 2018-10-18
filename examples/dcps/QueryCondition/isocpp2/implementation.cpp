@@ -1,9 +1,10 @@
 
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -74,7 +75,8 @@ int publisher(int argc, char *argv[])
         dds::topic::qos::TopicQos topicQos
              = dp.default_topic_qos()
                 << dds::core::policy::Durability::Transient()
-                << dds::core::policy::Reliability::Reliable();
+                << dds::core::policy::Reliability::Reliable()
+                << dds::core::policy::DestinationOrder::SourceTimestamp();
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
         dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
@@ -111,8 +113,7 @@ int publisher(int argc, char *argv[])
         {
             geQuote.price() += 0.5f;
             msftQuote.price() += 1.5f;
-            std::cout << "=== [QueryConditionDataPublisher] sends 2 stockQuotes : (GE, "
-                      << geQuote.price() << ") (MSFT, " << msftQuote.price() << ")" << std::endl;
+            std::cout << "GE : " << geQuote.price() << " MSFT : " << msftQuote.price() << std::endl;
             dw << geQuote;
             dw << msftQuote;
             exampleSleepMilliseconds(1000);
@@ -133,7 +134,7 @@ int publisher(int argc, char *argv[])
         /* A short sleep ensures time is allowed for the sample to be written to the network.
         If the example is running in *Single Process Mode* exiting immediately might
         otherwise shutdown the domain services before this could occur */
-        exampleSleepMilliseconds(1000);
+        exampleSleepMilliseconds(2000);
     }
     catch (const dds::core::Exception& e)
     {
@@ -170,7 +171,8 @@ int subscriber(int argc, char *argv[])
         dds::domain::DomainParticipant dp(org::opensplice::domain::default_id());
         dds::topic::qos::TopicQos topicQos = dp.default_topic_qos()
                                                     << dds::core::policy::Durability::Transient()
-                                                    << dds::core::policy::Reliability::Reliable();
+                                                    << dds::core::policy::Reliability::Reliable()
+                                                    << dds::core::policy::DestinationOrder::SourceTimestamp();
         dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::sub::Subscriber is created on the domain participant. */
@@ -244,7 +246,7 @@ int subscriber(int argc, char *argv[])
             exampleSleepMilliseconds(900);
             ++count;
         }
-        while (!closed && count < write_loop_count * 30);
+        while (!closed && count < write_loop_count * 3);
 
         if (!closed)
         {

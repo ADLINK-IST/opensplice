@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -44,6 +45,7 @@
 struct _ospl_handlerList_t {
     void (*handler)(void);
     struct _ospl_handlerList_t *next;
+
 };
 
 /* #642 fix : define mapping between scheduling abstraction and windows
@@ -681,10 +683,32 @@ os_procIdSelf(void)
    /* returns a pseudo HANDLE to process, no need to close it */
    return GetProcessId (GetCurrentProcess());
 }
+
+#if (_WIN32_WINNT <= 0x0502)
+static
+DWORD
+os__processQueryFlag(void)
+{
+    DWORD flag;
+
+    /* For Windows Server 2003 and Windows XP:  PROCESS_QUERY_LIMITED_INFORMATION is not supported.
+     * PROCESS_QUERY_INFORMATION need higher access permission which are not always granted when using OpenSplice
+     * as a windows service due to UAC so use PROCESS_QUERY_LIMITED_INFORMATION instead */
+    if(LOBYTE(LOWORD(GetVersion())) < 6) {
+        flag = PROCESS_QUERY_INFORMATION;
+    } else {
+        flag = 0x1000; /* PROCESS_QUERY_LIMITED_INFORMATION */
+    }
+    return flag;
+}
+#else
+# define os__processQueryFlag() PROCESS_QUERY_LIMITED_INFORMATION
+#endif
+
 HANDLE
 os_procIdToHandle(os_procId procId)
 {
-    return OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, procId);
+    return OpenProcess(os__processQueryFlag() | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, procId);
 }
 os_procId
 os_handleToProcId(HANDLE procHandle)

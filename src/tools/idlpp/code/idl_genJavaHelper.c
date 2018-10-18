@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,11 +24,14 @@
 #include "idl_tmplExp.h"
 #include "idl_typeSpecifier.h"
 
+#include "os_abstract.h"
 #include "os_iterator.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
 #include "os_string.h"
 #include "os_errno.h"
+
+#include "c_base.h"
 
 static os_equality idl_genJavaHelperComparePackageRedirect (const void *obj1, const void *obj2);
 
@@ -51,9 +55,9 @@ static const char *java_keywords[61] = {
 };
 
 /* Translate an IDL identifier into a Java language identifier.
-   The IDL specification states that all identifiers that match
-   a Java keyword must be prepended by "_".
-*/
+ * The IDL specification states that all identifiers that match
+ * a Java keyword must be prepended by "_".
+ */
 c_char *
 idl_javaId(
     const char *identifier)
@@ -120,9 +124,9 @@ idl_scopeJavaElementName (
 }
 
 /* Build a textual presentation of the provided scope stack taking the
-   Java keyword identifier translation into account. Further the function
-   equals "idl_scopeStack".
-*/
+ * Java keyword identifier translation into account. Further the function
+ * equals "idl_scopeStack".
+ */
 c_char *
 idl_scopeStackJava (
     idl_scope scope,
@@ -147,7 +151,8 @@ idl_scopeStackJava (
         /* Translate the scope name to a C identifier */
         Id = idl_javaId(idl_scopeJavaElementName(idl_scopeIndexed(scope, si)));
         /* allocate space for the current scope stack + the separator
-           and the next scope name */
+         *and the next scope name
+         */
         /* QAC EXPECT 5007; will not use wrapper */
         slen = strlen (scopeStack) + strlen (scopeSepp) + strlen (Id);
         scopeStack = os_realloc(scopeStack, slen + 1);
@@ -214,7 +219,8 @@ idl_scopeStackJava (
         /* Translate the user identifier to a Java identifier */
         Id = idl_javaId(name);
         /* allocate space for the current scope stack + the separator
-           and the user identifier */
+         * and the user identifier
+         */
         /* QAC EXPECT 5007; will not use wrapper */
         scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
         /* Concatenate the separator */
@@ -232,8 +238,8 @@ idl_scopeStackJava (
 }
 
 /* Return the C specific type identifier for the
-   specified type specification
-*/
+ * specified type specification
+ */
 c_char *
 idl_corbaJavaTypeFromTypeSpec (
     idl_typeSpec typeSpec)
@@ -294,9 +300,9 @@ idl_corbaJavaTypeFromTypeSpec (
 	return idl_corbaJavaTypeFromTypeSpec (idl_typeDefActual(idl_typeDef (typeSpec)));
     } else {
         /* if a user type is specified build it from its scope and its name.
-	   The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
-           idl_tunion.
-	*/
+         * The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
+         * idl_tunion.
+         */
         typeName = idl_scopeStackJava(
             idl_typeUserScope(idl_typeUser(typeSpec)),
             ".",
@@ -306,6 +312,166 @@ idl_corbaJavaTypeFromTypeSpec (
     /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
 }
 
+c_char *
+idl_genJavaLiteralValueImage(
+    c_value literal,
+    c_type type)
+{
+    c_char * valueImg = NULL;
+    c_char *val2;
+    int i;
+
+    if (c_baseObject(type)->kind != M_ENUMERATION) {
+        switch (literal.kind) {
+        case V_OCTET:
+            valueImg = os_malloc (40);
+            snprintf(valueImg, 40, "%d", literal.is.Octet);
+            break;
+        case V_FLOAT:
+        case V_DOUBLE:
+            val2 = os_malloc(45);
+            valueImg = os_malloc(45);
+            snprintf(val2, 45, "%40.17g", literal.is.Double);
+            i = 0;
+            while (val2[i] == ' ') {
+                i++;
+            }
+            os_strncpy(valueImg, &val2[i], 40);
+            os_free(val2);
+            if ((strchr(valueImg, '.') == NULL) && (strchr(valueImg, 'E') == NULL)) {
+                strcat(valueImg, ".0");
+            }
+            break;
+        case V_STRING:
+            valueImg = os_malloc(strlen(literal.is.String)+3);
+            snprintf(valueImg, strlen(literal.is.String)+3, "\"%s\"", literal.is.String);
+            break;
+        case V_BOOLEAN:
+            valueImg = os_malloc(40);
+            if (literal.is.Boolean) {
+                snprintf(valueImg, 40, "true");
+            } else {
+                snprintf (valueImg, 40, "false");
+            }
+            break;
+        case V_LONGLONG:
+            valueImg = os_malloc(40);
+            switch (c_primitive(type)->kind) {
+                case P_SHORT:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%hu", (c_short)literal.is.LongLong);
+                    break;
+                case P_USHORT:
+                    /* Apply signed version, since Java has no unsigned types and therefore needs to
+                     * overflow into the negative range. */
+                    snprintf(valueImg, 40, "%hd", (c_short)literal.is.LongLong);
+                    break;
+                case P_LONG:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%u", (c_long)literal.is.LongLong);
+                    break;
+                case P_ULONG:
+                    /* Apply signed version, since Java has no unsigned types and therefore needs to
+                     * overflow into the negative range. */
+                    snprintf(valueImg, 40, "%d", (c_long)literal.is.LongLong);
+                    break;
+                case P_LONGLONG:
+                    /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+                    snprintf(valueImg, 40, "%"PA_PRIu64"L", (c_longlong)literal.is.LongLong);
+                    break;
+                case P_ULONGLONG:
+                    /* Apply signed version, since Java has no unsigned types and therefore needs to
+                     * overflow into the negative range. */
+                    snprintf(valueImg, 40, "%"PA_PRId64"L", (c_longlong)literal.is.LongLong);
+                    break;
+                case P_CHAR:
+                    snprintf(valueImg, 40, "%d", (unsigned char)literal.is.LongLong);
+                    break;
+                case P_OCTET:
+                    snprintf(valueImg, 40, "%d", (unsigned char)literal.is.LongLong);
+                    break;
+                case P_ADDRESS:
+                    snprintf(valueImg, 40, PA_ADDRFMT, (PA_ADDRCAST)literal.is.LongLong);
+                    break;
+                case P_UNDEFINED:
+                case P_BOOLEAN:
+                case P_WCHAR:
+                case P_FLOAT:
+                case P_DOUBLE:
+                case P_VOIDP:
+                case P_MUTEX:
+                case P_LOCK:
+                case P_COND:
+                case P_COUNT:
+                case P_PA_UINT32:
+                case P_PA_UINTPTR:
+                case P_PA_VOIDP:
+                    /* Do nothing */
+                    break;
+            }
+            break;
+        case V_SHORT:
+            /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%hu", literal.is.Short);
+            break;
+        case V_LONG:
+            /* Apply unsigned version, since sign will be applied later as additional minus operand. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%u", (c_long)literal.is.Long);
+            break;
+        case V_USHORT:
+            /* Apply signed version, since Java has no unsigned types and therefore needs to
+             * overflow into the negative range. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%hd", (c_short)literal.is.UShort);
+            break;
+        case V_ULONG:
+            /* Apply signed version, since Java has no unsigned types and therefore needs to
+             * overflow into the negative range. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%d", (c_long)literal.is.ULong);
+            break;
+        case V_ULONGLONG:
+            /* Apply signed version, since Java has no unsigned types and therefore needs to
+             * overflow into the negative range. */
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%" PA_PRId64, (c_longlong)literal.is.ULongLong);
+            break;
+        case V_ADDRESS:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, PA_ADDRFMT, (PA_ADDRCAST)literal.is.Address);
+            break;
+        case V_CHAR:
+            valueImg = os_malloc(40);
+            snprintf(valueImg, 40, "%u", (unsigned char)literal.is.Char);
+            break;
+        case V_UNDEFINED:
+        case V_WCHAR:
+        case V_WSTRING:
+        case V_FIXED:
+        case V_VOIDP:
+        case V_OBJECT:
+        case V_COUNT:
+            /* Invalid types for literal constants*/
+            /* FALL THROUGH */
+        default:
+            valueImg = NULL;
+            break;
+        }
+    } else {
+        const char *ENUM_TEMPLATE = "%s.%s";
+        char *javaEnumTp = idl_javaId(c_metaObject(type)->name);
+        char *javaEnumLabel = idl_javaId(c_metaObject(c_enumeration(type)->elements[literal.is.Long])->name);
+        size_t valLen = strlen(javaEnumTp) + strlen(javaEnumLabel) + strlen(ENUM_TEMPLATE) + 1;
+        valueImg = os_malloc(valLen);
+        snprintf(valueImg, valLen, ENUM_TEMPLATE, javaEnumTp, javaEnumLabel);
+        os_free(javaEnumTp);
+        os_free(javaEnumLabel);
+    }
+    return valueImg;
+}
+
 /* FIXME: replace by os_mkpath once it's merged? */
 static int
 idl_createDir (
@@ -313,7 +479,7 @@ idl_createDir (
 {
     char *pathName;
     os_result statRes;
-    struct os_stat statbuf;
+    struct os_stat_s statbuf;
     char* outdir;
     os_char* stackScope;
     os_char* token;
@@ -356,7 +522,7 @@ idl_createDir (
                 stackScope = token;
                 statRes = os_stat (pathName, &statbuf);
                 if (statRes == os_resultFail) {
-                    /* @todo                                                      */
+                    /* TODO                                                       */
                     /* Assume the file does not exist. On some platforms          */
                     /* a check to see if errno == ENOENT would be more conclusive */
                     /* That fails on WIN32 however because stat is not fully      */

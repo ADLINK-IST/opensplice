@@ -25,7 +25,6 @@
 #include <dds/core/types.hpp>
 #include <dds/core/Time.hpp>
 #include <dds/core/Entity.hpp>
-//#include <dds/core/cond/StatusCondition.hpp>
 #include <dds/domain/qos/DomainParticipantQos.hpp>
 
 #include <dds/topic/qos/TopicQos.hpp>
@@ -497,6 +496,50 @@ public:
       */
 
     /**
+      * This operation will create a snapshot of all persistent data matching the provided
+      * partition and topic expressions and store the snapshot at the location indicated by
+      * the URI. Only persistent data available on the local node is considered.
+      *
+      * @note This is a proprietary OpenSplice extension.
+      *
+      *<b>Detailed Description</b><br>
+      *
+      * This operation will create a snapshot of all persistent data matching the provided
+      * partition and topic expressions and store the snapshot at the location indicated by
+      * the URI. Only persistent data available on the local node is considered. This
+      * operation will fire an event to trigger the snapshot creation by the durability service
+      * and then return while the durability service fulfills the snapshot request.
+      * The created snapshot can then be used as the persistent store for the durability
+      * service next time it starts up by configuring the location of the snapshot as the
+      * persistent store in the configuration file. The durability service will then use the
+      * snapshot as the regular store (and can thus also alter its contents).
+      *
+      * <i>Call</i><br>
+      * This is a proprietary operation and can be called by using the operator->.
+      * @code{.cpp}
+      * dds::domain::DomainParticipant dp(domainId);
+      * dp->create_persistent_snapshot(...);
+      * @endcode
+      *
+      * @param partition_expression The expression of all partitions involved in
+      *                             the snapshot; this may contain wildcards.
+      * @param topic_expression     The expression of all topics involved in
+      *                             the snapshot; this may contain wildcards.
+      * @param uri                  The location where to store the snapshot.
+      *                             Currently only directories are supported.
+      */
+    void create_persistent_snapshot(const std::string& partition_expression, const std::string& topic_expression, const std::string& uri);
+
+#endif
+
+#ifdef DOXYGEN_FOR_ISOCPP2
+     /*
+      * The above macro is never (and must never) be defined in normal compilation.
+      *
+      * The following code is for documenting proprietary API only.
+      */
+
+    /**
       * This operation safely detaches the application from all domains it is currently
       * participating in.
       *
@@ -567,7 +610,124 @@ public:
       */
     static void detach_all_domains(bool block_operations, bool delete_entities);
 
+
 #endif
+    
+#ifdef DOXYGEN_FOR_ISOCPP2
+     /*
+      * The above macro is never (and must never) be defined in normal compilation.
+      *
+      * The following code is for documenting proprietary API only.
+      */
+    /**
+      * This operation set a property in the domainparticipant
+      *
+      * @note This is a proprietary OpenSplice extension.
+      *
+      *<b>Detailed Description</b><br>
+      *
+      * This operation sets a property in the domain participant to the specified value.
+      * <p>
+      * Currently, the following properties are defined:
+      * <i>isolateNode</i> : The isolateNode property allows applications to isolate the federation from the 
+      *                  rest of the Domain, i.e. at network level disconnect the node from the rest of the 
+      *                  system. Additionally, they also need to be able to issue a request to reconnect 
+      *                  their federation to the domain again after which the durability merge-policy 
+      *                  that is configured needs to be applied. 
+      *                  To isolate a federation, the application needs to set the isolateNode property 
+      *                  value to ‘true’ and to (de)isolate the federation the same property needs to set to ‘false’. 
+      *                  The default value of the isolateNode property is ‘false’.       
+      *                  All data that is published after isolateNode is set to true will not be sent to the network and 
+      *                  any data received from the network will be ignored. 
+      *                  Be aware that data being processed by the network service at time of isolating a node may still 
+      *                  be sent to the network due to asynchronous nature of network service internals.
+      *                  The value is interpreted as a boolean (i.e., it must be either ‘true’ or ‘false’).
+      *                  <i>false</i> (default): The federation is connected to the domain.
+      *                  <i>true</i>: The federation is disconnected from the domain meaning that data is not published 
+      *                   on the network and data from the network is ignored.
+      * </p>
+      * <br>
+      *
+      * <i>Call</i><br>
+      * This is a proprietary operation and can be called by using the operator->.
+      * @code{.cpp}
+      * dds::domain::DomainParticipant dp(domainId);
+      * dp->set_property(...);
+      * @endcode
+      *
+      * @param name  Indicates the name of the property to be set
+      * @param value Indicates the value to set
+      * @throws dds::core::Error
+      *                  An internal error has occurred.
+      * @throws dds::core::InvalidArgumentError
+      *                  an invalid value has been specified.
+      * @throws dds::core::AlreadyClosedError
+      *                  The entity has already been closed.
+      * @throws dds::core::OutOfResourcesError
+      *                  The Data Distribution Service ran out of resources to
+      *                  complete this operation.
+      * @throws dds::core::UnsupportedError
+      *                  The name specifies an undefined property or the operation is not supported in this version.
+      */
+    void set_property(std::string property, std::string value);
+#endif 
+
+#ifdef DOXYGEN_FOR_ISOCPP2
+     /*
+      * The above macro is never (and must never) be defined in normal compilation.
+      *
+      * The following code is for documenting proprietary API only.
+      */
+    /**
+      * This operation get a property from the domainparticipant
+      *
+      * @note This is a proprietary OpenSplice extension.
+      *
+      *<b>Detailed Description</b><br>
+      *
+      * This operation gets a property from the domain participant.
+      * <p>
+      * Currently, the following properties are defined:
+      * <i>isolateNode</i> : The isolateNode property allows applications to isolate the federation from the 
+      *                  rest of the Domain, i.e. at network level disconnect the node from the rest of the 
+      *                  system. Additionally, they also need to be able to issue a request to reconnect 
+      *                  their federation to the domain again after which the durability merge-policy 
+      *                  that is configured needs to be applied. 
+      *                  To isolate a federation, the application needs to set the isolateNode property 
+      *                  value to ‘true’ and to (de)isolate the federation the same property needs to set to ‘false’. 
+      *                  The default value of the isolateNode property is ‘false’.       
+      *                  All data that is published after isolateNode is set to true will not be sent to the network and 
+      *                  any data received from the network will be ignored. 
+      *                  Be aware that data being processed by the network service at time of isolating a node may still 
+      *                  be sent to the network due to asynchronous nature of network service internals.
+      * </p>
+      * <br>
+      *
+      * <i>Call</i><br>
+      * This is a proprietary operation and can be called by using the operator->.
+      * @code{.cpp}
+      * dds::domain::DomainParticipant dp(domainId);
+      * dp->get_property(...);
+      * @endcode
+      *
+      * @param name  Indicates the name of the property to get
+      * 
+      * @return the value of the property
+      * 
+      * @throws dds::core::Error
+      *                  An internal error has occurred.
+      * @throws dds::core::AlreadyClosedError
+      *                  The entity has already been closed.
+      * @throws dds::core::OutOfResourcesError
+      *                  The Data Distribution Service ran out of resources to
+      *                  complete this operation.
+      * @throws dds::core::UnsupportedError
+      *                  The name specifies an undefined property or the operation is not supported in this version.
+      */
+    std::string get_property(std::string property);
+
+#endif
+
 
     //=============================================================================
 };

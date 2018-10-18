@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -64,6 +65,13 @@ AnyTopicDelegate::AnyTopicDelegate(
 
 AnyTopicDelegate::~AnyTopicDelegate()
 {
+    if (!closed) {
+        try {
+            close();
+        } catch (...) {
+
+        }
+    }
 }
 
 void
@@ -112,10 +120,10 @@ AnyTopicDelegate::reader_expression() const
     return rExpr;
 }
 
-c_value *
+std::vector<c_value>
 AnyTopicDelegate::reader_parameters() const
 {
-    return NULL;
+    return std::vector<c_value>();
 }
 
 void

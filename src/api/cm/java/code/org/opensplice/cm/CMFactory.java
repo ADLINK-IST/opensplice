@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -100,7 +101,7 @@ public class CMFactory {
 
     /**
      * Provides access to the communication handler for a given domain.
-     * 
+     *
      * @return The communicator for the given domain
      * @throws CMException
      *             Thrown when communicator could not be constructed or
@@ -152,7 +153,7 @@ public class CMFactory {
     /**
      * Resolves the version of the federation identified by the domain
      * parameter.
-     * 
+     *
      * @return The version of federation identified by the domain parameter.
      * @throws CMException
      *             Thrown when communication with the federation fails.
@@ -225,7 +226,7 @@ public class CMFactory {
             int localMinor = new Integer(localVersion[1]);
             int remoteMajor = new Integer(remoteVersion[0]);
             int remoteMinor = new Integer(remoteVersion[1]);
-            final String devLabel = "non-PrismTech build";
+            final String devLabel = "non-ADLINK build";
             boolean isLocalDev = local.contains(devLabel);
             boolean isRemoteDev = local.contains(devLabel);
 

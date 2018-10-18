@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,8 +20,10 @@
  */
 #include "idl_genISOCxx2Helper.h"
 #include "idl_genLanguageHelper.h"
+#include "idl_genCHelper.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
 #include "c_misc.h"
 #include "c_metabase.h"
 #include "ut_collection.h"
@@ -473,15 +476,35 @@ idl_ISOCxx2ValueFromCValue(
     case M_PRIMITIVE:
         switch (c_primitiveKind(t))
         {
-        case P_SHORT:
-        case P_USHORT:
         case P_LONG:
+            cxxValue = os_malloc(40);
+            if (v.is.Long != INT32_MIN) {
+                snprintf(cxxValue, 40, "%dL", v.is.Long);
+            } else {
+                snprintf(cxxValue, 40, "(-2147483647L - 1L)");
+            }
+            break;
         case P_ULONG:
+            cxxValue = os_malloc(40);
+            snprintf(cxxValue, 40, "%uU", v.is.ULong);
+            break;
         case P_LONGLONG:
+            cxxValue = os_malloc(40);
+            if (v.is.LongLong != INT64_MIN) {
+                snprintf(cxxValue, 40, "%"PA_PRId64"LL", v.is.LongLong);
+            } else {
+                snprintf(cxxValue, 40, "(-9223372036854775807LL - 1LL)");
+            }
+            break;
         case P_ULONGLONG:
+            cxxValue = os_malloc(40);
+            snprintf(cxxValue, 40, "%"PA_PRIu64"ULL", v.is.ULongLong);
+            break;
         case P_OCTET:
         case P_FLOAT:
         case P_DOUBLE:
+        case P_SHORT:
+        case P_USHORT:
             cxxValue = c_valueImage(v);
             break;
         case P_BOOLEAN:
@@ -521,6 +544,28 @@ idl_ISOCxx2ValueFromCValue(
         break;
     }
     return cxxValue;
+}
+
+c_char *
+idl_genISOCxx2LiteralValueImage(
+    c_value literal,
+    c_type type)
+{
+    c_char * valueImg = NULL;
+
+    if (c_baseObject(type)->kind != M_ENUMERATION) {
+        valueImg = idl_genCLiteralValueImage(literal, type);
+    } else {
+        const char *ENUM_TEMPLATE = "OSPL_UNSCOPED_ENUM_LABEL(%s,%s)";
+        char *cxxEnumTp = idl_ISOCxx2Id(c_metaObject(type)->name);
+        char *cxxEnumLabel = idl_ISOCxx2Id(c_metaObject(c_enumeration(type)->elements[literal.is.Long])->name);
+        size_t valLen = strlen(cxxEnumTp) + strlen(cxxEnumLabel) + strlen(ENUM_TEMPLATE) + 1;
+        valueImg = os_malloc(valLen);
+        snprintf(valueImg, valLen, ENUM_TEMPLATE, cxxEnumTp, cxxEnumLabel);
+        os_free(cxxEnumTp);
+        os_free(cxxEnumLabel);
+    }
+    return valueImg;
 }
 
 c_bool

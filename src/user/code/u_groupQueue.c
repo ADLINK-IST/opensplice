@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -108,3 +109,19 @@ u_groupQueueNew(
     return _this;
 }
 
+u_result
+u_groupQueueSize(
+    u_groupQueue _this,
+    c_ulong * size)
+{
+    u_result result;
+    v_groupQueue kq;
+
+    result = u_observableWriteClaim(u_observable(_this),(v_public *)(&kq), C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        *size = v_groupQueueSize(kq);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
+    }
+
+    return result;
+}

@@ -1,0 +1,48 @@
+module FarmGraph {
+
+    enum FarmGraphEntityType{
+        PROCESSING_AREA,
+        TCS_AREA,
+        MULTI_COW_AREA,
+        HIGH_PRIORITY_AREA,
+        AUTOMATIC_HOLDING_AREA,
+        SELECTION_GATE,
+        SEGREGATION_GATE,
+        BLOCKING_GATE
+    };
+
+    struct FarmGraphEntity{
+        string identifier;
+        unsigned long robot_id;
+        FarmGraphEntityType type;
+    };
+
+    struct FarmGraphEdge{
+        string entity_1_identifier;
+        string entity_2_identifier;
+        boolean bidirectional;
+        string position;
+    };
+
+    struct RoutingDataResult{
+        sequence<FarmGraphEntity> entities;
+        sequence<FarmGraphEdge> edges;
+    };
+    #pragma keylist RoutingDataResult
+
+};
+
+/** No module, key */
+
+enum LeftRightStates{
+    LEFT,
+    RIGHT
+};
+
+struct SegregationGate{
+    string output_identifier;
+    LeftRightStates state;
+};
+#pragma keylist SegregationGate output_identifier
+
+

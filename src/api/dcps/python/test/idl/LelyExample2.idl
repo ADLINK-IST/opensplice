@@ -1,0 +1,33 @@
+
+enum rootEnum {
+  A,
+  B
+};
+
+module basic{
+
+    enum basicEnum {
+      A,
+      B
+    };
+
+	module module_SequenceOfStruct{
+
+		struct Inner{
+			short short1;
+			double double1;
+			
+		};
+		
+		typedef Inner inner_struct;
+		
+		struct SequenceOfStruct_struct{
+			long long1;
+			Sequence<inner_struct> seq1;
+			rootEnum enum_test;
+		};
+		
+		#pragma keylist SequenceOfStruct_struct
+	};
+};
+		

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5. OpenSplice Networking Options &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    <title>5. Vortex OpenSplice Networking Options &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
     
     <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
     <link rel="next" title="6. Benchmarking OpenSplice: Decision Trees" href="decisions.html" />
-    <link rel="prev" title="4. OpenSplice Architectural Modes" href="architectural.html" /> 
+    <link rel="prev" title="4. Vortex OpenSplice Architectural Modes" href="architectural.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,7 +38,7 @@
           <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+          <a href="architectural.html" title="4. Vortex OpenSplice Architectural Modes"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
       </ul>
@@ -49,25 +49,25 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="opensplice-networking-options">
-<span id="id1"></span><h1>5. OpenSplice Networking Options<a class="headerlink" href="#opensplice-networking-options" title="Permalink to this headline">¶</a></h1>
-<p>OpenSplice Enterprise provides several networking options for the
+  <div class="section" id="vortex-opensplice-networking-options">
+<span id="id1"></span><h1>5. Vortex OpenSplice Networking Options<a class="headerlink" href="#vortex-opensplice-networking-options" title="Permalink to this headline">¶</a></h1>
+<p>Vortex OpenSplice provides several networking options for the
 delivery of DDS data between nodes. The networking service selection
 is largely transparent to the user; the difference is observed
 in the CPU consumption, networking load, and ultimately how fast and
 efficiently the data is delivered between nodes. The most applicable
 service is dependent on the requirements of the use case.</p>
-<p><strong>OpenSplice DDSI</strong> is the industry standard protocol providing vendor
+<p><strong>Vortex OpenSplice DDSI</strong> is the industry standard protocol providing vendor
 interoperability that operates using a typed &#8216;pull&#8217; style model.</p>
-<p><strong>OpenSplice RTNetworking</strong> is an alternative to the DDSI wire protocol.
+<p><strong>Vortex OpenSplice RTNetworking</strong> is an alternative to the DDSI wire protocol.
 RTNetworking uses a type-less &#8216;push&#8217; style model in
 contrast to DDSI and is often the more performant, scalable option.
 RTNetworking also offers prioritization of network traffic via
-&amp;lsquo;channels&amp;rsquo;, partitioning to separate data flows and
+&#8216;channels&#8217;, partitioning to separate data flows and
 optional compression for low-bandwidth environments.
-<strong>OpenSplice SecureRTNetworking</strong> provides these features together
+<strong>Vortex OpenSplice SecureRTNetworking</strong> provides these features together
 with encryption and access control.</p>
-<p><strong>OpenSplice DDSI2E</strong> is the &#8216;enhanced&#8217; version of the
+<p><strong>Vortex OpenSplice DDSI2E</strong> is the &#8216;enhanced&#8217; version of the
 interoperable service. DDSI2E offers the benefits of the DDSI
 protocol (such as its automatic unicast delivery in the case of there
 being a single subscribing endpoint), together with some of the
@@ -97,7 +97,7 @@ to a DDSI2E xml file such as <tt class="docutils literal"><span class="pre">ospl
 <dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
 <dd>Note that by default, the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable refers to a
 <em>DDSI</em> configuration, so to see the extra performance and scalability
-benefits of OpenSplice DDS&#8217;s RTNetworking or DDSI2E it is
+benefits of Vortex OpenSplice&#8217;s RTNetworking or DDSI2E it is
 necessary to switch from the default.</dd>
 </dl>
 </div>
@@ -114,7 +114,7 @@ necessary to switch from the default.</dd>
             </a></p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">5. OpenSplice Networking Options</a><ul>
+<li><a class="reference internal" href="#">5. Vortex OpenSplice Networking Options</a><ul>
 <li><a class="reference internal" href="#how-to-select-the-networking-protocol">5.1. How to select the Networking Protocol</a></li>
 </ul>
 </li>
@@ -122,7 +122,7 @@ necessary to switch from the default.</dd>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="architectural.html"
-                        title="previous chapter">4. OpenSplice Architectural Modes</a></p>
+                        title="previous chapter">4. Vortex OpenSplice Architectural Modes</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="decisions.html"
                         title="next chapter">6. Benchmarking OpenSplice: Decision Trees</a></p>
@@ -158,13 +158,13 @@ necessary to switch from the default.</dd>
           <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
              >next</a> |</li>
         <li class="right" >
-          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+          <a href="architectural.html" title="4. Vortex OpenSplice Architectural Modes"
              >previous</a> |</li>
         <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2016, PrismTech.
+        &copy; Copyright 2018, ADLINK Technology Limited.
     </div>
   </body>
 </html>

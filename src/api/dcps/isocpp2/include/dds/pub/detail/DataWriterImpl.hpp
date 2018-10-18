@@ -41,9 +41,13 @@ DataWriter<T, DELEGATE>::DataWriter(
     const dds::pub::Publisher& pub,
     const dds::topic::Topic<T>& topic) :
         dds::core::Reference< DELEGATE<T> >(
-            new DELEGATE<T>(pub, topic, pub.default_datawriter_qos(), NULL, dds::core::status::StatusMask::none()))
+            new DELEGATE<T>(pub,
+                            topic,
+                            pub.is_nil() ? dds::pub::qos::DataWriterQos() : pub.default_datawriter_qos(),
+                            NULL,
+                            dds::core::status::StatusMask::none()))
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(pub);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(pub);
     this->delegate()->init(this->impl_);
 }
 
@@ -56,7 +60,7 @@ DataWriter<T, DELEGATE>::DataWriter(const dds::pub::Publisher& pub,
          dds::core::Reference< DELEGATE<T> >(
             new DELEGATE<T>(pub, topic, qos, listener, mask))
 {
-	ISOCPP_REPORT_STACK_DDS_BEGIN(pub);
+    ISOCPP_REPORT_STACK_DDS_BEGIN(pub);
     this->delegate()->init(this->impl_);
 }
 
@@ -432,13 +436,23 @@ dds::pub::detail::DataWriter<T>::DataWriter(
         ISOCPP_THROW_EXCEPTION(ISOCPP_PRECONDITION_NOT_MET_ERROR, "DataWriter cannot be created, topic information not found");
     }
 
-    org::opensplice::pub::qos::DataWriterQosDelegate dwQos = qos.delegate();
+    /* Create a implicit publisher with the topic participant when needed. */
+    if (pub_.is_nil()) {
+        pub_ = dds::pub::Publisher(topic->domain_participant());
+    }
+
+    /* Merge the topic QoS implicitly when needed. */
+    if (topic.qos()->force_merge()) {
+        qos_ = topic.qos();
+    }
+
+    org::opensplice::pub::qos::DataWriterQosDelegate dwQos = qos_.delegate();
 
     // get and validate the kernel qos
     dwQos.check();
     u_writerQos uQos = dwQos.u_qos();
 
-    u_publisher uPublisher = (u_publisher)(pub.delegate()->get_user_handle());
+    u_publisher uPublisher = (u_publisher)(pub_.delegate()->get_user_handle());
     u_topic uTopic = (u_topic)(topic.delegate()->get_user_handle());
 
     std::string name = "writer <" + topic.name() + ">";
@@ -485,7 +499,7 @@ dds::pub::detail::DataWriter<T>::init(ObjectDelegate::weak_ref_type weak_ref)
     /* This only starts listening when the status mask shows interest. */
     this->listener_enable();
     /* Enable when needed. */
-    if (this->pub_.delegate()->is_auto_enable()) {
+    if (this->pub_.delegate()->is_enabled() && this->pub_.delegate()->is_auto_enable()) {
         this->enable();
     }
 }

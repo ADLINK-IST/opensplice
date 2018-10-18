@@ -1,4 +1,4 @@
-## Chapter 1 Code Example 
+## Chapter 1 Code Example
 
 This folder contains the full source for the example shown in the
 first chapter of the tutorial.
@@ -12,7 +12,7 @@ To compile the example you need:
 
    - g++ v4.6 or higher (clang++ would also be fine)
    - CMake v2.6 or higher
-   - [OpenSplice DDS](http://www.opensplice.org) v6.4 or higher
+   - [DDS Community Edition](http://ist.adlinktech.com/dds-community) v6.7 or higher
 
 Once you have installed the required tools simply do:
 
@@ -25,7 +25,7 @@ Once you have installed the required tools simply do:
 
 To run the examples do:
 
-   $ ./tspub 
+   $ ./tspub
    USAGE:
 	 tspub <sensor-id>
 

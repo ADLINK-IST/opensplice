@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,13 +21,12 @@
 #include "u_statusCondition.h"
 #include "u__types.h"
 #include "u__object.h"
-#include "u__observable.h"
 #include "u__entity.h"
 #include "u__participant.h"
 #include "u__domain.h"
-#include "v_statusCondition.h"
-#include "v_observable.h"
+#include "u__observable.h"
 #include "v_observer.h"
+#include "v_statusCondition.h"
 #include "v_entity.h"
 #include "v_event.h"
 #include "os_report.h"
@@ -68,11 +68,11 @@ u_statusConditionNew(
     if (result == U_RESULT_OK) {
         kCond = v_public(v_statusConditionNew(kEntity));
         if (kCond != NULL) {
-            v_observerSetEventMask(v_observer(kCond), V_EVENTMASK_ALL);
             _this = u_objectAlloc(sizeof(*_this), U_STATUSCONDITION, u__statusConditionDeinitW, u__statusConditionFreeW);
             if (_this) {
                 u_domain domain = u_observableDomain(u_observable(entity));
-                u_result result = u_observableInit(u_observable(_this), kCond, domain);
+                v_observerSetEventMask(v_observer(kCond), V_EVENTMASK_ALL);
+                result = u_observableInit(u_observable(_this), kCond, domain);
                 if (result != U_RESULT_OK) {
                     u_objectFree(_this);
                     _this = NULL;

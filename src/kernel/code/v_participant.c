@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
  *   limitations under the License.
  *
  */
+#include "v__kernel.h"
 #include "v__participant.h"
 #include "v__participantQos.h"
 #include "v__kernel.h"
@@ -24,7 +26,7 @@
 #include "v__publisher.h"
 #include "v__writer.h"
 #include "v__subscriber.h"
-#include "v_dataReader.h"
+#include "v__dataReader.h"
 #include "v__reader.h"
 #include "v__observer.h"
 #include "v__builtin.h"
@@ -35,6 +37,7 @@
 #include "v__processInfo.h"
 #include "v__topicAdapter.h"
 #include "v__typeRepresentation.h"
+#include "v__spliced.h"
 
 #include "v__entity.h"
 #include "v_event.h"
@@ -75,10 +78,12 @@ v_participantNew(
 
     assert(C_TYPECHECK(kernel,v_kernel));
     /* Do not use C_TYPECHECK on qos parameter,
-     * since it might be allocated on heap! */
+     * since it might be allocated on heap!
+     */
 
     /* do no use cast method on qos parameter,
-     * it is most likely allocated on heap! */
+     * it is most likely allocated on heap!
+     */
     if (v_participantQosCheck(qos) == V_RESULT_OK) {
         q = v_participantQosNew(kernel, qos);
 
@@ -89,7 +94,10 @@ v_participantNew(
             p = NULL;
         } else {
             p = v_participant(v_objectNew(kernel,K_PARTICIPANT));
-            v_participantInit(p, name, q, enable);
+            v_participantInit(p, name, q);
+            if(enable) {
+                (void)v_entityEnable(v_entity(p));
+            }
             result = v_participantMonitorSpliceDeamonLiveliness(kernel, name, p);
             if(result != V_RESULT_OK) {
                 OS_REPORT(OS_CRITICAL, "v_participant", result,
@@ -106,7 +114,7 @@ v_participantNew(
 
 v_result
 v_participantEnable (
-    v_participant p)
+    _In_ v_participant p)
 {
     v_kernel kernel = v_objectKernel(v_object(p));
     v_message builtinMsg;
@@ -158,6 +166,7 @@ v_participantMonitorSpliceDeamonLiveliness(
                     "to the lease manager of participant %p (%s). "
                     "The result code was %d.", (void*)participant, name, result);
             }
+            c_free(splicedParticipant);
         } else {
             v_participant p;
             result = V_RESULT_INTERNAL_ERROR;
@@ -174,7 +183,8 @@ v_participantMonitorSpliceDeamonLiveliness(
     } else
     {
         /* else do nothing, exception for splice deamon monitoring are made for
-         * the splice deamon participant and the built in participant*/
+         * the splice deamon participant and the built in participant
+         */
         result = V_RESULT_OK;
     }
     return result;
@@ -182,10 +192,9 @@ v_participantMonitorSpliceDeamonLiveliness(
 
 void
 v_participantInit(
-    v_participant p,
-    const c_char *name,
-    v_participantQos qos,
-    c_bool enable)
+    _Inout_ v_participant p,
+    _In_opt_z_ const c_char *name,
+    _In_ v_participantQos qos)
 {
     v_kernel kernel;
     c_base base;
@@ -198,17 +207,17 @@ v_participantInit(
 
     kernel = v_objectKernel(p);
     base = c_getBase(p);
-    v_entityInit(v_entity(p), name, enable);
+    v_entityInit(v_entity(p), name);
 
     p->entities = c_setNew(c_resolve(base,"kernelModuleI::v_entity"));
     p->qos = c_keep(qos);
     /* Currently default LIVELINESS policy is used: kind=AUTOMATIC,
      * duration=INFINITE This setting implies no lease registration.
-    */
+     */
 
     p->leaseManager = v_leaseManagerNew(kernel);
     p->resendQuit = FALSE;
-    c_mutexInit(base, &p->resendMutex);
+    (void)c_mutexInit(base, &p->resendMutex);
     c_condInit(base, &p->resendCond, &p->resendMutex);
     writerProxyType = v_kernelType(kernel,K_PROXY);
     p->resendWriters = c_tableNew(writerProxyType, "source.index,source.serial");
@@ -217,26 +226,9 @@ v_participantInit(
     (void) os_procGetProcessName (procName, sizeof (procName));
     p->processName = c_stringNew (base, procName);
     p->processIsZombie = FALSE;
+    p->ignore = NULL; // ignore Admin is initially NULL and lazy created when the user ignores entities.
 
-    p->builtinSubscriber = NULL;
-    if (!v_observableAddObserver(v_observable(kernel),v_observer(p), NULL)) {
-        if (name != NULL) {
-            OS_REPORT(OS_WARNING,"Kernel Participant",0,
-                        "%s: Cannot observe Kernel events",name);
-        } else {
-            OS_REPORT(OS_WARNING,"Kernel Participant",0,
-                      "Cannot observe Kernel events");
-        }
-    }
     p->typeRepresentations = c_tableNew(v_kernelType(kernel,K_TYPEREPRESENTATION),"typeName");
-
-    c_mutexInit(base, &p->newGroupListMutex);
-    p->newGroupList = c_listNew(c_resolve(base, "kernelModuleI::v_group"));
-
-    v_observerSetEventMask(v_observer(p), V_EVENT_NEW_GROUP);
-
-    c_lockInit(base, &p->lock);
-    c_mutexInit(base, &p->builtinLock);
 
     v_addParticipant(kernel, p);
 
@@ -271,18 +263,7 @@ v_participantFree(
         assert(C_TYPECHECK(p,v_participant));
 
         kernel = v_objectKernel(p);
-
-        if (!v_observableRemoveObserver(v_observable(kernel),v_observer(p), NULL)) {
-            if (v_participantName(p) != NULL) {
-                OS_REPORT(OS_WARNING,"v_participantFree",V_RESULT_INTERNAL_ERROR,
-                            "Participant '%s' cannot disconnect from Kernel events",
-                            v_participantName(p));
-            } else {
-                OS_REPORT(OS_WARNING,"v_participantFree",V_RESULT_INTERNAL_ERROR,
-                          "Participant cannot disconnect from Kernel events");
-            }
-        }
-
+        (void)OSPL_REMOVE_OBSERVER(kernel,p, V_EVENTMASK_ALL, NULL);
         if (v_entityEnabled(v_entity(p))) {
             builtinMsg = v_builtinCreateParticipantInfo(kernel->builtin,p);
             v_writeDisposeBuiltinTopic(kernel, V_PARTICIPANTINFO_ID, builtinMsg);
@@ -301,10 +282,6 @@ v_participantFree(
             c_free(builtinMsg);
         }
 
-        if (p->builtinSubscriber) {
-            v_subscriberFree(p->builtinSubscriber);
-            p->builtinSubscriber = NULL;
-        }
         while ((e = c_take(p->entities)) != NULL) {
             switch (v_objectKind(e)) {
             case K_PUBLISHER:
@@ -357,43 +334,6 @@ v_participantDeinit(
     v_entityDeinit(v_entity(p));
 }
 
-#if 0
-void
-v_participantAdd(
-    v_participant p,
-    v_entity e)
-{
-    v_entity found;
-
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_participant));
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entity));
-
-    (void)c_lockWrite(&p->lock);
-    found = c_setInsert(p->entities,e);
-    c_lockUnlock(&p->lock);
-    assert(found == e);
-}
-
-void
-v_participantRemove(
-    v_participant p,
-    v_entity e)
-{
-    v_entity found;
-
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_participant));
-    assert(e != NULL);
-    assert(C_TYPECHECK(e,v_entity));
-
-    (void)c_lockWrite(&p->lock);
-    found = c_remove(p->entities,e,NULL,NULL);
-    c_lockUnlock(&p->lock);
-    c_free(found);
-}
-#else
 void
 v_participantAdd(
     v_participant p,
@@ -406,9 +346,9 @@ v_participantAdd(
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_object));
 
-    (void)c_lockWrite(&p->lock);
+    OSPL_LOCK(p);
     found = c_setInsert(p->entities,e);
-    c_lockUnlock(&p->lock);
+    OSPL_UNLOCK(p);
     assert(found == e);
     OS_UNUSED_ARG(found);
 }
@@ -425,65 +365,38 @@ v_participantRemove(
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_object));
 
-    (void)c_lockWrite(&p->lock);
+    OSPL_LOCK(p);
     found = c_remove(p->entities,e,NULL,NULL);
-    c_lockUnlock(&p->lock);
+    OSPL_UNLOCK(p);
     c_free(found);
-}
-#endif
-
-static c_bool
-connectNewGroup(
-    c_object o,
-    c_voidp arg)
-{
-    c_bool result = TRUE;
-
-    switch (v_objectKind(o)) {
-    case K_PARTICIPANT:
-    case K_SPLICED:
-    case K_DURABILITY:
-    case K_NWBRIDGE:
-    case K_SERVICE:
-    case K_CMSOAP:
-    case K_NETWORKING:
-        (void)c_lockWrite(&v_participant(o)->lock);
-        result = c_walk(v_participant(o)->entities, connectNewGroup, (v_group)arg);
-        c_lockUnlock(&v_participant(o)->lock);
-    break;
-    case K_PUBLISHER:
-        result = v_publisherConnectNewGroup(v_publisher(o), (v_group)arg);
-    break;
-    case K_SUBSCRIBER:
-        result = v_subscriberConnectNewGroup(v_subscriber(o), (v_group)arg);
-    break;
-    default:
-        /* Other entities do not connect */
-    break;
-    }
-    return result;
 }
 
 void
-v_participantConnectNewGroup (
+v_participantConnectGroup (
     v_participant _this,
-    v_event event)
+    v_group g)
 {
-    v_group g;
+    v_entity entity;
+    c_iter entities;
 
-    OS_UNUSED_ARG(event);
-
-    c_mutexLock(&_this->newGroupListMutex);
-    g = c_take(_this->newGroupList);
-    while (g) {
-        c_mutexUnlock(&_this->newGroupListMutex);
-        (void)c_lockWrite(&_this->lock);
-        (void)c_walk(_this->entities, connectNewGroup, g);
-        c_lockUnlock(&_this->lock);
-        c_mutexLock(&_this->newGroupListMutex);
-        g = c_take(_this->newGroupList);
+    OSPL_LOCK(_this);
+    entities = ospl_c_select(_this->entities, 0);
+    OSPL_UNLOCK(_this);
+    while ((entity = c_iterTakeFirst(entities)) != NULL) {
+        switch (v_objectKind(entity)) {
+        case K_PUBLISHER:
+            (void)v_publisherConnectNewGroup(v_publisher(entity), g);
+        break;
+        case K_SUBSCRIBER:
+            (void)v_subscriberConnectNewGroup(v_subscriber(entity), g);
+        break;
+        default:
+            /* Other entities do not connect */
+        break;
+        }
+        c_free(entity);
     }
-    c_mutexUnlock(&_this->newGroupListMutex);
+    c_iterFree(entities);
 }
 
 static c_bool
@@ -502,9 +415,9 @@ v_participantNotifyGroupCoherentPublication(
     v_participant _this,
     v_message msg)
 {
-    (void)c_lockWrite(&_this->lock);
+    OSPL_LOCK(_this);
     (void)c_walk(_this->entities, notifyGroupCoherentPublication, msg);
-    c_lockUnlock(&_this->lock);
+    OSPL_UNLOCK(_this);
 }
 
 static c_bool
@@ -545,13 +458,13 @@ v_participantDeleteHistoricalData(
         params[0]  = c_stringValue((c_string)partitionExpr);
         params[1]  = c_stringValue((c_string)topicExpr);
 
-        c_lockRead(&participant->lock);
+        OSPL_LOCK(participant);
         t = os_timeEGet();
         matchingGroups = v_groupSetSelect(
                                 v_objectKernel(participant)->groupSet,
                                 "partition.name like %0 AND topic.name like %1",
                                 params);
-        c_lockUnlock(&participant->lock);
+        OSPL_UNLOCK(participant);
 
         group = v_group(c_iterTakeFirst(matchingGroups));
         while(group){
@@ -567,10 +480,13 @@ v_participantDeleteHistoricalData(
             hde->partitionExpr = c_stringNew(base, (c_char *)partitionExpr);
             hde->topicExpr = c_stringNew(base, (c_char *)topicExpr);
             hde->deleteTime = t;
+
             event.kind = V_EVENT_HISTORY_DELETE;
             event.source = v_observable(participant);
             event.data = hde;
-            v_observableNotify(v_observable(v_objectKernel(participant)),&event);
+            event.handled = TRUE;
+
+            OSPL_THROW_EVENT(v_objectKernel(participant), &event);
             c_free(hde);
         }
     }
@@ -590,45 +506,35 @@ v_participantNotify(
      * calling <subclass>Notify(_this, event, userData).
      * This implies that _this as observer cannot be locked within any
      * Notify method to avoid deadlocks.
-     * For consistency _this must be locked by v_observerLock(_this) before
+     * For consistency _this must be locked by OSPL_LOCK(_this) before
      * calling this method.
      */
     OS_UNUSED_ARG(userData);
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_participant));
+    assert(event != NULL);
 
-    if (event) {
-        switch (event->kind) {
-        case V_EVENT_NEW_GROUP:
-            assert(event->data);
-            c_mutexLock(&_this->newGroupListMutex);
-            c_listInsert(_this->newGroupList,v_group(event->data));
-            c_mutexUnlock(&_this->newGroupListMutex);
-            (void)v_entityNotifyListener(v_entity(_this), event);
-        break;
-        case V_EVENT_LIVELINESS_ASSERT:
-            (void)c_lockWrite(&_this->lock);
-            (void)c_walk(_this->entities, assertLivelinessPublisher, event);
-            c_lockUnlock(&_this->lock);
-        break;
-        case V_EVENT_SERVICESTATE_CHANGED:
-        case V_EVENT_DATA_AVAILABLE:
-        case V_EVENT_HISTORY_DELETE:
-        case V_EVENT_HISTORY_REQUEST:
-        case V_EVENT_PERSISTENT_SNAPSHOT:
-        case V_EVENT_CONNECT_WRITER:
-            /*Do nothing here.*/
-        break;
-        case V_EVENT_ALL_DATA_DISPOSED:
-        case V_EVENT_INCONSISTENT_TOPIC:
-            (void)v_entityNotifyListener(v_entity(_this), event);
-        break;
-        default:
-            OS_REPORT(OS_WARNING,"v_participantNotify",V_RESULT_ILL_PARAM,
-                        "Notify encountered unknown event kind (%d)",
-                        event->kind);
-        break;
-        }
+    switch (event->kind) {
+    case V_EVENT_LIVELINESS_ASSERT:
+        (void)c_walk(_this->entities, assertLivelinessPublisher, event);
+    break;
+    case V_EVENT_NEW_GROUP:
+    case V_EVENT_SERVICESTATE_CHANGED:
+    case V_EVENT_DATA_AVAILABLE:
+    case V_EVENT_HISTORY_DELETE:
+    case V_EVENT_HISTORY_REQUEST:
+    case V_EVENT_PERSISTENT_SNAPSHOT:
+    case V_EVENT_CONNECT_WRITER:
+        /*Do nothing here.*/
+    break;
+    case V_EVENT_ALL_DATA_DISPOSED:
+    case V_EVENT_INCONSISTENT_TOPIC:
+        (void)v_entityNotifyListener(v_entity(_this), event);
+    break;
+    default:
+        OS_REPORT(OS_WARNING,"v_participantNotify",V_RESULT_ILL_PARAM,
+                  "Notify encountered unknown event kind (%d)", event->kind);
+    break;
     }
 }
 
@@ -636,74 +542,13 @@ void
 v_participantAssertLiveliness(
     v_participant p)
 {
-    C_STRUCT(v_event) event;
-
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_participant));
 
-    event.kind = V_EVENT_LIVELINESS_ASSERT;
-    event.source = v_observable(p);
-    event.data = NULL;
     /* Walk over all entities and assert liveliness on all writers */
-    (void)c_lockWrite(&p->lock);
-    (void)c_walk(p->entities, assertLivelinessPublisher, &event);
-    c_lockUnlock(&p->lock);
-}
-
-v_subscriber
-v_participantGetBuiltinSubscriber(
-    v_participant p)
-{
-    v_subscriberQos sQos;
-    v_readerQos rQos;
-    v_kernel kernel;
-
-    assert(p != NULL);
-    assert(C_TYPECHECK(p, v_participant));
-
-    c_mutexLock(&p->builtinLock);
-    if (p->builtinSubscriber == NULL) {
-        kernel = v_objectKernel(p);
-        sQos = v_subscriberQosNew(kernel, NULL);
-        sQos->presentation.v.access_scope = V_PRESENTATION_TOPIC;
-        c_free(sQos->partition.v);
-        sQos->partition.v = c_stringNew(c_getBase(c_object(kernel)),
-                                      V_BUILTIN_PARTITION);
-        sQos->entityFactory.v.autoenable_created_entities = TRUE;
-
-        p->builtinSubscriber = v_subscriberNew(p, V_BUILTINSUBSCRIBER_NAME, sQos, TRUE);
-        v_subscriberQosFree(sQos);
-
-        c_mutexUnlock(&p->builtinLock);
-
-        assert(p->builtinSubscriber != NULL);
-
-        rQos = v_readerQosNew(kernel, NULL);
-        rQos->durability.v.kind = V_DURABILITY_TRANSIENT;
-        rQos->reliability.v.kind = V_RELIABILITY_RELIABLE;
-        rQos->history.v.kind = V_HISTORY_KEEPLAST;
-        rQos->history.v.depth = 1;
-
-#define _CREATE_READER_(topicName) {\
-            q_expr expr; \
-            v_dataReader dr; \
-            expr = q_parse("select * from " topicName);\
-            dr = v_dataReaderNew(p->builtinSubscriber, topicName "Reader", \
-                                   expr, NULL, rQos, TRUE);\
-            c_free(dr); \
-            q_dispose(expr); \
-        }
-        _CREATE_READER_(V_PARTICIPANTINFO_NAME)
-        _CREATE_READER_(V_TOPICINFO_NAME)
-        _CREATE_READER_(V_PUBLICATIONINFO_NAME)
-        _CREATE_READER_(V_SUBSCRIPTIONINFO_NAME)
-#undef _CREATE_READER_
-        v_readerQosFree(rQos);
-    } else {
-        c_mutexUnlock(&p->builtinLock);
-    }
-
-    return c_keep(p->builtinSubscriber);
+    OSPL_LOCK(p);
+    (void)c_walk(p->entities, assertLivelinessPublisher, NULL);
+    OSPL_UNLOCK(p);
 }
 
 v_participantQos
@@ -714,9 +559,9 @@ v_participantGetQos(
 
     assert(C_TYPECHECK(_this,v_participant));
 
-    c_lockRead(&_this->lock);
+    OSPL_LOCK(_this);
     qos = c_keep(_this->qos);
-    c_lockUnlock(&_this->lock);
+    OSPL_UNLOCK(_this);
 
     return qos;
 }
@@ -737,7 +582,7 @@ v_participantSetQos(
 
     result = v_participantQosCheck(tmpl);
     if (result == V_RESULT_OK) {
-        c_lockWrite(&p->lock);
+        OSPL_LOCK(p);
         kernel = v_objectKernel(p);
         qos = v_participantQosNew(kernel, tmpl);
 
@@ -746,7 +591,7 @@ v_participantSetQos(
             if ((result == V_RESULT_OK) && (cm != 0)) {
                 c_free(p->qos);
                 p->qos = c_keep(qos);
-                if (v_entityEnabled(v_entity(p))) {
+                if (v__entityEnabled_nl(v_entity(p))) {
                     builtinMsg = v_builtinCreateParticipantInfo(kernel->builtin,p);
                 }
             }
@@ -754,7 +599,7 @@ v_participantSetQos(
         } else {
             result = V_RESULT_OUT_OF_MEMORY;
         }
-        c_lockUnlock(&p->lock);
+        OSPL_UNLOCK(p);
     }
 
     if (builtinMsg != NULL) {
@@ -1006,12 +851,11 @@ v_participantGetEntityList(v_participant participant)
     assert(participant != NULL);
 
     /* Copy the current entity set into an iter list. */
-    c_lockRead(&participant->lock);
+    OSPL_LOCK(participant);
     entities = ospl_c_select(participant->entities, 0);
-    c_lockUnlock(&participant->lock);
+    OSPL_UNLOCK(participant);
 
-    /*
-     * Unfortunately, the entities list of the participant can
+    /* Unfortunately, the entities list of the participant can
      * contain waitsets as well.
      * This loop makes sure that only entities are returned.
      */
@@ -1022,8 +866,7 @@ v_participantGetEntityList(v_participant participant)
 
         /* Remove this object from the list when it's not an entity. */
         if (c_instanceOf(object, "v_entity") == FALSE) {
-            /*
-             * This is not an entity.
+            /* This is not an entity.
              *
              * Taking this object means that the remaining objects will shift a
              * place down in the list. Or when this is the last object, then this
@@ -1058,9 +901,9 @@ v__participantAddTypeRepresentation (
     assert(C_TYPECHECK(p, v_participant));
     assert(tr != NULL);
 
-    c_lockWrite(&p->lock);
+    OSPL_LOCK(p);
     found = ospl_c_insert(p->typeRepresentations, tr);
-    c_lockUnlock(&p->lock);
+    OSPL_UNLOCK(p);
 
     return found;
 }
@@ -1076,34 +919,402 @@ v__participantRemoveTypeRepresentation (
     assert(C_TYPECHECK(p, v_participant));
     assert(tr != NULL);
 
-    c_lockWrite(&p->lock);
+    OSPL_LOCK(p);
     found = c_remove(p->typeRepresentations, tr, NULL, NULL);
-    c_lockUnlock(&p->lock);
+    OSPL_UNLOCK(p);
 
     return found;
 }
 
-v_typeRepresentation
-v_participantLookupTypeRepresentation (
-    v_participant p,
-    const os_char *typeName)
+static c_bool
+transactionsPurge (
+    c_object o,
+    c_voidp arg)
 {
-    v_typeRepresentation found = NULL;
-    C_STRUCT(v_typeRepresentation) dummy;
+    c_bool result = TRUE;
 
-    assert(p != NULL);
-    assert(C_TYPECHECK(p, v_participant));
-    assert(typeName != NULL);
+    OS_UNUSED_ARG(arg);
 
-    memset(&dummy, 0, sizeof(dummy));
-    /* Removing const qualifier from typeName so it can be passed to the
-     * c_find function. c_find does not alter the dummy struct.
+    switch(v_objectKind(o)) {
+    case K_SUBSCRIBER:
+        /* A transaction flush purges and flushes the obsolete groups,
+         * flushing is required in case the obsolete group contains samples
+         * which cannot be discarded. */
+        v_subscriberGroupTransactionFlush(v_subscriber(o));
+        break;
+    default:
+        /* No need to purge other entities */
+        break;
+    }
+
+    return result;
+}
+
+void
+v_participantTransactionsPurge (
+    v_participant _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_participant));
+
+    OSPL_LOCK(_this);
+    (void)c_walk(_this->entities, transactionsPurge, NULL);
+    OSPL_UNLOCK(_this);
+}
+
+static v_ignoreAdmin
+getIgnoreAdmin(
+    v_participant _this)
+{
+    if (_this->ignore == NULL) {
+        c_type type = c_resolve(c_getBase(_this), "kernelModuleI::v_ignoreAdmin");
+        _this->ignore = c_new(type);
+        c_free(type);
+    }
+    return _this->ignore;
+}
+
+static os_boolean
+inList(
+    c_array list,
+    v_gid gid)
+{
+    os_uint32 i, size;
+    v_gid *gidlist = (v_gid *)list;
+    size = c_arraySize(list);
+    for (i=0; i<size; i++) {
+        if (gidlist[i].systemId == gid.systemId && gidlist[i].localId == gid.localId)
+        {
+            return OS_TRUE;
+        }
+    }
+    return OS_FALSE;
+}
+
+static void
+ignoreGID(
+    v_ignoreAdmin _this,
+    c_array *ignoreList,
+    v_gid gid)
+{
+    c_type type;
+    os_uint32 i, size;
+
+    type = c_resolve(c_getBase(_this),"kernelModule::v_gid");
+    if (*ignoreList == NULL) {
+        *ignoreList = c_arrayNew(type, 1);
+        ((v_gid *)(*ignoreList))[0] = gid;
+    } else if (!inList(*ignoreList, gid)) {
+        v_gid *old = (v_gid *)(*ignoreList);
+        size = c_arraySize(*ignoreList);
+        *ignoreList = c_arrayNew(type, size+1);
+        for (i=0; i<size; i++) {
+            ((v_gid *)(*ignoreList))[i] = old[i];
+        }
+        ((v_gid *)(*ignoreList))[i] = gid;
+        c_free(old);
+    }
+    c_free(type);
+
+}
+
+static void
+disposeGID(
+    v_ignoreAdmin _this,
+    c_array *ignoreList,
+    v_gid gid)
+{
+    c_type type;
+    os_uint32 i, n, size;
+
+    if (inList(*ignoreList, gid)) {
+        v_gid *old = (v_gid *)(*ignoreList);
+        size = c_arraySize(*ignoreList);
+        type = c_resolve(c_getBase(_this),"kernelModule::v_gid");
+        *ignoreList = c_arrayNew(type, size-1);
+        c_free(type);
+        n = 0;
+        for (i=0; i<size; i++) {
+            if (old[i].systemId != gid.systemId || old[i].localId != gid.localId)
+            {
+                ((v_gid *)(*ignoreList))[n++] = old[i];
+            }
+        }
+        c_free(old);
+    }
+}
+
+static v_result
+v_participantIgnorePublicationInfo (
+    v_participant _this,
+    const struct v_publicationInfo *info);
+
+typedef struct ignoreArg_s {
+    v_gid gid;
+    v_participant participant;
+} *ignoreArg;
+
+static os_boolean
+ignorePublications(
+    const v_message publication,
+    c_voidp arg)
+{
+    const struct v_publicationInfo *info = (struct v_publicationInfo *)(publication + 1);
+    ignoreArg a = (ignoreArg)arg;
+
+    if (info->participant_key.systemId == a->gid.systemId &&
+        info->participant_key.localId == a->gid.localId)
+    {
+        TRACE_IGNORE("Participant::ignore_participant found a publication for topic \"%s\"\n", info->topic_name);
+
+        v_participantIgnorePublicationInfo(a->participant, info);
+    }
+    return OS_TRUE;
+}
+
+static os_boolean
+ignoreSubscriptions(
+    const v_message subscription,
+    c_voidp arg)
+{
+    const struct v_subscriptionInfo *info = (struct v_subscriptionInfo *)(subscription + 1);
+    ignoreArg a = (ignoreArg)arg;
+
+    if (info->participant_key.systemId == a->gid.systemId &&
+        info->participant_key.localId == a->gid.localId)
+    {
+        TRACE_IGNORE("Participant::ignore_participant found a subscription for topic \"%s\"\n", info->topic_name);
+
+        v_participantIgnoreSubscription(a->participant, info->key);
+    }
+    return OS_TRUE;
+}
+
+v_result
+v_participantIgnoreParticipant (
+    v_participant _this,
+    v_gid gid)
+{
+    v_result result = V_RESULT_OK;
+    v_kernel kernel;
+    v_ignoreAdmin ignore;
+    struct ignoreArg_s a;
+
+    TRACE_IGNORE("Participant::ignore_participant called for participant GID: {%d, %d, %d}\n",
+                 gid.systemId, gid.localId, gid.serial);
+
+    OSPL_LOCK(_this);
+    ignore = getIgnoreAdmin(_this);
+    ignoreGID(ignore, &ignore->participants, gid);
+    OSPL_UNLOCK(_this);
+
+    /* Now lookup all publications and subscriptions associated to this participant and add these to the
+     * ignore publication and ignore subscription list
      */
-    dummy.typeName = (c_string) typeName;
 
-    c_lockRead(&p->lock);
-    found = v_typeRepresentation(c_find(p->typeRepresentations, &dummy));
-    c_lockUnlock(&p->lock);
+    a.gid = gid;
+    a.participant = _this;
+    kernel = v_objectKernel(_this);
+    result = v_kernelWalkPublications(kernel, ignorePublications, &a);
+    assert(result == V_RESULT_OK);
+    result = v_kernelWalkSubscriptions(kernel, ignoreSubscriptions, &a);
+    assert(result == V_RESULT_OK);
 
-    return found;
+    return result;
+}
+
+v_result
+v_participantIgnoreTopic (
+    v_participant _this,
+    v_gid gid)
+{
+    v_result result = V_RESULT_UNSUPPORTED;
+    v_ignoreAdmin ignore;
+
+    OS_REPORT(OS_ERROR, "Kernel IgnoreTopic", result, "This operation is currently unsupported.");
+
+    TRACE_IGNORE("v_participantIgnoreTopic called\n");
+
+    OSPL_LOCK(_this);
+    ignore = getIgnoreAdmin(_this);
+    ignoreGID(ignore, &ignore->topics, gid);
+    OSPL_UNLOCK(_this);
+
+    /* Now lookup all publications and subscriptions associated to this topic and add these to the
+     * ignore publication and ignore subscription list
+     */
+
+    return result;
+}
+
+static c_bool
+ignoreOnReaders(
+    c_object o,
+    c_voidp publicationInfo)
+{
+    v_object vObject = v_object(o);
+
+    if (v_objectKind(vObject) == K_DATAREADER) {
+        v_dataReaderIgnore(v_dataReader(o), publicationInfo, TRUE);
+    }
+    return TRUE;
+}
+
+static c_bool
+ignoreOnSubscribers(
+    c_object o,
+    c_voidp publicationInfo)
+{
+    v_object vObject = v_object(o);
+
+    if (v_objectKind(vObject) == K_SUBSCRIBER) {
+        v_subscriberWalkReaders(v_subscriber(o), ignoreOnReaders, publicationInfo);
+    }
+    return TRUE;
+}
+
+static v_result
+v_participantIgnorePublicationInfo (
+    v_participant _this,
+    const struct v_publicationInfo *info)
+{
+    v_result result = V_RESULT_OK;
+    v_ignoreAdmin ignore;
+
+    TRACE_IGNORE("Participant::ignore_publication called for publication GID: {%d, %d, %d}\n",
+                 info->key.systemId, info->key.localId, info->key.serial);
+
+    OSPL_LOCK(_this);
+    ignore = getIgnoreAdmin(_this);
+    ignoreGID(ignore, &ignore->publications, info->key);
+
+    /* Now visit local DataReaders and add gid to the DataReader ignore publication list */
+
+    (void)c_walk(_this->entities, ignoreOnSubscribers, (void *)info);
+    OSPL_UNLOCK(_this);
+
+    return result;
+}
+
+v_result
+v_participantIgnorePublication (
+    v_participant _this,
+    v_gid gid)
+{
+    v_result result = V_RESULT_UNSUPPORTED;
+    v_message msg;
+
+    msg = v_kernelLookupPublication(v_objectKernel(_this), gid);
+    if (msg) {
+        struct v_publicationInfo *info = v_builtinPublicationInfoData(msg);
+        result = v_participantIgnorePublicationInfo(_this, info);
+        c_free(msg);
+    } else {
+        OS_REPORT(OS_ERROR, "Ignore Publication", 0, "Lookup builtin Publication data failed");
+    }
+    return result;
+}
+
+v_result
+v_participantIgnoreSubscription (
+    v_participant _this,
+    v_gid gid)
+{
+    v_result result = V_RESULT_OK;
+    v_ignoreAdmin ignore;
+
+    TRACE_IGNORE("Participant::ignore_subscription called for subscription GID: {%d, %d, %d}\n",
+                 gid.systemId, gid.localId, gid.serial);
+
+    OSPL_LOCK(_this);
+    ignore = getIgnoreAdmin(_this);
+    ignoreGID(ignore, &ignore->subscriptions, gid);
+    OSPL_UNLOCK(_this);
+
+    /* Now visit local DataWriters and add gid to the DataWriter ignore subscription list
+     * This is only required if performance is an issue but for noe this doesn't seem the case.
+     */
+
+    return result;
+}
+
+static os_boolean
+ignoredParticipant(
+    v_ignoreAdmin _this,
+    v_gid gid)
+{
+    if (inList(_this->participants, gid)) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void
+v_participantNotifyPublication(
+    v_participant _this,
+    v_message msg)
+{
+    struct v_publicationInfo *info;
+
+    OSPL_LOCK(_this);
+    if (_this->ignore) {
+        info = v_builtinPublicationInfoData(msg);
+        if (v_messageStateTest(msg, L_DISPOSED)) {
+            disposeGID(_this->ignore, &_this->ignore->publications, info->key);
+            TRACE_IGNORE("Participant is notified to remove Publication GID {%u,%u,%u} from the ignore list\n",
+                         info->key.systemId, info->key.localId, info->key.serial);
+        } else if (ignoredParticipant(_this->ignore, info->participant_key)) {
+            TRACE_IGNORE("Participant is notified to add Publication GID {%u,%u,%u} to the ignore lists\n",
+                         info->key.systemId, info->key.localId, info->key.serial);
+            ignoreGID(_this->ignore, &_this->ignore->publications, info->key);
+            /* Now visit local DataReaders and add gid to the DataReader ignore publication list */
+            (void)c_walk(_this->entities, ignoreOnSubscribers, (void *)info);
+        }
+    }
+    OSPL_UNLOCK(_this);
+}
+
+void
+v_participantNotifySubscription(
+    v_participant _this,
+    v_message msg)
+{
+    struct v_subscriptionInfo *info;
+    c_bool ignore = FALSE;
+    OSPL_LOCK(_this);
+    if (_this->ignore) {
+       info = v_builtinSubscriptionInfoData(msg);
+       if (v_messageStateTest(msg, L_DISPOSED)) {
+           disposeGID(_this->ignore, &_this->ignore->subscriptions, info->key);
+           TRACE_IGNORE("Participant is notified to remove Subscription GID {%u,%u,%u} from the ignore list\n",
+                        info->key.systemId, info->key.localId, info->key.serial);
+       } else if (ignoredParticipant(_this->ignore, info->participant_key)) {
+           TRACE_IGNORE("Participant is notified to add Subscription GID {%u,%u,%u} to the ignore lists\n",
+                        info->key.systemId, info->key.localId, info->key.serial);
+           ignore = TRUE;
+       }
+    }
+    OSPL_UNLOCK(_this);
+    if (ignore) {
+    	v_participantIgnoreSubscription(_this, info->key);
+    }
+
+}
+
+os_boolean
+v_participantCheckPublicationIgnored(
+    v_participant _this,
+    const struct v_publicationInfo *info)
+{
+    os_boolean ignored = FALSE;
+
+    OSPL_LOCK(_this);
+    if (_this->ignore) {
+        ignored = inList(_this->ignore->participants, info->participant_key);
+        if (!ignored) {
+            ignored = inList(_this->ignore->publications, info->key);
+        }
+    }
+    OSPL_UNLOCK(_this);
+    return ignored;
 }

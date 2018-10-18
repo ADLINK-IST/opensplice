@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,11 +37,11 @@ public class TimeBasedFilterImpl extends QosPolicyImpl implements
         super(environment);
         this.minimumSeparation = environment.getSPI().zeroDuration();
     }
-    
+
     public TimeBasedFilterImpl(OsplServiceEnvironment environment,
             Duration minimumSeparation) {
         super(environment);
-        
+
         if(minimumSeparation == null){
             throw new IllegalArgumentExceptionImpl(environment,
                     "Supplied invalid mimimumSeparation duration.");

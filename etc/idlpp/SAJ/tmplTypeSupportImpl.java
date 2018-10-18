@@ -1,5 +1,7 @@
 public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupportImpl implements DDS.TypeSupportOperations
 {
+    private static final long serialVersionUID = 1L;
+
     private long copyCache;
 
     public $(type-name)TypeSupport()
@@ -9,12 +11,6 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
               "$(key-list)",
               $(java-package-redirects),
               $(scoped-type-name)MetaHolder.metaDescriptor);
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        super.finalize();
     }
 
     @Override

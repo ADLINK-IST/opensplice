@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -81,8 +82,12 @@ v_objectLoanRelease (
      * E.g. we don't want to free and allocate a buffer for each read or take operation of
      * a reader, especially when reading one sample at the time.
      */
-    c_free(v_objectBuffer(loan)->next);
-    v_objectBuffer(loan)->next = NULL;
+    while (v_objectBuffer(loan)->next != NULL) {
+       v_objectBuffer tmp = v_objectBuffer(loan)->next;
+       v_objectBuffer(loan)->next = tmp->next;
+       tmp->next = NULL;
+       c_free(tmp);
+    }
 
     if (loan->index > LOANSIZE) {
         loan->index = LOANSIZE;

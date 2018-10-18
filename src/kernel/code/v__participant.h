@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -77,6 +78,39 @@ void
 v_participantNotifyGroupCoherentPublication(
     v_participant _this,
     v_message msg);
+
+void
+v_participantConnectGroup (
+    v_participant _this,
+    v_group g);
+
+/* This operation will update the participant according to a newly discovered publication and
+ * notify matching local subscriptions (synchronously).
+ * The given message holds the builtin publication data describing the discovered writer.
+ * This operation will lock the participant and contained subscribers and contained DataReaders.
+ */
+void
+v_participantNotifyPublication(
+    v_participant _this,
+    v_message msg);
+
+/* This operation will update the participant according to a newly discovered subscription and
+ * notify matching local publications (synchronously).
+ * The given message holds the builtin subscription data describing the discovered reader.
+ * This operation will lock the participant and contained publishers and contained DataWriters.
+ */
+void
+v_participantNotifySubscription(
+    v_participant _this,
+    v_message msg);
+
+/* This operation will return TRUE if the writer identified given publication info is ignored by
+ * this participant.
+ */
+os_boolean
+v_participantCheckPublicationIgnored(
+    v_participant _this,
+    const struct v_publicationInfo *info);
 
 #if defined (__cplusplus)
 }

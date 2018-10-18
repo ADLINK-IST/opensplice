@@ -8,14 +8,14 @@ Preface
 About the Vortex OpenSplice Google Protocol Buffers Tutorial
 ************************************************************
 
-This *OpenSplice GPB Tutorial* is included with the OpenSplice DDS
+This *Vortex OpenSplice GPB Tutorial* is included with the Vortex OpenSplice
 Documentation Set.
 
 It describes how to use the Vortex OpenSplice **ISO C++ API** and **Java 5 API** in combination
 with **Google Protocol Buffers** (*GPB*) data models.
 
 This Tutorial assumes that the user is already familiar with the
-DDS API as well as the OpenSplice product.
+DDS API as well as the Vortex OpenSplice product.
 
 *Intended Audience*
 
@@ -28,7 +28,7 @@ applications with Vortex OpenSplice.
 Detailed information about Vortex OpenSplice itself
 is provided in the *User* and *Deployment* Guides,
 which also give details of where additional information
-can be found, such as the OpenSplice FAQs, Knowledge Base,
+can be found, such as the Vortex OpenSplice FAQs, Knowledge Base,
 bug reports, *etc.*
 
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -31,11 +32,11 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 
-OS_API void 
+OS_API void
 q_exprSetText(
     q_expr expr, const c_char* text);
-    
-OS_API c_char*    
+
+OS_API c_char*
 q_exprGetText(
     q_expr expr);
 
@@ -67,15 +68,9 @@ q_exprGetViewState(
     q_expr expr);
 
 OS_API c_iter
-deOr(
+q_exprDeOr(
     q_expr e,
     c_iter list);
-
-OS_API void
-translate(
-    q_expr expr,
-    c_array sourceKeyList, /* c_array<c_field> */
-    c_array indexKeyList); /* c_array<c_field> */
 
 #undef OS_API
 

@@ -80,3 +80,125 @@
    fun:start_thread
    fun:clone
 }
+{
+   <OSPL_SUPP_6_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   ...
+   fun:loadkernelModuleI
+   fun:v_kernelNew
+   fun:u_domainNew
+   ...
+}
+{
+   <OSPL_SUPP_7_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:c__metaDefineCommon
+   fun:c_metaDefine
+   ...
+}
+
+{
+   <OSPL_SUPP_8_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:c__metaBindCommon
+   fun:c_metaBind
+   ...
+}
+{
+   <OSPL_SUPP_9_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:c_baseInit
+   ...
+}
+{
+   <OSPL_SURR_10_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:v_durabilityClientLoadTypes
+   ...
+}
+{
+   <OSPL_SUPP_11_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:v_builtinCreateTopicInfo
+   ...
+}
+{
+   <OSPL_SUPP_12_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMallocThreshold
+   ...
+   fun:v_builtinCreateTopicInfo
+   ...
+}
+{
+   <OSPL_SUPP_13_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMalloc
+   ...
+   fun:u_domainNew
+   fun:u_splicedNew
+   fun:ospl_spliced
+   ...
+}
+{
+   <OSPL_SUPP_14_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   fun:c_mmMallocThreshold
+   ...
+   fun:v_readerWaitForHistoricalData
+   ...
+}
+{
+   <OSPL_SUPP_15_padding>
+   Memcheck:Leak
+   fun:malloc
+   fun:os_malloc
+   ...
+   fun:v_processInfoNew
+   fun:v_kernelNew
+   ...
+}
+{
+   <OSPL_SUPP_16_padding>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:os_libraryOpen
+   ...
+}
+{
+   <OSPL_SUPP_17_padding>
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:os_libraryOpen
+   ...
+}

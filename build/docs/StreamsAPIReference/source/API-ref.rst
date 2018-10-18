@@ -8,11 +8,11 @@ API Reference
 Introduction
 ************
 
-*As described in :ref:`Getting Started <Getting Started>`, the OpenSplice
+*As described in :ref:`Getting Started <Getting Started>`, the Vortex OpenSplice
 IDL preprocessor generates typed Streams API classes for each type that
 is annotated with a streams pragma.*
 
-As in the OpenSplice DDS *C++ Reference Guide*, the fictional type ``Foo``,
+As in the Vortex OpenSplice *C++ Reference Guide*, the fictional type ``Foo``,
 defined in module Space, is used as an example. When the ``Foo`` type is
 annotated with a pragma streams, ``FooStreamDataWriter`` and
 ``FooStreamDataReader`` classes will be generated.
@@ -176,7 +176,7 @@ Constructors
 
    Constructors cannot return a value, therefore they throw exceptions when
    the object cannot be constructed. Besides exceptions, the regular
-   OpenSplice error logging framework is used to report additional
+   Vortex OpenSplice error logging framework is used to report additional
    information when a constructor fails.
 
    The constructors throw a ``StreamsException`` if an error occurs. The
@@ -319,7 +319,7 @@ flush
    ``RETCODE_PRECONDITION_NOT_MET``
       A precondition failed; most likely the stream doesn’t exist.
 
-   See the OpenSplice DDS *C++ Reference Guide* for
+   See the Vortex OpenSplice *C++ Reference Guide* for
    possible result codes returned by a DDS ``write`` operation.
 
 get_qos
@@ -491,7 +491,7 @@ Constructors
 
    Constructors cannot return a value, therefore they throw exceptions when
    the object cannot be constructed. Besides exceptions, the regular
-   OpenSplice error logging framework is used to report additional
+   Vortex OpenSplice error logging framework is used to report additional
    information when a constructor fails.
 
    The constructors throw a ``StreamsException`` if an error occurs. The
@@ -617,7 +617,7 @@ get
    ``waitset.wait()`` returns a ``DDS::RETCODE_TIMEOUT``, this return
    code is translated to a ``DDS::RETCODE_NO_DATA`` return code.
 
-   See the OpenSplice DDS *C++ Reference Guide* for possible result
+   See the Vortex OpenSplice *C++ Reference Guide* for possible result
    codes returned by a DDS ``take_instance`` operation and
    for ``waitset.wait()``.
 
@@ -706,7 +706,7 @@ get_w_filter
    ``waitset.wait()`` returns a ``DDS::RETCODE_TIMEOUT``, this return code
    is translated to a ``DDS::RETCODE_NO_DATA`` return code.
 
-   See the OpenSplice DDS *C++ Reference Guide* for possible result codes
+   See the Vortex OpenSplice *C++ Reference Guide* for possible result codes
    returned by a DDS ``take_instance`` operation and ``waitset.wait()``.
 
 return_loan

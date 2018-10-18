@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,10 +28,12 @@
 #include "v_kernelQos.h"
 #include "os_report.h"
 
+_Check_return_
+_Pre_satisfies_(kind >= V_PARTITION_QOS && kind < V_COUNT_QOS)
 v_qos
 v_qosCreate(
-    c_base base,
-    v_qosKind kind)
+    _In_ c_base base,
+    _In_ v_qosKind kind)
 {
     v_qos qos;
     c_type type;
@@ -55,19 +58,12 @@ v_qosCreate(
         OS_REPORT(OS_CRITICAL,"v_qos::Create",V_RESULT_ILL_PARAM,
                     "Illegal Qos kind specified (%s)",
                     v_qosKindImage(kind));
-        return NULL;
+        type = c_resolve(base, "kernelModuleI::v_kernelQos");
     }
 
-    qos = v_qos(c_new_s(type));
+    qos = v_qos(c_new(type));
     c_free(type);
-    if (qos) {
-        qos->kind = kind;
-    } else {
-        OS_REPORT(OS_FATAL,
-                  "v_qosCreate",V_RESULT_INTERNAL_ERROR,
-                  "Failed to allocate qos.");
-        assert(FALSE);
-    }
+    qos->kind = kind;
 
     return qos;
 

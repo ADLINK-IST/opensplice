@@ -37,10 +37,56 @@ class pingpong (Example):
         self.pingQuitArgs = self.quit_params
         self.pingQuitArgs.extend(self.partitions)
 
+    """
+    The yaml check for the block doesn't work if the output isn't in
+    the correct order, so the example fails even though it may have
+    worked.  This function checks the block instead of using yaml
+    """
+    def blockCheck(self, pingLog):
+        blocks = 0
+        timeouts = 0
+        intlines = 0
+        excessTimeouts = False
+        insufficientLines = False
+
+        with open (pingLog) as f:
+            for line in f:
+                if "Starting ping example" in line:
+                    blocks = blocks +1
+
+                    if blocks > 1:
+                        if timeouts > 5:
+                            excessTimeouts = True
+
+                        if blocks < 5 and intlines < 100:
+                            insufficientLines = True
+
+                        intlines = 0
+                        timeouts = 0
+                else:
+                    if "TIMEOUT" in line:
+                        timeouts = timeouts +1
+                    else:
+                        isText = False
+                        vals = line.split()
+                        for val in vals:
+                            try:
+                                intval = int(val)
+                            except ValueError:
+                                isText = True
+
+                        if isText == False:
+                            intlines = intlines + 1
+
+        f.close()
+
+        if excessTimeouts == True or insufficientLines == True:
+            raise LogCheckFail ("Ping results do not match expected results")
+
     def runExample(self, lang, extra, types):
-        print("runExample ", lang, extra, types)
+        print "runExample ", lang, extra, types
         if lang == "cs" and not self.host.isWindows():
-            print("C# not supported on " + self.host.name)
+            print "C# not supported on " + self.host.name
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -48,12 +94,9 @@ class pingpong (Example):
                 if extra == "all":
                     self.runExampleAllExtra(lang, extra, types)
                 else:
-                    currPath = os.getcwd()     
-        
-                    if lang == "cs":
-                        ping_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)),  'yaml', 'ping_cs_conditions.yaml')
-                    else:
-                        ping_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)),  'yaml', 'ping_conditions.yaml')
+                    currPath = os.getcwd()
+
+                    ping_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)),  'yaml', 'ping_conditions.yaml')
 
                     pong_conds = os.path.join(os.path.dirname(os.path.realpath(__file__)),  'yaml', 'pong_conds.yaml')
 
@@ -88,9 +131,6 @@ class pingpong (Example):
                                 if lang == "java":
                                     runLang = "cj"
                                     corbaJar = "dcpscj.jar"
-                                else:
-                                    runLang = "cj5"
-                                    corbaJar = "dcpscj5.jar"
 
                                 ospljar = os.path.join(os.environ['OSPL_HOME'], "jar", corbaJar)
                                 classes = os.path.join(os.environ['OSPL_HOME'], "examples", self.expath, self.name, lang, extra, "classes")
@@ -98,10 +138,12 @@ class pingpong (Example):
                             else:
                                 runLang = lang
 
-                            print("runLang is ", runLang)
+                            print "runLang is ", runLang
 
                             if extra == "corba":
                                 exes = "corba_executables"
+                                if lang == "java5":
+                                    exes = "executables"
                             else:
                                 exes = "executables"
 
@@ -128,8 +170,8 @@ class pingpong (Example):
                             if msg == "NONE":
                                 self.startOSPL()
 
-                                print("Going to start pong thread")
-                                pongThread = ExeThread(self.classpath, pongLog, runLang, pongExe, self.partitions, self.pongTimeout)  
+                                print "Going to start pong thread"
+                                pongThread = ExeThread(self.classpath, pongLog, runLang, pongExe, self.partitions, self.pongTimeout)
                                 pongThread.start()
 
                         except Exception as ex:
@@ -143,16 +185,16 @@ class pingpong (Example):
                                     runTypes = types
 
                                 for t in runTypes:
-                                    print("Running ping with", t)
+                                    print "Running ping with", t
 
                                     pingArgs = [self.BLOCKSIZE, self.BLOCKCOUNT, t]
                                     pingArgs.extend(self.partitions)
-                                    pingThread = ExeThread(self.classpath, pingLog, runLang, pingExe, pingArgs, self.pingTimeout)  
+                                    pingThread = ExeThread(self.classpath, pingLog, runLang, pingExe, pingArgs, self.pingTimeout)
                                     pingThread.start()
                                     pingThread.join(self.pingTimeout)
 
                                     # Allow time for output to be written to log
-                                    time.sleep(2)                                                               
+                                    time.sleep(5)
                             except Exception as ex:
                                 msg = "Failure running PingPong:  ping " + str(ex)
 
@@ -164,22 +206,24 @@ class pingpong (Example):
                                 pongThread.join(self.pongTimeout)
                             except:
                                 msg = "Failure running PingPong: ping quit " + str(sys.exc_info()[0])
-  
+
                         try:
                             self.stopOSPL()
                         except Exception as ex:
-                            print("Exception stopping OpenSplice ", str(ex))
+                            print "Exception stopping OpenSplice ", str(ex)
 
                         try:
                             self.copyLogs()
 
                             if os.path.isfile (self.ospl_error_log):
                                 msg = "ospl-error.log found"
-                             
+
                             self.checkResults(pingLog, ping_conds)
 
+                            self.blockCheck (pingLog)
+
                             self.checkResults(pongLog, pong_conds)
-  
+
                             self.checkOSPLInfoLog(self.ospl_info_log)
                         except LogCheckFail as lf:
                             reason = str(lf)
@@ -204,21 +248,19 @@ class pingpong (Example):
                                 resultLang = "ccpp"
                             elif lang == "java":
                                 resultLang = "cj"
-                            elif lang == "java5":
-                                resultLang = "cj5"
 
                         try:
-                            print("WRiting result for ", self.name + " " + resultLang)
+                            print "WRiting result for ", self.name + " " + resultLang
                             self.writeResult (result, self.expath +  self.name, resultLang, msg)
                         except Exception as ex:
-                            print("Exception writing result", str(ex))
+                            print "Exception writing result", str(ex)
 
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print("Exception cleaning up", str(ex))
+                            print "Exception cleaning up", str(ex)
 
                     except Exception as ex:
-                        print("Unexpected exception", str(ex))
+                        print "Unexpected exception", str(ex)
                     finally:
                         os.chdir(currPath)

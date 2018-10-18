@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@
 #include "sac_common.h"
 #include "sac_entity.h"
 #include "u_dataViewQos.h"
+#include "u_instanceHandle.h"
 #include "v_kernel.h"
 #include "kernelModule.h"
 #include "c_stringSupport.h"
@@ -1195,6 +1197,13 @@ validResourceLimitsQosPolicy (
         valid = FALSE;
         SAC_REPORT(DDS_RETCODE_BAD_PARAMETER, "Invalid max_samples_per_instance = %d",
                      policy->max_samples_per_instance);
+    }
+    if ( (policy->max_samples != DDS_LENGTH_UNLIMITED) &&
+         (policy->max_samples_per_instance != DDS_LENGTH_UNLIMITED) &&
+         (policy->max_samples < policy->max_samples_per_instance) ) {
+        valid = FALSE;
+        SAC_REPORT(DDS_RETCODE_BAD_PARAMETER, "Invalid max_samples(%d) < max_samples_per_instance(%d)",
+                policy->max_samples, policy->max_samples_per_instance);
     }
     return valid;
 }
@@ -3234,3 +3243,17 @@ DDS_PublicationMatchedStatus_init (
     status->last_subscription_handle = u_instanceHandleFromGID(info->instanceHandle);
 }
 
+DDS_ReturnCode_t
+DDS_InstanceHandle_set_userdata(
+    DDS_InstanceHandle_t handle,
+    void *userData)
+{
+    return DDS_ReturnCode_get(u_instanceHandleSetUserData((u_instanceHandle)handle, userData));
+}
+
+void *
+DDS_InstanceHandle_get_userdata(
+    DDS_InstanceHandle_t handle)
+{
+    return u_instanceHandleGetUserData((u_instanceHandle)handle);
+}

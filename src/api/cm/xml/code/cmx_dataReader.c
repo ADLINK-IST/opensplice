@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -51,9 +52,9 @@ cmx_dataReaderNew(
     if(ce != NULL){
         sub = u_subscriber(ce->uentity);
         if(view != NULL){
-            rea = u_dataReaderNew(sub, name,  view, NULL, NULL, FALSE);
+            rea = u_dataReaderNew(sub, name,  view, NULL, 0, NULL);
         } else {
-            rea = u_dataReaderNew(sub, name,  NULL, NULL, NULL, FALSE);
+            rea = u_dataReaderNew(sub, name,  NULL, NULL, 0, NULL);
         }
         cmx_entityRelease(ce);
         if(rea != NULL){
@@ -62,7 +63,17 @@ cmx_dataReaderNew(
                 ur = u_entitySetXMLQos(u_entity(rea), qos);
             }
             if(ur == U_RESULT_OK){
-                ur = u_entityEnable(u_entity(rea));
+                if(u_entityEnabled(u_entity(sub))) {
+                    u_subscriberQos uqos = NULL;
+                    if((ur = u_subscriberGetQos(sub, &uqos)) == U_RESULT_OK) {
+                        if(uqos->entityFactory.v.autoenable_created_entities) {
+                            ur = u_entityEnable(u_entity(rea));
+                        }
+                    }
+                    if(uqos) {
+                        u_subscriberQosFree(uqos);
+                    }
+                }
             }
             if(ur == U_RESULT_OK){
                 ur = cmx_entityRegister(u_object(rea), ce->participant, &result);

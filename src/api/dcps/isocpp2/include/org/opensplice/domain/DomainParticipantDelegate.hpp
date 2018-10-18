@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -99,6 +100,9 @@ public:
     static dds::domain::qos::DomainParticipantQos default_participant_qos();
     static void default_participant_qos(const ::dds::domain::qos::DomainParticipantQos& qos);
 
+    void add_participant(org::opensplice::core::EntityDelegate& participant);
+    void remove_participant(org::opensplice::core::EntityDelegate& participant);
+
     void add_publisher(org::opensplice::core::EntityDelegate& publisher);
     void remove_publisher(org::opensplice::core::EntityDelegate& publisher);
 
@@ -110,6 +114,9 @@ public:
 
     void add_cfTopic(org::opensplice::core::ObjectDelegate& cfTopic);
     void remove_cfTopic(org::opensplice::core::ObjectDelegate& cfTopic);
+
+    static org::opensplice::domain::DomainParticipantDelegate::ref_type
+    lookup_participant(uint32_t domain_id);
 
     org::opensplice::core::EntityDelegate::ref_type
     find_topic(const std::string& topic_name);
@@ -125,6 +132,11 @@ public:
     lookup_topics(const std::string& type_name,
                   std::vector<u_topic>& topics,
                   uint32_t max_size);
+
+    void ignore_participant(const ::dds::core::InstanceHandle& handle);
+    void ignore_topic(const ::dds::core::InstanceHandle& handle);
+    void ignore_publication(const ::dds::core::InstanceHandle& handle);
+    void ignore_subscription(const ::dds::core::InstanceHandle& handle);
 
     u_participant registerType(const std::string typeName,
                                const std::string typeDescriptor,
@@ -164,8 +176,13 @@ public:
 
     static void
     detach_all_domains(bool block_operations, bool delete_entities);
+    
+    void set_property(std::string property, std::string value);
+
+    std::string get_property(std::string property);
 
 private:
+    static org::opensplice::core::EntitySet participants;
     static dds::domain::qos::DomainParticipantQos default_participant_qos_;
     static org::opensplice::core::Mutex default_participant_qos_lock_;
     dds::domain::qos::DomainParticipantQos qos_;

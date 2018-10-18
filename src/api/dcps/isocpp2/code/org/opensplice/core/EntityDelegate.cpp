@@ -1,8 +1,9 @@
 /*
-*                         OpenSplice DDS
+*                         Vortex OpenSplice
 *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,7 +38,7 @@
 
 
 org::opensplice::core::EntityDelegate::EntityDelegate() :
-     enabled_(true),
+     enabled_(false),
      maxSupportedSeconds_(OS_TIME_MAX_VALID_SECONDS),
      listener_dispatcher(NULL),
      listener_mask(0),
@@ -59,7 +60,7 @@ org::opensplice::core::EntityDelegate::enable()
     u_result uResult = u_entityEnable(u_entity(userHandle));
     ISOCPP_U_RESULT_CHECK_AND_THROW(uResult, "Enabling failed");
 
-    enabled_ = true;
+    enabled_ = u_entityEnabled(u_entity(userHandle));
     if (!u_observableGetY2038Ready(u_observable(userHandle))) {
         maxSupportedSeconds_ = INT32_MAX;
     }
@@ -152,6 +153,18 @@ org::opensplice::core::EntityDelegate::retain()
 {
 	ISOCPP_REPORT_STACK_DELEGATE_BEGIN(this);
     ISOCPP_THROW_EXCEPTION(ISOCPP_UNSUPPORTED_ERROR, "The retain() is not supported");
+}
+
+bool
+org::opensplice::core::EntityDelegate::is_enabled()
+{
+    check();
+
+    if(!this->enabled_) {
+        this->enabled_ = u_entityEnabled(u_entity(userHandle));
+    }
+
+    return this->enabled_;
 }
 
 void

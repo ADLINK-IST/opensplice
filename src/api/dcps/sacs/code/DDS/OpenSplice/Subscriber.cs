@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,7 +64,7 @@ namespace DDS.OpenSplice
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
                 {
-                    IntPtr uSubscriber = User.Subscriber.New(participant.rlReq_UserPeer, name, marshaler.UserPtr, 0);
+                    IntPtr uSubscriber = User.Subscriber.New(participant.rlReq_UserPeer, name, marshaler.UserPtr);
                     if (uSubscriber != IntPtr.Zero)
                     {
                         result = base.init(uSubscriber);
@@ -321,7 +322,7 @@ namespace DDS.OpenSplice
                                     if (result == DDS.ReturnCode.Ok)
                                     {
                                         readerList.Add(dataReader);
-                                        if (rlReq_AutoEnableCreatedEntities)
+                                        if (rlReq_AutoEnableCreatedEntities && this.IsEnabled())
                                         {
                                             result = dataReader.Enable();
                                         }

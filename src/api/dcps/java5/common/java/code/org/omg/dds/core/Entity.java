@@ -40,7 +40,7 @@ extends Closeable, DDSObject
     /**
      * This operation allows access to the existing Listener attached to the
      * Entity.
-     * 
+     *
      * @return The attached listener if set, or null otherwise.
      *
      * @see #setListener(EventListener)
@@ -60,7 +60,7 @@ extends Closeable, DDSObject
      * already set, the operation will replace it with the new one. Consequently
      * if the value null is passed for the listener parameter, any existing
      * listener will be removed.
-     * 
+     *
      * @param listener
      *            the listener to attach.
      *
@@ -207,6 +207,28 @@ extends Closeable, DDSObject
      *  The Listeners associated with an entity are not called until the
      *  entity is enabled. {@link org.omg.dds.core.Condition}s associated with an entity that
      *  is not enabled are "inactive," that is, have a triggerValue == false.
+     *
+     *  In addition to the general description, the enable operation on a {@link org.omg.dds.sub.Subscriber}
+     *  has special meaning in specific usecases. This applies only to Subscribers with PresentationQoS
+     *  coherent-access set to true with access-scope set to group.
+     *
+     *  In this case the subscriber is always created in a disabled state, regardless of the factory's
+     *  auto-enable created entities setting. While the subscriber remains disabled, DataReaders can be
+     *  created that will participate in coherent transactions of the subscriber.
+     *
+     *  See {@link org.omg.dds.sub.Subscriber#beginAccess()} and
+     *  {@link org.omg.dds.sub.Subscriber#endAccess()} for more information.
+     *
+     *  All DataReaders will also be created in a disabled state. Coherency with group access-scope requires
+     *  data to be delivered as a transaction, atomically, to all eligible readers. Therefore data should not be
+     *  delivered to any single DataReader immediately after it's created, as usual, but only after the application
+     *  has finished creating all DataReaders for a given Subscriber. At this point, the application should enable the
+     *  Subscriber which in turn enables all its DataReaders.
+     *
+     *  Note that for a DataWriter which has a corresponding Publisher with a PresentationQoS with coherent-access
+     *  set to true and access-scope set to topic or group that the HistoryQoS of the DataWriter should be set to KEEP_ALL
+     *  otherwise the enable operation will fail.
+     *  See {@link org.omg.dds.pub.Publisher#createDataWriter(Topic, DataWriterQos, DataWriterListener, Collection)}
      */
     public void enable();
 

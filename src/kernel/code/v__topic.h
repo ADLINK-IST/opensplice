@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -35,6 +36,9 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+OS_API v_result
+v__topicEnable(
+    _Inout_ v_topic _this);
 
 OS_API void
 v_topicDeinit(
@@ -43,15 +47,6 @@ v_topicDeinit(
 OS_API c_type
 v_topicKeyType(
     v_topic _this);
-
-/**
- * for every notify method the observer lock must be locked!
- */
-OS_API void
-v_topicNotify (
-    v_topic _this,
-    v_event event,
-    c_voidp userData);
 
 OS_API void
 v_topicNotifyInconsistentTopic (

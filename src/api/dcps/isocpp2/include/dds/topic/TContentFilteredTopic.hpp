@@ -139,6 +139,8 @@ public:
      *                  An internal error has occurred.
      * @throws dds::core::NullReferenceError
      *                  The entity was not properly created and references to dds::core::null.
+     *
+     * NOTE: This operation is not yet implemented. It is scheduled for a future release.
      */
     template <typename FWDIterator>
     void filter_parameters(const FWDIterator& begin, const FWDIterator& end);

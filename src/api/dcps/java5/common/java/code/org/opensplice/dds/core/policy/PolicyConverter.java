@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -38,6 +39,13 @@ import org.omg.dds.core.policy.OwnershipStrength;
 import org.omg.dds.core.policy.Partition;
 import org.omg.dds.core.policy.Presentation;
 import org.omg.dds.core.policy.Presentation.AccessScopeKind;
+import org.opensplice.dds.core.DDSExceptionImpl;
+import org.opensplice.dds.core.DurationImpl;
+import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
+import org.opensplice.dds.core.OsplServiceEnvironment;
+import org.opensplice.dds.core.Utilities;
+import org.opensplice.dds.core.policy.Scheduling.SchedulingClass;
+import org.opensplice.dds.core.policy.Scheduling.SchedulingKind;
 import org.omg.dds.core.policy.QosPolicy;
 import org.omg.dds.core.policy.Reliability;
 import org.omg.dds.core.policy.ResourceLimits;
@@ -46,13 +54,6 @@ import org.omg.dds.core.policy.TopicData;
 import org.omg.dds.core.policy.TransportPriority;
 import org.omg.dds.core.policy.UserData;
 import org.omg.dds.core.policy.WriterDataLifecycle;
-import org.opensplice.dds.core.DDSExceptionImpl;
-import org.opensplice.dds.core.DurationImpl;
-import org.opensplice.dds.core.IllegalArgumentExceptionImpl;
-import org.opensplice.dds.core.OsplServiceEnvironment;
-import org.opensplice.dds.core.Utilities;
-import org.opensplice.dds.core.policy.Scheduling.SchedulingClass;
-import org.opensplice.dds.core.policy.Scheduling.SchedulingKind;
 
 public class PolicyConverter {
     public static DDS.UserDataQosPolicy convert(OsplServiceEnvironment env,

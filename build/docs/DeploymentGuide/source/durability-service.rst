@@ -10,7 +10,7 @@ purpose of the service. After that all its concepts and mechanisms are described
 
 The exact fulfilment of the durability responsibilities is determined by the
 configuration of the Durability Service.
-There are detailed descriptions of all of the available configuration 
+There are detailed descriptions of all of the available configuration
 parameters and their purpose in the :ref:`Configuration <Configuration>`
 section.
 
@@ -41,7 +41,7 @@ the DDS middleware and comes in four flavours:
   running on at least one of the nodes.
 *PERSISTENT*
   Data needs to outlive system downtime. This implies that it
-  must be kept somewhere on permanent storage in order to be able to make 
+  must be kept somewhere on permanent storage in order to be able to make
   it available again for subscribers after the middleware is restarted.
 
 In Vortex OpenSplice, the realisation of the non-volatile properties is the
@@ -113,8 +113,8 @@ collection are always handled as an atomic data-set by the durability service. I
 other words, the data is guaranteed to be stored and reinserted as a whole.
 
 This atomicity also implies that a name-space is a system-wide concept, meaning
-that different durability services need to agree on its definition, *i.e.* which 
-partitions belong to one name-space. This doesn’t mean that each durability service 
+that different durability services need to agree on its definition, *i.e.* which
+partitions belong to one name-space. This doesn’t mean that each durability service
 needs to know all name-spaces, as long as the name-spaces one does know don’t conflict
 with one of the others in the domain. Name-spaces that are completely disjoint can
 co-exist (their intersection is an empty set); name-spaces conflict when they
@@ -160,7 +160,7 @@ This section describes the policies that can be configured per name-space giving
 user full control over the fault-tolerance versus performance aspect on a per
 name-space level.
 
-Please refer to the  :ref:`Configuration <Configuration>` section for 
+Please refer to the  :ref:`Configuration <Configuration>` section for
 a detailed description of:
 
 +  ``//OpenSplice/DurabilityService/NameSpaces/Policy``
@@ -230,7 +230,7 @@ associated with the data, for instance by storing persistent data only in memory
 it were transient. Reasons for this are performance impact (CPU load, disk I/O) or
 simply because no permanent storage (in the form of some hard-disk) is available on
 a node. Be aware that it is not possible to ‘strengthen’ the durability of the data
-(Persistent > Transient > Volatile). 
+(Persistent > Transient > Volatile).
 
 The durability service has the following options
 for maintaining a set of historical data:
@@ -259,10 +259,10 @@ Delayed alignment policy
 
 The durability service has a mechanism in place to make sure that when multiple
 services with a persistent dataset exist, only one set (typically the one with the
-newest state) will be injected in the system (see `Persistent data injection`_). 
-This mechanism will, during the startup of the durability service, negotiate with 
-other services which one has the best set (see `Master selection`_). 
-After negotiation the ‘best’ persistent set (which can be empty) is restored 
+newest state) will be injected in the system (see `Persistent data injection`_).
+This mechanism will, during the startup of the durability service, negotiate with
+other services which one has the best set (see `Master selection`_).
+After negotiation the ‘best’ persistent set (which can be empty) is restored
 and aligned to all durability services.
 
 Once persistent data has been re-published in the domain by a durability service for
@@ -271,11 +271,11 @@ re-publish their own set for that name-space from disk any longer. Applications 
 already have started their processing based on the already-published set, and
 re-publishing another set of data may confuse the business logic inside applications.
 Other durability services will therefore back-up their own set of data and align and
-store the set that is already available in the domain. 
+store the set that is already available in the domain.
 
-It is important to realise that an empty set of data is also considered a set. 
+It is important to realise that an empty set of data is also considered a set.
 This means that once a durability service in the domain decides that there is no data
-(and has triggered applications that the set is complete), other late-joining 
+(and has triggered applications that the set is complete), other late-joining
 durability services will not re-publish any persistent data that they potentially
 have available.
 
@@ -310,12 +310,12 @@ nodes may have been publishing information for the same topic in the same
 partition without this information reaching the other party. Therefore their
 perception of the set of data will be different.
 
-In many cases, after this has occurred the exchange of information is no longer 
+In many cases, after this has occurred the exchange of information is no longer
 allowed, because there is no guarantee that data between the connected systems doesn’t
-conflict. For example, consider a fault-tolerant (distributed) global id service: 
-this service will provide globally-unique ids, but this will be guaranteed 
+conflict. For example, consider a fault-tolerant (distributed) global id service:
+this service will provide globally-unique ids, but this will be guaranteed
 *if and only if* there is no disruption of communication between all services. In such
-a case a disruption must be considered permanent and a reconnection must be avoided 
+a case a disruption must be considered permanent and a reconnection must be avoided
 at any cost.
 
 Some new environments demand supporting the possibility to (re)connect two
@@ -397,7 +397,7 @@ Prevent aligning equal data sets
 
 As explained in previous sections, temporary disconnections can cause durability
 services to get out-of-sync, meaning that their data sets may diverge. To recover
-from such situations merge policies have been defined (see `Merge policy`_) 
+from such situations merge policies have been defined (see `Merge policy`_)
 where a user can specify how to combine divergent data sets
 when they become reconnected. Many of these situations involve the transfer of
 data sets from one durability service to the other. This may generate a considerable
@@ -561,19 +561,19 @@ a detailed description of:
 Interaction with applications
 =============================
 
-The durability service is responsible for providing historical data to 
+The durability service is responsible for providing historical data to
 late-joining subscribers.
 
 Applications can use the DCPS API call ``wait_for_historical_data`` on a DataReader
-to synchronise on the availability of the complete set of historical data. 
-Depending on whether the historical data is already available locally, data can be 
-delivered immediately after the DataReader has been created or must be aligned from 
-another durability service in the domain first. Once all historical data is delivered 
-to the newly-created DataReader, the durability service will trigger the DataReader 
-unblocking the ``wait_for_historical_data`` performed by the application. If the 
-application does not need to block until the complete set of historical data is 
-available before it starts processing, there is no need to call 
-``wait_for_historical_data``. It should be noted that in such a case historical 
+to synchronise on the availability of the complete set of historical data.
+Depending on whether the historical data is already available locally, data can be
+delivered immediately after the DataReader has been created or must be aligned from
+another durability service in the domain first. Once all historical data is delivered
+to the newly-created DataReader, the durability service will trigger the DataReader
+unblocking the ``wait_for_historical_data`` performed by the application. If the
+application does not need to block until the complete set of historical data is
+available before it starts processing, there is no need to call
+``wait_for_historical_data``. It should be noted that in such a case historical
 data still is delivered by the durability service when it becomes available.
 
 
@@ -722,24 +722,51 @@ for every name-space, which is the next phase in its lifecycle.
 Master selection
 ================
 
-To ensure a single source for re-publishing of persistent data and to allow parallel
-alignment, each durability service will select a master for every name-space. 
+For each Namespace and Role combination there shall be at most one Master Durability
+Service. The Master Durability Service coordinates single source re-publishing of
+persistent data and to allow parallel alignment after system start-up,
+and to coordinate recovery of a split brain syndrome after connecting nodes having
+selected a different Master indicating that more than one state of the data may exist.
 
-The rules for determining a master are:
+Therefore after system start-up as well as after any topology change (i.e. late joining
+nodes or leaving master node) a master selection process will take place for each
+affected Namespace/Role combination.
 
-1. If some other durability service in the domain already selected
-   a master, pick the same one.
+To control the master selection process a masterPriority attribute can be used.
 
-2. If no master has been selected, pick the one with the newest 
-   initial set of persistent data.
+Each Durability Service will have a configured masterPriority attribute per namespace
+which is an integer value between 0 and 255 and which specifies the eagerness of the
+Durability Service to become Master for that namespace.
+The values 0 and 255 have a special meaning.
+Value 0 is used to indicate that the Durability Service will never become Master.
+The value 255 is used to indicate that the Durability Service will not use priorities
+but instead uses the legacy selection algorithm.
+If not configured the default is 255.
 
-3. If multiple durability services exist with the newest set of 
-   initial persistent data, pick the one with the highest id 
-   (this id is a domain-wide unique number that is
-   generated at start-up of each OpenSplice federation).
+During the master selection process each Durability service will exchange for each
+namespace the masterPriority and quality. The namespace quality is the timestamp of the
+latest update of the persistent data set stored on disk and only plays a role in master
+selection initially when no master has been chosen before and persistent data has not
+been injected yet.
 
-If an existing master is no longer available, due to a disconnection, crash or
-regular termination, a new master is selected based on the same rules.
+Each Durability Service will determine the Master based upon the highest non zero
+masterPriority and in case of multiple masters further select based on namespace
+quality (but only if persistent data has not been injected before) and again in case of
+multiple masters select the highest system id. The local system id is an arbitrary
+value which unique identifies a durability service.
+After selection each Durability Service will communicate their determined master and on
+agreement effectuate the selection, on disagreement which may occur if some Durability
+Services had a temporary different view of the system this process of master selection
+will restart until all Durability Services have the same view of the system and have
+made the same selection.
+If no durability services exists having a masterPriority greater than zero then no
+master will be selected.
+
+Summarizing, the precedence rules for master selection are (from high to low):
+
+1. The namespace masterPriority
+2. The namespace quality, if no data has been injected before.
+3. The Durability Service system id, which is unique for each durability service.
 
 Please refer to the  :ref:`Configuration <Configuration>` section for
 a detailed description of:
@@ -753,88 +780,88 @@ Persistent data injection
 =========================
 
 As persistent data needs to outlive system downtime, this data needs to be
-re-published in DDS once a domain is started. 
+re-published in DDS once a domain is started.
 
-If only one node is started, the durability service on that node can simply 
-re-publish the persistent data from its disk. However, if multiple nodes are 
-started at the same time, things become more difficult. Each one of them may 
-have a different set available on permanent storage due to the fact that 
+If only one node is started, the durability service on that node can simply
+re-publish the persistent data from its disk. However, if multiple nodes are
+started at the same time, things become more difficult. Each one of them may
+have a different set available on permanent storage due to the fact that
 durability services have been stopped at a different moment in time.
 Therefore only one of them should be allowed to re-publish its data, to prevent
-inconsistencies and duplication of data. 
+inconsistencies and duplication of data.
 
-The steps below describe how a durability service currently determines whether or 
+The steps below describe how a durability service currently determines whether or
 not to inject its data during start-up:
 
-1. *Determine validity of own persistent data* — 
-   During this step the durability service determines whether its persistent 
-   store has initially been completely filled with all persistent data in the 
-   domain in the last run. If the service was shut down in the last run 
-   during initial alignment of the persistent data, the set of data will be 
-   incomplete and the service will restore its back-up of a full set of (older) 
+1. *Determine validity of own persistent data* —
+   During this step the durability service determines whether its persistent
+   store has initially been completely filled with all persistent data in the
+   domain in the last run. If the service was shut down in the last run
+   during initial alignment of the persistent data, the set of data will be
+   incomplete and the service will restore its back-up of a full set of (older)
    data if that is available from a run before that. This is done because it
-   is considered better to re-publish an older but complete set of data instead 
+   is considered better to re-publish an older but complete set of data instead
    of a part of a newer set.
 
-2. *Determine quality of own persistent data* — 
-   If persistence has been configured, the durability service will inspect the 
-   quality of its persistent data on start-up. The quality is determined on a 
-   *per-name-space* level by looking at the time-stamps of the persistent data 
-   on disk. The latest time-stamp of the data on disk is used as the quality 
-   of the name-space. This information is useful when multiple nodes are started 
-   at the same time. Since there can only be one source per name-space that is 
-   allowed to actually inject the data from disk into DDS, this mechanism allows 
-   the durability services to select the source that has the latest data, because 
-   this is generally considered the best data. If this is not true then an 
-   intervention is required. The data on the node must be replaced by the 
-   correct data either by a supervisory (human or system management application) 
+2. *Determine quality of own persistent data* —
+   If persistence has been configured, the durability service will inspect the
+   quality of its persistent data on start-up. The quality is determined on a
+   *per-name-space* level by looking at the time-stamps of the persistent data
+   on disk. The latest time-stamp of the data on disk is used as the quality
+   of the name-space. This information is useful when multiple nodes are started
+   at the same time. Since there can only be one source per name-space that is
+   allowed to actually inject the data from disk into DDS, this mechanism allows
+   the durability services to select the source that has the latest data, because
+   this is generally considered the best data. If this is not true then an
+   intervention is required. The data on the node must be replaced by the
+   correct data either by a supervisory (human or system management application)
    replacing the data files or starting the nodes in the desired sequence
    so that data is replaced by alignment.
 
-3. *Determine topology* — 
-   During this step, the durability service determines whether there are other 
+3. *Determine topology* —
+   During this step, the durability service determines whether there are other
    durability services in the domain and what their state is.
-   If this service is the only one, it will select itself as the ‘best’ source 
+   If this service is the only one, it will select itself as the ‘best’ source
    for the persistent data.
 
-4. *Determine master* — 
+4. *Determine master* —
    During this step the durability service will determine who
-   will inject persistent data or who has injected persistent data already. 
-   The one that will or already has injected persistent data is called the 
-   *‘master’*. This process is done on a per name-space level 
+   will inject persistent data or who has injected persistent data already.
+   The one that will or already has injected persistent data is called the
+   *‘master’*. This process is done on a per name-space level
    (see previous section).
 
-   a) *Find existing master* – 
-      In case the durability service joins an already-running domain, 
-      the master has already been determined and this one has already 
-      injected the persistent data from its disk or is doing it right now. 
-      In this case, the durability service will set its current set of 
-      persistent data aside and will align data from the already existing 
-      master node. If there is no master yet, persistent data has not 
+   a) *Find existing master* –
+      In case the durability service joins an already-running domain,
+      the master has already been determined and this one has already
+      injected the persistent data from its disk or is doing it right now.
+      In this case, the durability service will set its current set of
+      persistent data aside and will align data from the already existing
+      master node. If there is no master yet, persistent data has not
       been injected yet.
 
-   b) *Determine new master* – 
-      If the master has not been determined yet, the durability service 
-      determines the master for itself based on who has the best quality 
+   b) *Determine new master* –
+      If the master has not been determined yet, the durability service
+      determines the master for itself based on who has the best quality
       of persistent data. In case there is more than one service with the
       ‘best’ quality, the one with the highest system id (unique number) is
-      selected. Furthermore, a durability service that is marked as not 
-      being an aligner for a name-space cannot become master for 
+      selected. Furthermore, a durability service that is marked as not
+      being an aligner for a name-space cannot become master for
       that name-space.
 
-5. *Inject persistent data* — 
-   During this final step the durability service injects its persistent data 
-   from disk into the running domain. This is *only* done when the service has 
+5. *Inject persistent data* —
+   During this final step the durability service injects its persistent data
+   from disk into the running domain. This is *only* done when the service has
    determined that it is the master. In any other situation the durability
-   service backs up its current persistent store and fills a new store with 
-   the data it aligns from the master durability service in the domain, or 
+   service backs up its current persistent store and fills a new store with
+   the data it aligns from the master durability service in the domain, or
    postpones alignment until a master becomes available in the domain.
 
 |caution|
 
-  It is strongly discouraged to re-inject persistent data from a persistent 
-  store in a running system after persistent data has been published. 
-  Behaviour of re-injecting persistent stores in a running system is not 
+  It is strongly discouraged to re-inject persistent data from a persistent
+  store in a running system after persistent data has been published.
+  Behaviour of re-injecting persistent stores in a running system is not
   specified and may be changed over time.
 
 
@@ -859,8 +886,8 @@ Align historical data
 
 Once all topic and partition information for all configured name-spaces are known,
 the initial alignment of historical data takes place. Depending on the configuration
-of the service, data is obtained either immediately after discovering it or only once 
-local interest in the data arises. The process of aligning historical data continues 
+of the service, data is obtained either immediately after discovering it or only once
+local interest in the data arises. The process of aligning historical data continues
 during the entire lifecycle of the durability service.
 
 
@@ -869,8 +896,8 @@ during the entire lifecycle of the durability service.
 Provide historical data
 =======================
 
-Once (a part of) the historical data is available in the durability service, it is 
-able to provide historical data to local DataReaders as well as other durability 
+Once (a part of) the historical data is available in the durability service, it is
+able to provide historical data to local DataReaders as well as other durability
 services.
 
 Providing of historical data to local DataReaders is performed automatically as soon
@@ -898,6 +925,239 @@ the configured merge-policies will determine what actions are performed to recov
 from this situation. The process of merging historical data will be performed every
 time two separately running systems get (re-)connected.
 
+.. _`Threads description`:
+
+Threads description
+*******************
+
+This section contains a short description of each durability thread. When applicable,
+relevant configuration parameters are mentioned.
+
+ospl_durability
+===============
+This is the main durability service thread. It starts most of the other threads, e.g.
+the listener threads that are used to receive the durability protocol messages,
+and it initiates initial alignment when necessary. This thread is responsible for
+periodically updating the service-lease so that the splice-daemon is aware the service
+is still alive. It also periodically (every 10 seconds) checks the state of all other
+service threads to detect if deadlock has occurred. If deadlock has occurred the service
+will indicate which thread didn't make progress and action can be taken (e.g. the service
+refrains from updating its service-lease, causing the splice daemon to execute a failure
+action). Most of the time this thread is asleep.
+
+conflictResolver
+================
+This thread is responsible for resolving conflicts. If a conflict has been detected and
+stored in the conflictQueue, the conflictResolver thread takes the conflict, checks
+whether the conflict still exists, and if so, starts the procedure to resolve the conflict
+(i.e., start to determine a new master, send out sample requests, etc).
+
+statusThread
+============
+This thread is responsible for the sending status messages to other durability services.
+These messages are periodically sent between durability services to inform each other
+about their state (.e.,g INITIALIZING or TERMINATING).
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Watchdog/Scheduling``
+
+d_adminActionQueue
+==================
+The durability service maintains a queue to schedule timed action. The d_adminActionQueue
+periodically checks (every 100 ms) if an action is scheduled.
+Example actions are: electing a new master, detection of new local groups and deleting
+historical data.
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Network/Heartbeat/Scheduling``
+
+AdminEventDispatcher
+====================
+Communication between the splice-daemon and durability service is managed by events. The
+AdminEventDispatcher thread listens and acts upon these events. For example, the creation
+of a new topic is noticed by the splice-daemon, which generates an event for the
+durability service, which schedules an action on to request historical data for the topic.
+
+groupCreationThread
+===================
+The groupCreationThread is responsible for the creation of groups that exist in other
+federations. When a durability service receives a newGroup message from another
+federation, it must create the group locally in order to acquire data for it.
+Creation of a group may fail in case a topic is not yet known. The thread will retry with
+a 10ms interval.
+
+sampleRequestHandler
+====================
+This thread is responsible for the handling of sampleRequests. When a durability
+service receives a d_sampleRequest message (see the sampleRequestListener thread) it
+will not immediately answer the request, but wait some time until the time to combine
+requests has been expired (see
+//OpenSplice/DurabilityService/Network/Alignment/RequestCombinePeriod). When this time
+has expired the sampleRequestHandler will answer the request by collecting the requested
+data and sending the data as d_sampleChain messages to the requestor.
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Network/Alignment/AlignerScheduling``
+
+resendQueue
+===========
+This thread is responsible for injection of message in the group after it has been rejected
+before. When a durability service has received historical data from another fellow,
+historical data is injected in the group (see d_sampleChain). Injection of historical data
+can be rejected, e.g., when a resource limits are being used. When this happens, a new attempt
+to inject the data is scheduled overusing the resendQueue thread. This thread will try to
+deliver the data 1s later.
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Network/Alignment/AligneeScheduling``
+
+masterMonitor
+=============
+The masterMonitor is the thread that handles the selection of a new master. This thread is
+invoked when the conflict resolver detects that a master conflict has occurred. The
+masterMonitor is responsible for collecting master proposals from other fellows and sending
+out proposals to other fellows.
+
+groupLocalListenerActionQueue
+=============================
+This thread is used to handle historical data requests from specific readers, and to handle
+delayed alignment (see //OpenSplice/DurabilityService/NameSpaces/Policy[@delayedAlignment])
+
+d_groupsRequest
+===============
+The d_groupsRequest thread is responsible for processing incoming d_groupsRequest messages
+from other fellows. When a durability service receives a message from a fellow, the durability
+service will send information about its groups to the requestor by means of d_newGroup messages.
+This thread collects group information, packs it in d_newGroup messages and send them to the
+requestor. This thread will only do something when a d_groupsRequest has been received from a
+fellow. Most of the time it will sleep.
+
+d_nameSpaces
+============
+This thread is responsible for processing incoming d_nameSpaces messages from other fellows.
+Durability services send each other their namespaces state so that they can detect potential
+conflicts. The d_nameSpaces thread processes and administrates every incoming d_nameSpace. When
+a conflict is detected, the conflict is scheduled which may cause the conflictResolver thread
+to kick in.
+
+d_nameSpacesRequest
+===================
+The d_nameSpacesRequest thread is responsible for processing incoming d_nameSpacesRequest
+messages from other fellows. A durability service can request the namespaces form a fellow by
+sending a d_nameSpacesRequest message to the fellow. Whenever a durability service receives a
+d_nameSpacesRequest messages it will respond by sending its set of namespaces to the fellow.
+The thread handles incoming d_nameSpacesRequest messages. As a side effect new fellows can be
+discovered if a nameSpacesRequest is received from an unknown fellow.
+
+d_status
+========
+The d_status thread is responsible for processing incoming d_status messages from other fellows.
+Durability services periodically send each other status information (see the statusThread).
+NOTE: in earlier versions missing d_status messages could lead to the conclusion that a fellows
+has been removed. In recent versions this mechanism has been replaced so that the durability
+service slaves itself to the liveness of remote federations based on heartbeats
+(see thread dcpsHeartbeatListener). Effectivily, the d_status message is not used anymore to
+verify liveliness of remote federations, it is only used to transfer the durability state of
+a remote federation.
+
+d_newGroup
+==========
+The d_newGroup thread is responsible for handling incoming d_newGroup messages from other fellows.
+Durability services inform each other about groups in the namespaces. They do that by sending
+d_newGroup messages to each other (see also thread d_groupsRequest). The d_newGroup thread is
+responsible for handling incoming groups.
+
+d_sampleChain
+=============
+The d_sampleChain thread handles incoming d_sampleChain messages from other fellows. When a
+durability service answers an d_sampleRequest, it must collect the requested data and send it
+to the requestor. The collected data is packed in d_sampleChain messages. The d_sampleChain thread
+handles incoming d_sampleChain messages and applies the configured merge policy for the data.
+For example, in case of a MERGE it injects all the received data in the local group and delivers
+the data to the available readers.
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Network/Alignment/AligneeScheduling``
+
+d_sampleRequest
+===============
+The d_sampleRequest thread is responsible for handling incoming d_sampleRequest messages from
+other fellows. A durability service can request historical data from a fellow by sending a
+d_sampleRequest message. The d_sampleRequest thread is used to process d_sampleRequest messages.
+Because d_sampleRequest messages are not handled immediately, they are stored in a list and handled
+later on (see thread sampleRequestHandler).
+
+d_deleteData
+============
+The d_deleteData thread is responsible for handling incoming d_deleteData messages from other fellows.
+An application can call delete_historical_data(). This causes all historical data up till now to be
+deleted. To propagate deletion of historical data to all available durability services in the system,
+durability services send each other a d_deleteData message. The d_deleteData thread handles incoming
+d_deleteData messages and takes care that the relevant data is deleted. This thread will only be active
+after delete_historical_data() is called.
+
+dcpsHeartbeatListener
+=====================
+The dcpsHeartbeatListener is responsible for the liveliness detection of remote federations. This
+thread listens to DCPSHeartbeat messages that are sent by federation. It is used to detect new
+federations or federations that disconnect. This thread will only do something when there is a change
+in federation topology. Most of the time it will be asleep.
+
+d_capability
+============
+The thread is responsible for processing d_cability messages from other fellows. As soon as a durability
+service detects a fellow it will send its list of capabilities to the fellow. The fellow can use this
+list to find what functionality is supported by the durability service. Similarly, the durability
+service can receive capabilities from the fellow. This thread is used to process the capabilities sent by
+a fellow. This thread will only do something when a fellow is detected.                                                                                                                                                                                                                                                                                                                                                         |                                                                    |
+
+remoteReader
+============
+The remoteReader thread is responsible for the detection of remote readers on other federations. The DDSI
+service performs discovery and reader-writing matching. This is an asynchronous mechanism. When a
+durability service (say A) receives a request from a fellow durability service (say B) and DDSI is used
+as networking service, then A cannot be sure that DDSI has already detected the reader on B that should
+receive the answer to the request. To ensure that durability services will only answer if all relevant
+remote readers have been detected, the remoteReader thread keeps track of the readers that have been
+discovered by ddsi. Only when all relevant readers have been discovered durability services are allowed
+to answer requests. This prevents DDSI from dropping messages destined for readers that have not been
+discovered yet.
+
+persistentDataListener
+======================
+The persistentDataListenerThread is responsible for persisting durable data. When a durability service
+retrieves persistent data, the data is stored in a queue. The persistentDataListener thread retrieves the
+data from the queue and stores it in the persistent store. For large data sets persisting the data can take
+quite some time, depending mostly on the performance of the disk.
+
+Note this thread is only created when persistency is enabled
+(//OpenSplice/DurabilityService/Persistent/StoreDirectory has a value set):
+
+Configuration parameters:
+
++  ``//OpenSplice/DurabilityService/Persistent/Scheduling``
+
+historicalDataRequestHandler
+============================
+This thread is responsible for handling incoming historicalDataRequest messages from durability clients. In
+case an application does not have the resources to run a durability service but still wants to acquire
+historical data it can configure a client. The client sends HistoricalDataRequest messages to the durability
+service. These messages are handled by the historicalDataRequestHandler thread.
+
+Note this thread is only created when client durability is enabled
+(//OpenSplice/DurabilityService/ClientDurability element exists)
+
+durabilityStateListener
+=======================
+This thread is responsible for handling incoming durabilityStateRequest messages from durability clients.
+
+Note this thread is only created when client durability is enabled
+(//OpenSplice/DurabilityService/ClientDurability element exists)
 
 .. EoF
 

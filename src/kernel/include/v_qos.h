@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -47,10 +48,12 @@ extern "C" {
 
 typedef c_ulong v_qosChangeMask; /* mask indicating, which policies have changed */
 
+_Check_return_
+_Pre_satisfies_(kind >= V_PARTITION_QOS && kind < V_COUNT_QOS)
 OS_API v_qos
-v_qosCreate (
-    c_base base,
-    v_qosKind kind);
+v_qosCreate(
+    _In_ c_base base,
+    _In_ v_qosKind kind);
 
 OS_API void
 v_qosFree (

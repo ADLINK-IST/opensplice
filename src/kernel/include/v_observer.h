@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -50,6 +51,7 @@
 
 #include "v_kernel.h"
 #include "v_event.h"
+#include "v_observable.h"
 #include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
@@ -67,6 +69,9 @@
  * be <code>v_observer</code> or one of its subclasses.
  */
 #define v_observer(o) (C_CAST(o,v_observer))
+
+#define v_observerWaitCount(_this) \
+        (v_observer(_this)->waitCount)
 
 /**
  * Notify the observer.
@@ -124,6 +129,13 @@ OS_API c_ulong
 v_observerTimedWait(
     v_observer _this,
     const os_duration timeout);
+
+c_ulong
+v_observerTimedWaitAction(
+    v_observer o,
+    const os_duration time,
+    const c_action action,
+    c_voidp arg);
 
 /**
  * Add the event(s) the observer is interested in.
@@ -187,14 +199,20 @@ v_observerSetEventMask(
     v_observer _this,
     c_ulong mask);
 
-#define v_observerLock(_this) \
-        (void)c_mutexLock(&v_observer(_this)->mutex)
+/*
+ * The following three operations are depriated!
+ */
+OS_API void
+v_observerLock(
+    v_observer o);
 
-#define v_observerUnlock(_this) \
-        c_mutexUnlock(&v_observer(_this)->mutex)
+OS_API void
+v_observerUnlock(
+    v_observer o);
 
-#define v_observerWaitCount(_this) \
-        (v_observer(_this)->waitCount)
+OS_API void
+v_observerClearEventFlags(
+    v_observer _this);
 
 #undef OS_API
 

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -153,6 +154,7 @@ u_observableGid (
 OS_API u_result
 u_observableAddListener(
     const u_observable _this,
+    const u_eventMask eventMask,
     const u_observableListener listener,
     void *userData);
 
@@ -162,7 +164,7 @@ u_observableRemoveListener(
     const u_observableListener listener);
 
 OS_API u_result
-u_observableNotifyListener(
+u_observableNotify(
     const u_observable _this);
 
 OS_API u_result

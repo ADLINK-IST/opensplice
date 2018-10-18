@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -54,22 +55,25 @@
 
 /*static cms_uri_cache uri_cache = NULL;*/
 
-static void cmsoapAtExit(u_service service, void *privateData);
-
 static os_result
 exitRequestHandler(
         os_callbackArg ignore,
+        void *callingThreadContext,
         void * arg)
 {
     cms_service cms = (cms_service)arg;
 
+    OS_UNUSED_ARG(callingThreadContext);
     OS_UNUSED_ARG(ignore);
+
 
     assert(cms);
     /* Terminate cmsoap */
     cms->terminate = TRUE;
 
-    return os_resultFail; /* Don't invoke further handlers; main thread will take care of termination. */
+    OS_REPORT(OS_INFO, "CMSoap Exit Handler", 0, "Initiated CMSoap Service termination...");
+
+    return os_resultSuccess;
 }
 
 
@@ -93,13 +97,9 @@ OPENSPLICE_SERVICE_ENTRYPOINT (ospl_cmsoap, cmsoap)
 
           if(cms != NULL){
              os_signalHandlerExitRequestHandle erh = os_signalHandlerExitRequestHandleNil;
-             if (u_serviceAtExit(cms->uservice, cmsoapAtExit, cms) != U_RESULT_OK) {
-                 OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
-                           "Could not register atExit.");
-                 cms->terminate = TRUE;
-             }
+
              if(!os_serviceGetSingleProcess()){
-                  erh = os_signalHandlerRegisterExitRequestCallback(exitRequestHandler, cms);
+                  erh = os_signalHandlerRegisterExitRequestCallback(exitRequestHandler, NULL, NULL, NULL, cms);
              }
 
              while(cms->terminate == FALSE){
@@ -187,16 +187,6 @@ OPENSPLICE_SERVICE_ENTRYPOINT (ospl_cmsoap, cmsoap)
           printf("Usage: %s <name> <uri>\n", argv[0]);
        }
     return 0;
-}
-
-static void
-cmsoapAtExit(
-    u_service service,
-    void *privateData)
-{
-    cms_service cms = cms_service(privateData);
-    OS_UNUSED_ARG(service);
-    cms->terminate = TRUE;
 }
 
 static c_bool

@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ import java.util.EventListener;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.cyclone.dds.core.AbstractDDSObject;
 import org.omg.dds.core.EntityQos;
 import org.omg.dds.core.InstanceHandle;
 import org.omg.dds.core.ServiceEnvironment;
@@ -125,9 +127,9 @@ public abstract class EntityImpl<OLD extends DDS.Entity, OLDPARENT, QOS extends 
         int newValue = this.refCount.incrementAndGet();
 
         if (newValue <= 0) {
-            this.refCount.decrementAndGet();
+            int refCount = this.refCount.decrementAndGet();
             throw new AlreadyClosedExceptionImpl(this.environment,
-                    "Entity already closed.");
+                    "Entity already closed. refcount:" + refCount);
         }
         assert (newValue > newValue - 1);
         assert (newValue > 1);

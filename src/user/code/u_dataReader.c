@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -82,8 +83,8 @@ u_dataReaderNew(
     const os_char *name,
     const os_char *expr,
     const c_value params[],
-    const u_readerQos qos,
-    u_bool enable)
+    os_uint32 nrOfParams,
+    const u_readerQos qos)
 {
     u_dataReader _this = NULL;
     v_subscriber ks = NULL;
@@ -99,7 +100,7 @@ u_dataReaderNew(
     result = u_observableWriteClaim(u_observable(s), (v_public *)(&ks), C_MM_RESERVATION_HIGH);
     if (result == U_RESULT_OK) {
         assert(ks);
-        reader = v_dataReaderNewBySQL(ks, name, expr, params, qos, enable);
+        reader = v_dataReaderNewBySQL(ks, name, expr, params, nrOfParams, qos);
         if (reader != NULL) {
             _this = u_objectAlloc(sizeof(*_this), U_READER, u__dataReaderDeinitW, u__dataReaderFreeW);
             if (_this != NULL) {
@@ -401,7 +402,7 @@ u_dataReaderWaitForHistoricalData(
 
     result = u_dataReaderReadClaim(_this, &reader, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
-        result = u_resultFromKernel(v_readerWaitForHistoricalData(v_reader(reader), timeout));
+        result = u_resultFromKernel(v_readerWaitForHistoricalData(v_reader(reader), timeout, FALSE));
         u_dataReaderRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
@@ -432,7 +433,7 @@ u_dataReaderWaitForHistoricalDataWithCondition(
             v_reader(reader), filter, params, paramsLength,
             minSourceTime, maxSourceTime,
             max_samples, max_instances, max_samples_per_instance,
-            timeout));
+            timeout, FALSE));
         u_dataReaderRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
@@ -461,39 +462,44 @@ u_dataReaderLookupInstance(
     result = u_dataReaderReadClaim(_this, &reader, C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
         topic = v_dataReaderGetTopic(reader);
-        message = v_topicMessageNew_s(topic);
-        if (message) {
-            to = (void *) (message + 1);
-            copyResult = copyIn(v_topicDataType(topic), keyTemplate, to);
-            if (V_COPYIN_RESULT_IS_OK(copyResult)) {
-                instance = v_dataReaderLookupInstance(reader, message);
-                *handle = u_instanceHandleNew(v_public(instance));
-                c_free(instance);
-            } else {
-                if (V_COPYIN_RESULT_IS_OUT_OF_MEMORY(copyResult)) {
-                    result = U_RESULT_OUT_OF_MEMORY;
-                    OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
-                              "Out of memory: unable to create message for Topic: '%s'.",
-                              v_entityName2(topic));
+
+        if(topic){
+            message = v_topicMessageNew_s(topic);
+            if (message) {
+                to = (void *) (message + 1);
+                copyResult = copyIn(v_topicDataType(topic), keyTemplate, to);
+                if (V_COPYIN_RESULT_IS_OK(copyResult)) {
+                    instance = v_dataReaderLookupInstance(reader, message);
+                    *handle = u_instanceHandleNew(v_public(instance));
+                    c_free(instance);
                 } else {
-                    result = U_RESULT_ILL_PARAM;
-                    OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
-                              "Invalid key: unable to create message for Topic: '%s'.",
-                              v_entityName2(topic));
+                    if (V_COPYIN_RESULT_IS_OUT_OF_MEMORY(copyResult)) {
+                        result = U_RESULT_OUT_OF_MEMORY;
+                        OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
+                                  "Out of memory: unable to create message for Topic: '%s'.",
+                                  v_entityName2(topic));
+                    } else {
+                        result = U_RESULT_ILL_PARAM;
+                        OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
+                                  "Invalid key: unable to create message for Topic: '%s'.",
+                                  v_entityName2(topic));
+                    }
                 }
+                c_free(message);
+            } else {
+                c_char *name = v_topicName(topic);
+                if (name == NULL) {
+                    name = "No Name";
+                }
+                result = U_RESULT_OUT_OF_MEMORY;
+                OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
+                          "Out of memory: unable to create message for Topic: '%s'.",
+                          name);
             }
-            c_free(message);
+            c_free(topic);
         } else {
-            c_char *name = v_topicName(topic);
-            if (name == NULL) {
-                name = "No Name";
-            }
-            result = U_RESULT_OUT_OF_MEMORY;
-            OS_REPORT(OS_ERROR, "u_dataReaderLookupInstance", result,
-                      "Out of memory: unable to create message for Topic: '%s'.",
-                      name);
+            result = U_RESULT_ALREADY_DELETED;
         }
-        c_free(topic);
         u_dataReaderRelease(_this, C_MM_RESERVATION_LOW);
     } else {
         OS_REPORT(OS_WARNING, "u_dataReaderLookupInstance", U_RESULT_INTERNAL_ERROR,
@@ -584,7 +590,7 @@ u_dataReaderSetQos (
 
     result = u_dataReaderReadClaim(_this, &reader,C_MM_RESERVATION_HIGH);
     if (result == U_RESULT_OK) {
-        result = u_resultFromKernel(v_readerSetQos(v_reader(reader), qos));
+        result = u_resultFromKernel(v_dataReaderSetQos(reader, qos));
         u_dataReaderRelease(_this, C_MM_RESERVATION_HIGH);
     }
     return result;

@@ -3,6 +3,8 @@ import os
 import json
 import shutil
 import subprocess
+import fileinput
+import platform
 import time
 from shutil import copy
 import example_logparser
@@ -50,12 +52,11 @@ class dbmsconnect (Example):
 
     def runExample(self):
 
-        print("In runExample for " + self.expath + ": " + self.name)
+        print "In runExample for " + self.expath + ": " + self.name
 
         currPath = os.getcwd()
 
         try:
-
             self.exdir = "servicesdbmsconnectSQLCPPODBC"
 
             exSfx = ""
@@ -69,10 +70,16 @@ class dbmsconnect (Example):
             msg = "NONE"
             result = "PASS"
 
+            dsn = self.odbcMsgBoard_params[0]
+            os.putenv("MY_DSN", dsn);
+            os.environ["MY_DSN"]= dsn;
+
             os.putenv("OSPL_URI", self.uri)
             os.environ["OSPL_URI"] = self.uri
             
             try:
+                self.convertConfig()
+
                 self.setLogPathAndLogs("", "")
                 odbcMsgBoardLog = os.path.join(self.pPath, 'odbcMsgBoard.log')
                 odbcChatter1Log = os.path.join(self.pPath, 'odbcChatter1.log')
@@ -179,7 +186,7 @@ class dbmsconnect (Example):
             try:
                 self.stopOSPL()
             except Exception as ex:
-                print("Exception stopping OpenSplice ", str(ex))
+                print "Exception stopping OpenSplice ", str(ex)
 
             if msg == "NONE":
                 try:
@@ -190,13 +197,13 @@ class dbmsconnect (Example):
                     if os.path.isfile (self.ospl_error_log):
                         msg = "ospl-error.log found"
                              
-                    print("checking odbcMsgBoardLog with odbcmsgboard_conds", odbcMsgBoardLog, odbcmsgboard_conds)
+                    print "checking odbcMsgBoardLog with odbcmsgboard_conds", odbcMsgBoardLog, odbcmsgboard_conds
                     self.checkResults(odbcMsgBoardLog, odbcmsgboard_conds)
 
-                    print("checking odbcChatter1Log with odbcchatter_conds", odbcChatter1Log, odbcchatter_conds)
+                    print "checking odbcChatter1Log with odbcchatter_conds", odbcChatter1Log, odbcchatter_conds
                     self.checkResults(odbcChatter1Log, odbcchatter_conds)
 
-                    print("checking odbcChatter2Log with odbcchatter_conds", odbcChatter2Log, odbcchatter_conds)
+                    print "checking odbcChatter2Log with odbcchatter_conds", odbcChatter2Log, odbcchatter_conds
                     self.checkResults(odbcChatter2Log, odbcchatter_conds)
 
                     self.checkResults(cppMsgBoardLog, cppmsgboard_conds)
@@ -215,7 +222,7 @@ class dbmsconnect (Example):
          
                 logdir =  os.path.join(os.environ['LOGDIR'], "examples", "run_" + os.environ['EXRUNTYPE'], self.exdir)
                 dbmsconnLog = os.path.join(self.pPath, 'dbmsconnect.log')
-                print("dbmsconnect.log is ", dbmsconnLog)
+                print "dbmsconnect.log is ", dbmsconnLog
                 copy(dbmsconnLog, logdir)
 
                 
@@ -225,14 +232,32 @@ class dbmsconnect (Example):
             try:
                 self.writeResult (result,  self.exdir, "", msg)
             except Exception as ex:
-                print("Exception writing result", str(ex))
+                print "Exception writing result", str(ex)
 
             try:
                 self.cleanUp()
             except Exception as ex:
-                print("Exception cleaning  up", str(ex))
+                print "Exception cleaning  up", str(ex)
 
         except Exception as ex:
-            print("Unexpected exception ", str(ex))
+            print "Unexpected exception ", str(ex)   
         finally:
-            os.chdir(currPath)   
+            os.chdir(currPath)
+
+    def convertConfig(self):
+        if os.environ['EXRUNTYPE'] == "shm":
+            uri = self.shm_uri
+        else:
+            uri = self.sp_uri
+        fcfg = os.path.join(os.environ['OSPL_HOME'], 'examples', 'services', 'dbmsconnect', uri)
+        forig = os.path.join(os.environ['OSPL_HOME'], 'examples', 'services', 'dbmsconnect', uri+'.orig')
+        os.rename(fcfg, forig)
+        if self.host.name != "default":
+            hn = self.host.name
+        else:
+            hn = platform.uname()[1]
+        prefix = hn[:16].replace('-', '_') + '_'
+        fout = open(fcfg, "w")
+        for line in fileinput.input(forig):
+            fout.write(line.replace("Sql", prefix))
+        fout.close()

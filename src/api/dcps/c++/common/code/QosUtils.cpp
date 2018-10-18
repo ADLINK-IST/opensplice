@@ -1,8 +1,9 @@
 /*
- *                         OpenSplice DDS
+ *                         Vortex OpenSplice
  *
- *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
- *   Limited, its affiliated companies and licensors. All rights reserved.
+ *   This software and documentation are Copyright 2006 to TO_YEAR ADLINK
+ *   Technology Limited, its affiliated companies and licensors. All rights
+ *   reserved.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@
 #include "MiscUtils.h"
 #include "SequenceUtils.h"
 #include "ReportUtils.h"
+#include "os_atomics.h"
 
 /*
  * Default QoSses
@@ -31,6 +33,9 @@
 namespace DDS {
 namespace OpenSplice {
 namespace Utils {
+
+
+
 
 static const DataReaderQos *
     initializeDataReaderQos()
@@ -145,75 +150,279 @@ static const DDS::TopicQos *
         return qos;
     }
 
+class DefaultDataReaderQosHolder {
+public:
+    DefaultDataReaderQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultDataReaderQosHolder() {
+        const DataReaderQos *qos = static_cast<const DataReaderQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const DataReaderQos *get_instance() {
+        const DataReaderQos *qos = static_cast<const DataReaderQos *>(pa_ldvoidp(&this->_qos));
+        if (!qos) {
+            qos = initializeDataReaderQos();
+            if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                delete qos;
+                qos = static_cast<const DataReaderQos *>(pa_ldvoidp(&this->_qos));
+            }
+        }
+        return qos;
+    }
+
+    pa_voidp_t _qos;
+};
+
+class DefaultDataReaderViewQosHolder {
+public:
+    DefaultDataReaderViewQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultDataReaderViewQosHolder() {
+        const DataReaderViewQos *qos = static_cast<const DataReaderViewQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const DataReaderViewQos *get_instance() {
+         const DataReaderViewQos *qos = static_cast<const DataReaderViewQos *>(pa_ldvoidp(&this->_qos));
+         if (!qos) {
+             qos = initializeDataReaderViewQos();
+             if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                 delete qos;
+                 qos = static_cast<const DataReaderViewQos *>(pa_ldvoidp(&this->_qos));
+             }
+         }
+         return qos;
+     }
+     pa_voidp_t _qos;
+};
+
+class DefaultDataWriterQosHolder {
+public:
+    DefaultDataWriterQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultDataWriterQosHolder() {
+        const DataWriterQos *qos = static_cast<const DataWriterQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const DataWriterQos *get_instance() {
+        const DataWriterQos *qos = static_cast<const DataWriterQos *>(pa_ldvoidp(&this->_qos));
+        if (!qos) {
+            qos = initializeDataWriterQos();
+            if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                delete qos;
+                qos = static_cast<const DataWriterQos *>(pa_ldvoidp(&this->_qos));
+            }
+        }
+        return qos;
+    }
+    pa_voidp_t _qos;
+};
+
+class DefaultSubscriberQosHolder {
+public:
+    DefaultSubscriberQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultSubscriberQosHolder() {
+        const SubscriberQos *qos = static_cast<const SubscriberQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const SubscriberQos *get_instance() {
+        const SubscriberQos *qos = static_cast<const SubscriberQos *>(pa_ldvoidp(&this->_qos));
+        if (!qos) {
+            qos = initializeSubscriberQos();
+            if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                delete qos;
+                qos = static_cast<const SubscriberQos *>(pa_ldvoidp(&this->_qos));
+            }
+        }
+        return qos;
+    }
+    pa_voidp_t _qos;
+};
+
+class DefaultPublisherQosHolder {
+public:
+    DefaultPublisherQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultPublisherQosHolder() {
+        const PublisherQos *qos = static_cast<const PublisherQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const PublisherQos *get_instance() {
+        const PublisherQos *qos = static_cast<const PublisherQos *>(pa_ldvoidp(&this->_qos));
+        if (!qos) {
+            qos = initializePublisherQos();
+            if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                delete qos;
+                qos = static_cast<const PublisherQos *>(pa_ldvoidp(&this->_qos));
+            }
+        }
+        return qos;
+    }
+    pa_voidp_t _qos;
+};
+
+class DefaultTopicQosHolder {
+public:
+    DefaultTopicQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultTopicQosHolder() {
+        const TopicQos *qos = static_cast<const TopicQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const TopicQos *get_instance() {
+        const TopicQos *qos = static_cast<const TopicQos *>(pa_ldvoidp(&this->_qos));
+        if (!qos) {
+            qos = initializeTopicQos();
+            if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                delete qos;
+                qos = static_cast<const TopicQos *>(pa_ldvoidp(&this->_qos));
+            }
+        }
+        return qos;
+    }
+    pa_voidp_t _qos;;
+};
+
+class DefaultDomainParticipantQosHolder {
+public:
+    DefaultDomainParticipantQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultDomainParticipantQosHolder() {
+        const DomainParticipantQos *qos = static_cast<const DomainParticipantQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const DomainParticipantQos *get_instance() {
+         const DomainParticipantQos *qos = static_cast<const DomainParticipantQos *>(pa_ldvoidp(&this->_qos));
+         if (!qos) {
+             qos = initializeDomainParticipantQos();
+             if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                 delete qos;
+                 qos = static_cast<const DomainParticipantQos *>(pa_ldvoidp(&this->_qos));
+             }
+         }
+         return qos;
+     }
+     pa_voidp_t _qos;;
+};
+
+class DefaultDomainParticipantFactoryQosHolder {
+public:
+    DefaultDomainParticipantFactoryQosHolder() {
+        pa_stvoidp(&this->_qos, NULL);
+    }
+    ~DefaultDomainParticipantFactoryQosHolder() {
+        const DomainParticipantFactoryQos *qos = static_cast<const DomainParticipantFactoryQos *>(pa_ldvoidp(&this->_qos));
+        if (qos && pa_casvoidp(&this->_qos, (void *)qos, NULL)) {
+            delete qos;
+        }
+    }
+    const DomainParticipantFactoryQos *get_instance() {
+          const DomainParticipantFactoryQos *qos = static_cast<const DomainParticipantFactoryQos *>(pa_ldvoidp(&this->_qos));
+          if (!qos) {
+              qos = initializeDomainParticipantFactoryQos();
+              if (!pa_casvoidp(&this->_qos, NULL, (void *)qos)) {
+                  delete qos;
+                  qos = static_cast<const DomainParticipantFactoryQos *>(pa_ldvoidp(&this->_qos));
+              }
+          }
+          return qos;
+      }
+      pa_voidp_t _qos;;
+};
+
+
+static DefaultDataReaderQosHolder               defaultDataReaderQosHolder;
+static DefaultDataReaderQosHolder               defaultDataReaderUseTopicQosHolder;
+static DefaultDataReaderViewQosHolder           defaultDataReaderViewQosHolder;
+static DefaultDataWriterQosHolder               defaultDataWriterQosHolder;
+static DefaultDataWriterQosHolder               defaultDataWriterUseTopicQosHolder;
+static DefaultSubscriberQosHolder               defaultSubscriberQosHolder;
+static DefaultPublisherQosHolder                defaultPublisherQosHolder;
+static DefaultTopicQosHolder                    defaultTopicQosHolder;
+static DefaultDomainParticipantQosHolder        defaultDomainParticipantQosHolder;
+static DefaultDomainParticipantFactoryQosHolder defaultDomainParticipantFactoryQosHolder;
+
+
+
 const DDS::DataReaderQos *
 FactoryDefaultQosHolder::get_dataReaderQos_default()
 {
-    static const DDS::DataReaderQos *DataReaderQos_default = DDS::OpenSplice::Utils::initializeDataReaderQos();
-    return DataReaderQos_default;
+    return defaultDataReaderQosHolder.get_instance();
 }
 
 const DDS::DataReaderQos *
 FactoryDefaultQosHolder::get_dataReaderQos_use_topic()
 {
-    static const DDS::DataReaderQos *DataReaderQos_use_topic = DDS::OpenSplice::Utils::initializeDataReaderQos();
-    return DataReaderQos_use_topic;
+    return defaultDataReaderUseTopicQosHolder.get_instance();
 }
 
 const DDS::DataReaderViewQos *
 FactoryDefaultQosHolder::get_dataReaderViewQos_default()
 {
-    static const DDS::DataReaderViewQos *DataReaderViewQos_default = DDS::OpenSplice::Utils::initializeDataReaderViewQos();
-    return DataReaderViewQos_default;
+    return defaultDataReaderViewQosHolder.get_instance();
 }
 
 const DDS::DataWriterQos *
 FactoryDefaultQosHolder::get_dataWriterQos_default()
 {
-    static const DDS::DataWriterQos *DataWriterQos_default = DDS::OpenSplice::Utils::initializeDataWriterQos();
-    return DataWriterQos_default;
+    return defaultDataWriterQosHolder.get_instance();
 }
 
 const DDS::DataWriterQos *
 FactoryDefaultQosHolder::get_dataWriterQos_use_topic()
 {
-    static const DDS::DataWriterQos *DataWriterQos_use_topic = DDS::OpenSplice::Utils::initializeDataWriterQos();
-    return DataWriterQos_use_topic;
+    return defaultDataWriterUseTopicQosHolder.get_instance();
 }
 
 const DDS::DomainParticipantFactoryQos *
 FactoryDefaultQosHolder::get_domainParticipantFactoryQos_default()
 {
-    static const DDS::DomainParticipantFactoryQos *DomainParticipantFactoryQos_default =
-            DDS::OpenSplice::Utils::initializeDomainParticipantFactoryQos();
-    return DomainParticipantFactoryQos_default;
+    return defaultDomainParticipantFactoryQosHolder.get_instance();
 }
 
 const DDS::DomainParticipantQos *
 FactoryDefaultQosHolder::get_domainParticipantQos_default()
 {
-    static const DDS::DomainParticipantQos *DomainParticipantQos_default = DDS::OpenSplice::Utils::initializeDomainParticipantQos();
-    return DomainParticipantQos_default;
+    return defaultDomainParticipantQosHolder.get_instance();
 }
 
 const DDS::PublisherQos *
 FactoryDefaultQosHolder::get_publisherQos_default()
 {
-    static const DDS::PublisherQos *PublisherQos_default = DDS::OpenSplice::Utils::initializePublisherQos();
-    return PublisherQos_default;
+    return defaultPublisherQosHolder.get_instance();
 }
 
 const DDS::SubscriberQos *
 FactoryDefaultQosHolder::get_subscriberQos_default()
 {
-    static const DDS::SubscriberQos *SubscriberQos_default = DDS::OpenSplice::Utils::initializeSubscriberQos();
-    return SubscriberQos_default;
+    return defaultSubscriberQosHolder.get_instance();
 }
 
 const DDS::TopicQos *
 FactoryDefaultQosHolder::get_topicQos_default()
 {
-    static const DDS::TopicQos *TopicQos_default = DDS::OpenSplice::Utils::initializeTopicQos();
-    return TopicQos_default;
+    return defaultTopicQosHolder.get_instance();
 }
 
 } /* end namespace Utils */

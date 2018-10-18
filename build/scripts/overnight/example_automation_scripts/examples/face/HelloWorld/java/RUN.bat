@@ -17,7 +17,7 @@ start CMD /C RUNSUB.bat
 
 %SLEEP5% >NUL
 
-java -classpath "%OSPL_HOME%\jar\ddsface.jar";classes HelloWorldDataPublisher > pubResult.txt
+java -jar pub/face_HelloWorld_pub.jar > pubResult.txt
 set PUB_RESULT=%errorlevel%
 set /p SUB_RESULT=<subReturn.txt
 
