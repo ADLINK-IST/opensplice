@@ -32,7 +32,15 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 OS_API sd_serializer sd_serializerXMLTypeinfoNew(c_base base, c_bool escapeQuote) __nonnull_all__ __attribute_warn_unused_result__;
+
+#if defined (__cplusplus)
+}
+#endif
 
 #undef OS_API
 

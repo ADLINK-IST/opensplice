@@ -35,6 +35,10 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 /** \brief \b sd_serializedData is a class encapsulating the serialized data
  *            resulting from the serialization funtion. It is used by
  *            \b sd_serializer.
@@ -89,6 +93,10 @@ sd_serializerLastValidationMessage(
 OS_API c_char *
 sd_serializerLastValidationLocation(
     sd_serializer _this) __nonnull_all__;
+
+#if defined (__cplusplus)
+}
+#endif
 
 #undef OS_API
 

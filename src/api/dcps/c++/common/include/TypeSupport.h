@@ -24,6 +24,7 @@
 #include "ccpp.h"
 #include "CppSuperClass.h"
 #include "TypeSupportMetaHolder.h"
+#include "os_atomics.h"
 #include "cpp_dcps_if.h"
 
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
@@ -37,6 +38,7 @@ namespace DDS
               public ::DDS::OpenSplice::CppSuperClass
         {
             friend class ::DDS::OpenSplice::DomainParticipant;
+            friend class ::DDS::OpenSplice::CdrTypeSupport;
 
         protected:
             DDS::OpenSplice::TypeSupportMetaHolder *tsMetaHolder;
@@ -59,7 +61,6 @@ namespace DDS
 
             virtual char *
             get_type_name() THROW_ORB_EXCEPTIONS;
-
         }; /* class TypeSupport */
     } /* namespace OpenSplice */
 } /* namespace DDS */
