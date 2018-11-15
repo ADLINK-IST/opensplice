@@ -38,7 +38,7 @@ namespace xtypes
 {
 struct TypeKind_def
 {
-    enum type
+    enum Type
     {
         NO_TYPE           =  0, // sentinel indicating "null" value
         PRIMITIVE_TYPE    = 0x4000,
