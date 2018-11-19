@@ -25,8 +25,13 @@
 #include "c_base.h"
 #include "c_metabase.h"
 #include "sd_cdr.h"
+#include "os_abstract.h"
 
-
+#ifdef PA_LITTLE_ENDIAN
+#define PLATFORM_IS_LITTLE_ENDIAN 1
+#else
+#define PLATFORM_IS_LITTLE_ENDIAN 0
+#endif
 
 namespace DDS
 {
@@ -57,16 +62,22 @@ namespace DDS
 
             virtual unsigned int get_size()
             {
-                return _size;
+                return _size + 4;
             }
 
             virtual void get_data(void *buffer)
             {
+                unsigned char *data = (unsigned char *)buffer;
                 const void *blob;
                 unsigned int sz;
 
                 sz = sd_cdrSerdataBlob(&blob, _serdata);
-                memcpy(buffer, blob, sz);
+
+                memcpy(&data[4], blob, sz);
+                data[0] = 0;
+                data[1] = PLATFORM_IS_LITTLE_ENDIAN;
+                data[2] = 0;
+                data[3] = 0;
             }
 
         private:
@@ -106,6 +117,8 @@ DDS::OpenSplice::CdrTypeSupport::serialize(
             cbase = c_getBase(c_object(ctype));
             copyIn(cbase, message, obj);
 
+            c_free(ctype);
+
             serdata = sd_cdrSerialize(marshaler, obj);
             if (serdata) {
                 *cdrdata = new CdrSerializedDataImpl(serdata);
@@ -132,16 +145,32 @@ DDS::OpenSplice::CdrTypeSupport::deserialize(
     DDS::ReturnCode_t result;
     c_object obj;
     struct sd_cdrInfo *marshaler;
-    c_type ctype;
+    int swap = 0;
 
     CPP_REPORT_STACK();
 
+    const unsigned char *header = (const unsigned char *)serialized_message;
+    if (message_size < 4) {
+        return DDS::RETCODE_BAD_PARAMETER;
+    }
+
+    if (header[1] & 0x1) {
+        swap = (~PLATFORM_IS_LITTLE_ENDIAN) & 0x1;
+    } else {
+        swap = PLATFORM_IS_LITTLE_ENDIAN;
+    }
+
     result = tsMetaHolder->init_cdr();
     if (result == DDS::RETCODE_OK) {
-        marshaler = static_cast<struct sd_cdrInfo *>(tsMetaHolder->get_cdrMarshaler());
-        ctype = static_cast<c_type>(tsMetaHolder->get_ctype());
+        int cdrResult;
 
-        int cdrResult = sd_cdrDeserializeObject(&obj, marshaler, message_size, serialized_message);
+        marshaler = static_cast<struct sd_cdrInfo *>(tsMetaHolder->get_cdrMarshaler());
+
+        if (!swap) {
+            cdrResult = sd_cdrDeserializeObject(&obj, marshaler, message_size - 4, &header[4]);
+        } else {
+            cdrResult = sd_cdrDeserializeObjectBSwap(&obj, marshaler, message_size - 4, &header[4]);
+        }
         if (cdrResult == SD_CDR_OK) {
             cxxCopyOut copyOut = tsMetaHolder->get_copy_out();
             copyOut(obj, message);

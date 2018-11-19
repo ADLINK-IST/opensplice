@@ -24,6 +24,8 @@
 #include "ReportUtils.h"
 #include "Constants.h"
 #include "ccpp_dds_cdrBlob.h"
+#include "v_topic.h"
+#include "v_writer.h"
 
 typedef struct writerCopyInfo_s {
     DDS::OpenSplice::FooDataWriter_impl *writer;
@@ -454,6 +456,101 @@ DDS::OpenSplice::FooDataWriter_impl::lookup_instance(
     return handle;
 }
 
+static void
+getDataWriterTopicType(
+    v_public p,
+    void *arg)
+{
+    void **topicType = (void **)arg;
+    v_writer vwriter = v_writer(p);
+    v_topic vtopic = v_writerTopic(vwriter);
+
+    if (vtopic) {
+        *topicType = c_keep(v_topicDataType(vtopic));
+        c_free(vtopic);
+    } else {
+        *topicType = NULL;
+    }
+}
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataWriter_impl::nlReq_init_cdr()
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_OK;
+
+    this->write_lock();
+    if (this->cdrMarshaler) {
+        this->unlock();
+        return result;
+    }
+
+    if (result == DDS::RETCODE_OK) {
+        c_type topicType;
+
+        u_result uResult = u_observableAction(u_observable(rlReq_get_user_entity()), getDataWriterTopicType, &topicType);
+        if (uResult == U_RESULT_OK && topicType) {
+            struct sd_cdrInfo *marshaler = NULL;
+            marshaler = sd_cdrInfoNew(topicType);
+            if (marshaler) {
+                if (sd_cdrCompile(marshaler) < 0) {
+                    sd_cdrInfoFree((struct sd_cdrInfo *) marshaler);
+                    result = DDS::RETCODE_BAD_PARAMETER;
+                } else {
+                    this->cdrMarshaler = marshaler;
+                }
+            } else {
+                result = DDS::RETCODE_BAD_PARAMETER;
+            }
+            c_free(topicType);
+        }
+    }
+    this->unlock();
+
+    return result;
+}
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataWriter_impl::write_cdr(
+    const void * instance_data,
+    ::DDS::InstanceHandle_t handle
+) THROW_ORB_EXCEPTIONS
+{
+    ::DDS::ReturnCode_t result;
+    u_writer uWriter;
+    u_result uResult;
+    os_timeW timestamp;
+    writerCopyInfo data;
+
+    CPP_REPORT_STACK();
+
+    assert(instance_data != NULL);
+    result = this->check();
+    if (result == DDS::RETCODE_OK) {
+        result = nlReq_init_cdr();
+    }
+
+    if (result == DDS::RETCODE_OK) {
+        uWriter = u_writer(this->rlReq_get_user_entity());
+        assert (uWriter != NULL);
+        result = copyTimeIn(DDS::TIMESTAMP_CURRENT, timestamp, maxSupportedSeconds);
+        if (result == DDS::RETCODE_OK)
+        {
+            data.writer = this;
+            data.data = (void *)instance_data;
+            uResult = u_writerWrite(
+                    uWriter,
+                    (u_writerCopy)rlReq_cdrCopyIn,
+                    (void *)&data,
+                    timestamp,
+                    handle);
+            result = uResultToReturnCode(uResult);
+        }
+    }
+    CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_TIMEOUT));
+
+    return result;
+}
+
 v_copyin_result
 DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn (
     c_type type,
@@ -472,9 +569,9 @@ DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn (
 
 v_copyin_result
 DDS::OpenSplice::FooDataWriter_impl::rlReq_cdrCopyIn (
-	c_type type,
-	void *data,
-	void *to)
+    c_type type,
+    void *data,
+    void *to)
 {
     v_copyin_result result;
     writerCopyInfo *info = (writerCopyInfo *)data;
@@ -485,11 +582,11 @@ DDS::OpenSplice::FooDataWriter_impl::rlReq_cdrCopyIn (
 
     cdrResult = sd_cdrDeserializeRaw(to, (sd_cdrInfo *) info->writer->cdrMarshaler, from->blob.length(), from->blob.get_buffer());
     if (cdrResult == SD_CDR_OK) {
-    	result = V_COPYIN_RESULT_OK;
+        result = V_COPYIN_RESULT_OK;
     } else if (cdrResult == SD_CDR_OUT_OF_MEMORY) {
-    	result = V_COPYIN_RESULT_OUT_OF_MEMORY;
+        result = V_COPYIN_RESULT_OUT_OF_MEMORY;
     } else {
-    	result = V_COPYIN_RESULT_INVALID;
+        result = V_COPYIN_RESULT_INVALID;
     }
 
     return result;

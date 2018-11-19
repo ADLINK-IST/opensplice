@@ -275,7 +275,7 @@ DDS::OpenSplice::TypeSupportMetaHolder::get_cdrMarshaler()
 void *
 DDS::OpenSplice::TypeSupportMetaHolder::get_ctype()
 {
-    return cType;
+    return c_keep(cType);
 }
 
 DDS::ReturnCode_t

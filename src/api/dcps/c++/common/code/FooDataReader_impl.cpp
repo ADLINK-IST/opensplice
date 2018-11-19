@@ -31,6 +31,14 @@
 #include "os_atomics.h"
 #include "ccpp_dds_cdrBlob.h"
 #include "sd_cdr.h"
+#include "v_topic.h"
+#include "os_abstract.h"
+
+#ifdef PA_LITTLE_ENDIAN
+#define PLATFORM_IS_LITTLE_ENDIAN 1
+#else
+#define PLATFORM_IS_LITTLE_ENDIAN 0
+#endif
 
 using namespace DDS::OpenSplice::Utils;
 
@@ -50,7 +58,7 @@ typedef struct copyArg_s {
     ::DDS::ReturnCode_t result;
 
     copyArg_s() : dataSample(NULL), infoSample(NULL), copyDataOut(NULL),
-    			  copyInfoOut(NULL), cdrMarshaler(NULL), result(DDS::RETCODE_ERROR) {};
+    copyInfoOut(NULL), cdrMarshaler(NULL), result(DDS::RETCODE_ERROR) {};
 } copyArg_t;
 
 class parallelDemarshaling {
@@ -827,6 +835,214 @@ DDS::OpenSplice::FooDataReader_impl::take_next_instance_w_condition (
     return result;
 }
 
+static void
+getDataReaderTopicType(
+    v_public p,
+    void *arg)
+{
+    void **topicType = (void **)arg;
+    v_dataReader vreader = v_dataReader(p);
+    v_topic vtopic = v_dataReaderGetTopic(vreader);
+
+    if (vtopic) {
+        *topicType = c_keep(v_topicDataType(vtopic));
+        c_free(vtopic);
+    } else {
+        *topicType = NULL;
+    }
+}
+
+
+static int
+ccpp_cdrSerdataInit(void *vsd, char **dst, os_uint32 size_hint)
+{
+    DDS::octSeq *cdrSampleSeq = (DDS::octSeq *) vsd;
+    if (cdrSampleSeq->maximum() == 0) {
+        cdrSampleSeq->length(size_hint);
+    }
+    *dst = (char *)cdrSampleSeq->get_buffer(FALSE);
+    return (int) cdrSampleSeq->maximum();
+}
+
+static int
+ccpp_cdrSerdataGrow(void *vsd, char **dst, os_uint32 size_hint)
+{
+    DDS::octSeq *cdrSampleSeq = (DDS::octSeq *) vsd;
+    DDS::ULong prevMax = cdrSampleSeq->maximum();
+
+    cdrSampleSeq->length(prevMax + size_hint);
+    *dst = (char *) cdrSampleSeq->get_buffer(FALSE) + prevMax;
+    return (int) cdrSampleSeq->maximum();
+}
+
+static void
+ccpp_cdrSerdataFinalize(void *vsd, char *dst)
+{
+    DDS::octSeq *cdrSampleSeq = (DDS::octSeq *) vsd;
+    cdrSampleSeq->length((dst - (const char *) cdrSampleSeq->get_buffer()));
+}
+
+static os_uint32
+ccpp_cdrSerdataGetpos(const void *vsd, const char *dst)
+{
+    return 0;
+}
+
+static int
+ccpp_cdrTagField_notag (os_uint32 *tag, void *arg, enum sd_cdrTagType type, os_uint32 srcoff)
+{
+    return 0;
+}
+
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataReader_impl::wlReq_init_cdr()
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_OK;
+    sd_cdrControl control;
+    control.init = ccpp_cdrSerdataInit;
+    control.grow = ccpp_cdrSerdataGrow;
+    control.finalize = ccpp_cdrSerdataFinalize;
+    control.getpos = ccpp_cdrSerdataGetpos;
+    control.tag = ccpp_cdrTagField_notag;
+    control.tag_arg = NULL;
+    control.process = 0;
+    control.process_arg = NULL;
+
+    if (this->pimpl->cdrMarshaler) {
+        return result;
+    }
+
+    if (result == DDS::RETCODE_OK) {
+        c_type topicType;
+
+        u_result uResult = u_observableAction(u_observable(rlReq_get_user_entity()), getDataReaderTopicType, &topicType);
+        if (uResult == U_RESULT_OK && topicType) {
+            struct sd_cdrInfo *marshaler = NULL;
+            marshaler = sd_cdrInfoNewControl(topicType, &control);
+            if (marshaler) {
+                if (sd_cdrCompile(marshaler) < 0) {
+                    sd_cdrInfoFree((struct sd_cdrInfo *) marshaler);
+                    result = DDS::RETCODE_BAD_PARAMETER;
+                } else {
+                    this->pimpl->cdrMarshaler = marshaler;
+                }
+            } else {
+                result = DDS::RETCODE_BAD_PARAMETER;
+            }
+                c_free(topicType);
+        }
+    }
+
+    return result;
+}
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataReader_impl::read_cdr (
+    void * received_data,
+    ::DDS::SampleInfo & info,
+    ::DDS::SampleStateMask sample_states,
+    ::DDS::ViewStateMask view_states,
+    ::DDS::InstanceStateMask instance_states
+) THROW_ORB_EXCEPTIONS
+{
+    ::DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
+    u_sampleMask mask;
+    u_dataReader uReader;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
+    if (statesMaskIsValid(sample_states, view_states, instance_states) == true) {
+        mask = statesMask(sample_states, view_states, instance_states);
+
+        result = this->write_lock();
+        if (result == DDS::RETCODE_OK) {
+            result = wlReq_init_cdr();
+        }
+
+        if (result == DDS::RETCODE_OK) {
+            cmn_samplesList_reset(this->pimpl->samplesList, 1);
+            uReader = u_dataReader(this->rlReq_get_user_entity());
+            assert(uReader != NULL);
+
+            uResult = u_dataReaderRead(
+                    uReader, mask, cmn_reader_action,
+                    this->pimpl->samplesList, OS_DURATION_ZERO);
+            /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
+            if (uResult == U_RESULT_OK) {
+                result = this->flush_cdr(this->pimpl->samplesList, received_data, info);
+            } else {
+                result = uResultToReturnCode(uResult);
+            }
+
+            this->unlock();
+        }
+    } else {
+        result = DDS::RETCODE_BAD_PARAMETER;
+        CPP_REPORT(result,
+                   "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
+                   sample_states, view_states, instance_states);
+    }
+
+    CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_NO_DATA));
+
+    return result;
+}
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataReader_impl::take_cdr (
+    void * received_data,
+    ::DDS::SampleInfo & info,
+    ::DDS::SampleStateMask sample_states,
+    ::DDS::ViewStateMask view_states,
+    ::DDS::InstanceStateMask instance_states
+) THROW_ORB_EXCEPTIONS
+{
+    ::DDS::ReturnCode_t result;
+    u_sampleMask mask;
+    u_dataReader uReader;
+    u_result uResult;
+
+    CPP_REPORT_STACK();
+
+    if (statesMaskIsValid(sample_states, view_states, instance_states) == true) {
+        mask = statesMask(sample_states, view_states, instance_states);
+
+        result = this->write_lock();
+        if (result == DDS::RETCODE_OK) {
+            result = wlReq_init_cdr();
+        }
+
+        if (result == DDS::RETCODE_OK) {
+            cmn_samplesList_reset(this->pimpl->samplesList, 1);
+            uReader = u_dataReader(this->rlReq_get_user_entity());
+            assert(uReader != NULL);
+
+            uResult = u_dataReaderTake(
+                    uReader, mask, cmn_reader_action,
+                    this->pimpl->samplesList, OS_DURATION_ZERO);
+            /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
+            if (uResult == U_RESULT_OK) {
+                result = this->flush_cdr(this->pimpl->samplesList, received_data, info);
+            } else {
+                result = uResultToReturnCode(uResult);
+            }
+
+            this->unlock();
+        }
+    } else {
+        result = DDS::RETCODE_BAD_PARAMETER;
+        CPP_REPORT(result,
+                   "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
+                   sample_states, view_states, instance_states);
+    }
+
+    CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_NO_DATA));
+
+    return result;
+}
+
 DDS::ReturnCode_t
 DDS::OpenSplice::FooDataReader_impl::wlReq_return_loan (
     void *data_buffer,
@@ -972,6 +1188,51 @@ DDS::OpenSplice::FooDataReader_impl::actualFlush (
     return result;
 }
 
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooDataReader_impl::flush_cdr (
+    void * samplesList,
+    void * received_data,
+    ::DDS::SampleInfo & info)
+{
+    ::DDS::ReturnCode_t result = DDS::RETCODE_OK;
+    u_entity uEntity = rlReq_get_user_entity();
+    cmn_samplesList list;
+    u_result uResult;
+    os_int32 res;
+    copyArg_t copyArg;
+
+    CPP_REPORT_STACK();
+
+    list = reinterpret_cast<cmn_samplesList>(samplesList);
+
+    copyArg.copyDataOut = this->pimpl->copyDataOut;
+    copyArg.cdrMarshaler = this->pimpl->cdrMarshaler;
+    copyArg.result = DDS::RETCODE_OK;
+    copyArg.dataSample = received_data;
+    copyArg.infoSample = &info;
+
+    uResult = u_readerProtectCopyOutEnter(uEntity);
+    if (uResult == U_RESULT_OK) {
+        res = cmn_samplesList_read(list, 0, (cmn_sampleList_copy_func) copyCDRSampleOut, &copyArg);
+        u_readerProtectCopyOutExit(uEntity);
+        if ((copyArg.result != DDS::RETCODE_OK) || (res != 1)) {
+            result = copyArg.result;
+        }
+    } else {
+        result = uResultToReturnCode(uResult);
+    }
+
+    /* Free samples */
+    if (u_readerProtectCopyOutEnter(uEntity) == U_RESULT_OK) {
+        cmn_samplesList_reset(list, 0);
+        u_readerProtectCopyOutExit(uEntity);
+    }
+
+    CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
+
+    return result;
+}
+
 
 DDS::Long
 DDS::OpenSplice::FooDataReader_impl::rlReq_get_workers ()
@@ -1074,7 +1335,7 @@ DDS::OpenSplice::FooDataReader_impl::copyCDRSampleOut (
     void *arg)
 {
     copyArg_t *copyArg = reinterpret_cast<copyArg_t *>(arg);
-    DDS::CDRSample *to = (DDS::CDRSample *) copyArg->dataSample;
+    DDS::CDRSample *to = reinterpret_cast<DDS::CDRSample *>(copyArg->dataSample);
 
     (void) (sd_cdrSerializeControl((sd_cdrInfo *) copyArg->cdrMarshaler, &to->blob, sample) + 1);
     DDS::OpenSplice::FooDataReader_impl::Implementation::copyInfoOut((cmn_sampleInfo) info, copyArg->infoSample);

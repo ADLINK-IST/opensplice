@@ -24,7 +24,6 @@
 #include "ccpp.h"
 #include "CppSuperClass.h"
 #include "TypeSupportMetaHolder.h"
-#include "os_atomics.h"
 #include "cpp_dcps_if.h"
 
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
