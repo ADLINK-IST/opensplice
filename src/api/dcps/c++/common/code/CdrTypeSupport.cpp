@@ -154,10 +154,10 @@ DDS::OpenSplice::CdrTypeSupport::deserialize(
         return DDS::RETCODE_BAD_PARAMETER;
     }
 
-    if (header[1] & 0x1) {
-        swap = (~PLATFORM_IS_LITTLE_ENDIAN) & 0x1;
-    } else {
+    if ((header[1] & 0x01) == 0) {
         swap = PLATFORM_IS_LITTLE_ENDIAN;
+    } else {
+        swap = !PLATFORM_IS_LITTLE_ENDIAN;
     }
 
     result = tsMetaHolder->init_cdr();

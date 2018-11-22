@@ -26,6 +26,9 @@
 #include "cpp_dcps_if.h"
 
 namespace DDS {
+
+   class CDRSample;
+
     namespace OpenSplice {
 
     class FooDataReaderView_impl;
@@ -184,14 +187,14 @@ namespace DDS {
             const void * instance) THROW_ORB_EXCEPTIONS;
 
         ::DDS::ReturnCode_t read_cdr(
-            void * received_data,
+            ::DDS::CDRSample & received_data,
             ::DDS::SampleInfo & info_seq,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
             ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS;
 
         ::DDS::ReturnCode_t take_cdr (
-            void * received_data,
+            ::DDS::CDRSample & received_data,
             ::DDS::SampleInfo & info_seq,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,

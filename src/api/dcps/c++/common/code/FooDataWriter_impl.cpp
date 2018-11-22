@@ -511,7 +511,7 @@ DDS::OpenSplice::FooDataWriter_impl::nlReq_init_cdr()
 
 ::DDS::ReturnCode_t
 DDS::OpenSplice::FooDataWriter_impl::write_cdr(
-    const void * instance_data,
+    const DDS::CDRSample & sample,
     ::DDS::InstanceHandle_t handle
 ) THROW_ORB_EXCEPTIONS
 {
@@ -523,7 +523,6 @@ DDS::OpenSplice::FooDataWriter_impl::write_cdr(
 
     CPP_REPORT_STACK();
 
-    assert(instance_data != NULL);
     result = this->check();
     if (result == DDS::RETCODE_OK) {
         result = nlReq_init_cdr();
@@ -536,7 +535,7 @@ DDS::OpenSplice::FooDataWriter_impl::write_cdr(
         if (result == DDS::RETCODE_OK)
         {
             data.writer = this;
-            data.data = (void *)instance_data;
+            data.data = (void *)&sample;
             uResult = u_writerWrite(
                     uWriter,
                     (u_writerCopy)rlReq_cdrCopyIn,

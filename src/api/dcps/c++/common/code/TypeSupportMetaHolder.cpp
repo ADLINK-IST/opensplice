@@ -202,9 +202,9 @@ DDS::OpenSplice::TypeSupportMetaHolder::wlReq_deinit()
 {
     if (cdrMarshaler) {
         sd_cdrInfoFree((struct sd_cdrInfo *) cdrMarshaler);
-    }
-    if (serialization_base_holder.is_valid()) {
-        c_free(cType);
+        if (serialization_base_holder.is_valid()) {
+            c_free(cType);
+        }
     }
     delete[] metaDescriptor;
     return DDS::OpenSplice::CppSuperClass::wlReq_deinit();

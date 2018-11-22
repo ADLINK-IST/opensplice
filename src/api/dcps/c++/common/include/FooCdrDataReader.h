@@ -26,8 +26,6 @@
 
 namespace DDS {
 
-    class CDRSample;
-
     namespace OpenSplice {
 
         class OS_API FooCdrDataReader

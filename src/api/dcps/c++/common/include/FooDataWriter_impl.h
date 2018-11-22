@@ -27,6 +27,9 @@
 #include "cpp_dcps_if.h"
 
 namespace DDS {
+
+    class CDRSample;
+
     namespace OpenSplice {
 
         class FooCdrDataWriter;
@@ -142,7 +145,7 @@ namespace DDS {
 
             ::DDS::ReturnCode_t
              write_cdr(
-                const void * instance_data,
+                const DDS::CDRSample & sample,
                 ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
         };
     } /* namespace OpenSplice */

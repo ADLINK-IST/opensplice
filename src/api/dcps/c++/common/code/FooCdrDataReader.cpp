@@ -48,11 +48,29 @@ DDS::OpenSplice::FooCdrDataReader::read_cdr(
      ::DDS::ViewStateMask view_states,
      ::DDS::InstanceStateMask instance_states)
 {
+    unsigned char header[4] = { 0, PLATFORM_IS_LITTLE_ENDIAN, 0, 0 };
+
     if (!reader) {
         return DDS::RETCODE_PRECONDITION_NOT_MET;
     }
 
-    return reader->read_cdr(&received_data, info, sample_states, view_states, instance_states);
+    DDS::CDRSample sample;
+
+    DDS::ReturnCode_t result = reader->read_cdr(sample, info, sample_states, view_states, instance_states);
+    if (result != DDS::RETCODE_OK) {
+        return result;
+    }
+
+    unsigned int sz = sample.blob.length();
+    unsigned char *from_payload = sample.blob.get_buffer();
+
+    received_data.blob.length(sz + sizeof(header));
+
+    unsigned char *to_buffer = received_data.blob.get_buffer();
+    memcpy(to_buffer, header, sizeof(header));
+    memcpy(&to_buffer[sizeof(header)], from_payload, sz);
+
+    return result;
 }
 
 DDS::ReturnCode_t
@@ -71,7 +89,7 @@ DDS::OpenSplice::FooCdrDataReader::take_cdr(
 
     DDS::CDRSample sample;
 
-    DDS::ReturnCode_t result = reader->take_cdr(&sample, info, sample_states, view_states, instance_states);
+    DDS::ReturnCode_t result = reader->take_cdr(sample, info, sample_states, view_states, instance_states);
     if (result != DDS::RETCODE_OK) {
         return result;
     }

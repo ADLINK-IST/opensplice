@@ -939,7 +939,7 @@ DDS::OpenSplice::FooDataReader_impl::wlReq_init_cdr()
 
 ::DDS::ReturnCode_t
 DDS::OpenSplice::FooDataReader_impl::read_cdr (
-    void * received_data,
+    ::DDS::CDRSample & received_data,
     ::DDS::SampleInfo & info,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -971,7 +971,7 @@ DDS::OpenSplice::FooDataReader_impl::read_cdr (
                     this->pimpl->samplesList, OS_DURATION_ZERO);
             /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
             if (uResult == U_RESULT_OK) {
-                result = this->flush_cdr(this->pimpl->samplesList, received_data, info);
+                result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
             } else {
                 result = uResultToReturnCode(uResult);
             }
@@ -992,7 +992,7 @@ DDS::OpenSplice::FooDataReader_impl::read_cdr (
 
 ::DDS::ReturnCode_t
 DDS::OpenSplice::FooDataReader_impl::take_cdr (
-    void * received_data,
+    ::DDS::CDRSample & received_data,
     ::DDS::SampleInfo & info,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -1024,7 +1024,7 @@ DDS::OpenSplice::FooDataReader_impl::take_cdr (
                     this->pimpl->samplesList, OS_DURATION_ZERO);
             /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
             if (uResult == U_RESULT_OK) {
-                result = this->flush_cdr(this->pimpl->samplesList, received_data, info);
+                result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
             } else {
                 result = uResultToReturnCode(uResult);
             }
