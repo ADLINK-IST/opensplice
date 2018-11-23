@@ -959,30 +959,28 @@ DDS::OpenSplice::FooDataReader_impl::read_cdr (
         result = this->write_lock();
         if (result == DDS::RETCODE_OK) {
             result = wlReq_init_cdr();
-        }
+            if (result == DDS::RETCODE_OK) {
+                cmn_samplesList_reset(this->pimpl->samplesList, 1);
+                uReader = u_dataReader(this->rlReq_get_user_entity());
+                assert(uReader != NULL);
 
-        if (result == DDS::RETCODE_OK) {
-            cmn_samplesList_reset(this->pimpl->samplesList, 1);
-            uReader = u_dataReader(this->rlReq_get_user_entity());
-            assert(uReader != NULL);
-
-            uResult = u_dataReaderRead(
-                    uReader, mask, cmn_reader_action,
-                    this->pimpl->samplesList, OS_DURATION_ZERO);
-            /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
-            if (uResult == U_RESULT_OK) {
-                result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
-            } else {
-                result = uResultToReturnCode(uResult);
+                uResult = u_dataReaderRead(
+                        uReader, mask, cmn_reader_action,
+                        this->pimpl->samplesList, OS_DURATION_ZERO);
+                /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
+                if (uResult == U_RESULT_OK) {
+                    result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
+                } else {
+                    result = uResultToReturnCode(uResult);
+                }
             }
-
             this->unlock();
         }
     } else {
         result = DDS::RETCODE_BAD_PARAMETER;
         CPP_REPORT(result,
-                   "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
-                   sample_states, view_states, instance_states);
+                "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
+                sample_states, view_states, instance_states);
     }
 
     CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_NO_DATA));
@@ -1012,30 +1010,28 @@ DDS::OpenSplice::FooDataReader_impl::take_cdr (
         result = this->write_lock();
         if (result == DDS::RETCODE_OK) {
             result = wlReq_init_cdr();
-        }
+            if (result == DDS::RETCODE_OK) {
+                cmn_samplesList_reset(this->pimpl->samplesList, 1);
+                uReader = u_dataReader(this->rlReq_get_user_entity());
+                assert(uReader != NULL);
 
-        if (result == DDS::RETCODE_OK) {
-            cmn_samplesList_reset(this->pimpl->samplesList, 1);
-            uReader = u_dataReader(this->rlReq_get_user_entity());
-            assert(uReader != NULL);
-
-            uResult = u_dataReaderTake(
-                    uReader, mask, cmn_reader_action,
-                    this->pimpl->samplesList, OS_DURATION_ZERO);
-            /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
-            if (uResult == U_RESULT_OK) {
-                result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
-            } else {
-                result = uResultToReturnCode(uResult);
+                uResult = u_dataReaderTake(
+                        uReader, mask, cmn_reader_action,
+                        this->pimpl->samplesList, OS_DURATION_ZERO);
+                /* TODO: when samplesList thread specific unlock, see OSPL-4341 */
+                if (uResult == U_RESULT_OK) {
+                    result = this->flush_cdr(this->pimpl->samplesList, &received_data, info);
+                } else {
+                    result = uResultToReturnCode(uResult);
+                }
             }
-
             this->unlock();
         }
     } else {
         result = DDS::RETCODE_BAD_PARAMETER;
         CPP_REPORT(result,
-                   "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
-                   sample_states, view_states, instance_states);
+                "sample_states = 0x%x, view_states = 0x%x, instance_states = 0x%x",
+                sample_states, view_states, instance_states);
     }
 
     CPP_REPORT_FLUSH(this, (result != DDS::RETCODE_OK) && (result != DDS::RETCODE_NO_DATA));

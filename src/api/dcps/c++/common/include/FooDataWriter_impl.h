@@ -59,6 +59,12 @@ namespace DDS {
                 void *data,
                 void *to);
 
+            static v_copyin_result
+             rlReq_cdrEncCopyIn (
+                 c_type type,
+                 void *data,
+                 void *to);
+
             ::DDS::ReturnCode_t
             nlReq_init_cdr();
 

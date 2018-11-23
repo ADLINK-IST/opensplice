@@ -44,5 +44,9 @@ DDS::OpenSplice::FooCdrDataWriter::write_cdr(
         return DDS::RETCODE_PRECONDITION_NOT_MET;
     }
 
+    if (instance_data.blob.length() < 4) {
+        return DDS::RETCODE_BAD_PARAMETER;
+    }
+
     return writer->write_cdr(instance_data, handle);
 }

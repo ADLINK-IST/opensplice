@@ -27,6 +27,13 @@
 #include "v_topic.h"
 #include "v_writer.h"
 
+#ifdef PA_LITTLE_ENDIAN
+#define PLATFORM_IS_LITTLE_ENDIAN 1
+#else
+#define PLATFORM_IS_LITTLE_ENDIAN 0
+#endif
+
+
 typedef struct writerCopyInfo_s {
     DDS::OpenSplice::FooDataWriter_impl *writer;
     void *data;
@@ -478,9 +485,13 @@ DDS::OpenSplice::FooDataWriter_impl::nlReq_init_cdr()
 {
     DDS::ReturnCode_t result = DDS::RETCODE_OK;
 
-    this->write_lock();
-    if (this->cdrMarshaler) {
-        this->unlock();
+    result = this->write_lock();
+    if (result == DDS::RETCODE_OK) {
+        if (this->cdrMarshaler) {
+            this->unlock();
+            return result;
+        }
+    } else {
         return result;
     }
 
@@ -538,7 +549,7 @@ DDS::OpenSplice::FooDataWriter_impl::write_cdr(
             data.data = (void *)&sample;
             uResult = u_writerWrite(
                     uWriter,
-                    (u_writerCopy)rlReq_cdrCopyIn,
+                    (u_writerCopy)rlReq_cdrEncCopyIn,
                     (void *)&data,
                     timestamp,
                     handle);
@@ -580,6 +591,49 @@ DDS::OpenSplice::FooDataWriter_impl::rlReq_cdrCopyIn (
     OS_UNUSED_ARG(type);
 
     cdrResult = sd_cdrDeserializeRaw(to, (sd_cdrInfo *) info->writer->cdrMarshaler, from->blob.length(), from->blob.get_buffer());
+    if (cdrResult == SD_CDR_OK) {
+        result = V_COPYIN_RESULT_OK;
+    } else if (cdrResult == SD_CDR_OUT_OF_MEMORY) {
+        result = V_COPYIN_RESULT_OUT_OF_MEMORY;
+    } else {
+        result = V_COPYIN_RESULT_INVALID;
+    }
+
+    return result;
+}
+
+v_copyin_result
+DDS::OpenSplice::FooDataWriter_impl::rlReq_cdrEncCopyIn (
+    c_type type,
+    void *data,
+    void *to)
+{
+    v_copyin_result result;
+    writerCopyInfo *info = (writerCopyInfo *)data;
+    DDS::CDRSample *from = (DDS::CDRSample *) info->data;
+    unsigned char *header;
+    unsigned int length;
+    int cdrResult;
+    int swap;
+
+    OS_UNUSED_ARG(type);
+
+    length = from->blob.length();
+    assert(length >= 4);
+
+    header = from->blob.get_buffer();
+    if ((header[1] & 0x01) == 0) {
+        swap = PLATFORM_IS_LITTLE_ENDIAN;
+    } else {
+        swap = !PLATFORM_IS_LITTLE_ENDIAN;
+    }
+
+    if (!swap) {
+        cdrResult = sd_cdrDeserializeRaw(to, (sd_cdrInfo *) info->writer->cdrMarshaler, length-4, &header[4]);
+    } else {
+        cdrResult = sd_cdrDeserializeRawBSwap(to, (sd_cdrInfo *) info->writer->cdrMarshaler, length-4, &header[4]);
+    }
+
     if (cdrResult == SD_CDR_OK) {
         result = V_COPYIN_RESULT_OK;
     } else if (cdrResult == SD_CDR_OUT_OF_MEMORY) {
