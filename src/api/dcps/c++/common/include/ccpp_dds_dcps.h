@@ -31,6 +31,7 @@
 #include "dds_builtinTopicsSplDcps.h"
 #include "dds_namedQosTypesSplDcps.h"
 #include "dds_cdrBlobSplDcps.h"
+#include "CdrTypeSupport.h"
 
 #endif /* CCPP_DDS_DCPS_H */
 

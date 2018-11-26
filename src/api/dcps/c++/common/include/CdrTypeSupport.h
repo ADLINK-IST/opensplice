@@ -18,12 +18,11 @@
  *   limitations under the License.
  *
  */
-#ifndef CPP_DDS_OPENSPLICE_TYPESUPPORT_H
-#define CPP_DDS_OPENSPLICE_TYPESUPPORT_H
+#ifndef CPP_DDS_OPENSPLICE_CDRTYPESUPPORT_H
+#define CPP_DDS_OPENSPLICE_CDRTYPESUPPORT_H
 
 #include "ccpp.h"
-#include "CppSuperClass.h"
-#include "TypeSupportMetaHolder.h"
+#include "TypeSupport.h"
 #include "cpp_dcps_if.h"
 
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
@@ -32,37 +31,35 @@ namespace DDS
 {
     namespace OpenSplice
     {
-        class OS_API TypeSupport :
-              public virtual ::DDS::TypeSupport,
-              public ::DDS::OpenSplice::CppSuperClass
+        class OS_API CdrSerializedData
         {
-            friend class ::DDS::OpenSplice::DomainParticipant;
-            friend class ::DDS::OpenSplice::CdrTypeSupport;
-
-        protected:
-            DDS::OpenSplice::TypeSupportMetaHolder *tsMetaHolder;
-
-            TypeSupport();
-
-            virtual ~TypeSupport();
-
-            DDS::ReturnCode_t
-            wlReq_deinit();
-
-            DDS::OpenSplice::TypeSupportMetaHolder *
-            get_metaHolder();
-
         public:
-            virtual ::DDS::ReturnCode_t
-            register_type(
-                ::DDS::DomainParticipant_ptr participant,
-                const char * type_name) THROW_ORB_EXCEPTIONS;
+           virtual ~CdrSerializedData() {}
+           virtual unsigned int get_size() = 0;
+           virtual void get_data(void *buffer) = 0;
+        };
 
-            virtual char *
-            get_type_name() THROW_ORB_EXCEPTIONS;
-        }; /* class TypeSupport */
+        class OS_API CdrTypeSupport
+        {
+        public:
+            CdrTypeSupport(DDS::TypeSupport& ts);
+            virtual ~CdrTypeSupport();
+
+            virtual ::DDS::ReturnCode_t
+             serialize(
+                 const void *message,
+                 DDS::OpenSplice::CdrSerializedData **serdata);
+
+             virtual ::DDS::ReturnCode_t
+             deserialize(
+                 const void *serialized_message,
+                 unsigned int message_size,
+                 void *message);
+        private:
+             DDS::OpenSplice::TypeSupportMetaHolder *tsMetaHolder;
+        }; /* class CdrTypeSupport */
     } /* namespace OpenSplice */
 } /* namespace DDS */
 
 #undef OS_API
-#endif /* CPP_DDS_OPENSPLICE_TYPESUPPORT_H */
+#endif /* CPP_DDS_OPENSPLICE_CDRTYPESUPPORT_H */

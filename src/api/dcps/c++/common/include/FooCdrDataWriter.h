@@ -18,30 +18,32 @@
  *   limitations under the License.
  *
  */
-#ifndef SD_SERIALIZERXMLTYPEINFO_H
-#define SD_SERIALIZERXMLTYPEINFO_H
+#ifndef CPP_DDS_OPENSPLICE_FOOCDRDATAWRITER_H
+#define CPP_DDS_OPENSPLICE_FOOCDRDATAWRITER_H
 
-#include "sd_serializer.h"
-#include "c_base.h"
-#include "os_if.h"
+#include "FooDataWriter_impl.h"
+#include "cpp_dcps_if.h"
 
-#ifdef OSPL_BUILD_CORE
-#define OS_API OS_API_EXPORT
-#else
-#define OS_API OS_API_IMPORT
-#endif
-/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+namespace DDS {
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
+    namespace OpenSplice {
 
-OS_API sd_serializer sd_serializerXMLTypeinfoNew(c_base base, c_bool escapeQuote) __nonnull_all__ __attribute_warn_unused_result__;
+        class OS_API FooCdrDataWriter
+        {
+        public:
+            FooCdrDataWriter(DDS::DataWriter *wr);
+            ~FooCdrDataWriter();
 
-#if defined (__cplusplus)
-}
-#endif
+            ::DDS::ReturnCode_t
+            write_cdr(
+                const DDS::CDRSample & sample,
+                ::DDS::InstanceHandle_t handle);
+
+        private:
+            DDS::OpenSplice::FooDataWriter_impl *writer;
+        }; /* class FooCdrDataWriter */
+    } /* namespace OpenSplice */
+} /* namespace DDS */
 
 #undef OS_API
-
-#endif /* SD_SERIALIZERXMLTYPEINFO_H */
+#endif /* CPP_DDS_OPENSPLICE_FOOCDRDATAWRITER_H */

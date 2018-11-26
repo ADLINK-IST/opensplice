@@ -18,30 +18,35 @@
  *   limitations under the License.
  *
  */
-#ifndef SD_SERIALIZERXMLTYPEINFO_H
-#define SD_SERIALIZERXMLTYPEINFO_H
+#include "sd_cdr.h"
+#include "ReportUtils.h"
+#include "FooCdrDataWriter.h"
+#include "ccpp_dds_cdrBlob.h"
 
-#include "sd_serializer.h"
-#include "c_base.h"
-#include "os_if.h"
 
-#ifdef OSPL_BUILD_CORE
-#define OS_API OS_API_EXPORT
-#else
-#define OS_API OS_API_IMPORT
-#endif
-/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-OS_API sd_serializer sd_serializerXMLTypeinfoNew(c_base base, c_bool escapeQuote) __nonnull_all__ __attribute_warn_unused_result__;
-
-#if defined (__cplusplus)
+DDS::OpenSplice::FooCdrDataWriter::FooCdrDataWriter(
+     DDS::DataWriter *wr)
+{
+    writer = dynamic_cast<DDS::OpenSplice::FooDataWriter_impl *>(wr);
 }
-#endif
 
-#undef OS_API
+DDS::OpenSplice::FooCdrDataWriter::~FooCdrDataWriter()
+{
 
-#endif /* SD_SERIALIZERXMLTYPEINFO_H */
+}
+
+::DDS::ReturnCode_t
+DDS::OpenSplice::FooCdrDataWriter::write_cdr(
+    const DDS::CDRSample & instance_data,
+    ::DDS::InstanceHandle_t handle)
+{
+    if (!writer) {
+        return DDS::RETCODE_PRECONDITION_NOT_MET;
+    }
+
+    if (instance_data.blob.length() < 4) {
+        return DDS::RETCODE_BAD_PARAMETER;
+    }
+
+    return writer->write_cdr(instance_data, handle);
+}
