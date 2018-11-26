@@ -24,6 +24,67 @@
 #include "TypeSupportMetaHolder.h"
 #include "FooDataWriter_impl.h"
 #include "FooDataReader_impl.h"
+#include "ReportUtils.h"
+
+#include "c_base.h"
+#include "c_metabase.h"
+#include "sd_serializerXMLTypeinfo.h"
+#include "os_atomics.h"
+
+class SerializationBaseHolder {
+public:
+    SerializationBaseHolder();
+    ~SerializationBaseHolder();
+
+    c_base get_base();
+
+    int is_valid()
+    {
+        return valid;
+    }
+
+private:
+    pa_voidp_t basePtr;
+    int valid;
+};
+
+SerializationBaseHolder::SerializationBaseHolder()
+{
+    pa_stvoidp(&basePtr, NULL);
+    valid = 0;
+}
+
+SerializationBaseHolder::~SerializationBaseHolder()
+{
+    c_base base = (c_base)pa_ldvoidp(&basePtr);
+    valid = 0;
+    if (base) {
+        c_destroy(base);
+    }
+
+}
+
+
+c_base
+SerializationBaseHolder::get_base()
+{
+    c_base base = (c_base)pa_ldvoidp(&basePtr);
+    if (!base) {
+        base = c_create("message_serializer", NULL, 0, 0);
+        if (base) {
+            if (!pa_casvoidp(&basePtr, NULL, base)) {
+                c_destroy(base);
+                base = (c_base) pa_ldvoidp(&basePtr);
+            }
+        }
+        valid = base != NULL;
+    }
+    return base;
+}
+
+static SerializationBaseHolder serialization_base_holder;
+
+
 
 static int
 ccpp_cdrSerdataInit(void *vsd, char **dst, os_uint32 size_hint)
@@ -84,6 +145,8 @@ DDS::OpenSplice::TypeSupportMetaHolder::TypeSupportMetaHolder(
     this->keyList = keyList;
     this->writerCopy = (u_writerCopy) DDS::OpenSplice::FooDataWriter_impl::rlReq_copyIn;
     this->readerCopy = (cxxReaderCopy) DDS::OpenSplice::FooDataReader_impl::copySampleOut;
+    this->cdrMarshaler = NULL;
+    this->cType = NULL;
 }
 
 
@@ -139,6 +202,9 @@ DDS::OpenSplice::TypeSupportMetaHolder::wlReq_deinit()
 {
     if (cdrMarshaler) {
         sd_cdrInfoFree((struct sd_cdrInfo *) cdrMarshaler);
+        if (serialization_base_holder.is_valid()) {
+            c_free(cType);
+        }
     }
     delete[] metaDescriptor;
     return DDS::OpenSplice::CppSuperClass::wlReq_deinit();
@@ -204,4 +270,78 @@ void *
 DDS::OpenSplice::TypeSupportMetaHolder::get_cdrMarshaler()
 {
 	return cdrMarshaler;
+}
+
+void *
+DDS::OpenSplice::TypeSupportMetaHolder::get_ctype()
+{
+    return c_keep(cType);
+}
+
+DDS::ReturnCode_t
+DDS::OpenSplice::TypeSupportMetaHolder::init_cdr()
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_OK;
+    c_base cbase;
+
+    result = write_lock();
+    if (result != DDS::RETCODE_OK) {
+        return result;
+    }
+
+    if (cType) {
+        unlock();
+        return result;
+    }
+
+    cbase = serialization_base_holder.get_base();
+    if (cbase)  {
+        sd_serializer serializer;
+        sd_serializedData serData;
+        c_metaObject mt;
+        char *metaDescr = get_meta_descriptor();
+
+        serializer = sd_serializerXMLTypeinfoNew(cbase, TRUE);
+        serData = sd_serializerFromString(serializer, metaDescr);
+        mt = c_metaObject(sd_serializerDeserialize(serializer, serData));
+        if (mt) {
+            cType = c_resolve(cbase, typeName);
+            if (!cType) {
+                result = DDS::RETCODE_BAD_PARAMETER;
+                CPP_REPORT(result, "Could not inject type: %%s'", typeName);
+            }
+        } else {
+            result = DDS::RETCODE_BAD_PARAMETER;
+            CPP_REPORT(result, "Could not inject type: '%s'", typeName);
+        }
+        sd_serializedDataFree(serData);
+        sd_serializerFree(serializer);
+        DDS::string_free(metaDescr);
+    } else {
+        result = DDS::RETCODE_OUT_OF_RESOURCES;
+        CPP_REPORT(result, "Could not inject type: '%s'", typeName);
+    }
+
+    if (cType) {
+        cdrMarshaler = sd_cdrInfoNew((c_type)cType);
+        if (cdrMarshaler) {
+            if (sd_cdrCompile((struct sd_cdrInfo *)cdrMarshaler) < 0) {
+                sd_cdrInfoFree((struct sd_cdrInfo *) cdrMarshaler);
+                cdrMarshaler = NULL;
+                c_free(cType);
+                cType = NULL;
+                result = DDS::RETCODE_BAD_PARAMETER;
+                CPP_REPORT(result, "Could not create marshaler for type: '%s'", typeName);
+            }
+        } else {
+            c_free(cType);
+            cType = NULL;
+            result = DDS::RETCODE_BAD_PARAMETER;
+            CPP_REPORT(result, "Could not create marshaler for type: '%s'", typeName);
+        }
+    }
+
+    unlock();
+
+    return result;
 }

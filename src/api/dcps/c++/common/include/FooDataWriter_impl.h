@@ -27,12 +27,18 @@
 #include "cpp_dcps_if.h"
 
 namespace DDS {
+
+    class CDRSample;
+
     namespace OpenSplice {
+
+        class FooCdrDataWriter;
 
         class OS_API FooDataWriter_impl
             : public DDS::OpenSplice::DataWriter
         {
             friend class DDS::OpenSplice::TypeSupportMetaHolder;
+            friend class DDS::OpenSplice::FooCdrDataWriter;
 
         private:
             DDS::OpenSplice::cxxCopyIn copyIn;
@@ -52,6 +58,15 @@ namespace DDS {
                 c_type type,
                 void *data,
                 void *to);
+
+            static v_copyin_result
+             rlReq_cdrEncCopyIn (
+                 c_type type,
+                 void *data,
+                 void *to);
+
+            ::DDS::ReturnCode_t
+            nlReq_init_cdr();
 
         protected:
             FooDataWriter_impl();
@@ -133,6 +148,11 @@ namespace DDS {
             ::DDS::InstanceHandle_t
             lookup_instance (
                 const void * instance_data) THROW_ORB_EXCEPTIONS;
+
+            ::DDS::ReturnCode_t
+             write_cdr(
+                const DDS::CDRSample & sample,
+                ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
         };
     } /* namespace OpenSplice */
 } /* namespace DDS */

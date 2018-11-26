@@ -40,6 +40,7 @@ namespace DDS
         class DataReader;
         class DataReaderView;
         class TypeSupport;
+        class CdrTypeSupport;
 
         typedef v_copyin_result (*cxxCopyIn)(void *, const void *, void *);
         typedef void (*cxxCopyOut)(const void *, void *);
@@ -55,6 +56,7 @@ namespace DDS
             friend class DDS::OpenSplice::Subscriber;
             friend class DDS::OpenSplice::Publisher;
             friend class DDS::OpenSplice::DataReader;
+            friend class DDS::OpenSplice::CdrTypeSupport;
 
         protected:
             const char **metaDescriptor;
@@ -68,6 +70,7 @@ namespace DDS
             u_writerCopy writerCopy;
             cxxReaderCopy readerCopy;
             void *cdrMarshaler;
+            void *cType;
 
             TypeSupportMetaHolder(const char *typeName, const char *internalTypeName, const char *keyList);
             virtual ~TypeSupportMetaHolder();
@@ -116,6 +119,12 @@ namespace DDS
 
             virtual DDS::OpenSplice::DataReaderView *
             create_view() = 0;
+
+            virtual DDS::ReturnCode_t
+            init_cdr();
+
+            virtual void *
+            get_ctype();
 
         private:
             void initialize();
