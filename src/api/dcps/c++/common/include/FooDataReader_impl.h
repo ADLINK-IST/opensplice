@@ -27,7 +27,7 @@
 
 namespace DDS {
 
-   class CDRSample;
+   struct CDRSample;
 
     namespace OpenSplice {
 
