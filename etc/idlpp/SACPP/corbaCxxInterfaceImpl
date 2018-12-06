@@ -1,0 +1,180 @@
+#if DDS_USE_EXPLICIT_TEMPLATES
+template class $(seqtmpltname) < $(scopedtypename), struct $(typename)Seq_uniq_>;
+#endif
+
+const char * $(scopedtypename)TypeSupportInterface::_local_id = "IDL:$(namescope)/$(typename)TypeSupportInterface:1.0";
+
+$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_duplicate ($(scopedtypename)TypeSupportInterface_ptr p)
+{
+    if (p) p->m_count++;
+    return p;
+}
+
+DDS::Boolean $(scopedtypename)TypeSupportInterface::_local_is_a (const char * _id)
+{
+    if (strcmp (_id, $(scopedtypename)TypeSupportInterface::_local_id) == 0)
+    {
+        return true;
+    }
+
+    typedef DDS::TypeSupport NestedBase_1;
+
+    if (NestedBase_1::_local_is_a (_id))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)TypeSupportInterface_ptr result = NULL;
+    if (p && p->_is_a ($(scopedtypename)TypeSupportInterface::_local_id))
+    {
+        result = dynamic_cast < $(scopedtypename)TypeSupportInterface_ptr> (p);
+        if (result) result->m_count++;
+    }
+    return result;
+}
+
+$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_unchecked_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)TypeSupportInterface_ptr result;
+    result = dynamic_cast < $(scopedtypename)TypeSupportInterface_ptr> (p);
+    if (result) result->m_count++;
+    return result;
+}
+
+const char * $(scopedtypename)DataWriter::_local_id = "IDL:$(namescope)/$(typename)DataWriter:1.0";
+
+$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_duplicate ($(scopedtypename)DataWriter_ptr p)
+{
+    if (p) p->m_count++;
+    return p;
+}
+
+DDS::Boolean $(scopedtypename)DataWriter::_local_is_a (const char * _id)
+{
+    if (strcmp (_id, $(scopedtypename)DataWriter::_local_id) == 0)
+    {
+        return true;
+    }
+
+    typedef DDS::DataWriter NestedBase_1;
+
+    if (NestedBase_1::_local_is_a (_id))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataWriter_ptr result = NULL;
+    if (p && p->_is_a ($(scopedtypename)DataWriter::_local_id))
+    {
+        result = dynamic_cast < $(scopedtypename)DataWriter_ptr> (p);
+        if (result) result->m_count++;
+    }
+    return result;
+}
+
+$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_unchecked_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataWriter_ptr result;
+    result = dynamic_cast < $(scopedtypename)DataWriter_ptr> (p);
+    if (result) result->m_count++;
+    return result;
+}
+
+const char * $(scopedtypename)DataReader::_local_id = "IDL:$(namescope)/$(typename)DataReader:1.0";
+
+$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_duplicate ($(scopedtypename)DataReader_ptr p)
+{
+    if (p) p->m_count++;
+    return p;
+}
+
+DDS::Boolean $(scopedtypename)DataReader::_local_is_a (const char * _id)
+{
+    if (strcmp (_id, $(scopedtypename)DataReader::_local_id) == 0)
+    {
+        return true;
+    }
+
+    typedef DDS::DataReader NestedBase_1;
+
+    if (NestedBase_1::_local_is_a (_id))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataReader_ptr result = NULL;
+    if (p && p->_is_a ($(scopedtypename)DataReader::_local_id))
+    {
+        result = dynamic_cast < $(scopedtypename)DataReader_ptr> (p);
+        if (result) result->m_count++;
+    }
+    return result;
+}
+
+$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_unchecked_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataReader_ptr result;
+    result = dynamic_cast < $(scopedtypename)DataReader_ptr> (p);
+    if (result) result->m_count++;
+    return result;
+}
+
+const char * $(scopedtypename)DataReaderView::_local_id = "IDL:$(namescope)/$(typename)DataReaderView:1.0";
+
+$(scopedtypename)DataReaderView_ptr $(scopedtypename)DataReaderView::_duplicate ($(scopedtypename)DataReaderView_ptr p)
+{
+    if (p) p->m_count++;
+    return p;
+}
+
+DDS::Boolean $(scopedtypename)DataReaderView::_local_is_a (const char * _id)
+{
+    if (strcmp (_id, $(scopedtypename)DataReaderView::_local_id) == 0)
+    {
+        return true;
+    }
+
+    typedef DDS::DataReaderView NestedBase_1;
+
+    if (NestedBase_1::_local_is_a (_id))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+$(scopedtypename)DataReaderView_ptr $(scopedtypename)DataReaderView::_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataReaderView_ptr result = NULL;
+    if (p && p->_is_a ($(scopedtypename)DataReaderView::_local_id))
+    {
+        result = dynamic_cast < $(scopedtypename)DataReaderView_ptr> (p);
+        if (result) result->m_count++;
+    }
+    return result;
+}
+
+$(scopedtypename)DataReaderView_ptr $(scopedtypename)DataReaderView::_unchecked_narrow (DDS::Object_ptr p)
+{
+    $(scopedtypename)DataReaderView_ptr result;
+    result = dynamic_cast < $(scopedtypename)DataReaderView_ptr> (p);
+    if (result) result->m_count++;
+    return result;
+}
+

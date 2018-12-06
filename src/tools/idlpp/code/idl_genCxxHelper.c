@@ -22,6 +22,10 @@
 #include "idl_genLanguageHelper.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
+#include "c_misc.h"
+#include "c_metabase.h"
+#include "ut_collection.h"
 
 /* Specify a list of all C++ keywords */
 static const char *cxx_keywords[74] = {
@@ -141,110 +145,6 @@ idl_scopeStackCxx(
     return scopeStack;
 }
 
-static c_char *
-standaloneTypeFromTypeSpec(
-    idl_typeBasic t)
-{
-    c_char *typeName;
-
-    typeName = NULL;
-    switch (idl_typeBasicType(t)) {
-    case idl_short:
-        typeName = os_strdup("::DDS::Short");
-    break;
-    case idl_ushort:
-        typeName = os_strdup("::DDS::UShort");
-    break;
-    case idl_long:
-        typeName = os_strdup("::DDS::Long");
-    break;
-    case idl_ulong:
-        typeName = os_strdup("::DDS::ULong");
-    break;
-    case idl_longlong:
-        typeName = os_strdup("::DDS::LongLong");
-    break;
-    case idl_ulonglong:
-        typeName = os_strdup("::DDS::ULongLong");
-    break;
-    case idl_float:
-        typeName = os_strdup("::DDS::Float");
-    break;
-    case idl_double:
-        typeName = os_strdup("::DDS::Double");
-    break;
-    case idl_char:
-        typeName = os_strdup("::DDS::Char");
-    break;
-    case idl_string:
-        typeName = os_strdup("char *");
-    break;
-    case idl_boolean:
-        typeName = os_strdup("::DDS::Boolean");
-    break;
-    case idl_octet:
-        typeName = os_strdup("::DDS::Octet");
-    break;
-    default:
-        /* No processing required, empty statement to satisfy QAC */
-    break;
-    }
-    return typeName;
-}
-
-#if 0
-static c_char *
-corbaTypeFromTypeSpec(
-    idl_typeBasic t)
-{
-    c_char *typeName;
-
-    typeName = NULL;
-    switch (idl_typeBasicType(t)) {
-    case idl_short:
-        typeName = os_strdup("::DDS::Short");
-    break;
-    case idl_ushort:
-        typeName = os_strdup("::DDS::UShort");
-    break;
-    case idl_long:
-        typeName = os_strdup("::DDS::Long");
-    break;
-    case idl_ulong:
-        typeName = os_strdup("::DDS::ULong");
-    break;
-    case idl_longlong:
-        typeName = os_strdup("::DDS::LongLong");
-    break;
-    case idl_ulonglong:
-        typeName = os_strdup("::DDS::ULongLong");
-    break;
-    case idl_float:
-        typeName = os_strdup("::DDS::Float");
-    break;
-    case idl_double:
-        typeName = os_strdup("::DDS::Double");
-    break;
-    case idl_char:
-        typeName = os_strdup("::DDS::Char");
-    break;
-    case idl_string:
-        typeName = os_strdup("char *");
-    break;
-    case idl_boolean:
-        typeName = os_strdup("::DDS::Boolean");
-    break;
-    case idl_octet:
-        typeName = os_strdup("::DDS::Octet");
-    break;
-    default:
-        /* No processing required, empty statement to satisfy QAC */
-    break;
-    }
-    return typeName;
-}
-#endif
-
 /* Return the C++ specific type identifier for the
    specified type specification
 */
@@ -252,31 +152,416 @@ c_char *
 idl_corbaCxxTypeFromTypeSpec(
         idl_typeSpec typeSpec)
 {
-    c_char *typeName;
+    c_type t = idl_typeSpecDef(typeSpec);
+    return idl_CxxTypeFromCType(t, "<NotApplicable>");
+}
 
-    /* QAC EXPECT 3416; No side effects here */
-    if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-        /* if the specified type is a basic type */
-        typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec));
-    } else if ((idl_typeSpecType(typeSpec) == idl_tseq) ||
-            (idl_typeSpecType(typeSpec) == idl_tarray)) {
-        /* sequence does not have an identification */
-        typeName = os_strdup ("");
-        printf ("idl_corbaCxxTypeFromTypeSpec: Unexpected type handled\n");
-        (void)typeName;
-        assert(0);
+static c_char *
+CxxFromfullyScopedName(c_char *fullyScopedName)
+{
+    c_char *savePtr = NULL;
+    c_char *name, *cxxName, *typeName = NULL;
+    size_t totalLen = strlen(fullyScopedName) + 2 + 1;
+    size_t len = 0;
+
+    name = os_strtok_r(fullyScopedName, ":", &savePtr);
+    if (name) {
+        cxxName = idl_cxxId(name);
+        if (strlen(cxxName) != strlen(name)) {
+            totalLen += (strlen(cxxName) - strlen(name));
+        }
+        typeName = os_malloc(totalLen);
+
+        len = (size_t)snprintf(typeName, totalLen, "::%s", cxxName);
+        assert(len < totalLen);
+        os_free(cxxName);
+        name = os_strtok_r(NULL, ":", &savePtr);
+        while (name != NULL) {
+            cxxName = idl_cxxId(name);
+            if (strlen(cxxName) != strlen(name)) {
+                totalLen += (strlen(cxxName) - strlen(name));
+                typeName = os_realloc(typeName, totalLen);
+            }
+            assert(typeName[len] == '\0');
+            len += (size_t)snprintf(typeName + len, totalLen - len, "::%s", cxxName);
+            assert(len < totalLen);
+            os_free(cxxName);
+            name = os_strtok_r(NULL, ":", &savePtr);
+        }
     } else {
-        /* if a user type is specified build it from its scope and its name.
-	   The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
-           idl_tunion.
-         */
-        typeName = idl_scopeStackCxx(
-                idl_typeUserScope(idl_typeUser(typeSpec)),
-                "::",
-                idl_typeSpecName(typeSpec));
+        typeName = os_malloc(1);
+        typeName[0] = '\0';
+    }
+
+    return typeName;
+}
+
+c_char *
+idl_CxxTypeFromCType(
+    c_type t,
+    const char *memberName)
+{
+    c_char *typeName = NULL;
+    c_char *subTypeName;
+    const c_char *template;
+    size_t typeNameSize;
+
+    switch (c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_SHORT:
+            typeName = os_strdup("::DDS::Short");
+            break;
+        case P_USHORT:
+            typeName = os_strdup("::DDS::UShort");
+            break;
+        case P_LONG:
+            typeName = os_strdup("::DDS::Long");
+            break;
+        case P_ULONG:
+            typeName = os_strdup("::DDS::ULong");
+            break;
+        case P_LONGLONG:
+            typeName = os_strdup("::DDS::LongLong");
+            break;
+        case P_ULONGLONG:
+            typeName = os_strdup("::DDS::ULongLong");
+            break;
+        case P_FLOAT:
+            typeName = os_strdup("::DDS::Float");
+            break;
+        case P_DOUBLE:
+            typeName = os_strdup("::DDS::Double");
+            break;
+        case P_CHAR:
+            typeName = os_strdup("::DDS::Char");
+            break;
+        case P_BOOLEAN:
+            typeName = os_strdup("::DDS::Boolean");
+            break;
+        case P_OCTET:
+            typeName = os_strdup("::DDS::Octet");
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_COLLECTION:
+        switch (c_collectionTypeKind(t))
+        {
+        case OSPL_C_STRING:
+            typeName = os_strdup("::DDS::String_mgr");
+            break;
+        case OSPL_C_SEQUENCE:
+            template = "_%s_seq";
+            typeNameSize = strlen(template) + strlen(memberName) + 1;
+            typeName = os_malloc(typeNameSize);
+            (void)snprintf(typeName, typeNameSize, template, memberName);
+            break;
+        case OSPL_C_ARRAY:
+            template = "_%s";
+            typeNameSize = strlen(template) + strlen(memberName) + 1;
+            typeName = os_malloc(typeNameSize);
+            (void)snprintf(typeName, typeNameSize, template, memberName);
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_ENUMERATION:
+    case M_STRUCTURE:
+    case M_UNION:
+    case M_TYPEDEF:
+        subTypeName = c_metaScopedName(c_metaObject(t));
+        typeName = CxxFromfullyScopedName(subTypeName);
+        os_free(subTypeName);
+        break;
+    default:
+        assert(0);
+        break;
     }
     return typeName;
-    /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
+}
+
+c_char *
+idl_CxxTypeFromTypeSpec(
+        idl_typeSpec typeSpec)
+{
+    c_type t = idl_typeSpecDef(typeSpec);
+    return idl_CxxTypeFromCType(t, "<NotApplicable>");
+}
+
+static c_char *
+abstractEnumLabel(c_type t, c_ulong i)
+{
+    c_char *scopeName, *cxxScopeName, *cxxEnumLabel, *abstractLabel;
+    const c_char *enumTmplt = "%s::%s";
+    size_t abstractLabelLen;
+
+    scopeName = c_metaScopedName(c_metaObject(t)->definedIn);
+    cxxScopeName = CxxFromfullyScopedName(scopeName);
+    cxxEnumLabel = idl_cxxId(c_metaObject(c_enumeration(t)->elements[i])->name);
+    abstractLabelLen = strlen(enumTmplt) + strlen(cxxScopeName) + strlen(cxxEnumLabel) + 1;
+    abstractLabel = os_malloc(abstractLabelLen);
+    (void)snprintf(abstractLabel, abstractLabelLen, enumTmplt, cxxScopeName, cxxEnumLabel);
+    os_free(cxxEnumLabel);
+    os_free(cxxScopeName);
+    os_free(scopeName);
+    return abstractLabel;
+}
+
+c_char *
+idl_CxxDefaultValueFromCType(
+    c_type t)
+{
+    os_char *defValue = NULL;
+
+    t = c_typeActualType(t);
+    switch (c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_SHORT:
+        case P_USHORT:
+        case P_LONG:
+        case P_ULONG:
+        case P_LONGLONG:
+        case P_ULONGLONG:
+        case P_CHAR:
+        case P_OCTET:
+            defValue = os_strdup("0");
+            break;
+        case P_FLOAT:
+            defValue = os_strdup("0.0f");
+            break;
+        case P_DOUBLE:
+            defValue = os_strdup("0.0");
+            break;
+        case P_BOOLEAN:
+            defValue = os_strdup("false");
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_ENUMERATION:
+        defValue = abstractEnumLabel(t, 0);
+        break;
+    case M_COLLECTION:
+    case M_STRUCTURE:
+    case M_UNION:
+        defValue = NULL; /* These classes have their own default constructor. */
+        break;
+    case M_TYPEDEF:
+        assert(0); /* Typedef has already been resolved: should not get here! */
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    return defValue;
+}
+
+c_char *
+idl_CxxValueFromCValue(
+    c_type t,
+    c_value v)
+{
+    os_char *cxxValue = NULL;
+
+    t = c_typeActualType(t);
+    switch (c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_LONG:
+            cxxValue = os_malloc(40);
+            if (v.is.Long != INT32_MIN) {
+                snprintf(cxxValue, 40, "%dL", v.is.Long);
+            } else {
+                snprintf(cxxValue, 40, "(-2147483647L - 1L)");
+            }
+            break;
+        case P_ULONG:
+            cxxValue = os_malloc(40);
+            snprintf(cxxValue, 40, "%uU", v.is.ULong);
+            break;
+        case P_LONGLONG:
+            cxxValue = os_malloc(40);
+            if (v.is.LongLong != INT64_MIN) {
+                snprintf(cxxValue, 40, "%"PA_PRId64"LL", v.is.LongLong);
+            } else {
+                snprintf(cxxValue, 40, "(-9223372036854775807LL - 1LL)");
+            }
+            break;
+        case P_ULONGLONG:
+            cxxValue = os_malloc(40);
+            snprintf(cxxValue, 40, "%"PA_PRIu64"ULL", v.is.ULongLong);
+            break;
+        case P_OCTET:
+        case P_FLOAT:
+        case P_DOUBLE:
+        case P_SHORT:
+        case P_USHORT:
+            cxxValue = c_valueImage(v);
+            break;
+        case P_BOOLEAN:
+            if (v.is.Boolean) {
+                cxxValue = os_strdup("TRUE");
+            } else {
+                cxxValue = os_strdup("FALSE");
+            }
+            break;
+        case P_CHAR:
+            if (v.is.Char < 32) {
+                cxxValue = os_malloc(5); /* sign, 3 digits and '\0' */
+                (void)snprintf(cxxValue, 5, "%d", v.is.Char);
+            } else {
+                char *charValue = c_valueImage(v);
+                cxxValue = os_malloc(4);
+                (void)snprintf(cxxValue, 4, "'%s'", charValue);
+                os_free(charValue);
+            }
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_ENUMERATION:
+        cxxValue = abstractEnumLabel(t, (c_ulong) v.is.Long);
+        break;
+    case M_COLLECTION:
+    case M_STRUCTURE:
+    case M_UNION:
+    case M_TYPEDEF:
+        assert(0); /* None of these types should be expected here */
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    return cxxValue;
+}
+
+c_bool
+idl_CxxIsRefType(
+    c_type t)
+{
+    t = c_typeActualType(t);
+
+    switch (c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+    case M_ENUMERATION:
+        return FALSE;
+    case M_COLLECTION:
+        if (c_collectionTypeKind(t) == OSPL_C_STRING) {
+            return TRUE;
+        } else if (c_collectionTypeKind(t) == OSPL_C_SEQUENCE) {
+            return TRUE;
+        } else if (c_collectionTypeKind(t) == OSPL_C_ARRAY) {
+            return idl_CxxIsRefType(c_collectionTypeSubType(t));
+        } else {
+            assert(0);
+            break;
+        }
+    case M_STRUCTURE:
+        return (c_structure(t)->references != NULL);
+    case M_UNION:
+        return (c_union(t)->references != NULL);
+    case M_TYPEDEF:
+        assert(0); /* Typedef should have been resolved already. */
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    return FALSE;
+}
+
+c_char *
+idl_CxxInTypeFromCType(
+    c_type t,
+    const char *memberName)
+{
+    os_char *inType = NULL;
+    os_char *paramType;
+    const char *template;
+    size_t size;
+    c_type actualType;
+
+    switch (c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+    case M_ENUMERATION:
+        inType = idl_CxxTypeFromCType(t, memberName);
+        break;
+    case M_COLLECTION:
+        if (c_collectionTypeKind(t) == OSPL_C_ARRAY) {
+            template = "%s_slice*";
+            paramType = idl_CxxTypeFromCType(t, memberName);
+            size = strlen(template) + strlen(paramType) + 1;
+            inType = os_malloc(size);
+            (void)snprintf(inType, size, template, paramType);
+            os_free(paramType);
+            break;
+        } else if (c_collectionTypeKind(t) == OSPL_C_STRING) {
+            inType = os_strdup("char*");
+            break;
+        }
+        /* For sequence types, the fall-through is intentional. */
+    case M_STRUCTURE:
+    case M_UNION:
+        template = "const %s&";
+        paramType = idl_CxxTypeFromCType(t, memberName);
+        size = strlen(template) + strlen(paramType) + 1;
+        inType = os_malloc(size);
+        (void)snprintf(inType, size, template, paramType);
+        os_free(paramType);
+        break;
+    case M_TYPEDEF:
+        actualType = c_typeActualType(t);
+        switch(c_baseObjectKind(actualType)) {
+        case M_PRIMITIVE:
+        case M_ENUMERATION:
+            inType = idl_CxxTypeFromCType(t, memberName);
+            break;
+        case M_COLLECTION:
+            if (c_collectionTypeKind(actualType) == OSPL_C_STRING) {
+                inType = os_strdup("char*");
+                break;
+            } else if (c_collectionTypeKind(actualType) == OSPL_C_ARRAY) {
+                template = "%s_slice*";
+                paramType = idl_CxxTypeFromCType(t, memberName);
+                size = strlen(template) + strlen(paramType) + 1;
+                inType = os_malloc(size);
+                (void)snprintf(inType, size, template, paramType);
+                os_free(paramType);
+                break;
+            }
+            /* For sequence types, the fall-through is intentional. */
+        case M_STRUCTURE:
+        case M_UNION:
+            template = "const %s&";
+            paramType = idl_CxxTypeFromCType(t, memberName);
+            size = strlen(template) + strlen(paramType) + 1;
+            inType = os_malloc(size);
+            (void)snprintf(inType, size, template, paramType);
+            os_free(paramType);
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    return inType;
 }
 
 c_char *
@@ -289,4 +574,183 @@ const c_char*
 idl_isocppCxxStructMemberSuffix()
 {
   return idl_getIsISOCpp() && idl_getIsISOCppTypes() ? "_" : "";
+}
+
+static os_equality
+orderLabels (
+    c_object o1,
+    c_object o2,
+    c_voidp args)
+{
+    c_value *v1 = (c_value *)o1;
+    c_value *v2 = (c_value *)o2;
+
+    OS_UNUSED_ARG(args);
+
+    /* The cast below is safe due to the static compile-time assert above. */
+    return (os_equality) c_valueCompare(*v1, *v2);
+}
+
+/* This compile-time constraint assures that the cast from c_equality to
+ * os_equality is allowed. */
+struct os_equality_equals_c_equality_constraint {
+    char require_value_OS_LT_eq_value_C_LT [OS_LT == (os_equality)C_LT];
+    char require_value_OS_EQ_eq_value_C_EQ [OS_EQ == (os_equality)C_EQ];
+    char require_value_OS_GT_eq_value_C_GT [OS_GT == (os_equality)C_GT];
+    char require_value_OS_NE_eq_value_C_NE [OS_NE == (os_equality)C_NE];
+    char non_empty_dummy_last_member[1];
+};
+
+static c_value
+typeMinValue(c_type t)
+{
+    switch(c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_SHORT:
+            return c_shortMinValue();
+        case P_USHORT:
+            return c_ushortMinValue();
+        case P_LONG:
+            return c_longMinValue();
+        case P_ULONG:
+            return c_ulongMinValue();
+        case P_LONGLONG:
+            return c_longlongMinValue();
+        case P_ULONGLONG:
+            return c_ulonglongMinValue();
+        case P_OCTET:
+            return c_octetMinValue();
+        case P_BOOLEAN:
+            return c_boolMinValue();
+        case P_CHAR:
+            return c_charMinValue();
+        default:
+            assert(0);
+            return c_undefinedValue();
+        }
+        break;
+    case M_ENUMERATION:
+        return c_longValue(0);
+    default:
+        assert(0);
+        return c_undefinedValue();
+    }
+}
+
+static c_value
+typeOneValue(c_type t)
+{
+    switch(c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_SHORT:
+            return c_shortValue(1);
+        case P_USHORT:
+            return c_ushortValue(1);
+        case P_LONG:
+            return c_longValue(1);
+        case P_ULONG:
+            return c_ulongValue(1);
+        case P_LONGLONG:
+            return c_longlongValue(1);
+        case P_ULONGLONG:
+            return c_ulonglongValue(1);
+        case P_OCTET:
+            return c_octetValue(1);
+        case P_BOOLEAN:
+            return c_boolValue(1);
+        case P_CHAR:
+            return c_charValue(1);
+        default:
+            assert(0);
+            return c_undefinedValue();
+        }
+        break;
+    case M_ENUMERATION:
+        return c_longValue(1);
+    default:
+        assert(0);
+        return c_undefinedValue();
+    }
+}
+
+static c_value
+typeMaxValue(c_type t)
+{
+    switch(c_baseObjectKind(t)) {
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t))
+        {
+        case P_SHORT:
+            return c_shortMaxValue();
+        case P_USHORT:
+            return c_ushortMaxValue();
+        case P_LONG:
+            return c_longMaxValue();
+        case P_ULONG:
+            return c_ulongMaxValue();
+        case P_LONGLONG:
+            return c_longlongMaxValue();
+        case P_ULONGLONG:
+            return c_ulonglongMaxValue();
+        case P_OCTET:
+            return c_octetMaxValue();
+        case P_BOOLEAN:
+            return c_boolMaxValue();
+        case P_CHAR:
+            return c_charMaxValue();
+        default:
+            return c_undefinedValue();
+            break;
+        }
+        break;
+    case M_ENUMERATION:
+        return c_longValue((c_long) (c_enumerationCount(t) - 1));
+    default:
+        assert(0);
+        return c_undefinedValue();
+    }
+}
+
+c_value
+idl_CxxLowestUnionDefaultValue(
+        c_type t)
+{
+    c_value lowestValue, highestValue, unitValue;
+    c_ulong i, j, nrBranches;
+    ut_table labelValues;
+    c_value *label;
+    c_equality indexVsBound;
+    c_type discrType = c_typeActualType(c_unionUnionSwitchType(t));
+
+    /* First populate a binary tree with all available union labels. */
+    nrBranches = c_unionUnionCaseCount(t);
+    labelValues = ut_tableNew(orderLabels, NULL, NULL, NULL, NULL, NULL);
+    for (i = 0; i < nrBranches; i++) {
+        c_unionCase branch = c_unionUnionCase(t, i);
+        c_ulong nrLabels = c_arraySize(branch->labels);
+        for (j = 0; j < nrLabels; j++) {
+            label = &(c_literal(branch->labels[j])->value);
+            (void) ut_tableInsert(labelValues, label, label);
+        }
+    }
+
+    /* Now start looking for the lowest value that is still available. */
+    highestValue = typeMaxValue(discrType);
+    unitValue = typeOneValue(discrType);
+    lowestValue = typeMinValue(discrType);
+    indexVsBound = c_valueCompare(lowestValue, highestValue);
+    while (indexVsBound == C_LT || indexVsBound == C_EQ) {
+        if (!ut_get((ut_collection) labelValues, &lowestValue)) {
+            ut_tableFree(labelValues);
+            return lowestValue;
+        }
+        lowestValue = c_valueCalculate(lowestValue, unitValue, O_ADD);
+        indexVsBound = c_valueCompare(lowestValue, highestValue);
+    }
+    ut_tableFree(labelValues);
+    return c_undefinedValue();
 }
