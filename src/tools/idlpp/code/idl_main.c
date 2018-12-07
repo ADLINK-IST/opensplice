@@ -1325,7 +1325,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 /* Create a list of keys and streams existing only in this idl file */
                 idl_walk(base, filename, source, traceWalk, idl_genIdlHelperProgram());
 
-                if (idl_getCorbaMode() == IDL_MODE_STANDALONE && !deprecatedCxxMapping) {
+                if (idl_getCorbaMode() == IDL_MODE_STANDALONE && !deprecatedCxxMapping && idl_getIsISOCpp() == FALSE) {
                     idl_cxxInterfaceSelector interfaceSelector;
 
                     snprintf(fname,
@@ -1414,7 +1414,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
 
                 if (idl_getCorbaMode() == IDL_MODE_STANDALONE)
                 {
-                    if (deprecatedCxxMapping) {
+                    if (deprecatedCxxMapping || idl_getIsISOCpp()) {
                         /* Call cppgen for both the user provided IDL file (filename),
                          * and the generated IDL file (fname).
                          */
