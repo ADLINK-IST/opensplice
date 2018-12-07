@@ -208,19 +208,19 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUStrSeqT<struct %s_uniq_> %s;\n",
+                    "typedef DDS_DCPSUStrSeqT< struct %s_uniq_ > %s;\n",
                     typedefBaseName,
                     typedefBaseName);
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUStrSeq_var<%s> %s_var;\n",
+                    "typedef DDS_DCPSUStrSeq_var< %s > %s_var;\n",
                     typedefBaseName,
                     typedefBaseName);
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUStrSeq_out<%s> %s_out;\n",
+                    "typedef DDS_DCPSUStrSeq_out< %s > %s_out;\n",
                     typedefBaseName,
                     typedefBaseName);
                 _varAnd_outNeeded = FALSE;
@@ -228,7 +228,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSBStrSeq<%u> %s;\n",
+                    "typedef DDS_DCPSBStrSeq< %u > %s;\n",
                     maxBound,
                     typedefBaseName);
             }
@@ -250,7 +250,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUVLSeq<%s, struct %s_uniq_> %s;\n",
+                    "typedef DDS_DCPSUVLSeq< %s, struct %s_uniq_ > %s;\n",
                     subElementBaseName,
                     typedefBaseName,
                     typedefBaseName);
@@ -258,7 +258,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSBVLSeq<%s, %u> %s;\n",
+                    "typedef DDS_DCPSBVLSeq< %s, %u > %s;\n",
                     subElementBaseName,
                     maxBound,
                     typedefBaseName);
@@ -286,7 +286,7 @@ idl_generateSequenceElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPSUFLSeq<%s, struct %s_uniq_> %s;\n",
+                "typedef DDS_DCPSUFLSeq< %s, struct %s_uniq_ > %s;\n",
                 elementTypeName,
                 typedefBaseName,
                 typedefBaseName);
@@ -294,7 +294,7 @@ idl_generateSequenceElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPSBFLSeq<%s, struct %s_uniq_, %u> %s;\n",
+                "typedef DDS_DCPSBFLSeq< %s, struct %s_uniq_, %u > %s;\n",
                 elementTypeName,
                 typedefBaseName,
                 maxBound,
@@ -308,7 +308,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUVLSeq<%s, struct %s_uniq_> %s;\n",
+                    "typedef DDS_DCPSUVLSeq< %s, struct %s_uniq_ > %s;\n",
                     elementTypeName,
                     typedefBaseName,
                     typedefBaseName);
@@ -316,7 +316,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSBVLSeq<%s, %u> %s;\n",
+                    "typedef DDS_DCPSBVLSeq< %s, %u > %s;\n",
                     elementTypeName,
                     maxBound,
                     typedefBaseName);
@@ -326,7 +326,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSUFLSeq<%s, struct %s_uniq_> %s;\n",
+                    "typedef DDS_DCPSUFLSeq< %s, struct %s_uniq_ > %s;\n",
                     elementTypeName,
                     typedefBaseName,
                     typedefBaseName);
@@ -334,7 +334,7 @@ idl_generateSequenceElementTypedefs(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPSBFLSeq<%s, struct %s_uniq_, %u> %s;\n",
+                    "typedef DDS_DCPSBFLSeq< %s, struct %s_uniq_, %u > %s;\n",
                     elementTypeName,
                     typedefBaseName,
                     maxBound,
@@ -386,13 +386,13 @@ idl_generateSequenceTypedefs(
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
-            "typedef DDS_DCPSSequence_var<%s> %s_var;\n",
+            "typedef DDS_DCPSSequence_var< %s > %s_var;\n",
             typedefBaseName,
             typedefBaseName);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
-            "typedef DDS_DCPSSequence_out<%s> %s_out;\n",
+            "typedef DDS_DCPSSequence_out< %s > %s_out;\n",
             typedefBaseName,
             typedefBaseName);
     }
@@ -485,7 +485,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_VArray_var<%s, %s_slice, struct %s_uniq_> %s_var;\n",
+                "typedef DDS_DCPS_VArray_var< %s, %s_slice, struct %s_uniq_ > %s_var;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -493,7 +493,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_VLArray_out<%s, %s_slice, %s_var, struct %s_uniq_> %s_out;\n",
+                "typedef DDS_DCPS_VLArray_out< %s, %s_slice, %s_var, struct %s_uniq_ > %s_out;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -502,7 +502,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_Array_forany<%s, %s_slice, struct %s_uniq_> %s_forany;\n",
+                "typedef DDS_DCPS_Array_forany< %s, %s_slice, struct %s_uniq_ > %s_forany;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -512,7 +512,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_MArray_var<%s, %s_slice, struct %s_uniq_> %s_var;\n",
+                "typedef DDS_DCPS_MArray_var< %s, %s_slice, struct %s_uniq_ > %s_var;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -521,7 +521,7 @@ idl_generateArrayElementTypedefs(
             if (idl_CxxIsRefType(arrElementType)) {
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "typedef DDS_DCPS_VLArray_out<%s, %s_slice, %s_var, struct %s_uniq_> %s_out;\n",
+                    "typedef DDS_DCPS_VLArray_out< %s, %s_slice, %s_var, struct %s_uniq_ > %s_out;\n",
                     typedefBaseName,
                     typedefBaseName,
                     typedefBaseName,
@@ -537,7 +537,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_MArray_forany<%s, %s_slice, struct %s_uniq_> %s_forany;\n",
+                "typedef DDS_DCPS_MArray_forany< %s, %s_slice, struct %s_uniq_ > %s_forany;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -554,7 +554,7 @@ idl_generateArrayElementTypedefs(
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
-            "typedef DDS_DCPS_FArray_var<%s, %s_slice, struct %s_uniq_> %s_var;\n",
+            "typedef DDS_DCPS_FArray_var< %s, %s_slice, struct %s_uniq_ > %s_var;\n",
             typedefBaseName,
             typedefBaseName,
             typedefBaseName,
@@ -568,7 +568,7 @@ idl_generateArrayElementTypedefs(
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
-            "typedef DDS_DCPS_Array_forany<%s, %s_slice, struct %s_uniq_> %s_forany;\n",
+            "typedef DDS_DCPS_Array_forany< %s, %s_slice, struct %s_uniq_ > %s_forany;\n",
             typedefBaseName,
             typedefBaseName,
             typedefBaseName,
@@ -580,7 +580,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_VArray_var<%s, %s_slice, struct %s_uniq_> %s_var;\n",
+                "typedef DDS_DCPS_VArray_var< %s, %s_slice, struct %s_uniq_ > %s_var;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -588,7 +588,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_VLArray_out<%s, %s_slice, %s_var, struct %s_uniq_> %s_out;\n",
+                "typedef DDS_DCPS_VLArray_out< %s, %s_slice, %s_var, struct %s_uniq_ > %s_out;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -598,7 +598,7 @@ idl_generateArrayElementTypedefs(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef DDS_DCPS_FArray_var<%s, %s_slice, struct %s_uniq_> %s_var;\n",
+                "typedef DDS_DCPS_FArray_var< %s, %s_slice, struct %s_uniq_ > %s_var;\n",
                 typedefBaseName,
                 typedefBaseName,
                 typedefBaseName,
@@ -613,7 +613,7 @@ idl_generateArrayElementTypedefs(
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
-            "typedef DDS_DCPS_Array_forany<%s, %s_slice, struct %s_uniq_> %s_forany;\n",
+            "typedef DDS_DCPS_Array_forany< %s, %s_slice, struct %s_uniq_ > %s_forany;\n",
             typedefBaseName,
             typedefBaseName,
             typedefBaseName,
