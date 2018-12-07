@@ -396,7 +396,7 @@ idl_ISOCxx2ValueFromCValue(
         case P_USHORT:
         case P_CHAR:
             /* Forward to default C++ literal representation. */
-            cxxValue = idl_ISOCxx2ValueFromCValue(t, v);
+            cxxValue = idl_CxxValueFromCValue(t, v);
             break;
         case P_BOOLEAN:
             if (v.is.Boolean) {
