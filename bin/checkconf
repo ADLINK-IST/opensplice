@@ -1573,6 +1573,7 @@ maven_check_inner()
         echo "maven is not installed (properly):"
         echo "   mvn not found in path"
         echo "   M2_HOME variable not set"
+        no_javac
     else
         # maven was found, now check the version number
         MAVEN_CHECK=`mvn --version | grep "Apache Maven 3."`
@@ -1582,6 +1583,7 @@ maven_check_inner()
             MAVEN_CHECK=`mvn --version | grep "Apache Maven"`
             echo "   Found maven version $MAVEN_CHECK"
             echo "   WARNING - Maven version 3 would be better"
+            no_javac
          else
             echo "OK - Using $MAVEN_CHECK"
          fi
