@@ -1325,7 +1325,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 /* Create a list of keys and streams existing only in this idl file */
                 idl_walk(base, filename, source, traceWalk, idl_genIdlHelperProgram());
 
-                if (idl_getCorbaMode() == IDL_MODE_STANDALONE && !deprecatedCxxMapping && idl_getIsISOCpp() == FALSE) {
+                if (idl_getCorbaMode() == IDL_MODE_STANDALONE && !deprecatedCxxMapping && idl_getIsISOCpp() == FALSE && cpp_ignoreInterfaces) {
                     idl_cxxInterfaceSelector interfaceSelector;
 
                     snprintf(fname,
@@ -1356,13 +1356,6 @@ OPENSPLICE_MAIN (ospl_idlpp)
                     idl_walk(base, filename, source, traceWalk, idl_genIdlProgram());
                     idl_fileOutFree(idl_fileCur());
                 }
-                if (outputDir) {
-                   dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
-                   os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
-                } else {
-                   dcpsIdlFileName = os_strdup(fname);
-                }
-
                 /* Generate the Streams typed API if a #pragma streams is defined in the current file*/
                 if (os_iterLength(idl_idlScopeStreamsList) > 0) {
                     /* Generate these for CPP Streams only */
@@ -1414,7 +1407,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
 
                 if (idl_getCorbaMode() == IDL_MODE_STANDALONE)
                 {
-                    if (deprecatedCxxMapping || idl_getIsISOCpp()) {
+                    if (deprecatedCxxMapping || idl_getIsISOCpp() || cpp_ignoreInterfaces == FALSE) {
                         /* Call cppgen for both the user provided IDL file (filename),
                          * and the generated IDL file (fname).
                          */
@@ -1459,6 +1452,13 @@ OPENSPLICE_MAIN (ospl_idlpp)
                         if (maintain_include_namespace)
                         {
                             os_strncat (cpp_command, " -maintain_include_namespace", 29);
+                        }
+
+                        if (outputDir) {
+                           dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
+                           os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
+                        } else {
+                           dcpsIdlFileName = os_strdup(fname);
                         }
 
                         /* First on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
