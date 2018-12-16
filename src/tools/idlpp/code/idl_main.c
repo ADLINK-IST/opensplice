@@ -1358,51 +1358,53 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 }
                 /* Generate the Streams typed API if a #pragma streams is defined in the current file*/
                 if (os_iterLength(idl_idlScopeStreamsList) > 0) {
+                	char *strFileName = os_malloc(strlen(basename) + MAX_FILE_POSTFIX_LENGTH);
                     /* Generate these for CPP Streams only */
                     if(!(idl_getIsISOCpp() && idl_getIsISOCppTypes()))
                     {
                         /* Generate the main include file which includes ORB specific generated header files */
-                        snprintf(fname,
+                        snprintf(strFileName,
                                 strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
                                 "%sStreamsApi.h", basename);
-                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        idl_fileSetCur(idl_fileOutNew(strFileName, "w"));
                         if (idl_fileCur() == NULL) {
-                            idl_fileOpenError(fname);
+                            idl_fileOpenError(strFileName);
                         }
                         idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxStreamsCcppProgram());
                         idl_fileOutFree(idl_fileCur());
 
                         /* Generate the Stream API classes */
-                        snprintf(fname,
+                        snprintf(strFileName,
                                 strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
                                 "%sStreams_impl.h", basename);
-                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        idl_fileSetCur(idl_fileOutNew(strFileName, "w"));
                         if (idl_fileCur() == NULL) {
-                            idl_fileOpenError(fname);
+                            idl_fileOpenError(strFileName);
                         }
                         idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsDefsProgram());
                         idl_fileOutFree(idl_fileCur());
 
-                        snprintf(fname,
+                        snprintf(strFileName,
                                 strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
                                 "%sStreams_impl.cpp", basename);
-                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        idl_fileSetCur(idl_fileOutNew(strFileName, "w"));
                         if (idl_fileCur() == NULL) {
-                            idl_fileOpenError(fname);
+                            idl_fileOpenError(strFileName);
                         }
                         idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsImplProgram());
                         idl_fileOutFree(idl_fileCur());
                     }
                     /* Generate the IDL file containing the wrapper type and Streams API interfaces */
-                    snprintf(fname,
+                    snprintf(strFileName,
                             strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
                             "%sStreams.idl", basename);
-                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    idl_fileSetCur(idl_fileOutNew(strFileName, "w"));
                     if (idl_fileCur() == NULL) {
-                        idl_fileOpenError(fname);
+                        idl_fileOpenError(strFileName);
                     }
                     idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsIdlProgram());
                     idl_fileOutFree(idl_fileCur());
+                    os_free(strFileName);
                 }
 
                 if (idl_getCorbaMode() == IDL_MODE_STANDALONE)
