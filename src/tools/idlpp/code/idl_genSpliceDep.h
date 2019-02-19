@@ -23,6 +23,10 @@
 
 #include "idl_program.h"
 
+struct SpliceDepUserData {
+    c_bool keepIncludePaths;
+};
+
 idl_program idl_genSpliceDepProgram (void *userData);
 
 #endif /* IDL_GENSPLICEDEP_H */

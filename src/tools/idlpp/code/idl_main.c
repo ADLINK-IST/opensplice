@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "vortex_os.h"
+#include "os_version.h"
 #include "sd_serializerXMLTypeinfo.h"
 #include "sd_serializerXMLMetadata.h"
 #include <ctype.h>
@@ -152,7 +153,7 @@
     const char* DEFAULT_ORB = "DDS_OpenFusion_1_6_1";
     const char* QUOTE = "\"";
 #endif
-    const char* IDLPP_CMD_OPTIONS = "a:P:d:o:b:m:t:hCSTD:I:l:j:n:iNx:F";
+    const char* IDLPP_CMD_OPTIONS = "a:P:d:o:b:m:t:hCSTD:I:l:j:n:iNx:Fv";
 
 int runCppGen(
    char* outputDir,
@@ -167,13 +168,13 @@ print_usage(
 #ifdef EVAL_V
     printf("%s EVALUATION VERSION\n", name);
 #endif
-    printf("Usage: %s [-b ORB-template-path]\n"
+    printf("Usage: %s [ -v ] [-b ORB-template-path]\n"
            "       [-n <include-suffix>] [-I path] [-D macro[=definition]] [-S | -C] \n"
            "       [-l (c | c99 | c++ | cpp | isocpp | isoc++ | isocpp2 | isoc++2 | cs | java | python | simulink | matlab)] [-F] [-j [old]:<new>] [-d directory] [-i] \n"
 #ifdef ENABLE_DEPRECATED_OPTION_DDS_TYPES
-           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm | no-equality | deprecated-c++11-mapping)] <filename>\n", name);
+           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm | no-equality | maintain-include-namespace | deprecated-c++11-mapping)] <filename>\n", name);
 #else
-           "       [-P dll_macro_name[,<h-file>]] [-o (custom-psm | no-equality | deprecated-c++11-mapping)] <filename>\n", name);
+           "       [-P dll_macro_name[,<h-file>]] [-o (custom-psm | no-equality | maintain-include-namespace | deprecated-c++11-mapping)] <filename>\n", name);
 #endif
 }
 
@@ -185,12 +186,21 @@ print_isocpp_deprecation()
        "Please switch to isocpp2/isoc++2.\n");
 }
 
+static void
+print_version(void)
+{
+    printf ("OpenSplice version : %s\n", OSPL_VERSION_STR);
+}
+
 
 static void
 print_help(
     char *name)
 {
     print_usage(name);
+    printf(
+        "    -v\n"
+        "       Print the version .\n");
     printf(
         "    -b ORB-template-path\n"
         "       Specifies the ORB specific path within the template path.\n"
@@ -279,7 +289,7 @@ print_help(
         "       Specify the location where to place the generated files.\n");
 #ifdef ENABLE_DEPRECATED_OPTION_DDS_TYPES
     printf(
-        "    -o (dds-types | custom-psm | no-equality | deprecated-c++11-mapping)\n"
+        "    -o (dds-types | custom-psm | no-equality | deprecated-c++11-mapping | maintain-include-namespace)\n"
         "       'dds-types' enables support for standard DDS-DCPS definitions.\n"
         "       The OpenSplice preprocessor provides definitions for constants\n"
         "       and types as defined in the OMG-DDS-DCPS PSM. This implies that\n"
@@ -288,7 +298,7 @@ print_help(
         "       to your IDL input file instead.\n");
 #else
     printf(
-        "    -o (custom-psm | no-equality)\n");
+        "    -o (custom-psm | no-equality | deprecated-c++11-mapping | maintain-include-namespace)\n");
 #endif
     printf(
         "       'custom-psm' enables support for alternative IDL language mappings.\n"
@@ -298,6 +308,11 @@ print_help(
     printf(
         "       'no-equality' Disables support for the automatically generated \n"
         "       equality operator on ISOC++, ISOC++2 types.\n");
+    printf(
+        "       'maintain-include-namespace' maintains the include paths as\n"
+        "       specified in the idl file. When set the generated files will\n"
+        "       not have the directory names stripped from the generated include\n"
+        "       filenames");
     printf(
         "       'deprecated-c++11-mapping' Generates the ISOC++2 types using\n"
         "       the deprecated C++11 mapping implementation as used in the past\n"
@@ -606,6 +621,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
     c_bool customPSM = FALSE;
     c_bool attachDatabase = FALSE;
     c_bool cpp_ignoreInterfaces = TRUE;
+    c_bool maintain_include_namespace = FALSE;
     idl_program_args genArgs = {OS_FALSE};
     os_sharedAttr sharedAttr;
     os_sharedHandle sHandle = NULL;
@@ -635,6 +651,10 @@ OPENSPLICE_MAIN (ospl_idlpp)
     ccppOrbPath = getDefaultCcppOrbPath();
     while ((opt = getopt(argc, argv, IDLPP_CMD_OPTIONS)) != -1) {
         switch (opt) {
+        case 'v':
+            print_version();
+            idl_exit(0);
+        break;
         case 'h':
             print_help(argv[0]);
             idl_exit(0);
@@ -734,11 +754,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
             } else if (strcmp(optarg, "matlab") == 0) {
                 idl_setLanguage(IDL_LANG_MATLAB);
             } else if (strcmp(optarg, "pythondesc") == 0) {
-            	idl_setLanguage(IDL_LANG_PYTHON_DESCRIPTORS);
+                idl_setLanguage(IDL_LANG_PYTHON_DESCRIPTORS);
             } else if (strcmp(optarg, "labview") == 0) {
-            	idl_setLanguage(IDL_LANG_LABVIEW);
+                idl_setLanguage(IDL_LANG_LABVIEW);
             } else if (strcmp(optarg, "python") == 0) {
-            	idl_setLanguage(IDL_LANG_PYTHON);
+                idl_setLanguage(IDL_LANG_PYTHON);
             } else {
                 print_usage(argv[0]);
                 idl_exit(-1);
@@ -940,6 +960,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
 #endif
             } else if (strcmp(optarg, "deprecated-c++11-mapping") == 0) {
                 deprecatedCxx11Mapping = TRUE;
+            } else if (strcmp(optarg, "maintain-include-namespace") == 0) {
+                maintain_include_namespace = TRUE;
             } else {
                 print_usage(argv[0]);
                 idl_exit(-1);
@@ -1166,7 +1188,10 @@ OPENSPLICE_MAIN (ospl_idlpp)
         /* Walk through metadata to determine depedencies with other files,
          * the dependencies are used to generate include statements
          */
-        idl_walk(base, filename, source, traceWalk, idl_genSpliceDepProgram(NULL));
+        {
+            struct SpliceDepUserData info = {maintain_include_namespace};
+            idl_walk(base, filename, source, traceWalk, idl_genSpliceDepProgram(&info));
+        }
 
         if (makeAll) {
             /* Do normal generation */
@@ -1396,6 +1421,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
                         os_strncat (cpp_command, " -isocpp", 8);
                     }
 
+                    if (maintain_include_namespace)
+                    {
+                        os_strncat (cpp_command, " -maintain_include_namespace", 29);
+                    }
+
                     /* First on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
                     if (runCppGen (outputDir, cpp_command, dcpsIdlFileName, FALSE) != 0)
                     {
@@ -1544,6 +1574,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
                         {
                             os_strncat (cpp_command, " -genequality", 13);
                         }
+                    }
+
+                    if (maintain_include_namespace)
+                    {
+                        os_strncat (cpp_command, " -maintain_include_namespace", 29);
                     }
 
                     /* Now on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
@@ -1797,6 +1832,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
                    if(idl_getIsISOCpp())
                    {
                        os_strncat (cpp_command, " -isocpp", (size_t)8);
+                   }
+
+                   if (maintain_include_namespace)
+                   {
+                       os_strncat (cpp_command, " -maintain_include_namespace", 29);
                    }
 
                    /* First on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
@@ -2231,15 +2271,15 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 idl_fileSetCur(idl_fileOutNew(fname, "w"));
                 idl_walk(base, filename, source, traceWalk, idl_genSimulinkProgram());
             } else if (idl_getLanguage() == IDL_LANG_LABVIEW) {
-            	snprintf(fname, strlen(basename) + MAX_FILE_POSTFIX_LENGTH, "%s.idl.xml", basename);
-				idl_fileSetCur(idl_fileOutNew(fname, "w"));
-				idl_walk(base, filename, source, traceWalk, idl_genLabVIEWProgram());
+                snprintf(fname, strlen(basename) + MAX_FILE_POSTFIX_LENGTH, "%s.idl.xml", basename);
+                            idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                            idl_walk(base, filename, source, traceWalk, idl_genLabVIEWProgram());
             } else if(idl_getLanguage() == IDL_LANG_MATLAB) {
-            	idl_walk(base, filename, source, traceWalk, idl_genMatlabProgram());
+                idl_walk(base, filename, source, traceWalk, idl_genMatlabProgram());
             } else if(idl_getLanguage() == IDL_LANG_PYTHON_DESCRIPTORS) {
-            	idl_walk(base, filename, source, traceWalk, idl_genPythonDescriptorsProgram());
+                idl_walk(base, filename, source, traceWalk, idl_genPythonDescriptorsProgram());
             } else if(idl_getLanguage() == IDL_LANG_PYTHON) {
-            	idl_walk(base, filename, source, traceWalk, idl_genPythonProgram());
+                idl_walk(base, filename, source, traceWalk, idl_genPythonProgram());
             }
         }
 

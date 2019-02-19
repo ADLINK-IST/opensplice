@@ -155,7 +155,7 @@ extern void do_include (int sharp)
 static void read_include_file (char * name, int dohere, int sharp)
 {
    FILE *f;
-   char *n;
+   char *n, *w;
    char * temp = os_malloc (1024);
    char *cp;
    extern int incldep;
@@ -209,7 +209,10 @@ static void read_include_file (char * name, int dohere, int sharp)
    {
       printf("%s: %s\n", incldep_o, n);
    }
-   out_at(!sharp, n);
+   w = os_malloc(strlen(n) + +strlen(name) + 4);
+   sprintf(w, "%s\" \"%s", n, name);
+   out_at(!sharp, w);
+   os_free(w);
    autodef_file(n);
    autodef_line(1);
    Push('\n');

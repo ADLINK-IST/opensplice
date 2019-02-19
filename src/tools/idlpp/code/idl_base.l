@@ -340,6 +340,7 @@ preprocessor_directive(char *str)
     char *fileName, *ptr;
     c_iter pragmaItems;
     char *pragmaName, *typeName, *fieldName, *newFieldName;
+    char inclname[MAX_FILENAME_LENGTH];
     char valueString[1000];
     c_metaObject mo;
 
@@ -471,7 +472,26 @@ preprocessor_directive(char *str)
     if (*ptr != '"') return;
     os_strncpy(file_name,fileName,length);
     file_name[length] = 0;
-    idl_fileMapAdd(idl_fileMapDefGet(), file_name);
+
+    ptr++;
+    while ((*ptr != 0) && ((*ptr == ' ') || (*ptr == '\t'))) ptr++;
+    if (*ptr == '"') {
+        ptr++;
+        fileName = ptr;
+        while (isprint((int)*ptr) && (*ptr != '"')) ptr++;
+        length = (os_size_t) (ptr - fileName);
+        if (length >= MAX_FILENAME_LENGTH) {
+            fprintf(stderr,"filename <%s> exceeds max length of %d\n",fileName,MAX_FILENAME_LENGTH);
+            exit(-1);
+        }
+        if (*ptr != '"') return;
+        os_strncpy(inclname,fileName,length);
+        inclname[length] = 0;
+    } else {
+        inclname[0] = 0;
+    }
+
+    idl_fileMapAdd(idl_fileMapDefGet(), file_name, inclname);
     parser_line = lineNumber;
     parser_column = 0;
 }

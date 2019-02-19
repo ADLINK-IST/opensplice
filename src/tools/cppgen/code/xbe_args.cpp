@@ -172,6 +172,12 @@ DDS_BE_parse_args(int &argc, char **argv)
           DDSStripArg(argc, argv, i);
           i = 0;
       }
+      else if (0 == strcmp(argv[i], "-maintain_include_namespace"))
+      {
+	  idl_global->set_maintain_include_namespace(true);
+	  DDSStripArg(argc, argv, i);
+	  i = 0;
+      }
       else if (strncmp(argv[i], "-output=", sizeof("-output=") -1) == 0)
       {
          BE_Globals::OutputDirectory = strchr(argv[i], '=') + 1;

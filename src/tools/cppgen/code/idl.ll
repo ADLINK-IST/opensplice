@@ -294,7 +294,7 @@ _?[a-zA-Z][a-zA-Z0-9_]*	{
 ^#[ \t]*[0-9]*" ""\""[^\"]*"\""" "[0-9]*" "[0-9]*\n      {
         idl_parse_line_and_file(CPPGEN_YYTEXT);
       }
-^#[ \t]*[0-9]*" ""\""[^\"]*"\""\n			{
+^#[ \t]*[0-9]*" ""\""[^\"]*"\"".*\n			{
 		  idl_parse_line_and_file(CPPGEN_YYTEXT);
 		}
 ^#[ \t]*[0-9]*\n	{
@@ -365,6 +365,7 @@ static void idl_parse_line_and_file (char *buf)
 {
   char * r = buf;
   char * h;
+  char * l;
   UTL_String * nm;
 
   /* Skip initial '#' */
@@ -423,7 +424,22 @@ static void idl_parse_line_and_file (char *buf)
      (fstackdepth < 2)
   ) 
   {
-    nm = new UTL_String (stripped_name (idl_global->filename ()));
+    if (idl_global->maintain_include_namespace())
+    {
+      for (r++; *r != '\0' && (*r == ' ' || *r == '\t'); r++);
+      l = ++r;
+      for (; *r != '"'; r++);
+      *r = '\0';
+      if (*l != '\0') {
+          nm = new UTL_String (l);
+      } else {
+          nm = new UTL_String(stripped_name (idl_global->filename ()));
+      }
+    }
+    else
+    {
+      nm = new UTL_String (stripped_name (idl_global->filename ()));
+    }
     idl_global->store_include_file_name (nm);
   }
 }

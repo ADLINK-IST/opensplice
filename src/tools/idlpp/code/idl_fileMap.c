@@ -28,6 +28,8 @@
 /* defFileMap stores the default file map */
 static idl_fileMap defFileMap = NULL;
 
+static const char * idl_fileNameUndefined = "";
+
 C_CLASS(idl_file);
 
 /* "idl_fileMap" registers all files that are processed.
@@ -42,6 +44,7 @@ C_STRUCT(idl_fileMap) {
  */
 C_STRUCT(idl_file) {
     c_char *fileName;
+    c_char *inclName;
     c_iter contains;
 };
 
@@ -50,6 +53,7 @@ C_CLASS(idl_map);
 /* "idl_map" contains a filename meta object association */
 C_STRUCT(idl_map) {
     c_char *fileName;
+    c_char *inclName;
     c_baseObject object;
 };
 
@@ -71,12 +75,18 @@ idl_fileMapDefSet(
 /* Create a new file, identified by fileName */
 static idl_file
 idl_fileNew(
-    const char *fileName)
+    const char *fileName,
+    const char *inclName)
 {
     /* QAC EXPECT 5007; will not use wrapper */
     idl_file file = os_malloc (C_SIZEOF(idl_file));
 
     file->fileName = os_strdup(fileName);
+    if (inclName) {
+        file->inclName = os_strdup(inclName);
+    } else {
+        file->inclName = os_strdup("");
+    }
     file->contains = c_iterNew(0);
 
     return file;
@@ -97,6 +107,7 @@ idl_fileFree(
     }
     /* QAC EXPECT 5007; will not use wrapper */
     os_free(file->fileName);
+    os_free(file->inclName);
 }
 
 /* Check if the specified object list element is equal to the meta object specified
@@ -219,7 +230,8 @@ void
 idl_fileMapAdd(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
     const idl_fileMap fileMap,
-    const char *fileName)
+    const char *fileName,
+    const char *inclName)
 {
     idl_file file;
 
@@ -227,7 +239,7 @@ idl_fileMapAdd(
     file = c_iterResolve(fileMap->files, idl_fileCompare, (c_iterResolveCompareArg)fileName);
     if (file == NULL) {
         /* If not found, then add it now */
-        file = idl_fileNew(fileName);
+        file = idl_fileNew(fileName, inclName);
         c_iterAppend(fileMap->files, file);
     }
 }
@@ -268,11 +280,12 @@ idl_searchObject(
     if (o != NULL) {
         /* Store the associated filename */
         map->fileName = file->fileName;
+        map->inclName = file->inclName;
     }
 }
 
 /* Resolve the file which is related to the specified meta object in the specified file map */
-c_char *
+const c_char *
 idl_fileMapResolve(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
     const idl_fileMap fileMap,
@@ -280,12 +293,13 @@ idl_fileMapResolve(
 {
     /* QAC EXPECT 5007; will not use wrapper */
     idl_map map = os_malloc(C_SIZEOF(idl_map));
-    c_char *fileName = NULL;
+    const c_char *fileName = NULL;
 
     if (fileMap != NULL) {
 	/* map will contain the meta object reference before the c_iterWalk */
         map->object = object;
         map->fileName = NULL;
+        map->inclName = NULL;
         c_iterWalk(fileMap->files, (c_iterWalkAction)idl_searchObject, map);
 	/* map will contain the meta object reference and fileName reference
          * after the c_iterWalk.
@@ -293,13 +307,43 @@ idl_fileMapResolve(
         fileName = map->fileName;
         if (fileName == NULL) {
             /* file name is undefined for implicit defined types */
-            fileName = os_strdup("");
+            fileName = idl_fileNameUndefined;
         }
         /* QAC EXPECT 5007; will not use wrapper */
         os_free(map);
     }
     return fileName;
 }
+
+const c_char *
+idl_fileMapResolveInclude(
+    /* QAC EXPECT 3673; No solution to the message here, but no problem either */
+    const idl_fileMap fileMap,
+    const c_baseObject object)
+{
+    /* QAC EXPECT 5007; will not use wrapper */
+    idl_map map = os_malloc(C_SIZEOF(idl_map));
+    const c_char *inclName = NULL;
+
+    if (fileMap != NULL) {
+       /* map will contain the meta object reference before the c_iterWalk */
+        map->object = object;
+        map->fileName = NULL;
+        c_iterWalk(fileMap->files, (c_iterWalkAction)idl_searchObject, map);
+        /* map will contain the meta object reference and fileName reference
+         * after the c_iterWalk.
+         */
+        inclName = map->inclName;
+        if (inclName == NULL) {
+            /* file name is undefined for implicit defined types */
+            inclName = idl_fileNameUndefined;
+        }
+        /* QAC EXPECT 5007; will not use wrapper */
+        os_free(map);
+    }
+    return inclName;
+}
+
 
 /* Check if the specified meta object is specified with associated with
  * the specified file in the specified file map

@@ -101,7 +101,8 @@ IDL_GlobalData::IDL_GlobalData()
       pd_merge_includes(false),
       pd_parse_state(PS_NoState),
       pd_case_sensitive(false),
-      pd_ignore_interfaces(false)
+      pd_ignore_interfaces(false),
+      pd_maintain_include_namespace(false)
 
 {
    // empty
@@ -229,7 +230,7 @@ UTL_String *
 IDL_GlobalData::real_filename()
 {
    return pd_real_filename;
-}
+}// Store a name of an #include file
 
 void
 IDL_GlobalData::set_real_filename(UTL_String *n)
@@ -297,7 +298,7 @@ IDL_GlobalData::prog_name()
 void
 IDL_GlobalData::set_prog_name(char *pn)
 {
-   pd_prog_name = pn;
+   pd_prog_name = pn;// Store a name of an #include file
 }
 
 // Get or set location to find C preprocessor
@@ -409,8 +410,7 @@ void
 IDL_GlobalData::store_include_file_name(UTL_String *n)
 {
    UTL_String **o_include_file_names;
-   unsigned long o_n_alloced_file_names,
-   i;
+   unsigned long o_n_alloced_file_names, i;
 
    /*
     * Check if we need to store it at all or whether we've seen it already
@@ -519,6 +519,18 @@ bool
 IDL_GlobalData::ignore_interfaces()
 {
    return pd_ignore_interfaces;
+}
+
+void
+IDL_GlobalData::set_maintain_include_namespace(bool val)
+{
+    pd_maintain_include_namespace = val;
+}
+
+bool
+IDL_GlobalData::maintain_include_namespace()
+{
+   return pd_maintain_include_namespace;
 }
 
 /*

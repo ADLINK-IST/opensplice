@@ -23,6 +23,7 @@
 
 #include <c_metabase.h>
 #include <c_base.h>
+#include <c_iterator.h>
 
 C_CLASS(idl_fileMap);
 
@@ -43,7 +44,8 @@ idl_fileMapFree(
 void
 idl_fileMapAdd(
     const idl_fileMap fileMap,
-    const char *fileName);
+    const char *fileName,
+    const char *inclName);
 
 void
 idl_fileMapAssociation(
@@ -51,8 +53,13 @@ idl_fileMapAssociation(
     const c_baseObject object,
     const char *fileName);
 
-c_char *
+const c_char *
 idl_fileMapResolve(
+    const idl_fileMap fileMap,
+    const c_baseObject object);
+
+const c_char *
+idl_fileMapResolveInclude(
     const idl_fileMap fileMap,
     const c_baseObject object);
 
