@@ -310,8 +310,9 @@ idl_fileMapResolve(
             fileName = idl_fileNameUndefined;
         }
         /* QAC EXPECT 5007; will not use wrapper */
-        os_free(map);
     }
+    os_free(map);
+
     return fileName;
 }
 
@@ -341,6 +342,8 @@ idl_fileMapResolveInclude(
         /* QAC EXPECT 5007; will not use wrapper */
         os_free(map);
     }
+    os_free(map);
+
     return inclName;
 }
 
