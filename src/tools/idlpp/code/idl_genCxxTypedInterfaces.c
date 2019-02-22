@@ -335,6 +335,7 @@ idl_genCxxInterfaces = {
     NULL, /* idl_sequenceOpenClose */
     NULL, /* idl_constantOpenClose */
     NULL, /* idl_artificialDefaultLabelOpenClose */
+    NULL, /* idl_forwardDeclaration */
     NULL  /* userData */
 };
 

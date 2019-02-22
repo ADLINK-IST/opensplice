@@ -177,9 +177,11 @@ print_usage(
            "       [-n <include-suffix>] [-I path] [-D macro[=definition]] [-S | -C] \n"
            "       [-l (c | c99 | c++ | cpp | isocpp | isoc++ | isocpp2 | isoc++2 | cs | java | python | simulink | matlab)] [-F] [-j [old]:<new>] [-d directory] [-i] \n"
 #ifdef ENABLE_DEPRECATED_OPTION_DDS_TYPES
-           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm | no-equality | maintain-include-namespace | deprecated-c++-mapping | deprecated-c++11-mapping)] <filename>\n", name);    
+           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm | no-equality | \n"
+           "                                               maintain-include-namespace | deprecated-c++-mapping | deprecated-c++11-mapping)] <filename>\n", name);
 #else
-           "       [-P dll_macro_name[,<h-file>]] [-o (custom-psm | no-equality | maintain-include-namespace | deprecated-c++-mapping | deprecated-c++11-mapping)] <filename>\n", name);           
+           "       [-P dll_macro_name[,<h-file>]] [-o (custom-psm | no-equality | maintain-include-namespace |\n"
+           "                                                   deprecated-c++-mapping | deprecated-c++11-mapping)] <filename>\n", name);
 #endif
 }
 
@@ -294,7 +296,8 @@ print_help(
         "       Specify the location where to place the generated files.\n");
 #ifdef ENABLE_DEPRECATED_OPTION_DDS_TYPES
     printf(
-        "    -o (dds-types | custom-psm | no-equality | deprecated-c++-mapping | deprecated-c++11-mapping | maintain-include-namespace)\n"
+        "    -o (dds-types | custom-psm | no-equality | \n"
+        "                maintain-include-namespace | deprecated-c++-mapping | deprecated-c++11-mapping)\n"
         "       'dds-types' enables support for standard DDS-DCPS definitions.\n"
         "       The OpenSplice preprocessor provides definitions for constants\n"
         "       and types as defined in the OMG-DDS-DCPS PSM. This implies that\n"
@@ -1457,12 +1460,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
                         }
 
                         if (outputDir) {
-                           dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
-                           os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
+                            dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
+                            os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
                         } else {
-                           dcpsIdlFileName = os_strdup(fname);
+                            dcpsIdlFileName = os_strdup(fname);
                         }
-
                         /* First on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
                         if (runCppGen (outputDir, cpp_command, dcpsIdlFileName, FALSE) != 0)
                         {
