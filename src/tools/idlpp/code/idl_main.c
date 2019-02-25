@@ -1416,6 +1416,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
                         /* Call cppgen for both the user provided IDL file (filename),
                          * and the generated IDL file (fname).
                          */
+                        int cppgenResult;
                         char cpp_command[MAX_CPP_COMMAND];
                         cpp_command[0] = '\0';
 
