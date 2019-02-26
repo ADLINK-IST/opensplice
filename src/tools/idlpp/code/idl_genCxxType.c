@@ -436,7 +436,7 @@ idl_generateArrayElementTypedefs(
             c_collectionTypeKind(arrElementType) == OSPL_C_SEQUENCE) {
         const char *subElementTemplate = "%s_sub";
         size_t subElementLen = strlen(subElementTemplate) + strlen(typedefBaseName) + 1;
-        c_char *subElementBaseName = os_malloc(subElementLen);
+        subElementBaseName = os_malloc(subElementLen);
         c_char *subElementTypeName = idl_CxxTypeFromCType(c_collectionTypeSubType(arrElementType), subElementBaseName);
         snprintf(subElementBaseName, subElementLen, subElementTemplate, typedefBaseName);
         idl_printIndent(indent_level);
@@ -468,7 +468,7 @@ idl_generateArrayElementTypedefs(
         typedefBaseName,
         arrayDims);
     os_free(arrayDims);
-    if (subElementBaseName) os_free(subElementBaseName);
+    os_free(subElementBaseName);
 
     if (c_baseObjectKind(arrElementType) == M_TYPEDEF) {
         arrElementType = c_typeActualType(arrElementType);
