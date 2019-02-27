@@ -435,9 +435,11 @@ idl_generateArrayElementTypedefs(
     if (c_baseObjectKind(arrElementType) == M_COLLECTION &&
             c_collectionTypeKind(arrElementType) == OSPL_C_SEQUENCE) {
         const char *subElementTemplate = "%s_sub";
+        c_char *subElementTypeName;
         size_t subElementLen = strlen(subElementTemplate) + strlen(typedefBaseName) + 1;
+
         subElementBaseName = os_malloc(subElementLen);
-        c_char *subElementTypeName = idl_CxxTypeFromCType(c_collectionTypeSubType(arrElementType), subElementBaseName);
+        subElementTypeName = idl_CxxTypeFromCType(c_collectionTypeSubType(arrElementType), subElementBaseName);
         snprintf(subElementBaseName, subElementLen, subElementTemplate, typedefBaseName);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "struct %s_uniq_{};\n", subElementBaseName);
