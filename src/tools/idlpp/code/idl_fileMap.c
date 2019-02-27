@@ -309,7 +309,6 @@ idl_fileMapResolve(
             /* file name is undefined for implicit defined types */
             fileName = idl_fileNameUndefined;
         }
-        /* QAC EXPECT 5007; will not use wrapper */
     }
     os_free(map);
 
@@ -339,8 +338,6 @@ idl_fileMapResolveInclude(
             /* file name is undefined for implicit defined types */
             inclName = idl_fileNameUndefined;
         }
-        /* QAC EXPECT 5007; will not use wrapper */
-        os_free(map);
     }
     os_free(map);
 
