@@ -443,7 +443,7 @@ idl_generateArrayElementTypedefs(
         snprintf(subElementBaseName, subElementLen, subElementTemplate, typedefBaseName);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "struct %s_uniq_{};\n", subElementBaseName);
-        idl_generateSequenceElementTypedefs(
+        (void) idl_generateSequenceElementTypedefs(
                 arrElementType,
                 subElementTypeName,
                 subElementBaseName,
