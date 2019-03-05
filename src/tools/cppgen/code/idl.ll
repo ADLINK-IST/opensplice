@@ -429,7 +429,7 @@ static void idl_parse_line_and_file (char *buf)
       for (r++; *r != '\0' && (*r == ' ' || *r == '\t'); r++);
       if (*r == '"') {
         l = ++r;
-        for (; (*r != '0') && (*r != '"'); r++);
+        for (; (*r != '\0') && (*r != '"'); r++);
         *r = '\0';
         if (*l != '\0') {
           nm = new UTL_String (l);
