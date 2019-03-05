@@ -212,12 +212,12 @@ static void read_include_file (char * name, int dohere, int sharp)
    w = os_malloc(strlen(n) + +strlen(name) + 4);
    sprintf(w, "%s\" \"%s", n, name);
    out_at(!sharp, w);
-   os_free(w);
    autodef_file(n);
    autodef_line(1);
    Push('\n');
    Get();
-   push_new_file(n, f);
+   push_new_file(w, f);
+   os_free(w);
    cp = strrchr(n, CPP_FILESEPCHAR_1);
    if (!cp) {
        cp = strrchr(n, CPP_FILESEPCHAR_2);
