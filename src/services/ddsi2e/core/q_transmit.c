@@ -715,6 +715,7 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, const struct nn
 {
   unsigned i, sz, nfrags;
   int enqueued = 1;
+  int ret_on_success = 0;
 
   ASSERT_MUTEX_HELD (&wr->e.lock);
 
@@ -724,6 +725,15 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, const struct nn
   {
     /* end-of-transaction messages are empty, but still need to be sent */
     nfrags = 1;
+  }
+  else if (nfrags > 1 && !isnew && !config.retransmit_complete_sample)
+  {
+    /* retransmit only a single fragment for a retransmit request of a
+       full sample, so that afterward it switches to NACKFRAG mode -
+       should do so only do for implementations with known behaviours */
+    nfrags = 1;
+    /* return -1 to prevent the retransmit loop from resending more samples */
+    ret_on_success = -1;
   }
   for (i = 0; i < nfrags && enqueued; i++)
   {
@@ -762,7 +772,7 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, const struct nn
       }
     }
   }
-  return enqueued ? 0 : -1;
+  return enqueued ? ret_on_success : -1;
 }
 
 static int insert_sample_in_whc (struct writer *wr, os_int64 seq, struct nn_plist *plist, serdata_t serdata)

@@ -354,6 +354,7 @@ struct config
   int unicast_response_to_spdp_messages;
   int synchronous_delivery_priority_threshold;
   os_int64 synchronous_delivery_latency_bound;
+  int retransmit_complete_sample;
 
   /* Write cache */
 

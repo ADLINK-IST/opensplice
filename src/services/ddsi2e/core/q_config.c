@@ -688,6 +688,9 @@ static const struct cfgelem unsupp_cfgelems[] = {
     "<p>Do not use.</p>" },
   { LEAF_W_ATTRS ("RediscoveryBlacklistDuration", rediscovery_blacklist_duration_attrs), 1, "10s", ABSOFF (prune_deleted_ppant.delay), 0, uf_duration_inf, 0, pf_duration,
     "<p>This element controls for how long a remote participant that was previously deleted will remain on a blacklist to prevent rediscovery, giving the software on a node time to perform any cleanup actions it needs to do. To some extent this delay is required internally by DDSI2E, but in the default configuration with the 'enforce' attribute set to false, DDSI2E will reallow rediscovery as soon as it has cleared its internal administration. Setting it to too small a value may result in the entry being pruned from the blacklist before DDSI2E is ready, it is therefore recommended to set it to at least several seconds.</p>" },
+  { LEAF ("AlwaysRetransmitCompleteSample"), 1, "false", ABSOFF (retransmit_complete_sample), 0, uf_boolean, 0, pf_boolean,
+    "<p>This element controls if a sample is retransitted completely or only missing fragments.</p>"
+  },
   { MGROUP ("ControlTopic", control_topic_cfgelems, control_topic_cfgattrs), 1, 0, 0, 0, 0, 0, 0, 0,
     "<p>The ControlTopic element allows configured whether DDSI2E provides a special control interface via a predefined topic or not.<p>" },
   { GROUP ("Test", unsupp_test_cfgelems),
