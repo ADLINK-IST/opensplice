@@ -329,6 +329,7 @@ idl_fileMapResolveInclude(
        /* map will contain the meta object reference before the c_iterWalk */
         map->object = object;
         map->fileName = NULL;
+        map->inclName = NULL;
         c_iterWalk(fileMap->files, (c_iterWalkAction)idl_searchObject, map);
         /* map will contain the meta object reference and fileName reference
          * after the c_iterWalk.
