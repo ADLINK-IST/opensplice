@@ -105,7 +105,7 @@ idl_fileOpen (
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     os_free(idlpp_template);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromScope(scope, "")));
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
     idl_streamInFree(idlpp_inStream);

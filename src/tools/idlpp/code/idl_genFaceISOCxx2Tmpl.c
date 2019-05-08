@@ -102,7 +102,7 @@ idl_fileOpen (
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromScope(scope, "")));
 
     /* set dll stuff */
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew(IDL_DLL_TMPLMACRO_MACRO_NAME, idl_dllGetMacro()));

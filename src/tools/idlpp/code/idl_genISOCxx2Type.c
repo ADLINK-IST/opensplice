@@ -128,7 +128,7 @@ idl_fileOpen(
     OS_UNUSED_ARG(userData);
 
     /* Store fileName in uppercase. */
-    upperName = os_strdup(idl_genIncludeGuardFromFilename(scope, ""));
+    upperName = os_strdup(idl_genIncludeGuardFromScope(scope, ""));
 
     /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_H_\n", upperName);

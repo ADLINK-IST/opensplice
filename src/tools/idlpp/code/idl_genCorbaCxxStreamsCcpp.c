@@ -108,7 +108,7 @@ idl_fileOpen (
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
     if(clientheader != NULL)
     {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromScope(scope, "")));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", "#define CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", "#undef CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", clientheader));

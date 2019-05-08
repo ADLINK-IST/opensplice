@@ -112,7 +112,7 @@ idl_fileOpen (
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
-    includeGuard = idl_genIncludeGuardFromFilename(scope, "");
+    includeGuard = idl_genIncludeGuardFromScope(scope, "");
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", includeGuard));
 

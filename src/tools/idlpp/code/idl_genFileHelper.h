@@ -29,7 +29,7 @@ idl_genSetIncludeGuardMode(
     c_bool full);
 
 c_char *
-idl_genIncludeGuardFromFilename(
+idl_genIncludeGuardFromScope(
     idl_scope scope,
     const char *append);
 

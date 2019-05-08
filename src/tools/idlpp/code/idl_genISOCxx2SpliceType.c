@@ -66,7 +66,7 @@ idl_macroFromBasename(
     idl_scope scope,
     const char *append)
 {
-    return idl_genIncludeGuardFromFilename(scope, append);
+    return idl_genIncludeGuardFromScope(scope, append);
 }
 
 /* @brief callback function called on opening the IDL input file.
