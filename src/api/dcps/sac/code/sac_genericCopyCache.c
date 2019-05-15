@@ -213,15 +213,32 @@ userSizeCorrection (
             size += userSizeCorrection(c_memberType(member));
         }
     break;
-    case M_UNION:
+    case M_UNION: {
+        unsigned int unionValueSizeUser = 0;
+        unsigned int unionValueSizeSHM = 0;
+        unsigned int align = 1;
         for (i = 0; i < c_unionUnionCaseCount(actual); i++) {
+            unsigned a;
             ucase = c_unionUnionCase(actual, i);
-            cs = userSizeCorrection(c_unionCaseType(ucase));
-            if ( cs > size ) {
-                size = cs;
+            a = c_unionCaseType (ucase)->alignment;
+            if (a > align) {
+                align = a;
             }
         }
+        for (i = 0; i < c_unionUnionCaseCount(actual); i++) {
+            ucase = c_unionUnionCase(actual, i);
+            cs = DDS_cacheObjectUserSize(c_unionCaseType(ucase));
+            if (cs > unionValueSizeUser) {
+                unionValueSizeUser = cs;
+            }
+            cs = c_unionCaseType(ucase)->size;
+            if (cs > unionValueSizeSHM) {
+                unionValueSizeSHM = cs;
+            }
+        }
+        size = ((unionValueSizeUser + align - 1) & ~(align - 1)) - ((unionValueSizeSHM + align - 1) & ~(align - 1));
     break;
+    }
     case M_COLLECTION:
         switch ( c_collectionTypeKind(actual) ) {
         case OSPL_C_SEQUENCE:
