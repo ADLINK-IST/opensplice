@@ -46,7 +46,7 @@ c_char *idl_scopeElementName (idl_scopeElement element);
 
 idl_scopeType idl_scopeElementType (idl_scopeElement element);
 
-idl_scope idl_scopeNew (const char *baseName);
+idl_scope idl_scopeNew (const char *fileName, const char *baseName);
 
 idl_scope idl_scopeDup (idl_scope scope);
 
@@ -71,5 +71,7 @@ c_bool idl_scopeSub (idl_scope scope, idl_scope scopeSub);
 c_char *idl_scopeStack (idl_scope scope, const char *scopeSepp, const char *name);
 
 c_char *idl_scopeBasename (idl_scope scope);
+
+c_char *idl_scopeFilename (idl_scope scope);
 
 #endif /* IDL_SCOPE_H */

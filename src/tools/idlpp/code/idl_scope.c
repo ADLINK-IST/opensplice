@@ -59,6 +59,7 @@ C_STRUCT(idl_scopeElement) {
 */
 C_STRUCT(idl_scope) {
     idl_scopeElement stack[IDL_MAXSCOPE];
+    c_char *fileName;
     c_char *baseName;
     c_long scopePointer;
 };
@@ -134,10 +135,12 @@ idl_scopeElementType (
 /* Create a new and empty scope stack, for a specified basename */
 idl_scope
 idl_scopeNew (
+    const char *fileName,
     const char *baseName)
 {
     idl_scope scope = os_malloc (C_SIZEOF(idl_scope));
 
+    scope->fileName = os_strdup (fileName);
     scope->baseName = os_strdup (baseName);
     scope->scopePointer = -1;
     return scope;
@@ -148,7 +151,7 @@ idl_scope
 idl_scopeDup (
     idl_scope scope)
 {
-    idl_scope newScope = idl_scopeNew(scope->baseName);
+    idl_scope newScope = idl_scopeNew(scope->fileName, scope->baseName);
     c_long si;
 
     for (si = 0; si < (scope->scopePointer+1); si++) {
@@ -168,6 +171,7 @@ idl_scopeFree (
     for (si = 0; si < (scope->scopePointer+1); si++) {
         idl_scopeElementFree(scope->stack[si]);
     }
+    os_free (scope->fileName);
     os_free (scope->baseName);
     os_free (scope);
     return;
@@ -362,4 +366,12 @@ idl_scopeBasename (
     idl_scope scope)
 {
     return os_strdup(scope->baseName);
+}
+
+/* Return the filename related to a scope */
+c_char *
+idl_scopeFilename (
+    idl_scope scope)
+{
+    return os_strdup(scope->fileName);
 }

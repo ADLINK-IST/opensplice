@@ -1,5 +1,5 @@
-#ifndef _$upper($(basename))DCPS_H_
-#define _$upper($(basename))DCPS_H_
+#ifndef _$(basename_upper)DCPS_H_
+#define _$(basename_upper)DCPS_H_
 
 #include "sacpp_mapping.h"
 #include "dds_dcps.h"

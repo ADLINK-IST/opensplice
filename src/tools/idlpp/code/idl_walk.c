@@ -402,8 +402,8 @@ idl_buildScope(
         filename = os_strdup(idl_fileMapResolve (idl_fileMapDefGet(), c_baseObject(o)));
     }
     basename = idl_basename(filename);
-    scope = idl_scopeNew(basename);
-    rscope = idl_scopeNew(basename);
+    scope = idl_scopeNew(filename, basename);
+    rscope = idl_scopeNew(filename, basename);
 
     while (o->definedIn && o->definedIn->name) {
         if (c_baseObject(o->definedIn)->kind == M_STRUCTURE) {
@@ -1997,7 +1997,7 @@ idl_walk(
     context.traceWalk = traceWalk;
     context.fileName = os_strdup(fileName);
     context.baseName = os_strdup(idl_basename(fileName));
-    context.ownScope = idl_scopeNew (context.baseName);
+    context.ownScope = idl_scopeNew (fileName, context.baseName);
     context.sortedListIter = &iterator;
 
     if (traceWalk) {

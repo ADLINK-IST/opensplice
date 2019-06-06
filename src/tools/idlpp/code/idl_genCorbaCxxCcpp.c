@@ -28,6 +28,7 @@
 #include "idl_genCorbaCxxCcpp.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genLanguageHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 
 #include "os_heap.h"
@@ -75,10 +76,7 @@ idl_fileOpen (
     int tmplFile;
     struct os_stat_s tmplStat;
     unsigned int nRead;
-    os_char* tmpName;
-    os_uint32 i;
 
-    OS_UNUSED_ARG(scope);
     OS_UNUSED_ARG(userData);
 
     tmplPath = os_getenv ("OSPL_TMPL_PATH");
@@ -114,15 +112,10 @@ idl_fileOpen (
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+
     if(clientheader != NULL)
     {
-        tmpName = os_strdup(name);
-        for(i = 0; i < strlen(tmpName); i++)
-        {
-            tmpName[i] = (os_char) toupper (tmpName[i]);
-        }
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", tmpName));
-        os_free(tmpName);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", "#define CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", "#undef CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", clientheader));
@@ -131,7 +124,6 @@ idl_fileOpen (
         /* dds2071: Define some default macro values.. for the client header .h
          * was chosen as an arbitrary default
          */
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", ".h"));

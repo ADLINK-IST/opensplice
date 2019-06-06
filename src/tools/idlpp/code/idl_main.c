@@ -32,6 +32,7 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_genSpliceDep.h"
 #include "idl_fileMap.h"
+#include "idl_genFileHelper.h"
 #include "idl_streamsDef.h"
 
 /* Splice types related support */
@@ -997,6 +998,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
         }
     }
 
+
     if (makeLite) {
         if (idl_getLanguage () == IDL_LANG_CXX) {
             idl_setLanguage(IDL_LANG_LITE_CXX);
@@ -1162,6 +1164,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
         }
     }
 #endif
+
+    idl_genSetIncludeGuardMode(maintain_include_namespace);
 
     if (!attachDatabase) {
         addDefine("OSPL_IDL_COMPILER");

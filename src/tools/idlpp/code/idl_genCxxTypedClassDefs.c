@@ -24,6 +24,7 @@
 #include "idl_genCxxHelper.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_genSplHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 #include "idl_dll.h"
@@ -58,7 +59,6 @@ idl_fileOpen(
     struct os_stat_s tmplStat;
     unsigned int nRead;
 
-    (void) scope; /* Unused */
     (void) userData; /* Unused */
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
@@ -115,6 +115,8 @@ idl_fileOpen(
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     /* Expand file header */
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+
     /* set dll stuff */
     idl_macroSetAdd(idlpp_macroSet,
         idl_macroNew(IDL_DLL_TMPLMACRO_MACRO_NAME, idl_dllGetMacro()));

@@ -34,6 +34,7 @@
 #include "idl_genSpliceType.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_genSplHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
 #include "idl_dll.h"
@@ -80,32 +81,18 @@ static void idl_arrayDimensions(idl_typeArray typeArray, os_boolean resolveTyped
 
 /** @brief generate name which will be used as a macro to prevent multiple inclusions
  *
- * From the specified basename create a macro which will
+ * From the specified scope create a macro which will
  * be used to prevent multiple inclusions of the generated
- * header file. The basename characters are translated
- * into uppercase characters and the append string is
+ * header file. The scope file or basename characters are
+ * translated into uppercase characters and the append string is
  * appended to the macro.
- *
- * @param basename Basename of the IDL file passed (without extension).
- * @param append String to append to the basename
- * @return string of concatinated \b basename and \b append where basename is first
- * converted to uppercase characters
  */
 static c_char *
 idl_macroFromBasename(
-    const char *basename,
+    idl_scope scope,
     const char *append)
 {
-    static c_char macro[200];
-    c_long i;
-
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = (c_char) toupper(basename[i]);
-        macro[i+1] = '\0';
-    }
-    os_strncat(macro, append, sizeof(macro));
-
-    return macro;
+    return idl_genIncludeGuardFromFilename(scope, append);
 }
 
 /** @brief callback function called on opening the IDL input file.
@@ -126,12 +113,12 @@ idl_fileOpen(
     void *userData)
 {
     c_ulong i;
-    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
     OS_UNUSED_ARG(userData);
 
     /* Generate multiple inclusion prevention code */
-    idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
-    idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
+    idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(scope, "SPLTYPES_H"));
+    idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(scope, "SPLTYPES_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
 
     /* Generate inclusion of standard OpenSpliceDDS type definition files */

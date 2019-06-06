@@ -24,6 +24,7 @@
 #include "idl_genSacHelper.h"
 #include "idl_genCHelper.h"
 #include "idl_genMetaHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
@@ -55,10 +56,7 @@ idl_fileOpen(
     int tmplFile;
     struct os_stat_s tmplStat;
     unsigned int nRead;
-    OS_UNUSED_ARG(scope);
-    OS_UNUSED_ARG(userData);
 
-    OS_UNUSED_ARG(scope);
     OS_UNUSED_ARG(userData);
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
@@ -91,6 +89,8 @@ idl_fileOpen(
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     /* Expand file header */
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
+
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
     idl_streamInFree(idlpp_inStream);

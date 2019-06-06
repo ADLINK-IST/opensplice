@@ -1,5 +1,5 @@
-#ifndef $upper($(basename))DCPS_IMPL_H_
-#define $upper($(basename))DCPS_IMPL_H_
+#ifndef $(basename_upper)DCPS_IMPL_H_
+#define $(basename_upper)DCPS_IMPL_H_
 
 #include "$(basename)_DCPS.hpp"
 #include "ccpp.h"
