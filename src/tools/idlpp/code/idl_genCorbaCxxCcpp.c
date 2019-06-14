@@ -112,13 +112,13 @@ idl_fileOpen (
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
 
     if(clientheader != NULL)
     {
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", "#define CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", "#undef CCPP_USE_CUSTOM_SUFFIX_"));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", clientheader));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
     } else
     {
         /* dds2071: Define some default macro values.. for the client header .h
@@ -127,6 +127,7 @@ idl_fileOpen (
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", ".h"));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", ""));
     }
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
