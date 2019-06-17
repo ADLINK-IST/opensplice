@@ -195,6 +195,9 @@ msvs_check ()
         elif [[ $OSPL_COMPILER_VER == "19.1"* ]]; then
             VS_YEAR=2017
             DOTNET="4.6.1"
+        elif [[ $OSPL_COMPILER_VER == "19.2"* ]]; then
+            VS_YEAR=2019
+            DOTNET="4.7.2"
         else
             VS_YEAR=Unknown
             DOTNET="Unknown"

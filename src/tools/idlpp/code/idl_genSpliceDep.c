@@ -148,7 +148,7 @@ idl_structureMemberOpenClose(
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
             if (strlen(bn) && (strcmp(sn, bn) != 0)) {
                 /* referenced type is in different scope */
-                fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
+                fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
                 idl_depAdd(idl_depDefGet(), fn);
                 os_free(fn);
             }
@@ -163,7 +163,7 @@ idl_structureMemberOpenClose(
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
             if (strlen(bn) && (strcmp (sn, bn) != 0)) {
                 /* referenced type is in different scope */
-                fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
+                fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
                 idl_depAdd(idl_depDefGet(), fn);
                 os_free(fn);
             }
