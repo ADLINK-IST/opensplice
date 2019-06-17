@@ -1932,26 +1932,6 @@ idl_constantOpenClose (
 
 }
 
-static void
-idl_forwardDeclaration(
-    idl_scope scope,
-    const char *name,
-    idl_typeSpec typeSpec,
-    void *userData)
-{
-    char *cxxName;
-
-    OS_UNUSED_ARG(scope);
-    OS_UNUSED_ARG(typeSpec);
-    OS_UNUSED_ARG(userData);
-
-    idl_printIndent(indent_level);
-
-    cxxName = idl_cxxId(name);
-    idl_fileOutPrintf(idl_fileCur(), "class %s;\n\n", cxxName);
-    os_free(cxxName);
-}
-
 /**
  * Standard control structure to specify that anonymous
  * type definitions are to be processed inline with the
@@ -1999,7 +1979,6 @@ idl_genCxxTypeProgram(
     idl_genCxxType.sequenceOpenClose               = NULL;
     idl_genCxxType.constantOpenClose               = idl_constantOpenClose;
     idl_genCxxType.artificialDefaultLabelOpenClose = idl_artificialDefaultLabelOpenClose;
-    idl_genCxxType.forwardDeclaration              = idl_forwardDeclaration;
     idl_genCxxType.userData                        = userData;
 
     return &idl_genCxxType;

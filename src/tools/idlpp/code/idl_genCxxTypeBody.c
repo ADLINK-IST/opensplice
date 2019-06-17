@@ -601,7 +601,6 @@ idl_genCxxTypeBodyProgram(
     idl_genCxxType.sequenceOpenClose               = NULL;
     idl_genCxxType.constantOpenClose               = NULL;
     idl_genCxxType.artificialDefaultLabelOpenClose = NULL;
-    idl_genCxxType.forwardDeclaration              = NULL;
     idl_genCxxType.userData                        = userData;
 
     return &idl_genCxxType;
