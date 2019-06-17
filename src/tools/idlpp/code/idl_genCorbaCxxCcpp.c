@@ -73,6 +73,7 @@ idl_fileOpen (
     c_char tmplFileName [1024];
     c_char *tmplPath;
     c_char *orbPath = NULL;
+    c_char *includeGuard;
     int tmplFile;
     struct os_stat_s tmplStat;
     unsigned int nRead;
@@ -111,14 +112,21 @@ idl_fileOpen (
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+    includeGuard = idl_genIncludeGuardFromFilename(scope, "");
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", includeGuard));
 
     if(clientheader != NULL)
     {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", "#define CCPP_USE_CUSTOM_SUFFIX_"));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", "#undef CCPP_USE_CUSTOM_SUFFIX_"));
+        const char *customSuffixTemplate = "#define CCPP_USE_CUSTOM_SUFFIX_%s";
+        size_t customSuffixLength = strlen(customSuffixTemplate) + strlen(includeGuard) + 1;
+        char *tmpHeaderDefine = os_malloc(customSuffixLength);
+        snprintf(tmpHeaderDefine, customSuffixLength, customSuffixTemplate, includeGuard);
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", tmpHeaderDefine));
+        snprintf(tmpHeaderDefine, customSuffixLength, "#undef CCPP_USE_CUSTOM_SUFFIX_%s", includeGuard);
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", tmpHeaderDefine));
+        os_free(tmpHeaderDefine);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", clientheader));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromFilename(scope, "")));
     } else
     {
         /* dds2071: Define some default macro values.. for the client header .h
@@ -127,7 +135,6 @@ idl_fileOpen (
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", ""));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", ".h"));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", ""));
     }
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());

@@ -1,19 +1,19 @@
-#ifndef CCPP_$upper($(basename))_H
-#define CCPP_$upper($(basename))_H
+#ifndef CCPP_$(basename_upper)_H
+#define CCPP_$(basename_upper)_H
 
-$(clientheaderdefine)$(basename_upper)
+$(clientheaderdefine)
 
-#ifdef CCPP_USE_CUSTOM_SUFFIX_$upper($(basename))
+#ifdef CCPP_USE_CUSTOM_SUFFIX_$(basename_upper)
 #include "$(basename)$(clientheader)"
 #include "$(basename)Dcps$(clientheader)"
 #else
 #include "$(basename)C.h"
 #include "$(basename)DcpsC.h"
 #endif
-$(clientheaderundef)$(basename_upper)
+$(clientheaderundef)
 #include <orb_abstraction.h>
 #include "$(basename)Dcps_impl.h"
 
 
 
-#endif /* CCPP_$upper($(basename))_H */
+#endif /* CCPP_$(basename_upper)_H */
