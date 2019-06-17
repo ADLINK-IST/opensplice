@@ -1628,6 +1628,9 @@ DDS_cfoiUnion (
     cuh = (DDSCopyUnion *)ch;
 
     context.dst = dstUnion;
+    context.base = ctx->base;
+    context.dst_offset = 0;
+    context.src_correction = 0;
     cdh = DDSCopyUnionDiscriminantObject (cuh);
     ciFromUnion[cdh->copyType] (cdh, srcUnion, &context);
 
