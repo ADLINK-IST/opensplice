@@ -90,7 +90,7 @@ template <class T, DDS::ULong max> inline DDS_DCPSBVLSeq<T, max>::DDS_DCPSBVLSeq
 :
    m_length (0),
    m_release (TRUE),
-   m_buffer (allocbuf (max))
+   m_buffer (NULL)
 {}
 
 template <class T, DDS::ULong max> inline DDS_DCPSBVLSeq<T, max>::DDS_DCPSBVLSeq
@@ -115,14 +115,14 @@ template <class T, DDS::ULong max> inline DDS_DCPSBVLSeq<T, max>::DDS_DCPSBVLSeq
 :
    m_length (0),
    m_release (TRUE),
-   m_buffer (allocbuf (max))
+   m_buffer (NULL)
 {
    *this = that;
 }
 
 template <class T, DDS::ULong max> inline DDS_DCPSBVLSeq<T, max>::~DDS_DCPSBVLSeq ()
 {
-   if (m_release)
+   if (m_release && m_buffer)
    {
       freebuf (m_buffer);
    }
@@ -135,9 +135,12 @@ DDS_DCPSBVLSeq<T, max>::operator= (const DDS_DCPSBVLSeq<T, max>& that)
    {
       m_length = that.m_length;
 
-      for (DDS::ULong i = 0; i < m_length; i++)
-      {
-         m_buffer[i] = that.m_buffer[i];
+      if (m_length) {
+          m_buffer = allocbuf (max);
+          for (DDS::ULong i = 0; i < m_length; i++)
+          {
+             m_buffer[i] = that.m_buffer[i];
+          }
       }
    }
 
@@ -149,6 +152,9 @@ DDS_DCPSBVLSeq<T, max>::length (DDS::ULong nelems)
 {
    assert (nelems <= max);
    m_length = nelems;
+   if (m_length) {
+       m_buffer = allocbuf (max);
+   }
 }
 
 template <class T, DDS::ULong max> inline
@@ -195,7 +201,7 @@ DDS_DCPSBVLSeq<T, max>::get_buffer (DDS::Boolean orphan)
          m_length = 0;
          m_release = TRUE;
          ret = m_buffer;
-         m_buffer = allocbuf (max);
+         m_buffer = NULL;
       }
 
       // if orphan && !m_release
@@ -220,7 +226,7 @@ DDS_DCPSBVLSeq<T, max>::replace (DDS::ULong length, T * data, DDS::Boolean rel)
 {
    assert (length <= max);
 
-   if (m_release)
+   if (m_release && m_buffer)
    {
       freebuf(m_buffer);
    }

@@ -1,0 +1,173 @@
+$sp($(spaces))class $(typename)TypeSupportInterface;
+
+$sp($(spaces))typedef $(typename)TypeSupportInterface * $(typename)TypeSupportInterface_ptr;
+$sp($(spaces))typedef DDS_DCPSInterface_var < $(typename)TypeSupportInterface> $(typename)TypeSupportInterface_var;
+$sp($(spaces))typedef DDS_DCPSInterface_out < $(typename)TypeSupportInterface> $(typename)TypeSupportInterface_out;
+
+
+$sp($(spaces))class $(typename)DataWriter;
+
+$sp($(spaces))typedef $(typename)DataWriter * $(typename)DataWriter_ptr;
+$sp($(spaces))typedef DDS_DCPSInterface_var < $(typename)DataWriter> $(typename)DataWriter_var;
+$sp($(spaces))typedef DDS_DCPSInterface_out < $(typename)DataWriter> $(typename)DataWriter_out;
+
+
+$sp($(spaces))class $(typename)DataReader;
+
+$sp($(spaces))typedef $(typename)DataReader * $(typename)DataReader_ptr;
+$sp($(spaces))typedef DDS_DCPSInterface_var < $(typename)DataReader> $(typename)DataReader_var;
+$sp($(spaces))typedef DDS_DCPSInterface_out < $(typename)DataReader> $(typename)DataReader_out;
+
+
+$sp($(spaces))class $(typename)DataReaderView;
+
+$sp($(spaces))typedef $(typename)DataReaderView * $(typename)DataReaderView_ptr;
+$sp($(spaces))typedef DDS_DCPSInterface_var < $(typename)DataReaderView> $(typename)DataReaderView_var;
+$sp($(spaces))typedef DDS_DCPSInterface_out < $(typename)DataReaderView> $(typename)DataReaderView_out;
+
+$sp($(spaces))struct $(typename)Seq_uniq_ {};
+$sp($(spaces))typedef $(seqtmpltname) < $(typename), struct $(typename)Seq_uniq_> $(typename)Seq;
+$sp($(spaces))typedef DDS_DCPSSequence_var < $(typename)Seq> $(typename)Seq_var;
+$sp($(spaces))typedef DDS_DCPSSequence_out < $(typename)Seq> $(typename)Seq_out;
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)TypeSupportInterface :
+$sp($(spaces))    virtual public DDS::TypeSupport
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))    typedef $(typename)TypeSupportInterface_ptr _ptr_type;
+$sp($(spaces))    typedef $(typename)TypeSupportInterface_var _var_type;
+
+$sp($(spaces))    static $(typename)TypeSupportInterface_ptr _duplicate ($(typename)TypeSupportInterface_ptr obj);
+$sp($(spaces))    DDS::Boolean _local_is_a (const char * id);
+
+$sp($(spaces))    static $(typename)TypeSupportInterface_ptr _narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)TypeSupportInterface_ptr _unchecked_narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)TypeSupportInterface_ptr _nil () { return 0; }
+$sp($(spaces))    static const char * _local_id;
+$sp($(spaces))    $(typename)TypeSupportInterface_ptr _this () { return this; }
+
+
+$sp($(spaces))protected:
+$sp($(spaces))    $(typename)TypeSupportInterface () {};
+$sp($(spaces))    ~$(typename)TypeSupportInterface () {};
+$sp($(spaces))private:
+$sp($(spaces))    $(typename)TypeSupportInterface (const $(typename)TypeSupportInterface &);
+$sp($(spaces))    $(typename)TypeSupportInterface & operator = (const $(typename)TypeSupportInterface &);
+$sp($(spaces))};
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataWriter :
+$sp($(spaces))    virtual public DDS::DataWriter
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))    typedef $(typename)DataWriter_ptr _ptr_type;
+$sp($(spaces))    typedef $(typename)DataWriter_var _var_type;
+
+$sp($(spaces))    static $(typename)DataWriter_ptr _duplicate ($(typename)DataWriter_ptr obj);
+$sp($(spaces))    DDS::Boolean _local_is_a (const char * id);
+
+$sp($(spaces))    static $(typename)DataWriter_ptr _narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataWriter_ptr _unchecked_narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataWriter_ptr _nil () { return 0; }
+$sp($(spaces))    static const char * _local_id;
+$sp($(spaces))    $(typename)DataWriter_ptr _this () { return this; }
+
+$sp($(spaces))    virtual DDS::LongLong register_instance (const $(typename)& instance_data) = 0;
+$sp($(spaces))    virtual DDS::LongLong register_instance_w_timestamp (const $(typename)& instance_data, const DDS::Time_t& source_timestamp) = 0;
+$sp($(spaces))    virtual DDS::Long unregister_instance (const $(typename)& instance_data, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::Long unregister_instance_w_timestamp (const $(typename)& instance_data, DDS::LongLong handle, const DDS::Time_t& source_timestamp) = 0;
+$sp($(spaces))    virtual DDS::Long write (const $(typename)& instance_data, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::Long write_w_timestamp (const $(typename)& instance_data, DDS::LongLong handle, const DDS::Time_t& source_timestamp) = 0;
+$sp($(spaces))    virtual DDS::Long dispose (const $(typename)& instance_data, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::Long dispose_w_timestamp (const $(typename)& instance_data, DDS::LongLong handle, const DDS::Time_t& source_timestamp) = 0;
+$sp($(spaces))    virtual DDS::Long writedispose (const $(typename)& instance_data, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::Long writedispose_w_timestamp (const $(typename)& instance_data, DDS::LongLong handle, const DDS::Time_t& source_timestamp) = 0;
+$sp($(spaces))    virtual DDS::Long get_key_value ($(typename)& key_holder, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::LongLong lookup_instance (const $(typename)& instance_data) = 0;
+
+$sp($(spaces))protected:
+$sp($(spaces))    $(typename)DataWriter () {};
+$sp($(spaces))    ~$(typename)DataWriter () {};
+$sp($(spaces))private:
+$sp($(spaces))    $(typename)DataWriter (const $(typename)DataWriter &);
+$sp($(spaces))    $(typename)DataWriter & operator = (const $(typename)DataWriter &);
+$sp($(spaces))};
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataReader :
+$sp($(spaces))    virtual public DDS::DataReader
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))    typedef $(typename)DataReader_ptr _ptr_type;
+$sp($(spaces))    typedef $(typename)DataReader_var _var_type;
+
+$sp($(spaces))    static $(typename)DataReader_ptr _duplicate ($(typename)DataReader_ptr obj);
+$sp($(spaces))    DDS::Boolean _local_is_a (const char * id);
+
+$sp($(spaces))    static $(typename)DataReader_ptr _narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataReader_ptr _unchecked_narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataReader_ptr _nil () { return 0; }
+$sp($(spaces))    static const char * _local_id;
+$sp($(spaces))    $(typename)DataReader_ptr _this () { return this; }
+
+$sp($(spaces))    virtual DDS::Long read ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long take_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info) = 0;
+$sp($(spaces))    virtual DDS::Long read_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long return_loan ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq) = 0;
+$sp($(spaces))    virtual DDS::Long get_key_value ($(typename)& key_holder, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::LongLong lookup_instance (const $(typename)& instance) = 0;
+
+$sp($(spaces))protected:
+$sp($(spaces))    $(typename)DataReader () {};
+$sp($(spaces))    ~$(typename)DataReader () {};
+$sp($(spaces))private:
+$sp($(spaces))    $(typename)DataReader (const $(typename)DataReader &);
+$sp($(spaces))    $(typename)DataReader & operator = (const $(typename)DataReader &);
+$sp($(spaces))};
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataReaderView :
+$sp($(spaces))    virtual public DDS::DataReaderView
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))    typedef $(typename)DataReaderView_ptr _ptr_type;
+$sp($(spaces))    typedef $(typename)DataReaderView_var _var_type;
+
+$sp($(spaces))    static $(typename)DataReaderView_ptr _duplicate ($(typename)DataReaderView_ptr obj);
+$sp($(spaces))    DDS::Boolean _local_is_a (const char * id);
+
+$sp($(spaces))    static $(typename)DataReaderView_ptr _narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataReaderView_ptr _unchecked_narrow (DDS::Object_ptr obj);
+$sp($(spaces))    static $(typename)DataReaderView_ptr _nil () { return 0; }
+$sp($(spaces))    static const char * _local_id;
+$sp($(spaces))    $(typename)DataReaderView_ptr _this () { return this; }
+
+$sp($(spaces))    virtual DDS::Long read ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long take_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info) = 0;
+$sp($(spaces))    virtual DDS::Long read_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ULong sample_states, DDS::ULong view_states, DDS::ULong instance_states) = 0;
+$sp($(spaces))    virtual DDS::Long read_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long take_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, DDS::Long max_samples, DDS::LongLong a_handle, DDS::ReadCondition_ptr a_condition) = 0;
+$sp($(spaces))    virtual DDS::Long return_loan ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq) = 0;
+$sp($(spaces))    virtual DDS::Long get_key_value ($(typename)& key_holder, DDS::LongLong handle) = 0;
+$sp($(spaces))    virtual DDS::LongLong lookup_instance (const $(typename)& instance) = 0;
+
+$sp($(spaces))protected:
+$sp($(spaces))    $(typename)DataReaderView () {};
+$sp($(spaces))    ~$(typename)DataReaderView () {};
+$sp($(spaces))private:
+$sp($(spaces))    $(typename)DataReaderView (const $(typename)DataReaderView &);
+$sp($(spaces))    $(typename)DataReaderView & operator = (const $(typename)DataReaderView &);
+$sp($(spaces))};

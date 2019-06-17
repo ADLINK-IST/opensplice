@@ -18,36 +18,17 @@
  *   limitations under the License.
  *
  */
-#ifndef IDL_GENCXXHELPER_H
-#define IDL_GENCXXHELPER_H
+#ifndef IDL_GENCXXTYPEDINTERFACES_H
+#define IDL_GENCXXTYPEDINTERFACES_H
 
-#include "c_typebase.h"
-
-#include "idl_scope.h"
+#include "idl_genCorbaCxxHelper.h"
 #include "idl_program.h"
 
-c_char *idl_cxxId(const char *identifier);
+typedef enum {
+    IDL_INTERFACE_H,
+    IDL_INTERFACE_CPP
+} idl_cxxInterfaceSelector;
 
-c_char *idl_scopeStackCxx(idl_scope scope, const char *scopeSepp, const char *name);
+idl_program idl_genCxxIntefacesProgram (void *userData);
 
-c_char *idl_corbaCxxTypeFromTypeSpec(idl_typeSpec typeSpec);
-
-c_char *idl_CxxTypeFromCType(c_type t, const char *memberName);
-
-c_char *idl_CxxTypeFromTypeSpec(idl_typeSpec typeSpec);
-
-c_char *idl_CxxDefaultValueFromCType(c_type t);
-
-c_char *idl_CxxValueFromCValue(c_type t, c_value v);
-
-c_bool idl_CxxIsRefType(c_type t);
-
-c_char *idl_CxxInTypeFromCType(c_type t, const char *memberName);
-
-c_char *idl_genCxxConstantGetter(void);
-
-const c_char* idl_isocppCxxStructMemberSuffix(void);
-
-c_value idl_CxxLowestUnionDefaultValue(c_type t);
-
-#endif /* IDL_GENCXXHELPER_H */
+#endif /* IDL_GENCXXTYPEDINTERFACES_H */
