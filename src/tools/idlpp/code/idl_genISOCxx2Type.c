@@ -72,50 +72,6 @@ typedef struct ISOCxx2ScopeStack_s ISOCxx2ScopeStack;
  * @param scope Current scope (not used)
  * @param name Name of the IDL input file
  */
-#if 0
-static idl_action
-idl_fileOpen(
-    idl_scope scope,
-    const char *name,
-    void *userData)
-{
-    c_ulong i;
-
-    OS_UNUSED_ARG(scope);
-    OS_UNUSED_ARG(userData);
-
-    /* Store fileName in uppercase. */
-    upperName = os_malloc(strlen(name) + 1);
-    for(i = 0; i < strlen(name); i++)
-    {
-        upperName[i] = (os_char) toupper (name[i]);
-    }
-    upperName[i] = '\0';
-    /* Generate inclusion of standard Vortex OpenSplice type definition files */
-    idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_H_\n", upperName);
-    idl_fileOutPrintf(idl_fileCur(), "#define _%s_H_\n", upperName);
-    idl_fileOutPrintf(idl_fileCur(), "\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include <dds/core/ddscore.hpp>\n");
-
-    /* Generate inclusion of header files that this file has dependencies on. */
-    for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
-        const char *inclBaseName = idl_depGet (idl_depDefGet(), i);
-        const char *inclBasePath;
-        /* If dependency is on our builtin types, then add the relative path to the generated files. */
-        if (strcmp(inclBaseName, "dds_builtinTopics") == 0 || strcmp(inclBaseName, "dds_dcps_builtintopics") == 0) {
-            inclBasePath = "dds/core/detail/";
-        } else {
-            inclBasePath = "";
-        }
-        idl_fileOutPrintf(idl_fileCur(), "#include \"%s%s.h\"\n", inclBasePath, inclBaseName);
-    }
-    idl_fileOutPrintf(idl_fileCur(), "\n");
-
-    /* return idl_explore to indicate that the rest of the file needs to be processed */
-    return idl_explore;
-}
-#endif
-
 static idl_action
 idl_fileOpen(
     idl_scope scope,
@@ -153,8 +109,6 @@ idl_fileOpen(
     /* return idl_explore to indicate that the rest of the file needs to be processed */
     return idl_explore;
 }
-
-
 
 /**
  * Just close out the file with a #endif.

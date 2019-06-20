@@ -72,46 +72,6 @@ typedef struct SACPPScopeStack_s SACPPScopeStack;
  * @param scope Current scope (not used)
  * @param name Name of the IDL input file
  */
-#if 0
-static idl_action
-idl_fileOpen(
-    idl_scope scope,
-    const char *name,
-    void *userData)
-{
-    c_ulong i;
-
-    OS_UNUSED_ARG(scope);
-    OS_UNUSED_ARG(userData);
-
-    /* Store fileName in uppercase. */
-    upperName = os_malloc(strlen(name) + 1);
-    for(i = 0; i < strlen(name); i++)
-    {
-        upperName[i] = (os_char) toupper (name[i]);
-    }
-    upperName[i] = '\0';
-    /* Generate inclusion of standard Vortex OpenSplice type definition files */
-    idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_H_\n", upperName);
-    idl_fileOutPrintf(idl_fileCur(), "#define _%s_H_\n", upperName);
-    idl_fileOutPrintf(idl_fileCur(), "\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include \"sacpp_mapping.h\"\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include \"cpp_dcps_if.h\"\n");
-
-    /* Generate inclusion of header files that this file has dependencies on. */
-    for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
-        const char *inclBaseName = idl_depGet (idl_depDefGet(), i);
-        /* If dependency is on our builtin types, then add the relative path to the generated files. */
-        idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", inclBaseName);
-    }
-    idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
-    idl_fileOutPrintf(idl_fileCur(), "\n");
-
-    /* return idl_explore to indicate that the rest of the file needs to be processed */
-    return idl_explore;
-}
-#endif
-
 static idl_action
 idl_fileOpen(
     idl_scope scope,

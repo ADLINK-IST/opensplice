@@ -35,7 +35,6 @@
 static char *
 idl_stripIncludePath(
     idl_typeUser typeUser,
-    const char *basename,
     void *userData)
 {
     struct SpliceDepUserData *info = userData;
@@ -50,7 +49,7 @@ idl_stripIncludePath(
     }
 
     if (!inclName) {
-        inclName = os_strdup(basename);
+        inclName = idl_scopeBasename(idl_typeUserScope(typeUser));
     }
     return inclName;
 }
@@ -75,7 +74,6 @@ idl_getScopeFilename(
 
     return fileName;
 }
-
 
 
 /* fileOpen callback
@@ -144,7 +142,6 @@ idl_structureOpen(
    If it is defined in another file, add a dependency to the dependency
    list.
 */
-#if 0
 static void
 idl_structureMemberOpenClose(
     idl_scope scope,
@@ -153,73 +150,6 @@ idl_structureMemberOpenClose(
     void *userData)
 {
     idl_typeSpec actualType;
-    char *bn;
-    char *sn;
-    char *fn;
-    OS_UNUSED_ARG(name);
-    OS_UNUSED_ARG(userData);
-
-    OS_UNUSED_ARG(name);
-    OS_UNUSED_ARG(userData);
-
-    sn = idl_scopeBasename(scope);
-    /* QAC EXPECT 3416; No unexpected side effects here */
-    if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        actualType = idl_typeArrayActual(idl_typeArray(typeSpec));
-        /* QAC EXPECT 3416; No unexpected side effects here */
-        if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
-            /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen(bn) && (strcmp(sn, bn) != 0)) {
-                /* referenced type is in different scope */
-                fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
-                idl_depAdd(idl_depDefGet(), fn);
-                os_free(fn);
-            }
-            os_free(bn);
-        }
-        /* QAC EXPECT 3416; No unexpected side effects here */
-    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-        actualType = idl_typeSeqActual(idl_typeSeq(typeSpec));
-        /* QAC EXPECT 3416; No unexpected side effects here */
-        if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
-            /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen(bn) && (strcmp (sn, bn) != 0)) {
-                /* referenced type is in different scope */
-                fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
-                idl_depAdd(idl_depDefGet(), fn);
-                os_free(fn);
-            }
-            os_free(bn);
-        }
-        /* QAC EXPECT 3416; No unexpected side effects here */
-    } else if (idl_typeSpecType(typeSpec) != idl_tbasic) {
-        bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
-        /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-        if (strlen(bn) && (strcmp(sn, bn) != 0)) {
-            /* referenced type is in different scope */
-            fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
-            idl_depAdd(idl_depDefGet(), fn);
-            os_free(fn);
-        }
-        os_free(bn);
-    } else {
-        /* Do nothing, only to prevent dangling else-ifs QAC messages */
-    }
-    os_free(sn);
-}
-#endif
-
-static void
-idl_structureMemberOpenClose(
-    idl_scope scope,
-    const char *name,
-    idl_typeSpec typeSpec,
-    void *userData)
-{
-    idl_typeSpec actualType;
-    char *bn;
     char *sn;
     char *fn;
 
@@ -231,14 +161,12 @@ idl_structureMemberOpenClose(
         actualType = idl_typeArrayActual(idl_typeArray(typeSpec));
         /* QAC EXPECT 3416; No unexpected side effects here */
         if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeFilename(idl_typeUserScope(idl_typeUser(actualType)));
-            fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
+            fn = idl_stripIncludePath(idl_typeUser(actualType), userData);
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
             if (strlen(fn) && (strcmp(sn, fn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), fn);
             }
-            os_free(bn);
             os_free(fn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
@@ -246,26 +174,22 @@ idl_structureMemberOpenClose(
         actualType = idl_typeSeqActual(idl_typeSeq(typeSpec));
         /* QAC EXPECT 3416; No unexpected side effects here */
         if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
-            fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
+            fn = idl_stripIncludePath(idl_typeUser(actualType), userData);
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
             if (strlen(fn) && (strcmp (sn, fn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), fn);
             }
-            os_free(bn);
             os_free(fn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) != idl_tbasic) {
-        bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
-        fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
+        fn = idl_stripIncludePath(idl_typeUser(typeSpec), userData);
         /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
         if (strlen(fn) && (strcmp(sn, fn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), fn);
         }
-        os_free(bn);
         os_free(fn);
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC messages */
@@ -292,7 +216,6 @@ idl_typedefOpenClose(
 {
     idl_typeSpec arrayActual;
     idl_typeSpec seqActual;
-    char *bn;
     char *sn;
     char *fn;
 
@@ -309,14 +232,12 @@ idl_typedefOpenClose(
             /* QAC EXPECT 3416; No unexpected side effects here */
             if (idl_typeSpecType(idl_typeSpec(arrayActual)) != idl_tbasic) {
                 /* if the arrays actual type is not basic */
-                bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(arrayActual)));
-                fn = idl_stripIncludePath(idl_typeUser(arrayActual), bn, userData);
+                fn = idl_stripIncludePath(idl_typeUser(arrayActual), userData);
                 /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-                if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+                if (strlen (fn) && (strcmp(sn, fn) != 0)) {
                     /* referenced type is in different scope */
                     idl_depAdd(idl_depDefGet(), fn);
                 }
-                os_free(bn);
                 os_free(fn);
             }
            /* QAC EXPECT 3416; No unexpected side effects here */
@@ -326,26 +247,22 @@ idl_typedefOpenClose(
             /* QAC EXPECT 3416; No unexpected side effects here */
             if (idl_typeSpecType(idl_typeSpec(seqActual)) != idl_tbasic) {
                 /* if the sequence actual type is not basic */
-                bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(seqActual)));
-                fn = idl_stripIncludePath(idl_typeUser(seqActual), bn, userData);
+                fn = idl_stripIncludePath(idl_typeUser(seqActual), userData);
                 /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-                if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+                if (strlen (fn) && (strcmp(sn, fn) != 0)) {
                     /* referenced type is in different scope */
                     idl_depAdd(idl_depDefGet(), fn);
                 }
-                os_free(bn);
                 os_free(fn);
             }
         } else {
             /* the type is a structure or an union */
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(idl_typeDefRefered(defSpec))));
-            fn = idl_stripIncludePath(idl_typeUser(idl_typeDefRefered(defSpec)), bn, userData);
+            fn = idl_stripIncludePath(idl_typeUser(idl_typeDefRefered(defSpec)), userData);
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+            if (strlen (fn) && (strcmp(sn, fn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), fn);
             }
-            os_free(bn);
             os_free(fn);
         }
     }
@@ -371,16 +288,14 @@ idl_constantOpenClose(
 
     typeSpec = idl_constSpecTypeGet(constantSpec);
     if (idl_typeSpecType(typeSpec) != idl_tbasic) {
-        char *bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
         char *sn = idl_getScopeFilename(scope, userData);
-        char *fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
+        char *fn = idl_stripIncludePath(idl_typeUser(typeSpec), userData);
 
-        if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+        if (strlen (fn) && (strcmp(sn, fn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), fn);
         }
         os_free(sn);
-        os_free(bn);
         os_free(fn);
     }
 
@@ -419,16 +334,14 @@ idl_unionOpen (
     /* QAC EXPECT 3416; No unexpected side effects here */
     if ((idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) != idl_tbasic)) { 
         /* QAC EXPECT 5007; will not use wrapper */
-        char *bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(idl_typeUnionSwitchKind(unionSpec))));
         char *sn = idl_getScopeFilename(scope, userData);
-        char *fn = idl_stripIncludePath(idl_typeUser(idl_typeUnionSwitchKind(unionSpec)), bn, userData);
+        char *fn = idl_stripIncludePath(idl_typeUser(idl_typeUnionSwitchKind(unionSpec)), userData);
 
-        if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+        if (strlen (fn) && (strcmp(sn, fn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), fn);
         }
         os_free(sn);
-        os_free(bn);
         os_free(fn);
     }
     return idl_explore;
@@ -461,7 +374,6 @@ idl_unionCaseOpenClose (
     void *userData)
 {
     idl_typeSpec actualType;
-    char *bn;
     char *sn;
     char *fn;
     OS_UNUSED_ARG(name);
@@ -476,15 +388,13 @@ idl_unionCaseOpenClose (
         actualType = idl_typeArrayActual(idl_typeArray(typeSpec));
         /* QAC EXPECT 3416; No unexpected side effects here */
         if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
-            fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
+            fn = idl_stripIncludePath(idl_typeUser(actualType), userData);
 
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+            if (strlen (fn) && (strcmp(sn, fn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), fn);
             }
-            os_free(bn);
             os_free(fn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
@@ -492,28 +402,24 @@ idl_unionCaseOpenClose (
         actualType = idl_typeSeqActual(idl_typeSeq(typeSpec));
         /* QAC EXPECT 3416; No unexpected side effects here */
         if (idl_typeSpecType(actualType) != idl_tbasic) {
-            bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
-            fn = idl_stripIncludePath(idl_typeUser(actualType), bn, userData);
+            fn = idl_stripIncludePath(idl_typeUser(actualType), userData);
 
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+            if (strlen (fn) && (strcmp(sn, fn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), fn);
             }
-            os_free(bn);
             os_free(fn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) != idl_tbasic) { 
-        bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
-        fn = idl_stripIncludePath(idl_typeUser(typeSpec), bn, userData);
+        fn = idl_stripIncludePath(idl_typeUser(typeSpec), userData);
 
         /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-        if (strlen (bn) && (strcmp(sn, fn) != 0)) {
+        if (strlen (fn) && (strcmp(sn, fn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), fn);
         }
-        os_free(bn);
         os_free(fn);
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC messages */
