@@ -202,7 +202,7 @@ idl_moduleClose(
 
     idlpp_indent_level--;
     idl_printIndent(idlpp_indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "};\n");
+    idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
 }
 
