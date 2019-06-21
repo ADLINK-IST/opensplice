@@ -29,6 +29,7 @@
 #include "idl_genSACSTypedClassDefs.h"
 #include "idl_genSACSHelper.h"
 #include "idl_genMetaHelper.h"
+#include "idl_genFileHelper.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -59,7 +60,6 @@ idl_fileOpen(
     struct os_stat_s tmplStat;
     unsigned int nRead;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
-    OS_UNUSED_ARG(scope);
 
     OS_UNUSED_ARG(scope);
 
@@ -101,6 +101,7 @@ idl_fileOpen(
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     /* Expand file header */
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromScope(scope, "")));
 
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());

@@ -27,6 +27,7 @@
 #include "idl_genCxxHelper.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_genMetaHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 #include "idl_dll.h"
@@ -69,10 +70,6 @@ idl_fileOpen (
     int tmplFile;
     struct os_stat_s tmplStat;
     unsigned int nRead;
-    os_char* tmpName;
-    os_uint32 i;
-
-    OS_UNUSED_ARG(scope);
 
     assert(userData);
 
@@ -105,17 +102,12 @@ idl_fileOpen (
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
-    tmpName = os_strdup(name);
-    for(i = 0; i < strlen(tmpName); i++)
-    {
-        tmpName[i] = (os_char) toupper (tmpName[i]);
-    }
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", tmpName));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", idl_genIncludeGuardFromScope(scope, "")));
+
     /* set dll stuff */
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew(IDL_DLL_TMPLMACRO_MACRO_NAME, idl_dllGetMacro()));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew(IDL_DLL_TMPLMACRO_HEADER_NAME, idl_dllGetHeader()));
 
-    os_free(tmpName);
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
     idl_streamInFree(idlpp_inStream);

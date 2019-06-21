@@ -35,6 +35,7 @@
 #include "idl_genSACPPType.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
 #include "idl_genLanguageHelper.h"
@@ -240,28 +241,20 @@ idl_seqTypeDefs(
 
 /** @brief generate name which will be used as a macro to prevent multiple inclusions
  *
- * From the specified basename create a macro which will
+ * From the specified scope create a macro which will
  * be used to prevent multiple inclusions of the generated
- * header file. The basename characters are translated
- * into uppercase characters and the append string is
+ * header file. The scope file or basename characters are
+ * translated into uppercase characters and the append string is
  * appended to the macro.
  */
 static c_char *
 idl_macroFromBasename(
-    const char *basename,
+    idl_scope scope,
     const char *append)
 {
-    static c_char macro[200];
-    size_t i;
-
-    for (i = 0; i < strlen(basename); i++) {
-        macro[i] = (c_char) toupper(basename[i]);
-        macro[i+1] = '\0';
-    }
-    os_strncat(macro, append, sizeof(macro)-strlen(append));
-
-    return macro;
+    return idl_genIncludeGuardFromScope(scope, append);
 }
+
 
 /** @brief callback function called on opening the IDL input file.
  *
@@ -281,9 +274,8 @@ idl_fileOpen(
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
     c_ulong i;
-    OS_UNUSED_ARG(scope);
 
-    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
 
     /* First initialize userData */
     arg->indent_level = 0;
@@ -292,8 +284,8 @@ idl_fileOpen(
     arg->structSpecStack = ut_stackNew(UT_STACK_DEFAULT_INC);
 
     /* Generate multiple inclusion prevention code */
-    idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "DCPS_H"));
-    idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "DCPS_H"));
+    idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(scope, "DCPS_H"));
+    idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(scope, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <sacpp_mapping.h>\n");

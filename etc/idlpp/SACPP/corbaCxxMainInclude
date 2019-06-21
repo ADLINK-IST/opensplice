@@ -1,5 +1,5 @@
-#ifndef CCPP_$upper($(basename))_H
-#define CCPP_$upper($(basename))_H
+#ifndef CCPP_$(basename_upper)_H
+#define CCPP_$(basename_upper)_H
 
 #include "$(basename).h"
 #undef OS_API
@@ -9,4 +9,4 @@
 #include <orb_abstraction.h>
 #include "$(basename)Dcps_impl.h"
 
-#endif /* CCPP_$upper($(basename))_H */
+#endif /* CCPP_$(basename_upper)_H */

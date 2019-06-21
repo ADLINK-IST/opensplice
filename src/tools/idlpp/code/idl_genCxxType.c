@@ -33,6 +33,7 @@
 #include "idl_genCxxType.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
+#include "idl_genFileHelper.h"
 #include "idl_tmplExp.h"
 
 #include "idl_dependencies.h"
@@ -79,16 +80,12 @@ idl_fileOpen(
 {
     c_ulong i;
 
-    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
     OS_UNUSED_ARG(userData);
 
     /* Store fileName in uppercase. */
-    upperName = os_malloc(strlen(name) + 1);
-    for(i = 0; i < strlen(name); i++)
-    {
-        upperName[i] = (os_char) toupper (name[i]);
-    }
-    upperName[i] = '\0';
+    upperName = os_strdup(idl_genIncludeGuardFromScope(scope, ""));
+
     /* Generate inclusion of standard Vortex OpenSplice type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_H_\n", upperName);
     idl_fileOutPrintf(idl_fileCur(), "#define _%s_H_\n", upperName);
