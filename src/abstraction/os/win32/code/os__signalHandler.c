@@ -269,7 +269,7 @@ CtrlHandler(
     index = pa_inc32_nv(&_this->callbackInfo.exitRequestInsertionIndex) % EXIT_REQUEST_BUFFER_SIZE;
     os__signalHandlerExitRequestGetThreadContextCallbackInvoke(&_this->callbackInfo, index);
     os_signalHandlerDeleteDeregisteredExitRequestCallbacks(&_this->callbackInfo);
-    return TRUE;
+    return FALSE;
 }
 
 static void *
