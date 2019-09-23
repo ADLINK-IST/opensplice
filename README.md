@@ -22,7 +22,7 @@ The following tools should be installed and available on the machine executable 
 - bison - Version 2.7 or above is required.
 - perl - Version 5.8 or above is required.
 - gSOAP - This is optional. Version 2.7 or above is acceptable. If omitted the cmsoap services is not supported.
-- Java SDK - This is optional. Oracle SDK v1.6 or above is acceptable. If omitted no Java APIs or tools will be generated.
+- Java SDK - This is optional. SDK (>1.6 < 1.9) are working java version > 1.8 does not work. If omitted no Java APIs or tools will be generated.
 - Maven - This is optional. Version 3.0 or above is acceptable. If omitted no Java APIs or tools will be generated.
 - Doxygen - This is optional. If omitted the documentation for the C# and I.S.O. C++ APIs will not be generated. Version 1.8 or greater is recommended for ideal results. (v6 of Vortex OpenSplice Community Edition onwards only)
 - Protobuf - This is optional. Version 2.6.x is required. If omitted data types modeled in Google Protocol Buffers will not be supported
@@ -42,7 +42,7 @@ In addition to the above dependencies the following may also be optionally insta
 - Set environment variables so that the above tools can be located:
     - Optionally set GSOAPHOME to the location of the gSOAP toolkit
     - Optionally set either or both TAO_ROOT or JACORB_HOME if you wish to build CORBA support. Otherwise: leave either or both unset. See above.
-    - Optionally set JAVA_HOME - set to the directory that a Oracle SDK (>1.6) is installed in.
+    - Optionally set JAVA_HOME - set to the directory that a SDK (>1.6 < 1.9) is installed in.
 	- Optionally set M2_HOME - set to the directory that Apache Maven is installed in.
     - Optionally set PROTOBUF_HOME - set to the directory where Google Protocol Buffer is installed.
     - All other tools will be located from the machine $PATH
@@ -126,7 +126,7 @@ sm@plutus:~/opensplice> make && make install
   - unzip
   - doxygen (Optional - used for C# & ISO C++ API documentation)
 - gSOAP - This is optional. Version 2.7 or above is acceptable.
-- Java SDK -  This is optional. Oracle SDK v1.6 or above is acceptable. If omitted no Java APIs or tools will be generated.
+- Java SDK -  This is optional. SDK (>1.6 < 1.9) or above is acceptable. If omitted no Java APIs or tools will be generated.
 - Maven - This is optional. Version 3.0 or above is acceptable. If omitted no Java APIs or tools will be generated.
 - Protobuf- This is optional. Version 2.6.x is required. If omitted data types modeled in Google Protocol Buffers will not be supported
 - Qt4 - Highly optional. Its only use is to build the iShapes demonstration application into the distribution, which can be used to illustrate DCPS use and verify interoperability. (v6 of Vortex OpenSplice Community Edition onwards only). See demos/iShapes/README.md.
