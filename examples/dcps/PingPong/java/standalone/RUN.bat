@@ -8,7 +8,7 @@ set BLOKCOUNT=100
 
 ECHO Starting pong
 set LEVEL=Starting pong
-start java -classpath ".;classes;%OSPL_HOME%/jar/dcpssaj.jar" pong PongRead PongWrite
+start "" /B java -classpath ".;classes;%OSPL_HOME%/jar/dcpssaj.jar" pong PongRead PongWrite
 if %ERRORLEVEL% NEQ 0 GOTO error
 
 %SLEEP4% >NUL

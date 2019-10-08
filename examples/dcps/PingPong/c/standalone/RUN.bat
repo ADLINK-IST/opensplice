@@ -1,5 +1,4 @@
 @ECHO OFF
-set SLEEP2=@C:\WINDOWS\system32\ping.exe -n 2 localhost
 set SLEEP4=@C:\WINDOWS\system32\ping.exe -n 4 localhost
 
 set BLOKSIZE=100
@@ -59,4 +58,4 @@ ECHO An error occurred %LEVEL%  .....
 GOTO end
 
 :end
-)
+
