@@ -80,7 +80,7 @@ int OSPL_MAIN (int argc, char *argv[])
 
   // Publish Events
   ReturnCode_t status;
-  // update ContentFilteredTopicData price every second
+  // update ContentFilteredTopicData price every 100msec
   for (int x = 0; x < 20; x++)
   {
     geQuote.price = geQuote.price + 0.5f;
