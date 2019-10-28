@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/ADLINK-GDE/Vortex%20OpenSplice%20Community%20Edition/_apis/build/status/ADLINK-IST.opensplice?branchName=master)](https://dev.azure.com/ADLINK-GDE/Vortex%20OpenSplice%20Community%20Edition/_build/latest?definitionId=7&branchName=master)
+
 # Vortex OpenSplice Community Edition
 
 Vortex OpenSplice a full implementaiton of the **OMG DDS Standard** licensed under **Apache 2**. The DDS standard is used today across a large range of application domains ranging from autonomous vehicles, medical devices, robotic platforms, software defined networking, network switches, IoT Gateways, military and aerospace systems, Air Traffic Control and Management, smart grids, smart farms, etc.
