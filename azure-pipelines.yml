@@ -1,0 +1,480 @@
+resources:
+  repositories:
+  - repository: self
+    checkoutOptions:
+      submodules: true
+      persistCredentials: true
+      fetchDepth: 10
+
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  ARCH_X86: 0
+  
+ 
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy: 
+    matrix:
+      x86 GCC 5.4 Release:
+        SPLICE_PLATFORM: x86.linux-release
+        DOCKER_IMAGE_NAME: ub16.04-x86 
+        DOCKER_BASE: i386/ubuntu:xenial
+        ARCH: x86
+        EXAMPLE_HOME: /opensplice/install/HDE/x86.linux
+        JAVA_HOME: /usr/lib/jvm/java-8-openjdk-i386
+        
+      x86_64 GCC 7 Release:
+        DOCKER_IMAGE_NAME: ub18.04-x86_64 
+        DOCKER_BASE: ubuntu:bionic
+        SPLICE_PLATFORM: x86_64.linux-release
+        ARCH: x64
+        EXAMPLE_HOME: /opensplice/install/HDE/x86_64.linux
+        JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+  steps:
+     - bash: |
+         docker pull $(DOCKER_BASE)
+         docker run -e 'JAVA_HOME=$(JAVA_HOME)' -e 'ARCH=$(ARCH)' -i -u root -v $(pwd):/opensplice $(DOCKER_BASE) /bin/bash -c "cd opensplice && \
+         apt-get -y update && \
+         apt-get install -y python3 python3-pip python3-setuptools openjdk-8-jre-headless openjdk-8-jdk maven git flex bison wget unzip xz-utils zlib1g-dev gawk build-essential  && \
+         update-alternatives --install /usr/bin/python python /usr/bin/python3 10 && \
+         python3 -m pip install --user --upgrade pip && \
+         python3 -m pip install pyinstaller wheel cython --user && \
+         wget https://nodejs.org/dist/v8.11.1/node-v8.11.1-linux-$ARCH.tar.xz && \
+         tar xf node-v8.11.1-linux-$ARCH.tar.xz && \
+         wget https://www.sqlite.org/2019/sqlite-amalgamation-3290000.zip && \
+         unzip sqlite-amalgamation-3290000.zip && \
+         exit"
+         ID="$(sudo docker ps -l | awk 'NR > 1 {print $1}')"
+         echo $ID
+         docker commit $ID $(DOCKER_IMAGE_NAME)
+       displayName: 'Install Build Dependencies'
+     - bash: |
+         docker run -e 'JAVA_HOME=$(JAVA_HOME)' -e 'ARCH=$(ARCH)' -e 'SPLICE_PLATFORM=$(SPLICE_PLATFORM)' -i -u root -v $(pwd):/opensplice $(DOCKER_IMAGE_NAME) /bin/bash -c "cd opensplice && \
+         export NODEJS_HOME=/opensplice/node-v8.11.1-linux-$ARCH && \
+         export SQLITE_HOME=/opensplice/sqlite-amalgamation-3290000 && \
+         . configure $SPLICE_PLATFORM && \
+         make install  && \
+         exit"
+         echo $ID
+         ID="$(sudo docker ps -l | awk 'NR > 1 {print $1}')"
+         docker commit $ID $(DOCKER_IMAGE_NAME)     
+       displayName: 'Configure and Compile OpenSplice'
+     - bash: |
+         docker run -e 'EXAMPLE_HOME=$(EXAMPLE_HOME)' -i -u root -v $(pwd):/opensplice $(DOCKER_IMAGE_NAME) /bin/bash -c "cd $EXAMPLE_HOME && \
+         source release.com && \
+         cd examples && \
+         make && \
+         exit"
+         echo $ID
+         ID="$(sudo docker ps -l | awk 'NR > 1 {print $1}')"
+         docker commit $ID $(DOCKER_IMAGE_NAME)     
+       displayName: 'Compile Examples'
+       failOnStderr: false
+     - bash: |
+         docker run -e 'EXAMPLE_HOME=$(EXAMPLE_HOME)' -i -u root -v $(pwd):/opensplice $(DOCKER_IMAGE_NAME) /bin/bash -c "cd $EXAMPLE_HOME && \
+         source release.com && \
+         cd examples/dcps/PingPong/c/standalone && \
+         ./RUN && \
+         exit"
+       displayName: 'Run PingPong c example'
+       failOnStderr: false  
+     - bash: |
+         docker run -e 'EXAMPLE_HOME=$(EXAMPLE_HOME)' -i -u root -v $(pwd):/opensplice $(DOCKER_IMAGE_NAME) /bin/bash -c "cd $EXAMPLE_HOME && \
+         source release.com && \
+         cd examples/dcps/PingPong/cpp/standalone && \
+         ./RUN && \
+         exit"    
+       displayName: 'Run PingPong c++ example'
+       failOnStderr: false
+     - bash: | 
+         docker run -e 'EXAMPLE_HOME=$(EXAMPLE_HOME)' -e 'JAVA_HOME=$(JAVA_HOME)' -i -u root -v $(pwd):/opensplice $(DOCKER_IMAGE_NAME) /bin/bash -c "cd $EXAMPLE_HOME && \
+         source release.com && \
+         cd examples/dcps/PingPong/java/standalone && \
+         make && \
+         ./RUN && \
+         exit"    
+       displayName: 'Run PingPong java example'
+       failOnStderr: false 
+     - task: CopyFiles@2
+       inputs:
+          sourceFolder: '$(Build.SourcesDirectory)'
+          targetFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: 'install/VC/?(*HDE*.deb|*HDE*.msi|*HDE*.tar.gz|*HDE*.tar|*HDE*.zip|*HDE*.sh)'
+       displayName: 'Copy installer'
+     - task: PublishBuildArtifacts@1
+       inputs:
+         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+         artifactName: $(System.JobDisplayName)_$(SPLICE_PLATFORM)
+       displayName: 'Publish installer'
+      
+- job: Linux_x86_64
+  variables:
+    NODEJS_HOME: $(Build.SourcesDirectory)/node-v8.11.1-linux-x64
+    SQLITE_HOME: $(Build.SourcesDirectory)/sqlite-amalgamation-3290000
+    OSPL_HOME: $(Build.SourcesDirectory)
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy: 
+    matrix:   
+      GCC 5.4 Release:
+        SPLICE_PLATFORM: x86_64.linux-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86_64.linux
+  steps:
+     - task: UsePythonVersion@0
+       inputs:
+         versionSpec: '3.7'
+     - script: |
+         sudo apt-get install -y flex bison xz-utils zlib1g-dev gawk build-essential python-setuptools
+         pip install --upgrade pip
+         pip install pyinstaller wheel cython
+         
+         #nodejs 8.11.1
+         wget https://nodejs.org/dist/v8.11.1/node-v8.11.1-linux-x64.tar.xz
+         tar xf node-v8.11.1-linux-x64.tar.xz
+         
+         #sqlite
+         wget wget https://www.sqlite.org/2019/sqlite-amalgamation-3290000.zip
+         unzip sqlite-amalgamation-3290000.zip      
+       displayName: 'Install Build Dependencies'
+     - task: CacheBeta@0
+       inputs:
+         key: maven
+         path: $(MAVEN_CACHE_FOLDER)
+       displayName: Cache Maven local repo
+     - bash: |
+         . configure $(SPLICE_PLATFORM)
+         make install
+       displayName: 'Configure and Compile OpenSplice'
+       failOnStderr: false
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples
+         make    
+       displayName: 'Compile Examples'
+       failOnStderr: false
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/c/standalone
+         ./RUN     
+       displayName: 'Run PingPong c example'
+       failOnStderr: false  
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/cpp/standalone
+         ./RUN     
+       displayName: 'Run PingPong c++ example'
+       failOnStderr: false
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/java/standalone
+         make
+         ./RUN     
+       displayName: 'Run PingPong java example'
+       failOnStderr: false 
+     - task: CopyFiles@2
+       inputs:
+          sourceFolder: '$(Build.SourcesDirectory)'
+          targetFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: 'install/VC/?(*HDE*.deb|*HDE*.msi|*HDE*.tar.gz|*HDE*.tar|*HDE*.zip|*HDE*.sh)'
+       displayName: 'Copy installer'
+     - task: PublishBuildArtifacts@1
+       inputs:
+         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+         artifactName: $(System.JobDisplayName)_$(SPLICE_PLATFORM)
+       displayName: 'Publish installer'
+
+- job: Windows_VS_2019
+  variables:
+    VS_HOME: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise'
+    SQLITE_HOME_WIN: $(Build.SourcesDirectory)/sqlite-amalgamation-3290000
+    NODEJS_HOME_WIN: $(Build.SourcesDirectory)/node-v8.11.1-win-x64  
+    # not building protobuf as its currently not possible to build this for windows in the CI env.
+    
+  pool:
+    vmImage: 'windows-2019'
+  strategy:
+    matrix:  
+      x86_64 Release:
+        SPLICE_PLATFORM: x86_64.win64-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86_64.win64
+   
+      x86 Release:
+        SPLICE_PLATFORM: x86.win32-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86.win32
+        ARCH_X86: 1
+
+
+  steps:
+     - task: UsePythonVersion@0
+       inputs:
+         versionSpec: '3.7'
+     - task: CacheBeta@0
+       inputs:
+         key: maven
+         path: $(MAVEN_CACHE_FOLDER)
+       displayName: Cache Maven local repo
+     - script: |
+         mkdir build_tools
+         cd build_tools
+         powershell -Command "(New-Object Net.WebClient).DownloadFile('https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u222-b10/OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip', 'OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip')"  
+         cd ..
+       displayName: 'Download JDK 8 32 bits'
+       condition: eq( variables['ARCH_X86'], '1' )
+     - task: JavaToolInstaller@0
+       inputs:
+         versionSpec: "8"
+         jdkArchitectureOption: x86
+         jdkSourceOption: LocalDirectory
+         jdkFile: "build_tools/OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip"
+         jdkDestinationDirectory: "build_tools/java_x86"
+         cleanDestinationDirectory: true
+       displayName: 'Install JDK 8 32 bits'
+       condition: eq( variables['ARCH_X86'], '1' )
+     - script: |
+         powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
+         SET CYGROOT=C:\cygwin64
+         SET CYGCACHE=%CYGROOT%\var\cache\setup
+         setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P bc,git,flex,bison,expect,gcc-core,gcc-g++,make,zip,unzip,wget
+         C:\cygwin64\bin\bash -l %cd%\scripts\install_dep.sh
+       env:
+         CYGMIRROR: "http://ftp.snt.utwente.nl/pub/software/cygwin/"
+       displayName: 'Install Build Dependencies'
+     - script: |
+         C:\cygwin64\bin\bash -l %cd%\scripts\build_dds.sh $(SPLICE_PLATFORM)
+       displayName: 'Configure and Compile OpenSplice'
+       failOnStderr: false    
+     - task: BatchScript@1
+       inputs:
+         filename: $(EXAMPLE_HOME)/release.bat
+         #arguments: # Optional
+         modifyEnvironment: true 
+         workingFolder: $(EXAMPLE_HOME)
+       displayName: 'Set OpenSplice environment'
+     - task: VSBuild@1
+       inputs:
+          solution: '**\All_Standalone_C_and_CPlusPlus.sln' 
+       displayName: 'Build C & C++ examples'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/c/standalone
+         call RUN.bat
+       failOnStderr: false 
+       continueOnError: true    
+       displayName: 'Run PingPong c example'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/cpp/standalone
+         call RUN.bat
+       failOnStderr: false
+       continueOnError: true
+       displayName: 'Run PingPong C++ example'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/java/standalone
+         call BUILD_java.bat
+         call RUN.bat
+       failOnStderr: false
+       continueOnError: true 
+       displayName: 'Build & Run PingPong Java example'
+     - task: CopyFiles@2
+       inputs:
+          sourceFolder: '$(Build.SourcesDirectory)'
+          targetFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: 'install/VC/?(*HDE*.deb|*HDE*.msi|*HDE*.tar.gz|*HDE*.tar|*HDE*.zip|*HDE*.sh)'
+       displayName: 'Copy installer'
+     - task: PublishBuildArtifacts@1
+       inputs:
+         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+         artifactName: $(System.JobDisplayName)_$(SPLICE_PLATFORM)
+       displayName: 'Publish installer'
+         
+- job: Windows_VS_2017
+  variables:
+    VS_HOME: 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise'
+    SQLITE_HOME_WIN: $(Build.SourcesDirectory)/sqlite-amalgamation-3290000
+    NODEJS_HOME_WIN: $(Build.SourcesDirectory)/node-v8.11.1-win-x64
+    
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    matrix:
+      x86_64 Release:
+        SPLICE_PLATFORM: x86_64.win64-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86_64.win64
+      x86 Release:
+        SPLICE_PLATFORM: x86.win32-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86.win32
+        ARCH_X86: 1
+
+  steps:
+     - task: UsePythonVersion@0
+       inputs:
+         versionSpec: '3.7'
+     - task: CacheBeta@0
+       inputs:
+         key: maven
+         path: $(MAVEN_CACHE_FOLDER)
+       displayName: Cache Maven local repo
+     - script: |
+         mkdir build_tools
+         cd build_tools
+         powershell -Command "(New-Object Net.WebClient).DownloadFile('https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u222-b10/OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip', 'OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip')"  
+         cd ..
+       displayName: 'Download JDK 8 32 bits'
+       condition: eq( variables['ARCH_X86'], '1' )
+     - task: JavaToolInstaller@0
+       inputs:
+         versionSpec: "8"
+         jdkArchitectureOption: x86
+         jdkSourceOption: LocalDirectory
+         jdkFile: "build_tools/OpenJDK8U-jdk_x86-32_windows_hotspot_8u222b10.zip"
+         jdkDestinationDirectory: "build_tools/java_x86"
+         cleanDestinationDirectory: true
+       displayName: 'Install JDK 8 32 bits'
+       condition: eq( variables['ARCH_X86'], '1' )
+     - script: |
+         powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
+         SET CYGROOT=C:\cygwin64
+         SET CYGCACHE=%CYGROOT%\var\cache\setup
+         setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P bc,git,flex,bison,expect,gcc-core,gcc-g++,make,zip,unzip,wget
+         C:\cygwin64\bin\bash -l %cd%\scripts\install_dep.sh
+       env:
+         CYGMIRROR: "http://ftp.snt.utwente.nl/pub/software/cygwin/"
+       displayName: 'Install Build Dependencies'
+     - script: |
+         C:\cygwin64\bin\bash -l %cd%\scripts\build_dds.sh $(SPLICE_PLATFORM)
+       displayName: 'Configure and Compile OpenSplice'
+       failOnStderr: false    
+     - task: BatchScript@1
+       inputs:
+         filename: $(EXAMPLE_HOME)/release.bat
+         #arguments: # Optional
+         modifyEnvironment: true 
+         workingFolder: $(EXAMPLE_HOME)
+       displayName: 'Set OpenSplice environment'
+     - task: VSBuild@1
+       inputs:
+          solution: '**\All_Standalone_C_and_CPlusPlus.sln' 
+       displayName: 'Build C & C++ examples'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/c/standalone
+         call RUN.bat
+       failOnStderr: false 
+       continueOnError: true   
+       displayName: 'Run PingPong c example'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/cpp/standalone
+         call RUN.bat
+       failOnStderr: false
+       continueOnError: true 
+       displayName: 'Run PingPong C++ example'
+     - script: |
+         cd $(EXAMPLE_HOME)/examples/dcps/PingPong/java/standalone
+         call BUILD_java.bat
+         call RUN.bat
+       failOnStderr: false
+       continueOnError: true 
+       displayName: 'Build & Run PingPong Java example'
+     - task: CopyFiles@2
+       inputs:
+          sourceFolder: '$(Build.SourcesDirectory)'
+          targetFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: 'install/VC/?(*HDE*.deb|*HDE*.msi|*HDE*.tar.gz|*HDE*.tar|*HDE*.zip|*HDE*.sh)'
+       displayName: 'Copy installer'
+     - task: PublishBuildArtifacts@1
+       inputs:
+         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+         artifactName: $(System.JobDisplayName)_$(SPLICE_PLATFORM)
+       displayName: 'Publish installer'  
+                 
+- job: MacOS_10_14
+  variables:
+    NODEJS_HOME: $(Build.SourcesDirectory)/node-v8.11.1-darwin-x64
+    SQLITE_HOME: $(Build.SourcesDirectory)/sqlite-amalgamation-3290000
+  pool:
+    vmImage: 'macOS-10.14'
+  strategy: 
+    matrix:
+      Xcode 10.3 Release:
+        SPLICE_PLATFORM: x86_64.darwin10_clang-release
+        EXAMPLE_HOME: $(Build.SourcesDirectory)/install/HDE/x86_64.darwin10_clang
+  steps:
+     - task: UsePythonVersion@0
+       inputs:
+         versionSpec: '3.7'
+     - script: |
+         sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+         brew update
+         brew install cmake openssl@1.1 autoconf coreutils gettext readline automake gawk xz bison grep wget
+         pip install --upgrade pip
+         pip install pyinstaller wheel cython
+
+         #nodejs 8.11.1
+         wget https://nodejs.org/dist/v8.11.1/node-v8.11.1-darwin-x64.tar.xz
+         tar xf node-v8.11.1-darwin-x64.tar.xz
+
+         #sqlite
+         wget wget https://www.sqlite.org/2019/sqlite-amalgamation-3290000.zip
+         unzip sqlite-amalgamation-3290000.zip
+
+       displayName: 'Install Build Dependencies'
+     - task: CacheBeta@0
+       inputs:
+         key: maven
+         path: $(MAVEN_CACHE_FOLDER)
+       displayName: Cache Maven local repo
+     - bash: |
+         export PATH="/usr/local/opt/bison/bin:$PATH"
+         . configure $(SPLICE_PLATFORM)
+         make install
+       displayName: 'Configure and Compile OpenSplice'
+       failOnStderr: false
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples
+         make
+       displayName: 'Compile Examples'
+       failOnStderr: false
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/c/standalone
+         ./RUN
+       displayName: 'Run PingPong c example'
+       failOnStderr: false
+       continueOnError: true  
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/cpp/standalone
+         ./RUN
+       displayName: 'Run PingPong c++ example'
+       failOnStderr: false
+       continueOnError: true
+     - bash: |
+         cd $(EXAMPLE_HOME)
+         source release.com
+         cd examples/dcps/PingPong/java/standalone
+         make
+         # next line is needed when SIP is enabled as DYLD_LIBRARY_PATH does not work then"
+         export SPLICE_JAVA="java -Djava.library.path=$(EXAMPLE_HOME)/lib"
+         ./RUN
+       displayName: 'Run PingPong java example'
+       failOnStderr: false
+       continueOnError: true
+     - task: CopyFiles@2
+       inputs:
+          sourceFolder: '$(Build.SourcesDirectory)'
+          targetFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: 'install/VC/?(*HDE*.deb|*HDE*.msi|*HDE*.tar.gz|*HDE*.tar|*HDE*.zip|*HDE*.sh)'
+       displayName: 'Copy installer'
+     - task: PublishBuildArtifacts@1
+       inputs:
+         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+         artifactName: $(System.JobDisplayName)_$(SPLICE_PLATFORM)
+       displayName: 'Publish installer' 
