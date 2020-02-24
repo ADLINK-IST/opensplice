@@ -967,8 +967,8 @@ class Listener(object):
 
         This notification applies to: DataReader, Subscriber and DomainParticipant
 
-        :param writer: a handle to the reader
-        :type writer: dds.ReaderWriter
+        :param reader: a handle to the reader
+        :type reader: dds.DataReader
         :param status: a namedtuple with fields: alive_count, not_alive_count, alive_count_change, not_alive_count_change, last_publication_handle
         :type status: dds.LivelinessChangedStatus
         '''
@@ -980,8 +980,8 @@ class Listener(object):
 
         This notificiation applies: DataReader, Subscriber or DomainParticipant
 
-        :param writer: a handle to the reader
-        :type writer: dds.DataReader
+        :param reader: a handle to the reader
+        :type reader: dds.DataReader
         '''
         pass
 
