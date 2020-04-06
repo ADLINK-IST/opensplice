@@ -2,7 +2,7 @@
 
 # Vortex OpenSplice Community Edition
 
-Vortex OpenSplice a full implementaiton of the **OMG DDS Standard** licensed under **Apache 2**. The DDS standard is used today across a large range of application domains ranging from autonomous vehicles, medical devices, robotic platforms, software defined networking, network switches, IoT Gateways, military and aerospace systems, Air Traffic Control and Management, smart grids, smart farms, etc.
+Vortex OpenSplice a full implementation of the **OMG DDS Standard** licensed under **Apache 2**. The DDS standard is used today across a large range of application domains ranging from autonomous vehicles, medical devices, robotic platforms, software defined networking, network switches, IoT Gateways, military and aerospace systems, Air Traffic Control and Management, smart grids, smart farms, etc.
 
 ## Building
 
