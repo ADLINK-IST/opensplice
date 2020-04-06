@@ -3248,6 +3248,7 @@ cdef class WaitSet:
             for i in range(r):
                 key = <intptr_t>_c_conditions[i]
                 conditions.append(self._conditions[key])
+        free(_c_conditions)
         return conditions
 
 cdef class QosProvider:
