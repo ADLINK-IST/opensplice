@@ -91,12 +91,12 @@ else
 else
 # VS2015
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
-   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/10.0.10150.0/ucrt"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/10.0.18362.0/ucrt"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/um"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/shared"
    
    VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib/amd64"
-   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/10.0.10150.0/ucrt/x64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/10.0.18362.0/ucrt/x64"
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/Lib/winv6.3/um/x64"
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/lib/x64"
 endif
