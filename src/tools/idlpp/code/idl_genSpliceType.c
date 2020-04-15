@@ -277,7 +277,7 @@ idl_structureOpen(
         if(!test_mode)
         {
             /* define the prototype of the function for performing copyIn/copyOut. This needs to be
-             * exported as well to ensure it can be access by other (ussually also OpenSplice
+             * exported as well to ensure it can be access by other (usually also OpenSplice
              * generated) packages
              */
             idl_fileOutPrintf(
@@ -1025,7 +1025,52 @@ idl_typedefOpenClose(
 {
     OS_UNUSED_ARG(userData);
 
-    if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
+    if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_ttypedef ||
+        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tenum ||
+        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tstruct ||
+        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tunion ||
+        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tbasic) {
+        /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "typedef %s _%s;\n",
+            idl_scopedSplTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))),
+            idl_scopeStack (scope, "_", name));
+    } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tarray) {
+        /* generate code for an array mapping */
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "typedef %s _%s",
+            idl_scopedSplTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
+            idl_scopeStack(scope, "_", name));
+        idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)), OS_FALSE);
+        idl_fileOutPrintf(idl_fileCur(), ";\n");
+    } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tseq) {
+        /* generate code for a sequence mapping */
+        idl_printIndent(indent_level);
+        if (idl_typeSeqMaxSize (idl_typeSeq(idl_typeDefRefered(defSpec))) == 0) {
+        /* unbounded sequence */
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "typedef c_sequence _%s",
+                idl_scopeStack (scope, "_", name));
+        } else {
+        /* bounded sequence */
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "typedef c_sequence _%s",
+                idl_scopeStack(scope, "_", name));
+        }
+        idl_fileOutPrintf (idl_fileCur(), ";\n");
+    } else {
+        printf("idl_typedefOpenClose: Unsupported typedef type (typename = %s, type = %s)\n",
+            name, idl_scopedTypeName(idl_typeSpec(defSpec)));
+    }
+
+    if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule)
+    {
         idl_fileOutPrintf(
             idl_fileCur(),
             "extern c_metaObject __%s__load (c_base base);\n",
@@ -1044,50 +1089,56 @@ idl_typedefOpenClose(
                 "extern const char * __%s__name (void);\n",
                 idl_scopeStack(scope, "_", name));
         }
-    }
-    if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_ttypedef ||
-        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tenum ||
-        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tstruct ||
-        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tunion ||
-        idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tbasic) {
-        /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "typedef %s _%s;\n\n",
-            idl_scopedSplTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))),
-            idl_scopeStack (scope, "_", name));
-    } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tarray) {
-        /* generate code for an array mapping */
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "typedef %s _%s",
-            idl_scopedSplTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
-            idl_scopeStack(scope, "_", name));
-        idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)), OS_FALSE);
-        idl_fileOutPrintf(idl_fileCur(), ";\n\n");
-    } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tseq) {
-        /* generate code for a sequence mapping */
-        idl_printIndent(indent_level);
-        if (idl_typeSeqMaxSize (idl_typeSeq(idl_typeDefRefered(defSpec))) == 0) {
-        /* unbounded sequence */
+        if (!test_mode)
+        {
+            char *fullyScopedName = idl_scopeStack(scope, "_", name);
+            /* define the prototype of the function for performing copyIn/copyOut. This needs to be
+             * exported as well to ensure it can be access by other (usually also OpenSplice
+             * generated) packages
+             */
+            if (useVoidPtrs)
+            {
+                idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "extern %s v_copyin_result __%s__copyIn(c_base base, const void *from, void *to);\n",
+                    idl_dllGetMacro(),
+                    fullyScopedName);
+            }
+            else
+            {
+                char *tmpfullyScopedName = idl_scopeStack(scope, "::", name);
+                if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
+                {
+                  idl_fileOutPrintf(
+                      idl_fileCur(),
+                      "extern %s v_copyin_result __%s__copyIn(%s, const %s *from, _%s *to);\n",
+                      idl_dllGetMacro(),
+                      fullyScopedName,
+                      idl_getIsISOCpp2() ? "c_type dbType" : "c_base base",
+                      tmpfullyScopedName,
+                      fullyScopedName);
+                }
+                else
+                {
+                  idl_fileOutPrintf(
+                      idl_fileCur(),
+                      "extern %s v_copyin_result __%s__copyIn(c_base base, const %s *from, _%s *to);\n",
+                      idl_dllGetMacro(),
+                      fullyScopedName,
+                      tmpfullyScopedName,
+                      fullyScopedName);
+                }
+                os_free(tmpfullyScopedName);
+            }
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef c_sequence _%s",
-                idl_scopeStack (scope, "_", name));
-        } else {
-        /* bounded sequence */
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "typedef c_sequence _%s",
-                idl_scopeStack(scope, "_", name));
+                "extern %s void __%s__copyOut(const void *_from, void *_to);\n",
+                idl_dllGetMacro(),
+                fullyScopedName);
+            os_free(fullyScopedName);
         }
-        idl_fileOutPrintf (idl_fileCur(), ";\n\n");
-    } else {
-        printf("idl_typedefOpenClose: Unsupported typedef type (typename = %s, type = %s)\n",
-            name, idl_scopedTypeName(idl_typeSpec(defSpec)));
     }
+    idl_fileOutPrintf(idl_fileCur(), "\n");
 }
 
 /**
