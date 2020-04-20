@@ -2,7 +2,7 @@
 
 # Vortex OpenSplice Community Edition
 
-Vortex OpenSplice a full implementation of the **OMG DDS Standard** licensed under **Apache 2**. The DDS standard is used today across a large range of application domains ranging from autonomous vehicles, medical devices, robotic platforms, software defined networking, network switches, IoT Gateways, military and aerospace systems, Air Traffic Control and Management, smart grids, smart farms, etc.
+Vortex OpenSplice is a full implementation of the **OMG DDS Standard** licensed under **Apache 2**. The DDS standard is used today across a large range of application domains ranging from autonomous vehicles, medical devices, robotic platforms, software defined networking, network switches, IoT Gateways, military and aerospace systems, Air Traffic Control and Management, to smart grids, smart farms, etc.
 
 ## Building
 
@@ -50,7 +50,7 @@ In addition to the above dependencies the following may also be optionally insta
     - All other tools will be located from the machine $PATH
 - Source the Vortex OpenSplice configure script to set-up your build environment. N.B. You must source this script each time you wish to configure a new shell as a build environment. The configuration choices are not persistent.
 - Choose the target platform configuration.
-- Invoke `make` to compile Vortex OpenSplice Commmunity Edition
+- Invoke `make` to compile Vortex OpenSplice Community Edition
 - Invoke `make install` to build a Vortex OpenSplice Community Edition Distribution
 
 ```
@@ -90,7 +90,7 @@ JACORB: Warning - JACORB_HOME not set
    JACORB environment not set, disabling JACORB related features.
 GSOAP: OK - using GSOAP version 2.8.60
   setting GSOAPHOME to /usr
-DOXYGEN: OK - no doxygen installed, will attempt to retreive docs from git repo
+DOXYGEN: OK - no doxygen installed, will attempt to retrieve docs from git repo
 GOOGLE PROTOCOL BUFFERS: PROTOBUF_HOME has not been set
 Warning - Protobuf compiler environment not set, building of all protobuf related features is disabled.
 C99: OK - supported
@@ -150,7 +150,7 @@ In addition to the above dependencies the following may also be optionally insta
 	- Optionally set JAVA_HOME - set to the directory that an Oracle SDK (>1.6) is installed in.
 	- Optionally set QTDIR and PROTOBUF_HOME
 	- All other tools will be located from the cygwin shell $PATH
-- Unset TMP and TEMP (lower and upper case) otherwise you may encouter error 256 while building the Vortex OpenSplice Community Edition ISO C++ API. This is a known compatibility issue between Cygwin and Visual Studio. This can be done permanently by editing your /etc/profile and commenting out the setting of the variables.
+- Unset TMP and TEMP (lower and upper case) otherwise you may encounter error 256 while building the Vortex OpenSplice Community Edition ISO C++ API. This is a known compatibility issue between Cygwin and Visual Studio. This can be done permanently by editing your /etc/profile and commenting out the setting of the variables.
 - Source the Vortex OpenSplice configure script to set-up your build environment. N.B. You must source this script each time you wish to configure a new shell as a build environment. The configuration choices are not persistent.
 - Choose the target platform configuration. N.B - 32/64 bit debug (dev) or release (release) builds are available.
 	- Note that if you wish to build 'dev' and you wish to build C++ CORBA support then you must have installed a debug version of TAO. If you wish to build release then the TAO installed and indicated by the TAO_ROOT variable must also be release.
@@ -290,7 +290,7 @@ Below are a few links to learning material that will get you started quickly wit
 There are plenty of Open Source add-ons for Vortex OpenSplice and they keep growing almost daily. The main place to look for add one and extensions are [ADLINK-IST's GitHub](https://github.com/ADLINK-IST) repositories. Beside this, below are a few notable extensions:
 
 - **[DDS Tutorial Examples](http://bit.ly/1oAvXhz)**
-- **[C++11 Extensions](http://bit.ly/dds-cpp11)**: Support for lambda-based Data Reader listenerns
+- **[C++11 Extensions](http://bit.ly/dds-cpp11)**: Support for lambda-based Data Reader listeners
 - **[Moliere](http://bit.ly/moliere-dds)**: [Scala](http://scala-lang.org) APIs for Vortex OpenSplice
 - **[pydds](https://github.com/atolab/pydds)**: Python APIs for Vortex OpenSplice
 
