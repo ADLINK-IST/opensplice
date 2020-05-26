@@ -219,7 +219,7 @@ class DDSSampleRejectedStatusKind(Enum):
     REJECTED_BY_SAMPLES_PER_INSTANCE_LIMIT = 3
 
 # Basic Qos Policy class
-class QosPolicy():
+class QosPolicy:
     '''
     Abstract QoS policy class.
     Users should not instantiate this class.
