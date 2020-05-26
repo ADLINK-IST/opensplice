@@ -2995,12 +2995,6 @@ cdef class Condition:
     def __cinit__(self):
         self._c_handle = NULL
 
-    def __dealloc__(self):
-        if self._c_handle is not NULL:
-            with nogil:
-                dds_condition_delete(self._c_handle)
-        self._c_handle = NULL
-
     cdef set_handle(self, dds_condition_t handle):
         self._c_handle = handle
 
