@@ -581,8 +581,7 @@ def _deserialize_array(mem_type, data):
     '''
     array_size = int(mem_type.attrib[_SIZE_ATTRIBUTE])
     array_type = mem_type[0]
-    result = []
-    [result.append(_deserialize_data(array_type, data)) for _ in range(array_size)]
+    result = [_deserialize_data(array_type, data) for _ in range(array_size)]
     return result
 
 # Global variables
