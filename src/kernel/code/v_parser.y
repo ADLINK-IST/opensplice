@@ -227,7 +227,7 @@ topicName:
       ident
         { $$ = q_newId($1);
           ut_stackPush(context->exprStack, $$);
-          free($1);
+          os_free($1);
         }
     ;
 
@@ -354,14 +354,14 @@ field:
       IDENTIFIER
         { $$ = q_newId($1);
           ut_stackPush(context->exprStack, $$);
-          free($1);
+          os_free($1);
         }
     | FIELDNAME
         { q_list list = splitFieldname($1);
           assert(list != NULL);
           $$ = L1(Q_EXPR_PROPERTY,list); ;
           ut_stackPush(context->exprStack, $$);
-          free($1);
+          os_free($1);
         }
     ;
 
@@ -402,12 +402,12 @@ parameter:
     | STRINGVALUE
         { $$ = q_newStr($1);
           ut_stackPush(context->exprStack, $$);
-          free($1);
+          os_free($1);
         }
     | ENUMERATEDVALUE
         { $$ = q_newStr($1);
           ut_stackPush(context->exprStack, $$);
-          free($1);
+          os_free($1);
         }
     | PARAM
         { $$ = q_newVar($1);
