@@ -308,7 +308,7 @@ ID:
           /* frees dynamically malloced variable length string value
              allocated by the lexical scanner.
           */
-          free($1);
+          os_free($1);
         }
     ;
 
@@ -318,21 +318,21 @@ scopedName:
           /* frees dynamically malloced variable length string value
              allocated by the lexical scanner.
           */
-          free($1);
+          os_free($1);
         }
     | DOUBLECOLON identifier
         { $$ = List1(q_newId($2));
           /* frees dynamically malloced variable length string value
              allocated by the lexical scanner.
           */
-          free($2);
+          os_free($2);
         }
     | scopedName DOUBLECOLON identifier
         { $$ = q_append($1,q_newId($3));
           /* frees dynamically malloced variable length string value
              allocated by the lexical scanner.
           */
-          free($3);
+          os_free($3);
         }
     ;
 
@@ -368,7 +368,7 @@ literal:
           /* frees dynamically malloced variable length string value
              allocated by the lexical scanner.
           */
-          free($1);
+          os_free($1);
         }
     | DOLLAR ulonglongLiteral
         { $$ = q_newVar($2);
