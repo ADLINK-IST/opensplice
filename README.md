@@ -280,18 +280,18 @@ export PROTOBUF_HOME=`pwd`
 
 Below are a few links to learning material that will get you started quickly with Vortex OpenSplice and DDS.
 
-- [The DDS Tutorial Booklet](http://bit.ly/2sXqbOG)
-- [DDS Tutorial Slides](http://bit.ly/dds-onem2m)
-- [DDS Slideshares](http://bit.ly/2sXW6yo)
+- [The DDS Tutorial Booklet](https://www.slideshare.net/Angelo.Corsaro/the-data-distribution-service-tutorial)
+- [DDS Tutorial Slides](https://www.slideshare.net/Angelo.Corsaro/the-data-distribution-service-76586756)
+- [DDS Slideshares](https://www.slideshare.net/angelo.corsaro)
 - [DDS In Action Channel](https://vimeo.com/channels/dds)
 
 
 ## Open Source Add-ons
 There are plenty of Open Source add-ons for Vortex OpenSplice and they keep growing almost daily. The main place to look for add one and extensions are [ADLINK-IST's GitHub](https://github.com/ADLINK-IST) repositories. Beside this, below are a few notable extensions:
 
-- **[DDS Tutorial Examples](http://bit.ly/1oAvXhz)**
-- **[C++11 Extensions](http://bit.ly/dds-cpp11)**: Support for lambda-based Data Reader listeners
-- **[Moliere](http://bit.ly/moliere-dds)**: [Scala](http://scala-lang.org) APIs for Vortex OpenSplice
+- **[DDS Tutorial Examples](https://github.com/kydos/dds-tutorial-cpp)**
+- **[C++11 Extensions](https://github.com/kydos/dds-cpp11)**: Support for lambda-based Data Reader listeners
+- **[Moliere](https://github.com/nuvo-io/moliere)**: [Scala](http://scala-lang.org) APIs for Vortex OpenSplice
 - **[pydds](https://github.com/atolab/pydds)**: Python APIs for Vortex OpenSplice
 
 ## Related Projects
