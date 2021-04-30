@@ -51,7 +51,7 @@ Bibliography
 
 **PowerGrid Blackout 2003**
   | *'Northeast Blackout of 2003'*,
-  | http://bit.ly/ne-blackout,
+  | https://en.wikipedia.org/wiki/Northeast_blackout_of_2003,
   | 2003
     
 
