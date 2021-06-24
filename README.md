@@ -1,4 +1,11 @@
-[![Build Status](https://dev.azure.com/ADLINK-GDE/Vortex%20OpenSplice%20Community%20Edition/_apis/build/status/ADLINK-IST.opensplice?branchName=master)](https://dev.azure.com/ADLINK-GDE/Vortex%20OpenSplice%20Community%20Edition/_build/latest?definitionId=7&branchName=master)
+# Announcement
+
+For more than a decade, the Vortex Opensplice open source project helped to evangelise and successfully deploy the OMG Data Distribution Service Technology in thousands of industrial and academic projects worldwide. The Vortex Opensplice core team and the community have gained tremendous experience and know-how from these interactions. 
+
+Capitalizing on our lengthy experience developing data-centric middleware in real-time distributed systems the core team launched Cyclone DDS, a brand-new open source OMG DDS implementation. [Cyclone DDS](https://projects.eclipse.org/projects/iot.cyclonedds) under the Eclipse foundation governance continues our mission to fuel innovation and serve a more diverse customer base. It is gaining momentum in many opensource frameworks and industrial contexts including ROS2 , Autoware etc. It also represents a genuinely open-source data distribution solution with full source code access and updates.
+
+Buoyed by this success and adoptions, it became obvious that the focus of the core team and the community should now be Cyclone DDS. We, therefore, encourage the Vortex Opensplice open source community users to consider migrating to Cyclone DDS. The migration is straightforward when the ISO CPP V2 APIs are in use. 
+For users that are building mission- and/or business-critical systems, ADLINK continues to support Vortex Opensplice Professional Edition and offers a [commercially supported version](https://www.adlinktech.com/en/vortex-opensplice-data-distribution-service) with extra features and guarantees of support.
 
 # Vortex OpenSplice Community Edition
 
