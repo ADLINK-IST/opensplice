@@ -581,8 +581,7 @@ def _deserialize_array(mem_type, data):
     '''
     array_size = int(mem_type.attrib[_SIZE_ATTRIBUTE])
     array_type = mem_type[0]
-    result = []
-    [result.append(_deserialize_data(array_type, data)) for _ in range(array_size)]
+    result = [_deserialize_data(array_type, data) for _ in range(array_size)]
     return result
 
 # Global variables
@@ -718,8 +717,7 @@ def _compute_packing_fmt(mem_type, fmt_args, align):
         actual_key = mem_type.attrib[_NAME_ATTRIBUTE]
         actual_type = _get_actual_type(actual_key)
         if isinstance(actual_type, enum.EnumMeta):
-            size = struct.calcsize('i')
-            align = max(size, align)
+            align = _calcalign('i')
             fmt_args.append('i')
             return align
         elif isinstance(actual_type, type):
@@ -752,8 +750,7 @@ def _compute_packing_fmt(mem_type, fmt_args, align):
     else:
         mem_type = mem_type.tag
         fmt = _to_packing_fmt([mem_type])
-        size = struct.calcsize(fmt)
-        align = max(size, align)
+        align = _calcalign(fmt)
         fmt_args.append(fmt)
 
     fmt_args.append(' ')
