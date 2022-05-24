@@ -273,6 +273,7 @@ os_str_rtrim (
     const os_char *trim)
 {
     os_char *lim, *ptr;
+    os_size_t excess_chars;
 
     assert (str != NULL);
 
@@ -281,11 +282,12 @@ os_str_rtrim (
     }
 
     lim = os_strrchrs (str, trim, OS_FALSE);
+    excess_chars = strlen(lim) - strlen(trim);
     if (lim != NULL) {
         /* if byte following last occurrence of non-trim character is null
            terminating byte, nothing needs to be replaced */
         if (lim[1] != '\0') {
-            ptr = os_strndup (str, (os_size_t)((lim - str) + 1));
+            ptr = os_strndup (str, (os_size_t)((lim - str) + excess_chars));
         } else {
             ptr = (os_char *)str;
         }
