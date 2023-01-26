@@ -525,6 +525,9 @@ extern void do_endif (int sharp)
    }
 }
 
+IF *ifstack;
+int n_skipped_ifs;
+
 static void iftrue (void)
 {
    IF *i;

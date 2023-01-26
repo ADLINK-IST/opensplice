@@ -23,9 +23,9 @@
 
 #include "idl_program.h"
 
-os_iter idl_idlScopeKeyList;
-os_iter idl_idlScopeStreamsList;
+extern os_iter idl_idlScopeKeyList;
+extern os_iter idl_idlScopeStreamsList;
 
-idl_program idl_genIdlHelperProgram (void);
+extern idl_program idl_genIdlHelperProgram (void);
 
 #endif /* IDL_GENIDLHELPER_H */

@@ -37,8 +37,8 @@ extern "C"
 #define IFSTATE_FALSE 1
 #define IFSTATE_STAYFALSE 2
 
-   IF *ifstack;
-   int n_skipped_ifs;
+   extern IF *ifstack;
+   extern int n_skipped_ifs;
 
    extern void do_sharp (void);
    extern void do_if (int);
