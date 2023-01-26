@@ -26,6 +26,10 @@
 #include "os_string.h"
 #include "os_heap.h"
 
+ut_table simulink_propertiesTable;
+ut_table simulink_nameTable;
+char *simulink_propertiesFileName;
+
 c_char
 *simulinkScope(
         idl_scope scope)

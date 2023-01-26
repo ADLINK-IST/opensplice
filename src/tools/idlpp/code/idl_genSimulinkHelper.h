@@ -28,9 +28,9 @@
 #include "idl_typeSpecifier.h"
 #include "ut_collection.h"
 
-ut_table simulink_propertiesTable;
-ut_table simulink_nameTable;
-char *simulink_propertiesFileName;
+extern ut_table simulink_propertiesTable;
+extern ut_table simulink_nameTable;
+extern char *simulink_propertiesFileName;
 
 c_char *simulinkScope(idl_scope typeSpec);
 ut_table simulink_createTable();

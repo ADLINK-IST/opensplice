@@ -24,6 +24,9 @@
 #include "idl_keyDef.h"
 #include "idl_streamsDef.h"
 
+os_iter idl_idlScopeKeyList;
+os_iter idl_idlScopeStreamsList;
+
 /* The functions in this file create a key list and a streams list, that apply
  * only to the file being handled. This is in contrast to the lists that are
  * created when the meta model is created within the idl_base.l/y code (when the

@@ -35,6 +35,6 @@ extern EORB_CPP_node * read_expr_ (void);
 extern EORB_CPP_node * read_expr_p (void);
 extern int eval_expr (int, int);
 
-int expr_sharp;
+extern int expr_sharp;
 
 #endif
